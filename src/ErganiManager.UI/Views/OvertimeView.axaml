@@ -1,0 +1,144 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:ErganiManager.UI.ViewModels"
+             x:Class="ErganiManager.UI.Views.OvertimeView"
+             x:DataType="vm:OvertimeViewModel">
+
+    <Grid>
+        <StackPanel Spacing="16">
+
+            <Border IsVisible="{Binding !HasActiveCompany}" Background="#332D9CDB" CornerRadius="6" Padding="14">
+                <TextBlock Text="{Binding NoCompanyMessage}" TextWrapping="Wrap" />
+            </Border>
+
+            <StackPanel IsVisible="{Binding HasActiveCompany}" Spacing="14">
+
+                <Grid ColumnDefinitions="*,Auto,Auto">
+                    <TextBlock Grid.Column="0" Text="{Binding Loc[Overtime]}" FontSize="22" FontWeight="Bold" />
+                    <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8">
+                        <CalendarDatePicker SelectedDate="{Binding FilterFrom}" />
+                        <TextBlock Text="→" VerticalAlignment="Center" />
+                        <CalendarDatePicker SelectedDate="{Binding FilterTo}" />
+                        <Button Content="{Binding Loc[Load]}" Command="{Binding LoadRecordsCommand}" />
+                    </StackPanel>
+                    <Button Grid.Column="2" Content="{Binding Loc[New]}" Command="{Binding StartCreateCommand}"
+                            Classes="accent" Margin="8,0,0,0" />
+                </Grid>
+
+                <TextBlock Text="{Binding StatusMessage}" Foreground="Gray" FontSize="12" />
+
+                <!-- Overtime records list -->
+                <ItemsControl ItemsSource="{Binding Records}">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate><StackPanel Spacing="6" /></ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Border Background="#1A1D23" CornerRadius="8" Padding="14,10">
+                                <Grid ColumnDefinitions="*,Auto,Auto,Auto,Auto">
+                                    <StackPanel Grid.Column="0">
+                                        <TextBlock Text="{Binding EmployeeFullName}" FontWeight="SemiBold" FontSize="14" />
+                                        <TextBlock Text="{Binding BranchName}" FontSize="11" Foreground="Gray" />
+                                    </StackPanel>
+
+                                    <StackPanel Grid.Column="1" Margin="12,0" VerticalAlignment="Center">
+                                        <TextBlock Text="{Binding OvertimeDate, StringFormat='{}{0:dd/MM/yyyy}'}"
+                                                   FontSize="13" FontWeight="SemiBold" />
+                                        <TextBlock Text="{Binding StartTime, StringFormat='{}{0:HH:mm}'}"
+                                                   FontSize="12" Foreground="Gray" />
+                                    </StackPanel>
+
+                                    <TextBlock Grid.Column="2" VerticalAlignment="Center" Margin="8,0"
+                                               Text="{Binding EndTime, StringFormat='→ {0:HH:mm}'}"
+                                               Foreground="#AAAAAA" FontSize="12" />
+
+                                    <StackPanel Grid.Column="3" VerticalAlignment="Center" Margin="8,0" Spacing="4">
+                                        <Border CornerRadius="10" Padding="8,3"
+                                                Background="{Binding IsCancelled, Converter={x:Static vm:BoolToBackgroundConverter.Instance}}">
+                                            <TextBlock Text="{Binding IsCancelled, Converter={x:Static vm:CancelledTextConverter.Instance}}"
+                                                       FontSize="11" Foreground="White" />
+                                        </Border>
+                                        <TextBlock Text="{Binding Protocol}" FontSize="10" Foreground="#888888"
+                                                   IsVisible="{Binding Protocol, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                                    </StackPanel>
+
+                                    <Button Grid.Column="4" Content="Cancel" Tag="{Binding}"
+                                            Click="OnCancelClick"
+                                            IsEnabled="{Binding !IsCancelled}"
+                                            Margin="0,0,6,0" />
+                                    <Button Content="Delete" Tag="{Binding}"
+                                            Click="OnDeleteClick" />
+                                </Grid>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+
+            </StackPanel>
+        </StackPanel>
+
+        <!-- New overtime form overlay -->
+        <Border IsVisible="{Binding IsCreating}" Background="#AA000000">
+            <Border Background="#1E2128" CornerRadius="12" Padding="28"
+                    Width="500" VerticalAlignment="Center" HorizontalAlignment="Center"
+                    BorderBrush="#3A3F4B" BorderThickness="1">
+                <StackPanel Spacing="12">
+                    <TextBlock Text="New Overtime Entry" FontSize="17" FontWeight="Bold" />
+
+                    <TextBlock Text="Employee" FontWeight="SemiBold" />
+                    <ComboBox ItemsSource="{Binding AvailableEmployees}" SelectedItem="{Binding FormEmployee}"
+                              HorizontalAlignment="Stretch">
+                        <ComboBox.ItemTemplate>
+                            <DataTemplate><TextBlock Text="{Binding FullName}" /></DataTemplate>
+                        </ComboBox.ItemTemplate>
+                    </ComboBox>
+
+                    <TextBlock Text="{Binding Loc[Branch]}" FontWeight="SemiBold" />
+                    <ComboBox ItemsSource="{Binding AvailableBranches}" SelectedItem="{Binding FormBranch}"
+                              HorizontalAlignment="Stretch">
+                        <ComboBox.ItemTemplate>
+                            <DataTemplate><TextBlock Text="{Binding Name}" /></DataTemplate>
+                        </ComboBox.ItemTemplate>
+                    </ComboBox>
+
+                    <TextBlock Text="{Binding Loc[OvertimeDate]}" FontWeight="SemiBold" />
+                    <CalendarDatePicker SelectedDate="{Binding FormDate}" HorizontalAlignment="Stretch" />
+
+                    <Grid ColumnDefinitions="*,Auto,*">
+                        <StackPanel Grid.Column="0" Spacing="4">
+                            <TextBlock Text="{Binding Loc[StartTime]}" FontWeight="SemiBold" FontSize="12" />
+                            <TimePicker SelectedTime="{Binding FormStartTime}" ClockIdentifier="24HourClock" />
+                        </StackPanel>
+                        <TextBlock Grid.Column="1" Text="→" VerticalAlignment="Bottom"
+                                   Margin="12,0" Padding="0,0,0,8" FontSize="16" />
+                        <StackPanel Grid.Column="2" Spacing="4">
+                            <TextBlock Text="{Binding Loc[EndTime]}" FontWeight="SemiBold" FontSize="12" />
+                            <TimePicker SelectedTime="{Binding FormEndTime}" ClockIdentifier="24HourClock" />
+                        </StackPanel>
+                    </Grid>
+
+                    <TextBlock Text="{Binding Loc[Justification]}" FontWeight="SemiBold" />
+                    <ComboBox ItemsSource="{Binding Justifications}" SelectedItem="{Binding FormJustification}"
+                              HorizontalAlignment="Stretch" />
+
+                    <TextBlock Text="{Binding Loc[WeeklyWorkdays]}" FontWeight="SemiBold" />
+                    <NumericUpDown Value="{Binding FormWeeklyWorkdays}" Minimum="5" Maximum="6" />
+
+                    <TextBlock Text="ASEE Approval Number (if applicable)" FontWeight="SemiBold" />
+                    <TextBox Text="{Binding FormAseeApproval}" />
+
+                    <TextBlock Text="{Binding StatusMessage}" Foreground="Red" TextWrapping="Wrap"
+                               IsVisible="{Binding StatusMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+
+                    <Grid ColumnDefinitions="*,*" Margin="0,12,0,0">
+                        <Button Grid.Column="0" Content="{Binding Loc[Cancel]}" Command="{Binding CancelCreateCommand}"
+                                HorizontalAlignment="Stretch" Margin="0,0,6,0" />
+                        <Button Grid.Column="1" Content="{Binding Loc[Save]}" Command="{Binding SaveCommand}"
+                                Classes="accent" HorizontalAlignment="Stretch" Margin="6,0,0,0" />
+                    </Grid>
+                </StackPanel>
+            </Border>
+        </Border>
+    </Grid>
+
+</UserControl>

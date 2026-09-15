@@ -1,0 +1,122 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:ErganiManager.UI.ViewModels"
+             x:Class="ErganiManager.UI.Views.UsersView"
+             x:DataType="vm:UsersViewModel">
+
+    <Grid RowDefinitions="Auto,*">
+
+        <Grid Grid.Row="0" ColumnDefinitions="*,Auto" Margin="0,0,0,12">
+            <TextBlock Grid.Column="0" Text="{Binding Loc[Users]}" FontSize="22" FontWeight="Bold" />
+            <Button Grid.Column="1" Content="{Binding Loc[New]}"
+                    Command="{Binding StartCreateCommand}" Classes="accent" />
+        </Grid>
+
+        <!-- Users list -->
+        <ScrollViewer Grid.Row="1" IsVisible="{Binding !IsCreating}">
+            <ItemsControl ItemsSource="{Binding Users}">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate><StackPanel Spacing="8" /></ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <Border Background="#1A1D23" CornerRadius="8" Padding="16">
+                            <Grid ColumnDefinitions="*,Auto,Auto,Auto,Auto,Auto">
+                                <StackPanel Grid.Column="0">
+                                    <TextBlock Text="{Binding Username}" FontWeight="SemiBold" FontSize="14" />
+                                    <TextBlock Text="{Binding BranchName}" FontSize="12" Foreground="Gray" />
+                                </StackPanel>
+                                <Border Grid.Column="1" CornerRadius="10" Padding="8,3"
+                                        VerticalAlignment="Center" Background="#3A3F4B" Margin="8,0">
+                                    <TextBlock Text="{Binding Role}" FontSize="11" Foreground="White" />
+                                </Border>
+                                <TextBlock Grid.Column="2" Text="{Binding IsActive}"
+                                           VerticalAlignment="Center" Foreground="#999999"
+                                           Margin="8,0" FontSize="12" />
+                                <Button Grid.Column="3" Content="Reset Password"
+                                        Tag="{Binding}" Click="OnResetPasswordClick" Margin="0,0,6,0" />
+                                <Button Grid.Column="4" Content="Active"
+                                        Tag="{Binding}" Click="OnToggleActiveClick" Margin="0,0,6,0" />
+                                <Button Grid.Column="5" Content="Delete"
+                                        Tag="{Binding}" Click="OnDeleteClick" Foreground="#EF9A9A" />
+                            </Grid>
+                        </Border>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </ScrollViewer>
+
+        <!-- Create user form -->
+        <Grid Grid.Row="1" IsVisible="{Binding IsCreating}" RowDefinitions="*,Auto">
+            <ScrollViewer Grid.Row="0">
+                <Border Background="#1A1D23" CornerRadius="8" Padding="20">
+                    <StackPanel Spacing="10">
+                        <TextBlock Text="New User" FontSize="17" FontWeight="SemiBold" />
+
+                        <TextBlock Text="{Binding Loc[Username]}" FontWeight="SemiBold" />
+                        <TextBox Text="{Binding FormUsername}" />
+
+                        <TextBlock Text="{Binding Loc[Password]}" FontWeight="SemiBold" />
+                        <TextBox Text="{Binding FormPassword}" PasswordChar="•" />
+
+                        <TextBlock Text="{Binding Loc[Role]}" FontWeight="SemiBold" />
+                        <ComboBox ItemsSource="{Binding AvailableRoles}"
+                                  SelectedItem="{Binding FormRole}"
+                                  HorizontalAlignment="Stretch" />
+
+                        <StackPanel IsVisible="{Binding IsFormRoleOperator}" Spacing="10">
+                            <TextBlock Text="{Binding Loc[LockToBranch]}" FontWeight="SemiBold" />
+                            <ComboBox ItemsSource="{Binding AvailableBranches}"
+                                      SelectedItem="{Binding FormBranch}"
+                                      HorizontalAlignment="Stretch">
+                                <ComboBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Text="{Binding Name}" />
+                                    </DataTemplate>
+                                </ComboBox.ItemTemplate>
+                            </ComboBox>
+                        </StackPanel>
+
+                        <TextBlock Text="{Binding StatusMessage}" Foreground="Red"
+                                   TextWrapping="Wrap" Margin="0,8,0,0" />
+                    </StackPanel>
+                </Border>
+            </ScrollViewer>
+
+            <Grid Grid.Row="1" ColumnDefinitions="*,*" Margin="0,8,0,0">
+                <Button Grid.Column="0" Content="{Binding Loc[Cancel]}"
+                        Command="{Binding CancelCreateCommand}"
+                        HorizontalAlignment="Stretch" Margin="0,0,6,0" />
+                <Button Grid.Column="1" Content="{Binding Loc[Save]}"
+                        Command="{Binding SaveNewUserCommand}" Classes="accent"
+                        HorizontalAlignment="Stretch" Margin="6,0,0,0" />
+            </Grid>
+        </Grid>
+
+        <!-- Reset password panel -->
+        <Grid Grid.Row="1"
+              IsVisible="{Binding ResettingUser, Converter={x:Static ObjectConverters.IsNotNull}}"
+              RowDefinitions="*,Auto">
+            <Border Grid.Row="0" Background="#1A1D23" CornerRadius="8" Padding="20">
+                <StackPanel Spacing="10">
+                    <TextBlock Text="{Binding ResettingUser.Username, StringFormat='Reset password for {0}'}"
+                               FontSize="16" FontWeight="SemiBold" />
+                    <TextBox Text="{Binding ResetPasswordValue}" PasswordChar="•"
+                             Watermark="New password (min 8 characters)" />
+                    <TextBlock Text="{Binding StatusMessage}" Foreground="Red" TextWrapping="Wrap" />
+                </StackPanel>
+            </Border>
+
+            <Grid Grid.Row="1" ColumnDefinitions="*,*" Margin="0,8,0,0">
+                <Button Grid.Column="0" Content="{Binding Loc[Cancel]}"
+                        Command="{Binding CancelResetPasswordCommand}"
+                        HorizontalAlignment="Stretch" Margin="0,0,6,0" />
+                <Button Grid.Column="1" Content="{Binding Loc[Save]}"
+                        Command="{Binding ConfirmResetPasswordCommand}" Classes="accent"
+                        HorizontalAlignment="Stretch" Margin="6,0,0,0" />
+            </Grid>
+        </Grid>
+
+    </Grid>
+
+</UserControl>

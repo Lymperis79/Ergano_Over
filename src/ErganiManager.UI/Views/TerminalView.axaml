@@ -1,0 +1,85 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:ErganiManager.UI.ViewModels"
+        x:Class="ErganiManager.UI.Views.TerminalView"
+        x:DataType="vm:TerminalViewModel"
+        Title="Ergani Manager — Terminal"
+        WindowState="Maximized"
+        CanResize="False"
+        SystemDecorations="None">
+
+    <Grid Background="#0F1115">
+
+        <!-- Main terminal content -->
+        <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center"
+                    Spacing="18" Width="600">
+
+            <TextBlock Text="{Binding CompanyName}" FontSize="22" FontWeight="SemiBold"
+                       HorizontalAlignment="Center" Foreground="White" />
+            <TextBlock HorizontalAlignment="Center" Foreground="#AAAAAA" FontSize="14">
+                <Run Text="Branch:" /><Run Text="{Binding BranchName}" />
+            </TextBlock>
+
+            <Border IsVisible="{Binding IsOfflineMode}"
+                    Background="#332D9CDB" CornerRadius="6" Padding="8" Margin="0,4,0,0">
+                <TextBlock Text="{Binding Loc[OfflineMode]}"
+                           Foreground="White" FontSize="12" HorizontalAlignment="Center" />
+            </Border>
+
+            <TextBlock Text="{Binding CurrentDateText}" FontSize="18" Foreground="#CCCCCC"
+                       HorizontalAlignment="Center" Margin="0,24,0,0" />
+            <TextBlock Text="{Binding CurrentTimeText}" FontSize="56" FontWeight="Bold"
+                       Foreground="White" HorizontalAlignment="Center" />
+
+            <TextBox Name="ScanInputBox"
+                     Text="{Binding ScanInput}"
+                     Watermark="{Binding Loc[ScanPrompt]}"
+                     FontSize="22" Height="56"
+                     HorizontalAlignment="Stretch"
+                     HorizontalContentAlignment="Center"
+                     Margin="0,32,0,0"
+                     IsEnabled="{Binding !IsProcessing}">
+                <TextBox.KeyBindings>
+                    <KeyBinding Gesture="Enter" Command="{Binding ProcessScanCommand}" />
+                </TextBox.KeyBindings>
+            </TextBox>
+
+        </StackPanel>
+
+        <!-- Result popup overlay -->
+        <Border IsVisible="{Binding IsPopupVisible}"
+                Background="#CC000000">
+            <Border Background="#1E2128" CornerRadius="12" Padding="36"
+                    Width="560" VerticalAlignment="Center" HorizontalAlignment="Center"
+                    BorderBrush="#3A3F4B" BorderThickness="1">
+                <StackPanel Spacing="10">
+                    <TextBlock Text="{Binding PopupTitle}" FontSize="24" FontWeight="Bold"
+                               Foreground="White" HorizontalAlignment="Center"
+                               TextWrapping="Wrap" />
+                    <TextBlock Text="{Binding PopupEmployeeName}" FontSize="20"
+                               Foreground="#DDDDDD" HorizontalAlignment="Center"
+                               Margin="0,8,0,0"
+                               IsVisible="{Binding PopupEmployeeName,
+                                   Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                    <TextBlock Text="{Binding PopupDetailLine1}" FontSize="16"
+                               Foreground="#BBBBBB" HorizontalAlignment="Center"
+                               TextWrapping="Wrap" Margin="0,12,0,0"
+                               IsVisible="{Binding PopupDetailLine1,
+                                   Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                    <TextBlock Text="{Binding PopupDetailLine2}" FontSize="16"
+                               Foreground="#BBBBBB" HorizontalAlignment="Center"
+                               TextWrapping="Wrap"
+                               IsVisible="{Binding PopupDetailLine2,
+                                   Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                    <TextBlock Text="{Binding PopupDetailLine3}" FontSize="14"
+                               Foreground="#888888" HorizontalAlignment="Center"
+                               TextWrapping="Wrap" Margin="0,8,0,0"
+                               IsVisible="{Binding PopupDetailLine3,
+                                   Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                </StackPanel>
+            </Border>
+        </Border>
+
+    </Grid>
+
+</Window>

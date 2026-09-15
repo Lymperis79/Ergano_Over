@@ -1,0 +1,102 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:ErganiManager.UI.ViewModels"
+        x:Class="ErganiManager.UI.Views.DatabaseSetupView"
+        x:DataType="vm:DatabaseSetupViewModel"
+        Title="Ergani Manager"
+        Width="560" Height="640"
+        WindowStartupLocation="CenterScreen"
+        CanResize="False">
+
+    <ScrollViewer Padding="32">
+        <StackPanel Spacing="16">
+
+            <!-- STEP 1: DB Configuration -->
+            <StackPanel IsVisible="{Binding !IsDatabaseStepComplete}" Spacing="16">
+
+                <TextBlock Text="{Binding Loc[DbSetupTitle]}" FontSize="22" FontWeight="Bold" />
+                <TextBlock Text="{Binding Loc[DbSetupSubtitle]}" TextWrapping="Wrap" Foreground="Gray" />
+
+                <TextBlock Text="{Binding Loc[DbType]}" FontWeight="SemiBold" Margin="0,12,0,0" />
+                <ComboBox ItemsSource="{Binding AvailableProviders}"
+                          SelectedItem="{Binding SelectedProvider}"
+                          HorizontalAlignment="Stretch" />
+
+                <!-- SQLite -->
+                <Border IsVisible="{Binding IsSqlite}" Background="#1A2D9CDB"
+                        CornerRadius="6" Padding="12" Margin="0,8,0,0">
+                    <TextBlock TextWrapping="Wrap" Text="{Binding Loc[DbSqliteNote]}" />
+                </Border>
+
+                <!-- SQL Server -->
+                <StackPanel IsVisible="{Binding IsSqlServer}" Spacing="10" Margin="0,8,0,0">
+                    <TextBlock Text="{Binding Loc[DbServer]}" FontWeight="SemiBold" />
+                    <TextBox Text="{Binding SqlServerHost}" Watermark="localhost\SQLEXPRESS" />
+                    <TextBlock Text="{Binding Loc[DbName]}" FontWeight="SemiBold" />
+                    <TextBox Text="{Binding SqlServerDatabase}" />
+                    <CheckBox Content="{Binding Loc[DbWindowsAuth]}"
+                              IsChecked="{Binding SqlServerUseWindowsAuth}" />
+                    <StackPanel IsVisible="{Binding !SqlServerUseWindowsAuth}" Spacing="10">
+                        <TextBlock Text="{Binding Loc[Username]}" FontWeight="SemiBold" />
+                        <TextBox Text="{Binding SqlServerUsername}" />
+                        <TextBlock Text="{Binding Loc[Password]}" FontWeight="SemiBold" />
+                        <TextBox Text="{Binding SqlServerPassword}" PasswordChar="•" />
+                    </StackPanel>
+                </StackPanel>
+
+                <!-- MariaDB -->
+                <StackPanel IsVisible="{Binding IsMariaDb}" Spacing="10" Margin="0,8,0,0">
+                    <TextBlock Text="{Binding Loc[DbServer]}" FontWeight="SemiBold" />
+                    <TextBox Text="{Binding MariaDbHost}" Watermark="localhost" />
+                    <TextBlock Text="{Binding Loc[DbName]}" FontWeight="SemiBold" />
+                    <TextBox Text="{Binding MariaDbDatabase}" />
+                    <TextBlock Text="{Binding Loc[Username]}" FontWeight="SemiBold" />
+                    <TextBox Text="{Binding MariaDbUsername}" />
+                    <TextBlock Text="{Binding Loc[Password]}" FontWeight="SemiBold" />
+                    <TextBox Text="{Binding MariaDbPassword}" PasswordChar="•" />
+                </StackPanel>
+
+                <TextBlock Text="{Binding StatusMessage}" TextWrapping="Wrap" Margin="0,12,0,0" />
+
+                <Grid ColumnDefinitions="*,*" Margin="0,16,0,0">
+                    <Button Grid.Column="0" Content="{Binding Loc[TestConnection]}"
+                            Command="{Binding TestConnectionCommand}"
+                            IsEnabled="{Binding !IsTesting}"
+                            HorizontalAlignment="Stretch" Margin="0,0,6,0" />
+                    <Button Grid.Column="1" Content="{Binding Loc[DbSaveAndContinue]}"
+                            Command="{Binding SaveAndContinueCommand}"
+                            IsEnabled="{Binding !IsTesting}"
+                            Classes="accent"
+                            HorizontalAlignment="Stretch" Margin="6,0,0,0" />
+                </Grid>
+            </StackPanel>
+
+            <!-- STEP 2: Create first administrator -->
+            <StackPanel IsVisible="{Binding IsDatabaseStepComplete}" Spacing="14">
+
+                <TextBlock Text="{Binding Loc[CreateAdminTitle]}" FontSize="22" FontWeight="Bold" />
+                <TextBlock Text="{Binding Loc[CreateAdminSubtitle]}"
+                           TextWrapping="Wrap" Foreground="Gray" />
+
+                <TextBlock Text="{Binding Loc[Username]}" FontWeight="SemiBold" Margin="0,8,0,0" />
+                <TextBox Text="{Binding AdminUsername}" />
+
+                <TextBlock Text="{Binding Loc[Password]}" FontWeight="SemiBold" />
+                <TextBox Text="{Binding AdminPassword}" PasswordChar="•" />
+
+                <TextBlock Text="{Binding Loc[ConfirmPassword]}" FontWeight="SemiBold" />
+                <TextBox Text="{Binding AdminPasswordConfirm}" PasswordChar="•" />
+
+                <TextBlock Text="{Binding AdminStatusMessage}" Foreground="Red" TextWrapping="Wrap" />
+
+                <Button Content="{Binding Loc[CreateAdminTitle]}"
+                        Command="{Binding CreateFirstAdminCommand}"
+                        IsEnabled="{Binding !IsCreatingAdmin}"
+                        Classes="accent"
+                        HorizontalAlignment="Stretch" Margin="0,8,0,0" />
+            </StackPanel>
+
+        </StackPanel>
+    </ScrollViewer>
+
+</Window>

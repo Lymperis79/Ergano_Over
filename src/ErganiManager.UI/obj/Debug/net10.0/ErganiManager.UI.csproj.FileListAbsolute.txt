@@ -1,0 +1,7 @@
+C:\Users\ThinkPad\Desktop\ErganiManager\src\ErganiManager.UI\obj\Debug\net10.0\ErganiManager.UI.csproj.AssemblyReference.cache
+C:\Users\ThinkPad\Desktop\ErganiManager\src\ErganiManager.UI\obj\Debug\net10.0\Avalonia\Resources.Inputs.cache
+C:\Users\ThinkPad\Desktop\ErganiManager\src\ErganiManager.UI\obj\Debug\net10.0\Avalonia\resources
+C:\Users\ThinkPad\Desktop\ErganiManager\src\ErganiManager.UI\obj\Debug\net10.0\ErganiManager.UI.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\ThinkPad\Desktop\ErganiManager\src\ErganiManager.UI\obj\Debug\net10.0\ErganiManager.UI.AssemblyInfoInputs.cache
+C:\Users\ThinkPad\Desktop\ErganiManager\src\ErganiManager.UI\obj\Debug\net10.0\ErganiManager.UI.AssemblyInfo.cs
+C:\Users\ThinkPad\Desktop\ErganiManager\src\ErganiManager.UI\obj\Debug\net10.0\ErganiManager.UI.csproj.CoreCompileInputs.cache
