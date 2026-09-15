@@ -1,0 +1,10 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=Ergani Manager
+Comment=Employee time tracking and Ergani API submission tool
+Exec=/opt/erganimanager/ErganiManager.UI
+Icon=/opt/erganimanager/erganimanager.png
+Terminal=false
+Categories=Office;Finance;
+StartupNotify=true

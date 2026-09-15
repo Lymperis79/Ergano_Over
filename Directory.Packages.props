@@ -1,0 +1,53 @@
+<Project>
+  <!--
+    CENTRAL PACKAGE MANAGEMENT (CPM)
+    All NuGet package versions for the entire solution are defined here.
+    Individual .csproj files reference packages WITHOUT a Version attribute.
+    To update a package: change the version here only — all projects pick it up.
+
+    Docs: https://learn.microsoft.com/nuget/consume-packages/central-package-management
+  -->
+  <PropertyGroup>
+    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- ── EF Core (all Microsoft EF packages must share the same patch) ── -->
+    <PackageVersion Include="Microsoft.EntityFrameworkCore"           Version="10.0.10" />
+    <PackageVersion Include="Microsoft.EntityFrameworkCore.Sqlite"    Version="10.0.10" />
+    <PackageVersion Include="Microsoft.EntityFrameworkCore.SqlServer" Version="10.0.10" />
+    <PackageVersion Include="Microsoft.EntityFrameworkCore.Design"    Version="10.0.10" />
+
+    <!--
+      MariaDB provider: Official Pomelo does not support EF Core 10 yet.
+      Tracked at https://github.com/PomeloFoundation/Pomelo.EntityFrameworkCore.MySql/issues/2007
+      Using Microting fork (drop-in replacement, same namespaces) until official 10.x lands.
+      To switch back: replace Microting with Pomelo, same version scheme.
+    -->
+    <PackageVersion Include="Microting.EntityFrameworkCore.MySql"     Version="10.0.8" />
+
+    <!-- ── Microsoft.Extensions (must match EF Core patch exactly) ── -->
+    <PackageVersion Include="Microsoft.Extensions.DependencyInjection"            Version="10.0.10" />
+    <PackageVersion Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.10" />
+    <PackageVersion Include="Microsoft.Extensions.Hosting"                        Version="10.0.10" />
+    <PackageVersion Include="Microsoft.Extensions.Http"                           Version="10.0.10" />
+    <PackageVersion Include="Microsoft.Extensions.Logging"                        Version="10.0.10" />
+    <PackageVersion Include="Microsoft.Extensions.Logging.Abstractions"           Version="10.0.10" />
+
+    <!-- ── Avalonia UI ── -->
+    <PackageVersion Include="Avalonia"               Version="12.1.0" />
+    <PackageVersion Include="Avalonia.Desktop"       Version="12.1.0" />
+    <PackageVersion Include="Avalonia.Themes.Fluent" Version="12.1.0" />
+    <PackageVersion Include="Avalonia.Fonts.Inter"   Version="12.1.0" />
+
+    <!-- ── Other dependencies ── -->
+    <PackageVersion Include="BCrypt.Net-Next"         Version="4.0.3" />
+    <PackageVersion Include="CommunityToolkit.Mvvm"   Version="8.4.0" />
+    <PackageVersion Include="ClosedXML"               Version="0.104.2" />
+    <PackageVersion Include="MailKit"                 Version="4.7.1.1" />
+    <PackageVersion Include="Serilog"                 Version="4.2.0" />
+    <PackageVersion Include="Serilog.Extensions.Logging" Version="9.0.0" />
+    <PackageVersion Include="Serilog.Sinks.File"      Version="6.0.0" />
+  </ItemGroup>
+
+</Project>
