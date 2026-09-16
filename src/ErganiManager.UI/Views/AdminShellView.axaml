@@ -1,0 +1,136 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:ErganiManager.UI.ViewModels"
+        xmlns:views="using:ErganiManager.UI.Views"
+        x:Class="ErganiManager.UI.Views.AdminShellView"
+        x:DataType="vm:AdminShellViewModel"
+        Title="Ergani Manager — Admin"
+        Width="1200" Height="760"
+        WindowStartupLocation="CenterScreen">
+
+    <Window.Resources>
+        <views:SectionViewModelTemplateSelector x:Key="SectionTemplateSelector" />
+    </Window.Resources>
+
+    <Grid ColumnDefinitions="220,*" RowDefinitions="Auto,Auto,*">
+
+        <!-- Header -->
+        <Border Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2" Background="#1E2128" Padding="20,14">
+            <Grid ColumnDefinitions="*,Auto">
+                <StackPanel Grid.Column="0">
+                    <TextBlock Text="{Binding WelcomeText}" FontSize="18" FontWeight="Bold" Foreground="White" />
+                    <TextBlock Text="{Binding CompanyDisplayText}" FontSize="13" Foreground="#AAAAAA" />
+                </StackPanel>
+
+                <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" Spacing="16">
+
+                    <!-- Always-on-top scan window launcher -->
+                    <Button Content="📟 Scan Window"
+                            Command="{Binding OpenScanWindowCommand}"
+                            VerticalAlignment="Center" />
+
+                    <!-- Language picker (always visible) -->
+                    <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                        <TextBlock Text="{Binding Loc[Language]}" Foreground="#AAAAAA"
+                                   VerticalAlignment="Center" FontSize="12" />
+                        <ComboBox ItemsSource="{Binding LanguageSelector.AvailableLanguages}"
+                                  SelectedItem="{Binding LanguageSelector.SelectedLanguage}"
+                                  Width="100">
+                            <ComboBox.ItemTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding Converter={x:Static vm:AppLanguageConverter.Instance}}" />
+                                </DataTemplate>
+                            </ComboBox.ItemTemplate>
+                        </ComboBox>
+                    </StackPanel>
+
+                    <!-- Company switcher (super-admin only) -->
+                    <StackPanel IsVisible="{Binding IsSuperAdmin}"
+                                Orientation="Horizontal" VerticalAlignment="Center" Spacing="8">
+                        <TextBlock Text="Company:" Foreground="#AAAAAA"
+                                   VerticalAlignment="Center" FontSize="13" />
+                        <ComboBox ItemsSource="{Binding SwitchableCompanies}"
+                                  SelectedItem="{Binding SelectedSwitchCompany}"
+                                  Width="220">
+                            <ComboBox.ItemTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding Name}" />
+                                </DataTemplate>
+                            </ComboBox.ItemTemplate>
+                        </ComboBox>
+                    </StackPanel>
+
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- Global notification bar -->
+        <Border Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2"
+                IsVisible="{Binding HasNotification}"
+                Padding="16,10" ZIndex="100"
+                Background="{Binding IsNotificationError,
+                    Converter={x:Static vm:BoolToBackgroundConverter.Instance}}">
+            <Grid ColumnDefinitions="*,Auto">
+                <TextBlock Grid.Column="0" Text="{Binding NotificationMessage}"
+                           Foreground="White" TextWrapping="Wrap" VerticalAlignment="Center" />
+                <Button Grid.Column="1" Content="✕" Foreground="White"
+                        Background="Transparent" BorderThickness="0"
+                        Command="{Binding DismissNotificationCommand}" />
+            </Grid>
+        </Border>
+
+        <!-- Sidebar -->
+        <StackPanel Grid.Row="2" Grid.Column="0" Background="#16181D" Spacing="2">
+            <Button Content="{Binding Loc[NavCompanies]}" Classes="navItem"
+                    Command="{Binding NavigateToCommand}" CommandParameter="Companies"
+                    HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" />
+            <Button Content="{Binding Loc[NavBranches]}" Classes="navItem"
+                    Command="{Binding NavigateToCommand}" CommandParameter="Branches"
+                    HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" />
+            <Button Content="{Binding Loc[NavEmployees]}" Classes="navItem"
+                    Command="{Binding NavigateToCommand}" CommandParameter="Employees"
+                    HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" />
+            <Button Content="{Binding Loc[NavUsers]}" Classes="navItem"
+                    Command="{Binding NavigateToCommand}" CommandParameter="Users"
+                    HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" />
+            <Button Content="{Binding Loc[NavSchedules]}" Classes="navItem"
+                    Command="{Binding NavigateToCommand}" CommandParameter="Schedules"
+                    HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" />
+            <Button Content="{Binding Loc[NavWorkCards]}" Classes="navItem"
+                    Command="{Binding NavigateToCommand}" CommandParameter="WorkCards"
+                    HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" />
+            <Button Content="📟 Scan" Classes="navItem"
+                    Command="{Binding NavigateToCommand}" CommandParameter="WorkCardScan"
+                    HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" />
+            <Button Content="{Binding Loc[NavOvertime]}" Classes="navItem"
+                    Command="{Binding NavigateToCommand}" CommandParameter="Overtime"
+                    HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" />
+            <Button Content="{Binding Loc[NavApiLog]}" Classes="navItem"
+                    Command="{Binding NavigateToCommand}" CommandParameter="SubmissionLog"
+                    HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" />
+        </StackPanel>
+
+        <!-- Content area — each section manages its own scrolling internally -->
+        <Border Grid.Row="2" Grid.Column="1" Padding="24">
+            <ContentControl Content="{Binding CurrentSectionViewModel}"
+                            ContentTemplate="{StaticResource SectionTemplateSelector}"
+                            HorizontalContentAlignment="Stretch"
+                            VerticalContentAlignment="Stretch" />
+        </Border>
+
+    </Grid>
+
+    <Window.Styles>
+        <Style Selector="Button.navItem">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="Foreground" Value="#CCCCCC" />
+            <Setter Property="Padding" Value="20,12" />
+            <Setter Property="CornerRadius" Value="0" />
+            <Setter Property="FontSize" Value="14" />
+        </Style>
+        <Style Selector="Button.navItem:pointerover /template/ ContentPresenter">
+            <Setter Property="Background" Value="#22252C" />
+        </Style>
+    </Window.Styles>
+
+</Window>

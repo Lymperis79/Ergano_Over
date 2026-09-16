@@ -1,0 +1,86 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:ErganiManager.UI.ViewModels"
+        x:Class="ErganiManager.UI.Views.EmployeeImportView"
+        x:DataType="vm:EmployeeImportViewModel"
+        Title="Import Employees from Excel"
+        Width="780" Height="620"
+        WindowStartupLocation="CenterOwner"
+        CanResize="True">
+
+    <ScrollViewer Padding="24">
+        <StackPanel Spacing="16">
+
+            <TextBlock Text="Import Employees from Excel" FontSize="20" FontWeight="Bold" />
+            <TextBlock TextWrapping="Wrap" Foreground="Gray"
+                       Text="Download the template, fill it in, then select your completed file to preview and import." />
+
+            <!-- Step 1: Download template -->
+            <Border Background="#1A1D23" CornerRadius="8" Padding="16">
+                <StackPanel Spacing="8">
+                    <TextBlock Text="Step 1 — Download the import template" FontWeight="SemiBold" />
+                    <Button Content="⬇  Download Template (saves to Desktop)"
+                            Command="{Binding DownloadTemplateCommand}" />
+                </StackPanel>
+            </Border>
+
+            <!-- Step 2: Choose file -->
+            <Border Background="#1A1D23" CornerRadius="8" Padding="16">
+                <StackPanel Spacing="8">
+                    <TextBlock Text="Step 2 — Select your completed file" FontWeight="SemiBold" />
+                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                        <TextBox Grid.Column="0" Text="{Binding SelectedFilePath}"
+                                 Watermark="Click Browse to select a file..." IsReadOnly="True" />
+                        <Button Grid.Column="1" Content="Browse…" Click="OnBrowseClick" />
+                    </Grid>
+                </StackPanel>
+            </Border>
+
+            <!-- Step 3: Preview -->
+            <Border Background="#1A1D23" CornerRadius="8" Padding="16" IsVisible="{Binding HasPreview}">
+                <StackPanel Spacing="10">
+                    <TextBlock Text="Step 3 — Review and import" FontWeight="SemiBold" />
+
+                    <!-- Valid rows summary -->
+                    <Border Background="#1B3A27" CornerRadius="6" Padding="10">
+                        <TextBlock Text="{Binding ValidRows.Count, StringFormat='✅ {0} valid row(s) ready to import'}"
+                                   Foreground="#81C784" />
+                    </Border>
+
+                    <!-- Invalid rows summary -->
+                    <Border Background="#3E1F1F" CornerRadius="6" Padding="10"
+                            IsVisible="{Binding InvalidRows.Count}">
+                        <StackPanel Spacing="6">
+                            <TextBlock Text="{Binding InvalidRows.Count, StringFormat='⚠️ {0} row(s) have errors and will be skipped:'}"
+                                       Foreground="#EF9A9A" />
+                            <ItemsControl ItemsSource="{Binding InvalidRows}">
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate><StackPanel Spacing="2" /></ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <TextBlock FontSize="12" Foreground="#EF9A9A"
+                                                   Text="{Binding Error, StringFormat='  Row {Binding RowNumber}: {0}'}" />
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+                    </Border>
+
+                    <Button Content="{Binding ValidRows.Count, StringFormat='Import {0} Employee(s)'}"
+                            Command="{Binding ImportValidRowsCommand}"
+                            IsEnabled="{Binding !IsImporting}"
+                            Classes="accent"
+                            HorizontalAlignment="Stretch"
+                            HorizontalContentAlignment="Center" />
+                </StackPanel>
+            </Border>
+
+            <!-- Status -->
+            <TextBlock Text="{Binding StatusMessage}" TextWrapping="Wrap"
+                       IsVisible="{Binding StatusMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+
+        </StackPanel>
+    </ScrollViewer>
+
+</Window>

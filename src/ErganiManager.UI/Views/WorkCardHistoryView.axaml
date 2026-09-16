@@ -1,0 +1,126 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:ErganiManager.UI.ViewModels"
+             x:Class="ErganiManager.UI.Views.WorkCardHistoryView"
+             x:DataType="vm:WorkCardHistoryViewModel">
+
+    <StackPanel Spacing="16">
+
+        <Border IsVisible="{Binding !HasActiveCompany}" Background="#332D9CDB" CornerRadius="6" Padding="14">
+            <TextBlock Text="{Binding NoCompanyMessage}" TextWrapping="Wrap" />
+        </Border>
+
+        <StackPanel IsVisible="{Binding HasActiveCompany}" Spacing="14">
+
+            <Grid ColumnDefinitions="*,Auto">
+                <TextBlock Grid.Column="0" Text="{Binding Loc[WorkCards]}" FontSize="22" FontWeight="Bold" />
+                <Button Grid.Column="1" Content="⬇ Export to Excel"
+                        Command="{Binding ExportToExcelCommand}"
+                        IsEnabled="{Binding !IsLoading}" />
+            </Grid>
+
+            <!-- Filters -->
+            <Border Background="#1A1D23" CornerRadius="8" Padding="16">
+                <StackPanel Spacing="10">
+                    <TextBlock Text="Filters" FontWeight="SemiBold" FontSize="14" />
+
+                    <Grid ColumnDefinitions="*,*,*,*" ColumnSpacing="12">
+                        <StackPanel Grid.Column="0" Spacing="4">
+                            <TextBlock Text="From" FontSize="12" Foreground="Gray" />
+                            <CalendarDatePicker SelectedDate="{Binding FilterFromDate}" HorizontalAlignment="Stretch" />
+                        </StackPanel>
+                        <StackPanel Grid.Column="1" Spacing="4">
+                            <TextBlock Text="To" FontSize="12" Foreground="Gray" />
+                            <CalendarDatePicker SelectedDate="{Binding FilterToDate}" HorizontalAlignment="Stretch" />
+                        </StackPanel>
+                        <StackPanel Grid.Column="2" Spacing="4">
+                            <TextBlock Text="Employee" FontSize="12" Foreground="Gray" />
+                            <ComboBox ItemsSource="{Binding AvailableEmployees}"
+                                      SelectedItem="{Binding FilterEmployee}"
+                                      HorizontalAlignment="Stretch">
+                                <ComboBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Text="{Binding FullName}" />
+                                    </DataTemplate>
+                                </ComboBox.ItemTemplate>
+                            </ComboBox>
+                        </StackPanel>
+                        <StackPanel Grid.Column="3" Spacing="4">
+                            <TextBlock Text="Branch" FontSize="12" Foreground="Gray" />
+                            <ComboBox ItemsSource="{Binding AvailableBranches}"
+                                      SelectedItem="{Binding FilterBranch}"
+                                      HorizontalAlignment="Stretch">
+                                <ComboBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Text="{Binding Name}" />
+                                    </DataTemplate>
+                                </ComboBox.ItemTemplate>
+                            </ComboBox>
+                        </StackPanel>
+                    </Grid>
+
+                    <Grid ColumnDefinitions="Auto,*,Auto">
+                        <CheckBox Grid.Column="0" Content="{Binding Loc[EarlyDeparture]}"
+                                  IsChecked="{Binding FilterEarlyDepartureOnly}" />
+                        <TextBlock Grid.Column="1" Text="{Binding StatusMessage}"
+                                   Foreground="Gray" FontSize="12"
+                                   VerticalAlignment="Center" HorizontalAlignment="Right" Margin="0,0,12,0" />
+                        <Button Grid.Column="2" Content="{Binding Loc[Load]}"
+                                Command="{Binding LoadCommand}"
+                                IsEnabled="{Binding !IsLoading}"
+                                Classes="accent" />
+                    </Grid>
+                </StackPanel>
+            </Border>
+
+            <!-- Results list -->
+            <ItemsControl ItemsSource="{Binding Records}">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate><StackPanel Spacing="4" /></ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <Border Background="#1A1D23" CornerRadius="6" Padding="14,10">
+                            <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto,Auto">
+                                <!-- Movement icon -->
+                                <TextBlock Grid.Column="0" Width="28" FontSize="18" VerticalAlignment="Center"
+                                           Text="{Binding MovementType, Converter={x:Static vm:MovementTypeIconConverter.Instance}}" />
+
+                                <!-- Employee + branch -->
+                                <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                    <TextBlock Text="{Binding EmployeeFullName}" FontWeight="SemiBold" FontSize="13" />
+                                    <TextBlock Text="{Binding BranchName}" FontSize="11" Foreground="Gray" />
+                                </StackPanel>
+
+                                <!-- Date/time -->
+                                <TextBlock Grid.Column="2" Text="{Binding MovementDateTime, StringFormat='{}{0:dd/MM/yyyy HH:mm}'}"
+                                           VerticalAlignment="Center" Margin="12,0" FontFamily="Consolas,Menlo,monospace" FontSize="12" />
+
+                                <!-- Early departure badge -->
+                                <Border Grid.Column="3" IsVisible="{Binding WasEarlyDeparture}"
+                                        Background="#4E342E" CornerRadius="10" Padding="8,3" VerticalAlignment="Center" Margin="0,0,8,0">
+                                    <TextBlock Text="{Binding EarlyDepartureMinutes, StringFormat='⚠️ {0} min early'}"
+                                               FontSize="11" Foreground="#FFAB91" />
+                                </Border>
+
+                                <!-- Ergani status -->
+                                <Border Grid.Column="4" CornerRadius="10" Padding="8,3" VerticalAlignment="Center" Margin="0,0,8,0"
+                                        Background="{Binding SubmittedToErgani, Converter={x:Static vm:BoolToBackgroundConverter.Instance}}">
+                                    <TextBlock Text="{Binding SubmittedToErgani, Converter={x:Static vm:SubmittedTextConverter.Instance}}"
+                                               FontSize="11" Foreground="White" />
+                                </Border>
+
+                                <!-- Protocol -->
+                                <TextBlock Grid.Column="5" Text="{Binding Protocol}" FontSize="11"
+                                           Foreground="#888888" VerticalAlignment="Center"
+                                           IsVisible="{Binding Protocol, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                            </Grid>
+                        </Border>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+
+        </StackPanel>
+    </StackPanel>
+
+</UserControl>
