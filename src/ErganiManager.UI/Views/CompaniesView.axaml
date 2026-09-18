@@ -1,0 +1,134 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:ErganiManager.UI.ViewModels"
+             x:Class="ErganiManager.UI.Views.CompaniesView"
+             x:DataType="vm:CompaniesViewModel">
+
+    <Grid RowDefinitions="Auto,*">
+
+        <!-- Header row -->
+        <Grid Grid.Row="0" ColumnDefinitions="*,Auto" Margin="0,0,0,12">
+            <TextBlock Grid.Column="0" Text="{Binding Loc[Companies]}" FontSize="22" FontWeight="Bold" />
+            <Button Grid.Column="1" Content="{Binding Loc[New]}"
+                    Command="{Binding StartCreateCommand}" Classes="accent" />
+        </Grid>
+
+        <!-- List — shown when not editing -->
+        <ScrollViewer Grid.Row="1" IsVisible="{Binding !IsEditing}">
+            <ItemsControl ItemsSource="{Binding Companies}">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate><StackPanel Spacing="8" /></ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <Border Background="#1A1D23" CornerRadius="8" Padding="16">
+                            <Grid ColumnDefinitions="*,Auto,Auto,Auto">
+                                <StackPanel Grid.Column="0">
+                                    <TextBlock Text="{Binding Name}" FontWeight="SemiBold" FontSize="15" />
+                                    <TextBlock Text="{Binding TaxId}" FontSize="12" Foreground="Gray" />
+                                </StackPanel>
+                                <TextBlock Grid.Column="1" Text="{Binding ErganiUsername}"
+                                           VerticalAlignment="Center" Foreground="#999999"
+                                           Margin="12,0" FontSize="12" />
+                                <Border Grid.Column="2" CornerRadius="10" Padding="8,3"
+                                        VerticalAlignment="Center" Background="#2D9CDB">
+                                    <TextBlock Text="{Binding IsActive}" FontSize="11" Foreground="White" />
+                                </Border>
+                                <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="6" Margin="12,0,0,0">
+                                    <Button Content="Edit"   Tag="{Binding}" Click="OnEditClick" />
+                                    <Button Content="Delete" Tag="{Binding}" Click="OnDeleteClick" Foreground="#EF9A9A" />
+                                    <Button Content="Active" Tag="{Binding}" Click="OnToggleActiveClick" />
+                                </StackPanel>
+                            </Grid>
+                        </Border>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </ScrollViewer>
+
+        <!-- Edit/Create form — fills remaining space, Save pinned at bottom -->
+        <Grid Grid.Row="1" IsVisible="{Binding IsEditing}" RowDefinitions="*,Auto">
+
+            <!-- Scrollable fields -->
+            <ScrollViewer Grid.Row="0">
+                <Border Background="#1A1D23" CornerRadius="8" Padding="20">
+                    <StackPanel Spacing="12">
+
+                        <TextBlock Text="Company Details" FontSize="17" FontWeight="SemiBold" />
+
+                        <TextBlock Text="{Binding Loc[CompanyName]}" FontWeight="SemiBold" />
+                        <TextBox Text="{Binding FormName}" />
+
+                        <TextBlock Text="{Binding Loc[TaxId]}" FontWeight="SemiBold" />
+                        <TextBox Text="{Binding FormTaxId}" MaxLength="9" />
+
+                        <TextBlock Text="{Binding Loc[ErganiUsername]}" FontWeight="SemiBold" />
+                        <TextBox Text="{Binding FormErganiUsername}" />
+
+                        <TextBlock Text="{Binding Loc[ErganiPassword]}" FontWeight="SemiBold" />
+                        <TextBox Text="{Binding FormErganiPassword}" PasswordChar="•" />
+
+                        <TextBlock Text="{Binding Loc[ErganiBaseUrl]}" FontWeight="SemiBold" />
+                        <TextBox Text="{Binding FormErganiBaseUrl}" />
+
+                        <CheckBox Content="{Binding Loc[Active]}" IsChecked="{Binding FormIsActive}" />
+
+                        <Separator />
+                        <TextBlock Text="{Binding Loc[TimeRules]}" FontSize="15" FontWeight="SemiBold" />
+
+                        <TextBlock Text="{Binding Loc[EarlyClockInBlock]}" FontWeight="SemiBold" />
+                        <NumericUpDown Value="{Binding FormEarlyClockInBlockMinutes}" Minimum="0" Maximum="120" />
+
+                        <TextBlock Text="{Binding Loc[EarlyDepartureAlert]}" FontWeight="SemiBold" />
+                        <NumericUpDown Value="{Binding FormEarlyDepartureAlertMinutes}" Minimum="0" Maximum="120" />
+
+                        <CheckBox Content="{Binding Loc[BlockNoSchedule]}"
+                                  IsChecked="{Binding FormBlockClockInWithoutSchedule}" />
+
+                        <Separator />
+                        <TextBlock Text="{Binding Loc[EmailAlerts]}" FontSize="15" FontWeight="SemiBold" />
+                        <CheckBox Content="{Binding Loc[EmailAlerts]}" IsChecked="{Binding FormAlertEmailEnabled}" />
+
+                        <StackPanel IsVisible="{Binding FormAlertEmailEnabled}" Spacing="10">
+                            <TextBlock Text="Alert email recipients (comma-separated)" FontWeight="SemiBold" />
+                            <TextBox Text="{Binding FormAlertEmailRecipients}" />
+                            <TextBlock Text="SMTP Host" FontWeight="SemiBold" />
+                            <TextBox Text="{Binding FormSmtpHost}" Watermark="smtp.example.com" />
+                            <TextBlock Text="SMTP Port" FontWeight="SemiBold" />
+                            <NumericUpDown Value="{Binding FormSmtpPort}" Minimum="1" Maximum="65535" />
+                            <TextBlock Text="SMTP Username" FontWeight="SemiBold" />
+                            <TextBox Text="{Binding FormSmtpUser}" />
+                            <TextBlock Text="SMTP Password" FontWeight="SemiBold" />
+                            <TextBox Text="{Binding FormSmtpPassword}" PasswordChar="•" />
+                            <CheckBox Content="Use TLS" IsChecked="{Binding FormSmtpUseTls}" />
+                        </StackPanel>
+
+                        <Separator />
+                        <TextBlock Text="{Binding Loc[AutoRetry]}" FontSize="15" FontWeight="SemiBold" />
+                        <CheckBox Content="{Binding Loc[AutoRetry]}"
+                                  IsChecked="{Binding FormAutoRetryFailedSubmissions}" />
+                        <TextBlock Text="{Binding Loc[AutoRetryDesc]}" TextWrapping="Wrap"
+                                   Foreground="Gray" FontSize="11" />
+
+                        <TextBlock Text="{Binding StatusMessage}" Foreground="Red"
+                                   TextWrapping="Wrap" Margin="0,8,0,0" />
+
+                    </StackPanel>
+                </Border>
+            </ScrollViewer>
+
+            <!-- Save / Cancel — always visible at bottom of form -->
+            <Grid Grid.Row="1" ColumnDefinitions="*,*" Margin="0,8,0,0">
+                <Button Grid.Column="0" Content="{Binding Loc[Cancel]}"
+                        Command="{Binding CancelEditCommand}"
+                        HorizontalAlignment="Stretch" Margin="0,0,6,0" />
+                <Button Grid.Column="1" Content="{Binding Loc[Save]}"
+                        Command="{Binding SaveCommand}" Classes="accent"
+                        HorizontalAlignment="Stretch" Margin="6,0,0,0" />
+            </Grid>
+
+        </Grid>
+
+    </Grid>
+
+</UserControl>
