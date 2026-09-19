@@ -25,18 +25,10 @@ public class CacheSyncService : ICacheSyncService
 
     public async Task<SyncResult> RefreshCacheFromMainDatabaseAsync(int companyId)
     {
-        var config = _connectionState.LoadConfig();
-        if (config == null)
+        if (!_connectionState.ConfigExists())
             return new SyncResult { Success = false, ErrorMessage = "Database not configured." };
 
-        var (canConnect, error) = await DbProviderFactory.TestConnectionAsync(config);
-        if (!canConnect)
-            return new SyncResult { Success = false, ErrorMessage = error ?? "Database unreachable." };
-
-        var optionsBuilder = new DbContextOptionsBuilder<AppDbContext>();
-        DbProviderFactory.Configure(optionsBuilder, config);
-
-        await using var db = new AppDbContext(optionsBuilder.Options);
+        await using var db = new AppDbContext(_connectionState.GetDbOptions());
         using var cache = LocalCacheDbContextFactory.Create();
 
         var result = new SyncResult { Success = true };
