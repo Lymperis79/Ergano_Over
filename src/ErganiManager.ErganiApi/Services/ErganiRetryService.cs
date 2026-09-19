@@ -148,32 +148,38 @@ public class ErganiRetryService
                     continue;
                 }
 
-                var movementType = item.MovementType == "Arrival"
-                    ? WorkCardMovementType.ARRIVAL
-                    : WorkCardMovementType.DEPARTURE;
+                var movementTypeCode = WorkCardMovementTypeCodes.FromString(item.MovementType);
 
                 var submission = new CompanyWorkCardSubmission
                 {
                     EmployerTaxIdentificationNumber = company.TaxId,
-                    BusinessBranchNumber = branch.BranchNumber,
-                    Comments = $"Retry — original error: {item.FailureReason}",
-                    CardDetails = new List<WorkCardEntry>
+                    BusinessBranchNumber            = branch.BranchNumber,
+                    Comments                        = $"Retry — original error: {item.FailureReason}",
+                    Details = new WorkCardDetails
                     {
-                        new()
+                        CardDetails = new List<WorkCardEntry>
                         {
-                            EmployeeTaxIdentificationNumber = employee.TaxId,
-                            EmployeeLastName  = employee.LastName,
-                            EmployeeFirstName = employee.FirstName,
-                            MovementType      = movementType,
-                            SubmissionDate    = DateOnly.FromDateTime(DateTime.Today),
-                            MovementDateTime  = item.OriginalScannedAt,
-                            LateDeclarationJustification = LateDeclarationJustification.EMPLOYER_SYSTEMS_UNAVAILABLE
+                            new()
+                            {
+                                EmployeeTaxIdentificationNumber = employee.TaxId,
+                                EmployeeLastName                = employee.LastName,
+                                EmployeeFirstName               = employee.FirstName,
+                                MovementType                    = movementTypeCode,
+                                SubmissionDate                  = DateOnly.FromDateTime(item.OriginalScannedAt.Date),
+                                MovementDateTime                = new DateTimeOffset(item.OriginalScannedAt,
+                                                                    TimeZoneInfo.Local.GetUtcOffset(item.OriginalScannedAt)),
+                                LateDeclarationJustification    = "EMPLOYER_SYSTEMS_UNAVAILABLE"
+                            }
                         }
                     }
                 };
 
-                var result = await _erganiClient.SubmitWorkCardAsync(
-                    credentials, new List<CompanyWorkCardSubmission> { submission }, ct);
+                var envelope = new WorkCardSubmissionEnvelope
+                {
+                    Cards = new WorkCardCardArray { Card = new List<CompanyWorkCardSubmission> { submission } }
+                };
+
+                var result = await _erganiClient.SubmitWorkCardAsync(credentials, envelope, ct);
 
                 var first = result.Data?.FirstOrDefault();
                 item.RetryCount++;

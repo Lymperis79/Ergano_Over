@@ -1,12 +1,28 @@
+using System;
+using System.Collections.Generic;
 using System.Text.Json.Serialization;
 
 namespace ErganiManager.ErganiApi.Models;
 
-public enum WorkCardMovementType
+/// <summary>
+/// Movement type codes as expected by the Ergani API:
+/// "0" = Arrival, "1" = Departure.
+/// </summary>
+public static class WorkCardMovementTypeCodes
 {
-    ARRIVAL,
-    DEPARTURE
+    public const string Arrival   = "0";
+    public const string Departure = "1";
+
+    public static string FromString(string movementType) =>
+        movementType.ToLowerInvariant() switch
+        {
+            "arrival"   or "0" => Arrival,
+            "departure" or "1" => Departure,
+            _ => throw new ArgumentOutOfRangeException(nameof(movementType), movementType, null)
+        };
 }
+
+public enum WorkCardMovementType { ARRIVAL, DEPARTURE }
 
 public enum LateDeclarationJustification
 {
@@ -15,7 +31,12 @@ public enum LateDeclarationJustification
     OTHER
 }
 
-/// <summary>One employee movement record (a single ARRIVAL or DEPARTURE).</summary>
+/// <summary>
+/// One employee movement record matching the Ergani API format:
+/// { "f_afm": "...", "f_eponymo": "...", "f_onoma": "...",
+///   "f_type": "0", "f_reference_date": "2026-09-19",
+///   "f_date": "2026-09-19T17:03:58+03:00" }
+/// </summary>
 public class WorkCardEntry
 {
     [JsonPropertyName("f_afm")]
@@ -27,20 +48,38 @@ public class WorkCardEntry
     [JsonPropertyName("f_onoma")]
     public string EmployeeFirstName { get; set; } = string.Empty;
 
+    /// <summary>"0" = Arrival, "1" = Departure</summary>
     [JsonPropertyName("f_type")]
-    public WorkCardMovementType MovementType { get; set; }
+    public string MovementType { get; set; } = WorkCardMovementTypeCodes.Arrival;
 
+    /// <summary>Reference date (just the date part) e.g. "2026-09-19"</summary>
     [JsonPropertyName("f_reference_date")]
     public DateOnly SubmissionDate { get; set; }
 
+    /// <summary>Full datetime with timezone offset e.g. "2026-09-19T17:03:58+03:00"</summary>
     [JsonPropertyName("f_date")]
-    public DateTime MovementDateTime { get; set; }
+    public DateTimeOffset MovementDateTime { get; set; }
 
     [JsonPropertyName("f_aitiologia")]
-    public LateDeclarationJustification? LateDeclarationJustification { get; set; }
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? LateDeclarationJustification { get; set; }
 }
 
-/// <summary>The envelope for a single employer/branch's batch of work card entries.</summary>
+/// <summary>
+/// Inner "Details" wrapper:
+/// { "Details": { "CardDetails": [ ... ] } }
+/// </summary>
+public class WorkCardDetails
+{
+    [JsonPropertyName("CardDetails")]
+    public List<WorkCardEntry> CardDetails { get; set; } = new();
+}
+
+/// <summary>
+/// One "Card" object inside the "Card" array:
+/// { "f_afm_ergodoti": "...", "f_aa": 1, "f_comments": "...",
+///   "Details": { "CardDetails": [...] } }
+/// </summary>
 public class CompanyWorkCardSubmission
 {
     [JsonPropertyName("f_afm_ergodoti")]
@@ -52,8 +91,23 @@ public class CompanyWorkCardSubmission
     [JsonPropertyName("f_comments")]
     public string Comments { get; set; } = string.Empty;
 
-    [JsonPropertyName("card_details")]
-    public List<WorkCardEntry> CardDetails { get; set; } = new();
+    [JsonPropertyName("Details")]
+    public WorkCardDetails Details { get; set; } = new();
+}
+
+/// <summary>
+/// Top-level wrapper: { "Cards": { "Card": [ ... ] } }
+/// </summary>
+public class WorkCardCardArray
+{
+    [JsonPropertyName("Card")]
+    public List<CompanyWorkCardSubmission> Card { get; set; } = new();
+}
+
+public class WorkCardSubmissionEnvelope
+{
+    [JsonPropertyName("Cards")]
+    public WorkCardCardArray Cards { get; set; } = new();
 }
 
 /// <summary>Generic response envelope returned by Ergani for any submission type.</summary>
@@ -68,18 +122,13 @@ public class ErganiSubmissionResponse
     [JsonPropertyName("submitDate")]
     public DateTime? SubmissionDate { get; set; }
 
-    /// <summary>Error description returned by Ergani when submission is rejected
-    /// at business-logic level inside an HTTP 200 response.</summary>
     [JsonPropertyName("description")]
     public string? Description { get; set; }
 
-    /// <summary>Date accompanying the error description.</summary>
     [JsonPropertyName("date")]
     public DateTime? ErrorDate { get; set; }
 
-    /// <summary>True when Ergani returned a business error — Description is set
-    /// but Protocol is not.</summary>
-    [System.Text.Json.Serialization.JsonIgnore]
+    [JsonIgnore]
     public bool IsBusinessError =>
         !string.IsNullOrEmpty(Description) && string.IsNullOrEmpty(Protocol);
 }

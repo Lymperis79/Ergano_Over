@@ -32,7 +32,7 @@ public interface IErganiClient
 {
     Task<ErganiCallResult<List<ErganiSubmissionResponse>>> SubmitWorkCardAsync(
         ErganiCredentials credentials,
-        List<CompanyWorkCardSubmission> submissions,
+        WorkCardSubmissionEnvelope envelope,
         CancellationToken ct = default);
 
     Task<ErganiCallResult<List<ErganiSubmissionResponse>>> SubmitDailyScheduleAsync(

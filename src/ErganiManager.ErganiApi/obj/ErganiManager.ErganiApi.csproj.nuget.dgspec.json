@@ -63,7 +63,7 @@
           "dependencies": {
             "BCrypt.Net-Next": {
               "target": "Package",
-              "version": "[4.0.3, )",
+              "version": "[4.2.0, )",
               "versionCentrallyManaged": true
             },
             "Microsoft.Extensions.DependencyInjection.Abstractions": {
@@ -78,14 +78,14 @@
             }
           },
           "centralPackageVersions": {
-            "Avalonia": "12.1.0",
-            "Avalonia.Desktop": "12.1.0",
-            "Avalonia.Fonts.Inter": "12.1.0",
-            "Avalonia.Themes.Fluent": "12.1.0",
-            "BCrypt.Net-Next": "4.0.3",
-            "ClosedXML": "0.104.2",
-            "CommunityToolkit.Mvvm": "8.4.0",
-            "MailKit": "4.7.1.1",
+            "Avalonia": "12.1.2",
+            "Avalonia.Desktop": "12.1.2",
+            "Avalonia.Fonts.Inter": "12.1.2",
+            "Avalonia.Themes.Fluent": "12.1.2",
+            "BCrypt.Net-Next": "4.2.0",
+            "ClosedXML": "0.105.1",
+            "CommunityToolkit.Mvvm": "8.4.2",
+            "MailKit": "4.18.0",
             "Microsoft.EntityFrameworkCore": "10.0.10",
             "Microsoft.EntityFrameworkCore.Design": "10.0.10",
             "Microsoft.EntityFrameworkCore.Sqlite": "10.0.10",
@@ -97,9 +97,9 @@
             "Microsoft.Extensions.Logging": "10.0.10",
             "Microsoft.Extensions.Logging.Abstractions": "10.0.10",
             "Microting.EntityFrameworkCore.MySql": "10.0.8",
-            "Serilog": "4.2.0",
-            "Serilog.Extensions.Logging": "9.0.0",
-            "Serilog.Sinks.File": "6.0.0"
+            "Serilog": "4.4.0",
+            "Serilog.Extensions.Logging": "10.0.0",
+            "Serilog.Sinks.File": "7.0.0"
           },
           "imports": [
             "net461",
@@ -474,14 +474,14 @@
             }
           },
           "centralPackageVersions": {
-            "Avalonia": "12.1.0",
-            "Avalonia.Desktop": "12.1.0",
-            "Avalonia.Fonts.Inter": "12.1.0",
-            "Avalonia.Themes.Fluent": "12.1.0",
-            "BCrypt.Net-Next": "4.0.3",
-            "ClosedXML": "0.104.2",
-            "CommunityToolkit.Mvvm": "8.4.0",
-            "MailKit": "4.7.1.1",
+            "Avalonia": "12.1.2",
+            "Avalonia.Desktop": "12.1.2",
+            "Avalonia.Fonts.Inter": "12.1.2",
+            "Avalonia.Themes.Fluent": "12.1.2",
+            "BCrypt.Net-Next": "4.2.0",
+            "ClosedXML": "0.105.1",
+            "CommunityToolkit.Mvvm": "8.4.2",
+            "MailKit": "4.18.0",
             "Microsoft.EntityFrameworkCore": "10.0.10",
             "Microsoft.EntityFrameworkCore.Design": "10.0.10",
             "Microsoft.EntityFrameworkCore.Sqlite": "10.0.10",
@@ -493,9 +493,9 @@
             "Microsoft.Extensions.Logging": "10.0.10",
             "Microsoft.Extensions.Logging.Abstractions": "10.0.10",
             "Microting.EntityFrameworkCore.MySql": "10.0.8",
-            "Serilog": "4.2.0",
-            "Serilog.Extensions.Logging": "9.0.0",
-            "Serilog.Sinks.File": "6.0.0"
+            "Serilog": "4.4.0",
+            "Serilog.Extensions.Logging": "10.0.0",
+            "Serilog.Sinks.File": "7.0.0"
           },
           "imports": [
             "net461",
@@ -850,7 +850,7 @@
           "dependencies": {
             "MailKit": {
               "target": "Package",
-              "version": "[4.7.1.1, )",
+              "version": "[4.18.0, )",
               "versionCentrallyManaged": true
             },
             "Microsoft.Extensions.Http": {
@@ -865,14 +865,14 @@
             }
           },
           "centralPackageVersions": {
-            "Avalonia": "12.1.0",
-            "Avalonia.Desktop": "12.1.0",
-            "Avalonia.Fonts.Inter": "12.1.0",
-            "Avalonia.Themes.Fluent": "12.1.0",
-            "BCrypt.Net-Next": "4.0.3",
-            "ClosedXML": "0.104.2",
-            "CommunityToolkit.Mvvm": "8.4.0",
-            "MailKit": "4.7.1.1",
+            "Avalonia": "12.1.2",
+            "Avalonia.Desktop": "12.1.2",
+            "Avalonia.Fonts.Inter": "12.1.2",
+            "Avalonia.Themes.Fluent": "12.1.2",
+            "BCrypt.Net-Next": "4.2.0",
+            "ClosedXML": "0.105.1",
+            "CommunityToolkit.Mvvm": "8.4.2",
+            "MailKit": "4.18.0",
             "Microsoft.EntityFrameworkCore": "10.0.10",
             "Microsoft.EntityFrameworkCore.Design": "10.0.10",
             "Microsoft.EntityFrameworkCore.Sqlite": "10.0.10",
@@ -884,9 +884,9 @@
             "Microsoft.Extensions.Logging": "10.0.10",
             "Microsoft.Extensions.Logging.Abstractions": "10.0.10",
             "Microting.EntityFrameworkCore.MySql": "10.0.8",
-            "Serilog": "4.2.0",
-            "Serilog.Extensions.Logging": "9.0.0",
-            "Serilog.Sinks.File": "6.0.0"
+            "Serilog": "4.4.0",
+            "Serilog.Extensions.Logging": "10.0.0",
+            "Serilog.Sinks.File": "7.0.0"
           },
           "imports": [
             "net461",
@@ -1246,14 +1246,14 @@
             }
           },
           "centralPackageVersions": {
-            "Avalonia": "12.1.0",
-            "Avalonia.Desktop": "12.1.0",
-            "Avalonia.Fonts.Inter": "12.1.0",
-            "Avalonia.Themes.Fluent": "12.1.0",
-            "BCrypt.Net-Next": "4.0.3",
-            "ClosedXML": "0.104.2",
-            "CommunityToolkit.Mvvm": "8.4.0",
-            "MailKit": "4.7.1.1",
+            "Avalonia": "12.1.2",
+            "Avalonia.Desktop": "12.1.2",
+            "Avalonia.Fonts.Inter": "12.1.2",
+            "Avalonia.Themes.Fluent": "12.1.2",
+            "BCrypt.Net-Next": "4.2.0",
+            "ClosedXML": "0.105.1",
+            "CommunityToolkit.Mvvm": "8.4.2",
+            "MailKit": "4.18.0",
             "Microsoft.EntityFrameworkCore": "10.0.10",
             "Microsoft.EntityFrameworkCore.Design": "10.0.10",
             "Microsoft.EntityFrameworkCore.Sqlite": "10.0.10",
@@ -1265,9 +1265,9 @@
             "Microsoft.Extensions.Logging": "10.0.10",
             "Microsoft.Extensions.Logging.Abstractions": "10.0.10",
             "Microting.EntityFrameworkCore.MySql": "10.0.8",
-            "Serilog": "4.2.0",
-            "Serilog.Extensions.Logging": "9.0.0",
-            "Serilog.Sinks.File": "6.0.0"
+            "Serilog": "4.4.0",
+            "Serilog.Extensions.Logging": "10.0.0",
+            "Serilog.Sinks.File": "7.0.0"
           },
           "imports": [
             "net461",

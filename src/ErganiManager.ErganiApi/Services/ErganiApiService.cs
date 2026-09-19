@@ -63,37 +63,44 @@ public class ErganiApiService : IWorkCardSubmitter
             };
         }
 
-        var movementType = request.MovementType == "Arrival"
-            ? WorkCardMovementType.ARRIVAL
-            : WorkCardMovementType.DEPARTURE;
+        var movementTypeCode = WorkCardMovementTypeCodes.FromString(request.MovementType);
 
         var submission = new CompanyWorkCardSubmission
         {
             EmployerTaxIdentificationNumber = company.TaxId,
-            BusinessBranchNumber = branch.BranchNumber,
-            Comments = "Submitted via offline queue sync",
-            CardDetails = new List<WorkCardEntry>
+            BusinessBranchNumber            = branch.BranchNumber,
+            Comments                        = "Submitted via offline queue sync",
+            Details = new WorkCardDetails
             {
-                new()
+                CardDetails = new List<WorkCardEntry>
                 {
-                    EmployeeTaxIdentificationNumber = employee.TaxId,
-                    EmployeeLastName = employee.LastName,
-                    EmployeeFirstName = employee.FirstName,
-                    MovementType = movementType,
-                    SubmissionDate = DateOnly.FromDateTime(DateTime.Today),
-                    MovementDateTime = request.MovementDateTime
+                    new()
+                    {
+                        EmployeeTaxIdentificationNumber = employee.TaxId,
+                        EmployeeLastName                = employee.LastName,
+                        EmployeeFirstName               = employee.FirstName,
+                        MovementType                    = movementTypeCode,
+                        SubmissionDate                  = DateOnly.FromDateTime(request.MovementDateTime.Date),
+                        MovementDateTime                = new DateTimeOffset(request.MovementDateTime,
+                                                            TimeZoneInfo.Local.GetUtcOffset(request.MovementDateTime))
+                    }
                 }
             }
+        };
+
+        var envelope = new WorkCardSubmissionEnvelope
+        {
+            Cards = new WorkCardCardArray { Card = new List<CompanyWorkCardSubmission> { submission } }
         };
 
         var credentials = new ErganiCredentials
         {
             Username = company.ErganiUsername,
             Password = _credentialProtector.Unprotect(company.ErganiPasswordEncrypted),
-            BaseUrl = company.ErganiBaseUrl
+            BaseUrl  = company.ErganiBaseUrl
         };
 
-        var callResult = await _erganiClient.SubmitWorkCardAsync(credentials, new List<CompanyWorkCardSubmission> { submission });
+        var callResult = await _erganiClient.SubmitWorkCardAsync(credentials, envelope);
 
         var firstResponse = callResult.Data?.FirstOrDefault();
 
@@ -103,7 +110,7 @@ public class ErganiApiService : IWorkCardSubmitter
         {
             EmployeeId = employee.Id,
             BranchId = branch.Id,
-            MovementType = movementType == WorkCardMovementType.ARRIVAL
+            MovementType = movementTypeCode == WorkCardMovementTypeCodes.Arrival
                 ? Data.Entities.MovementType.Arrival
                 : Data.Entities.MovementType.Departure,
             MovementDateTime = request.MovementDateTime,

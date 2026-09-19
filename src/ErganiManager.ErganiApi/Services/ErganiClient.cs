@@ -36,8 +36,8 @@ public class ErganiClient : IErganiClient
     }
 
     public Task<ErganiCallResult<List<ErganiSubmissionResponse>>> SubmitWorkCardAsync(
-        ErganiCredentials credentials, List<CompanyWorkCardSubmission> submissions, CancellationToken ct = default)
-        => PostAsync(credentials, ErganiEndpoints.WorkCardSubmitPath, submissions, ct);
+        ErganiCredentials credentials, WorkCardSubmissionEnvelope envelope, CancellationToken ct = default)
+        => PostAsync(credentials, ErganiEndpoints.WorkCardSubmitPath, envelope, ct);
 
     public Task<ErganiCallResult<List<ErganiSubmissionResponse>>> SubmitDailyScheduleAsync(
         ErganiCredentials credentials, List<CompanyDailyScheduleSubmission> submissions, CancellationToken ct = default)
