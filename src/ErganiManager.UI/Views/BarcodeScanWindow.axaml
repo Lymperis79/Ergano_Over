@@ -9,7 +9,7 @@
         CanResize="True"
         WindowStartupLocation="CenterScreen">
 
-    <Grid RowDefinitions="Auto,Auto,*" Margin="20">
+    <Grid RowDefinitions="Auto,Auto,Auto,*" Margin="20">
 
         <!-- Header -->
         <StackPanel Grid.Row="0" Margin="0,0,0,12">
@@ -18,8 +18,31 @@
                        Foreground="Gray" FontSize="12" />
         </StackPanel>
 
+        <!-- Notification bar -->
+        <Border Grid.Row="1"
+                IsVisible="{Binding HasResponse}"
+                CornerRadius="6" Padding="12,8" Margin="0,0,0,8"
+                Background="{Binding ResponseSuccess,
+                    Converter={x:Static vm:BoolToBackgroundConverter.Instance}}">
+            <Grid ColumnDefinitions="*,Auto">
+                <StackPanel Grid.Column="0">
+                    <TextBlock Text="{Binding ResponseTitle}"
+                               FontSize="13" FontWeight="Bold"
+                               Foreground="White" TextWrapping="Wrap" />
+                    <TextBlock Text="{Binding ResponseDetail}"
+                               Foreground="White" TextWrapping="Wrap"
+                               FontFamily="Consolas,Menlo,monospace"
+                               FontSize="11" />
+                </StackPanel>
+                <Button Grid.Column="1" Content="✕" Foreground="White"
+                        Background="Transparent" BorderThickness="0"
+                        Command="{Binding ClearResponseCommand}"
+                        VerticalAlignment="Top" />
+            </Grid>
+        </Border>
+
         <!-- Scan input -->
-        <Border Grid.Row="1" Background="#1A1D23" CornerRadius="8" Padding="16" Margin="0,0,0,12">
+        <Border Grid.Row="2" Background="#1A1D23" CornerRadius="8" Padding="16" Margin="0,0,0,12">
             <StackPanel Spacing="10">
                 <TextBox Name="ScanInputBox"
                          Text="{Binding BarcodeInput}"
@@ -51,25 +74,10 @@
         </Border>
 
         <!-- Response + history -->
-        <Grid Grid.Row="2" RowDefinitions="Auto,Auto,*">
-
-            <!-- Response -->
-            <Border Grid.Row="0" IsVisible="{Binding HasResponse}"
-                    CornerRadius="8" Padding="16" Margin="0,0,0,8"
-                    Background="{Binding ResponseSuccess,
-                        Converter={x:Static vm:BoolToBackgroundConverter.Instance}}">
-                <StackPanel Spacing="6">
-                    <TextBlock Text="{Binding ResponseTitle}"
-                               FontSize="14" FontWeight="Bold"
-                               Foreground="White" TextWrapping="Wrap" />
-                    <TextBlock Text="{Binding ResponseDetail}"
-                               Foreground="White" TextWrapping="Wrap"
-                               FontFamily="Consolas,Menlo,monospace" FontSize="11" />
-                </StackPanel>
-            </Border>
+        <Grid Grid.Row="3" RowDefinitions="Auto,Auto,*">
 
             <!-- History header -->
-            <Grid Grid.Row="1" ColumnDefinitions="*,Auto" Margin="0,0,0,6">
+            <Grid Grid.Row="0" ColumnDefinitions="*,Auto" Margin="0,0,0,6">
                 <TextBlock Grid.Column="0" Text="Recent Scans"
                            FontWeight="SemiBold" VerticalAlignment="Center" />
                 <Button Grid.Column="1" Content="Clear"
@@ -78,7 +86,7 @@
             </Grid>
 
             <!-- History list -->
-            <ScrollViewer Grid.Row="2">
+            <ScrollViewer Grid.Row="1">
                 <ItemsControl ItemsSource="{Binding RecentScans}">
                     <ItemsControl.ItemsPanel>
                         <ItemsPanelTemplate><StackPanel Spacing="4" /></ItemsPanelTemplate>

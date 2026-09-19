@@ -24,6 +24,18 @@
 
                 <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" Spacing="16">
 
+                    <!-- Ergani API status indicator -->
+                    <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+                        <TextBlock Text="{Binding ErganiStatusIcon}" FontSize="14" VerticalAlignment="Center" />
+                        <TextBlock Text="{Binding ErganiStatusText}" FontSize="12"
+                                   Foreground="{Binding ErganiStatusColor}"
+                                   VerticalAlignment="Center" />
+                        <Button Content="⟳" FontSize="12" Padding="4,2"
+                                Command="{Binding CheckErganiNowCommand}"
+                                ToolTip.Tip="Check Ergani API status now"
+                                VerticalAlignment="Center" />
+                    </StackPanel>
+
                     <!-- Always-on-top scan window launcher -->
                     <Button Content="📟 Scan Window"
                             Command="{Binding OpenScanWindowCommand}"

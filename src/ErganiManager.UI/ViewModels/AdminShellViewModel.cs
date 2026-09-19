@@ -7,6 +7,8 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using ErganiManager.Core.Interfaces;
 using ErganiManager.Core.Models;
+using ErganiManager.ErganiApi.Services;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace ErganiManager.UI.ViewModels;
@@ -41,6 +43,7 @@ public partial class AdminShellViewModel : ViewModelBase
     private readonly ICompanyContext _companyContext;
     private readonly ICompanyService _companyService;
     private readonly ICacheSyncService _cacheSync;
+    private readonly IErganiHealthCheckService _erganiHealth;
 
     private readonly Dictionary<AdminSection, ViewModelBase> _sectionCache = new();
 
@@ -53,6 +56,11 @@ public partial class AdminShellViewModel : ViewModelBase
     [ObservableProperty] private bool _hasActiveCompany;
     public ObservableCollection<CompanyDto> SwitchableCompanies { get; } = new();
     [ObservableProperty] private CompanyDto? _selectedSwitchCompany;
+
+    // ── Ergani API status ────────────────────────────────────────────────────
+    [ObservableProperty] private string _erganiStatusIcon  = "⚪";
+    [ObservableProperty] private string _erganiStatusText  = "Ergani: Unknown";
+    [ObservableProperty] private string _erganiStatusColor = "#888888";
 
     // ── Global notification bar ───────────────────────────────────────────────
     [ObservableProperty] private string _notificationMessage = string.Empty;
@@ -73,6 +81,63 @@ public partial class AdminShellViewModel : ViewModelBase
     [RelayCommand]
     private void DismissNotification() => HasNotification = false;
 
+    // ── Ergani API status ─────────────────────────────────────────────────────
+
+    private void ApplyErganiStatus(ErganiManager.ErganiApi.Services.ErganiServiceStatus status)
+    {
+        (ErganiStatusIcon, ErganiStatusText, ErganiStatusColor) = status switch
+        {
+            ErganiManager.ErganiApi.Services.ErganiServiceStatus.Online  =>
+                ("🟢", "Ergani: Online",  "#4CAF50"),
+            ErganiManager.ErganiApi.Services.ErganiServiceStatus.Offline =>
+                ("🔴", "Ergani: Offline", "#EF5350"),
+            _ => ("⚪", "Ergani: Unknown", "#888888")
+        };
+    }
+
+    [RelayCommand]
+    private async Task CheckErganiNowAsync()
+    {
+        var companyId = _companyContext.ActiveCompanyId;
+        if (companyId == null) return; // no company yet — silent skip
+
+        Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+        {
+            ErganiStatusIcon  = "⏳";
+            ErganiStatusText  = "Ergani: Checking…";
+            ErganiStatusColor = "#888888";
+        });
+
+        try
+        {
+            await using var db = new ErganiManager.Data.AppDbContext(
+                _services.GetRequiredService<IConnectionStateService>().GetDbOptions());
+            var company = await db.Companies.FindAsync(companyId.Value);
+            if (company == null) return;
+
+            var protector   = _services.GetRequiredService<ICredentialProtector>();
+            var credentials = new ErganiManager.ErganiApi.Models.ErganiCredentials
+            {
+                Username = company.ErganiUsername,
+                Password = protector.Unprotect(company.ErganiPasswordEncrypted),
+                BaseUrl  = company.ErganiBaseUrl
+            };
+
+            var status = await _erganiHealth.CheckAsync(credentials).ConfigureAwait(false);
+            Avalonia.Threading.Dispatcher.UIThread.Post(() => ApplyErganiStatus(status));
+        }
+        catch (Exception ex)
+        {
+            Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+            {
+                ErganiStatusIcon  = "❌";
+                ErganiStatusText  = "Ergani: Error";
+                ErganiStatusColor = "#EF5350";
+                ShowError($"Ergani check failed: {ex.Message}");
+            });
+        }
+    }
+
     // ── Cache sync ────────────────────────────────────────────────────────────
 
     private async Task SyncCacheAsync(int companyId)
@@ -81,16 +146,20 @@ public partial class AdminShellViewModel : ViewModelBase
         {
             var result = await _cacheSync
                 .RefreshCacheFromMainDatabaseAsync(companyId).ConfigureAwait(false);
-            if (result.Success)
-                ShowNotification(
-                    $"✅ Offline cache updated: {result.EmployeesSynced} employees, " +
-                    $"{result.SchedulesSynced} schedules.");
-            else
-                ShowError($"⚠️ Cache sync failed: {result.ErrorMessage}");
+            Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+            {
+                if (result.Success)
+                    ShowNotification(
+                        $"✅ Offline cache updated: {result.EmployeesSynced} employees, " +
+                        $"{result.SchedulesSynced} schedules.");
+                else
+                    ShowError($"⚠️ Cache sync failed: {result.ErrorMessage}");
+            });
         }
         catch (Exception ex)
         {
-            ShowError($"⚠️ Cache sync error: {ex.Message}");
+            Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+                ShowError($"⚠️ Cache sync error: {ex.Message}"));
         }
     }
 
@@ -118,13 +187,19 @@ public partial class AdminShellViewModel : ViewModelBase
     private UserSession? _session;
 
     public AdminShellViewModel(IServiceProvider services, ICompanyContext companyContext,
-        ICompanyService companyService, ICacheSyncService cacheSync)
+        ICompanyService companyService, ICacheSyncService cacheSync,
+        IErganiHealthCheckService erganiHealth)
     {
-        _services      = services;
-        _companyContext = companyContext;
-        _companyService = companyService;
-        _cacheSync      = cacheSync;
+        _services       = services;
+        _companyContext  = companyContext;
+        _companyService  = companyService;
+        _cacheSync       = cacheSync;
+        _erganiHealth    = erganiHealth;
         LanguageSelector = services.GetRequiredService<LanguageSelectorViewModel>();
+
+        // Update status indicator whenever health check fires
+        _erganiHealth.StatusChanged += (_, status) =>
+            Avalonia.Threading.Dispatcher.UIThread.Post(() => ApplyErganiStatus(status));
     }
 
     public async void Initialize(UserSession session)
@@ -159,7 +234,10 @@ public partial class AdminShellViewModel : ViewModelBase
         // This ensures the terminal scan window works offline and has fresh data.
         var companyId = _companyContext.ActiveCompanyId;
         if (companyId.HasValue)
+        {
             _ = SyncCacheAsync(companyId.Value);
+            _ = CheckErganiNowAsync();
+        }
     }
 
     partial void OnSelectedSwitchCompanyChanged(CompanyDto? value)
@@ -181,6 +259,9 @@ public partial class AdminShellViewModel : ViewModelBase
 
         // Refresh offline cache for the newly selected company
         _ = SyncCacheAsync(value.Id);
+
+        // Check Ergani API status for the selected company
+        _ = CheckErganiNowAsync();
     }
 
     /// <summary>

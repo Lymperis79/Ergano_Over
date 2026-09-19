@@ -2,11 +2,11 @@
   "version": 4,
   "targets": {
     "net10.0": {
-      "Avalonia/12.1.0": {
+      "Avalonia/12.1.2": {
         "type": "package",
         "dependencies": {
           "Avalonia.BuildServices": "11.3.2",
-          "Avalonia.Remote.Protocol": "12.1.0",
+          "Avalonia.Remote.Protocol": "12.1.2",
           "MicroCom.Runtime": "0.11.6"
         },
         "compile": {
@@ -107,15 +107,15 @@
           "buildTransitive/Avalonia.BuildServices.targets": {}
         }
       },
-      "Avalonia.Desktop/12.1.0": {
+      "Avalonia.Desktop/12.1.2": {
         "type": "package",
         "dependencies": {
-          "Avalonia": "12.1.0",
-          "Avalonia.HarfBuzz": "12.1.0",
-          "Avalonia.Native": "12.1.0",
-          "Avalonia.Skia": "12.1.0",
-          "Avalonia.Win32": "12.1.0",
-          "Avalonia.X11": "12.1.0"
+          "Avalonia": "12.1.2",
+          "Avalonia.HarfBuzz": "12.1.2",
+          "Avalonia.Native": "12.1.2",
+          "Avalonia.Skia": "12.1.2",
+          "Avalonia.Win32": "12.1.2",
+          "Avalonia.X11": "12.1.2"
         },
         "compile": {
           "lib/net10.0/Avalonia.Desktop.dll": {
@@ -128,10 +128,10 @@
           }
         }
       },
-      "Avalonia.Fonts.Inter/12.1.0": {
+      "Avalonia.Fonts.Inter/12.1.2": {
         "type": "package",
         "dependencies": {
-          "Avalonia": "12.1.0"
+          "Avalonia": "12.1.2"
         },
         "compile": {
           "lib/net10.0/Avalonia.Fonts.Inter.dll": {
@@ -144,10 +144,10 @@
           }
         }
       },
-      "Avalonia.FreeDesktop/12.1.0": {
+      "Avalonia.FreeDesktop/12.1.2": {
         "type": "package",
         "dependencies": {
-          "Avalonia": "12.1.0",
+          "Avalonia": "12.1.2",
           "Tmds.DBus.Protocol": "0.94.1"
         },
         "compile": {
@@ -161,10 +161,10 @@
           }
         }
       },
-      "Avalonia.FreeDesktop.AtSpi/12.1.0": {
+      "Avalonia.FreeDesktop.AtSpi/12.1.2": {
         "type": "package",
         "dependencies": {
-          "Avalonia": "12.1.0"
+          "Avalonia": "12.1.2"
         },
         "compile": {
           "lib/net10.0/Avalonia.FreeDesktop.AtSpi.dll": {
@@ -177,10 +177,10 @@
           }
         }
       },
-      "Avalonia.HarfBuzz/12.1.0": {
+      "Avalonia.HarfBuzz/12.1.2": {
         "type": "package",
         "dependencies": {
-          "Avalonia": "12.1.0",
+          "Avalonia": "12.1.2",
           "HarfBuzzSharp": "8.3.1.3",
           "HarfBuzzSharp.NativeAssets.Linux": "8.3.1.3",
           "HarfBuzzSharp.NativeAssets.WebAssembly": "8.3.1.3"
@@ -196,10 +196,10 @@
           }
         }
       },
-      "Avalonia.Native/12.1.0": {
+      "Avalonia.Native/12.1.2": {
         "type": "package",
         "dependencies": {
-          "Avalonia": "12.1.0"
+          "Avalonia": "12.1.2"
         },
         "compile": {
           "lib/net10.0/Avalonia.Native.dll": {
@@ -218,7 +218,7 @@
           }
         }
       },
-      "Avalonia.Remote.Protocol/12.1.0": {
+      "Avalonia.Remote.Protocol/12.1.2": {
         "type": "package",
         "compile": {
           "lib/net10.0/Avalonia.Remote.Protocol.dll": {
@@ -231,10 +231,10 @@
           }
         }
       },
-      "Avalonia.Skia/12.1.0": {
+      "Avalonia.Skia/12.1.2": {
         "type": "package",
         "dependencies": {
-          "Avalonia": "12.1.0",
+          "Avalonia": "12.1.2",
           "HarfBuzzSharp": "8.3.1.3",
           "HarfBuzzSharp.NativeAssets.Linux": "8.3.1.3",
           "HarfBuzzSharp.NativeAssets.WebAssembly": "8.3.1.3",
@@ -253,10 +253,10 @@
           }
         }
       },
-      "Avalonia.Themes.Fluent/12.1.0": {
+      "Avalonia.Themes.Fluent/12.1.2": {
         "type": "package",
         "dependencies": {
-          "Avalonia": "12.1.0"
+          "Avalonia": "12.1.2"
         },
         "compile": {
           "lib/net10.0/Avalonia.Themes.Fluent.dll": {
@@ -269,10 +269,10 @@
           }
         }
       },
-      "Avalonia.Win32/12.1.0": {
+      "Avalonia.Win32/12.1.2": {
         "type": "package",
         "dependencies": {
-          "Avalonia": "12.1.0",
+          "Avalonia": "12.1.2",
           "Avalonia.Angle.Windows.Natives": "2.1.27548.20260419"
         },
         "compile": {
@@ -292,13 +292,13 @@
           }
         }
       },
-      "Avalonia.X11/12.1.0": {
+      "Avalonia.X11/12.1.2": {
         "type": "package",
         "dependencies": {
-          "Avalonia": "12.1.0",
-          "Avalonia.FreeDesktop": "12.1.0",
-          "Avalonia.FreeDesktop.AtSpi": "12.1.0",
-          "Avalonia.Skia": "12.1.0"
+          "Avalonia": "12.1.2",
+          "Avalonia.FreeDesktop": "12.1.2",
+          "Avalonia.FreeDesktop.AtSpi": "12.1.2",
+          "Avalonia.Skia": "12.1.2"
         },
         "compile": {
           "lib/net10.0/Avalonia.X11.dll": {
@@ -347,20 +347,16 @@
           }
         }
       },
-      "BCrypt.Net-Next/4.0.3": {
+      "BCrypt.Net-Next/4.2.0": {
         "type": "package",
         "compile": {
-          "lib/net6.0/BCrypt.Net-Next.dll": {
-            "related": ".xml"
-          }
+          "lib/net10.0/BCrypt-Net-Next.dll": {}
         },
         "runtime": {
-          "lib/net6.0/BCrypt.Net-Next.dll": {
-            "related": ".xml"
-          }
+          "lib/net10.0/BCrypt-Net-Next.dll": {}
         }
       },
-      "BouncyCastle.Cryptography/2.4.0": {
+      "BouncyCastle.Cryptography/2.7.0": {
         "type": "package",
         "compile": {
           "lib/net6.0/BouncyCastle.Cryptography.dll": {
@@ -373,14 +369,14 @@
           }
         }
       },
-      "ClosedXML/0.104.2": {
+      "ClosedXML/0.105.1": {
         "type": "package",
         "dependencies": {
-          "ClosedXML.Parser": "[1.2.0, 2.0.0)",
+          "ClosedXML.Parser": "2.0.0",
           "DocumentFormat.OpenXml": "[3.1.1, 4.0.0)",
           "ExcelNumberFormat": "1.1.0",
-          "RBush": "4.0.0",
-          "SixLabors.Fonts": "1.0.0"
+          "RBush.Signed": "4.0.0",
+          "SixLabors.Fonts": "[1.0.0, 3.0.0)"
         },
         "compile": {
           "lib/netstandard2.1/ClosedXML.dll": {
@@ -393,7 +389,7 @@
           }
         }
       },
-      "ClosedXML.Parser/1.2.0": {
+      "ClosedXML.Parser/2.0.0": {
         "type": "package",
         "compile": {
           "lib/netstandard2.1/ClosedXML.Parser.dll": {
@@ -406,16 +402,16 @@
           }
         }
       },
-      "CommunityToolkit.Mvvm/8.4.0": {
+      "CommunityToolkit.Mvvm/8.4.2": {
         "type": "package",
         "compile": {
           "lib/net8.0/CommunityToolkit.Mvvm.dll": {
-            "related": ".pdb;.xml"
+            "related": ".xml"
           }
         },
         "runtime": {
           "lib/net8.0/CommunityToolkit.Mvvm.dll": {
-            "related": ".pdb;.xml"
+            "related": ".xml"
           }
         },
         "build": {
@@ -602,18 +598,18 @@
           }
         }
       },
-      "MailKit/4.7.1.1": {
+      "MailKit/4.18.0": {
         "type": "package",
         "dependencies": {
-          "MimeKit": "4.7.1"
+          "MimeKit": "4.18.0"
         },
         "compile": {
-          "lib/net8.0/MailKit.dll": {
+          "lib/net10.0/MailKit.dll": {
             "related": ".dll.config;.pdb;.xml"
           }
         },
         "runtime": {
-          "lib/net8.0/MailKit.dll": {
+          "lib/net10.0/MailKit.dll": {
             "related": ".dll.config;.pdb;.xml"
           }
         }
@@ -1698,19 +1694,19 @@
           }
         }
       },
-      "MimeKit/4.7.1": {
+      "MimeKit/4.18.0": {
         "type": "package",
         "dependencies": {
-          "BouncyCastle.Cryptography": "2.4.0",
-          "System.Security.Cryptography.Pkcs": "8.0.0"
+          "BouncyCastle.Cryptography": "2.7.0",
+          "System.Security.Cryptography.Pkcs": "10.0.0"
         },
         "compile": {
-          "lib/net8.0/MimeKit.dll": {
+          "lib/net10.0/MimeKit.dll": {
             "related": ".dll.config;.pdb;.xml"
           }
         },
         "runtime": {
-          "lib/net8.0/MimeKit.dll": {
+          "lib/net10.0/MimeKit.dll": {
             "related": ".dll.config;.pdb;.xml"
           }
         }
@@ -1732,7 +1728,7 @@
           }
         }
       },
-      "RBush/4.0.0": {
+      "RBush.Signed/4.0.0": {
         "type": "package",
         "compile": {
           "lib/net8.0/RBush.dll": {
@@ -1745,48 +1741,51 @@
           }
         }
       },
-      "Serilog/4.2.0": {
+      "Serilog/4.4.0": {
         "type": "package",
         "compile": {
-          "lib/net9.0/Serilog.dll": {
+          "lib/net10.0/Serilog.dll": {
             "related": ".xml"
           }
         },
         "runtime": {
-          "lib/net9.0/Serilog.dll": {
+          "lib/net10.0/Serilog.dll": {
             "related": ".xml"
           }
+        },
+        "build": {
+          "buildTransitive/Serilog.targets": {}
         }
       },
-      "Serilog.Extensions.Logging/9.0.0": {
+      "Serilog.Extensions.Logging/10.0.0": {
         "type": "package",
         "dependencies": {
-          "Microsoft.Extensions.Logging": "9.0.0",
+          "Microsoft.Extensions.Logging": "10.0.0",
           "Serilog": "4.2.0"
         },
         "compile": {
-          "lib/net9.0/Serilog.Extensions.Logging.dll": {
+          "lib/net10.0/Serilog.Extensions.Logging.dll": {
             "related": ".xml"
           }
         },
         "runtime": {
-          "lib/net9.0/Serilog.Extensions.Logging.dll": {
+          "lib/net10.0/Serilog.Extensions.Logging.dll": {
             "related": ".xml"
           }
         }
       },
-      "Serilog.Sinks.File/6.0.0": {
+      "Serilog.Sinks.File/7.0.0": {
         "type": "package",
         "dependencies": {
-          "Serilog": "4.0.0"
+          "Serilog": "4.2.0"
         },
         "compile": {
-          "lib/net8.0/Serilog.Sinks.File.dll": {
+          "lib/net9.0/Serilog.Sinks.File.dll": {
             "related": ".xml"
           }
         },
         "runtime": {
-          "lib/net8.0/Serilog.Sinks.File.dll": {
+          "lib/net9.0/Serilog.Sinks.File.dll": {
             "related": ".xml"
           }
         }
@@ -2197,15 +2196,15 @@
           "buildTransitive/net6.0/_._": {}
         }
       },
-      "System.Security.Cryptography.Pkcs/9.0.4": {
+      "System.Security.Cryptography.Pkcs/10.0.0": {
         "type": "package",
         "compile": {
-          "lib/net9.0/System.Security.Cryptography.Pkcs.dll": {
+          "lib/net10.0/System.Security.Cryptography.Pkcs.dll": {
             "related": ".xml"
           }
         },
         "runtime": {
-          "lib/net9.0/System.Security.Cryptography.Pkcs.dll": {
+          "lib/net10.0/System.Security.Cryptography.Pkcs.dll": {
             "related": ".xml"
           }
         },
@@ -2213,7 +2212,7 @@
           "buildTransitive/net8.0/_._": {}
         },
         "runtimeTargets": {
-          "runtimes/win/lib/net9.0/System.Security.Cryptography.Pkcs.dll": {
+          "runtimes/win/lib/net10.0/System.Security.Cryptography.Pkcs.dll": {
             "assetType": "runtime",
             "rid": "win"
           }
@@ -2252,7 +2251,7 @@
         "type": "project",
         "framework": ".NETCoreApp,Version=v10.0",
         "dependencies": {
-          "BCrypt.Net-Next": "4.0.3",
+          "BCrypt.Net-Next": "4.2.0",
           "ErganiManager.Data": "1.0.0",
           "ErganiManager.LocalCache": "1.0.0",
           "Microsoft.Extensions.DependencyInjection.Abstractions": "10.0.10",
@@ -2287,7 +2286,7 @@
         "dependencies": {
           "ErganiManager.Core": "1.0.0",
           "ErganiManager.Data": "1.0.0",
-          "MailKit": "4.7.1.1",
+          "MailKit": "4.18.0",
           "Microsoft.Extensions.Http": "10.0.10",
           "Microsoft.Extensions.Logging.Abstractions": "10.0.10"
         },
@@ -2314,10 +2313,10 @@
     }
   },
   "libraries": {
-    "Avalonia/12.1.0": {
-      "sha512": "an4ugAy2q6GTdaFl635V8W/LKrWNL+mnSFUprbgyf8m1Zzf9WgoGaF5ajGv5i4gXefMZrzsUPV1QU+kKrgwCWg==",
+    "Avalonia/12.1.2": {
+      "sha512": "GHSe4qxjbqqxB570xuB4KtoD+Qhk3uKXJUXbelGYhGz/ti8xEoL7e5DGun8hcsXHondszPPBEdcC68szw7vUKg==",
       "type": "package",
-      "path": "avalonia/12.1.0",
+      "path": "avalonia/12.1.2",
       "hasTools": true,
       "files": [
         ".nupkg.metadata",
@@ -2328,7 +2327,7 @@
         "analyzers/dotnet/cs/Avalonia.Analyzers.CodeFixes.CSharp.dll",
         "analyzers/dotnet/cs/Avalonia.Analyzers.VisualBasic.dll",
         "analyzers/dotnet/cs/Avalonia.Generators.dll",
-        "avalonia.12.1.0.nupkg.sha512",
+        "avalonia.12.1.2.nupkg.sha512",
         "avalonia.nuspec",
         "build/Avalonia.Generators.props",
         "build/Avalonia.props",
@@ -2477,16 +2476,16 @@
         "tools/netstandard2.0/runtimeconfig.json"
       ]
     },
-    "Avalonia.Desktop/12.1.0": {
-      "sha512": "mxhz50At61IBQbB/bCo5JGp53rPi3GerGO9mFo/v93uBHa4J3cz3NSSqnVWSyQXKbPCwQhrogfEFWbKBgecy1w==",
+    "Avalonia.Desktop/12.1.2": {
+      "sha512": "ghG7UVnLVhCyWm/74xh24gAkXgEZ41oJTUr7c0VI9BiVSqhpukvU5vm8l8ZY35BZX8VPx1YtXUI1+VbhDTOLMw==",
       "type": "package",
-      "path": "avalonia.desktop/12.1.0",
+      "path": "avalonia.desktop/12.1.2",
       "files": [
         ".nupkg.metadata",
         ".signature.p7s",
         "Icon.png",
         "_manifest/cyclonedx/bom.cdx.json",
-        "avalonia.desktop.12.1.0.nupkg.sha512",
+        "avalonia.desktop.12.1.2.nupkg.sha512",
         "avalonia.desktop.nuspec",
         "lib/net10.0/Avalonia.Desktop.dll",
         "lib/net10.0/Avalonia.Desktop.xml",
@@ -2494,16 +2493,16 @@
         "lib/net8.0/Avalonia.Desktop.xml"
       ]
     },
-    "Avalonia.Fonts.Inter/12.1.0": {
-      "sha512": "2mK5Rv6aMWgXfQ2JZOq1Wo2bTNAfiidg2GO4b3MgLRN89ezfvfsSfp4P5Pl4ssRcWWwdV0jGzIw8n0xc9B26VA==",
+    "Avalonia.Fonts.Inter/12.1.2": {
+      "sha512": "pFkrNWecSX3wP9kTsMyLKyP29/8T7cYywKuE+DC9HN+BstmcIx5iOi6ZZLYAK1HkNTAGjF+oQf5wpTj3gnkWXA==",
       "type": "package",
-      "path": "avalonia.fonts.inter/12.1.0",
+      "path": "avalonia.fonts.inter/12.1.2",
       "files": [
         ".nupkg.metadata",
         ".signature.p7s",
         "Icon.png",
         "_manifest/cyclonedx/bom.cdx.json",
-        "avalonia.fonts.inter.12.1.0.nupkg.sha512",
+        "avalonia.fonts.inter.12.1.2.nupkg.sha512",
         "avalonia.fonts.inter.nuspec",
         "lib/net10.0/Avalonia.Fonts.Inter.dll",
         "lib/net10.0/Avalonia.Fonts.Inter.xml",
@@ -2511,16 +2510,16 @@
         "lib/net8.0/Avalonia.Fonts.Inter.xml"
       ]
     },
-    "Avalonia.FreeDesktop/12.1.0": {
-      "sha512": "89mrS7dSYtisJrjQufCOomHeAynlVVKZ+dq4leKtzHXXKVoWsE0Nb2ymiNYPMlirwzwpemflGj+K34opwyLeJQ==",
+    "Avalonia.FreeDesktop/12.1.2": {
+      "sha512": "RJqKF7djK/lyDBdj24+HKELGe+7I/86NIA57aeiod5k340svbcb9hs1RYkIF8Nga4Xa2Jd/Pzxpkmvdjb1ASiw==",
       "type": "package",
-      "path": "avalonia.freedesktop/12.1.0",
+      "path": "avalonia.freedesktop/12.1.2",
       "files": [
         ".nupkg.metadata",
         ".signature.p7s",
         "Icon.png",
         "_manifest/cyclonedx/bom.cdx.json",
-        "avalonia.freedesktop.12.1.0.nupkg.sha512",
+        "avalonia.freedesktop.12.1.2.nupkg.sha512",
         "avalonia.freedesktop.nuspec",
         "lib/net10.0/Avalonia.FreeDesktop.dll",
         "lib/net10.0/Avalonia.FreeDesktop.xml",
@@ -2528,16 +2527,16 @@
         "lib/net8.0/Avalonia.FreeDesktop.xml"
       ]
     },
-    "Avalonia.FreeDesktop.AtSpi/12.1.0": {
-      "sha512": "WWahMjzKtDl2PGHa8mS6NHIVMT+JNKVIeT5xMLp9SBTMvjHNpEbXTX3PNbbIQ7hRMSETAJ/PAnvgOzatGktEKQ==",
+    "Avalonia.FreeDesktop.AtSpi/12.1.2": {
+      "sha512": "632PfHnqe7OkzStmDOW2ghXfCcTapGhT46HZGMMOIZFr+I0biyxUk7felBQwNzEk5LJ54y4VfIoiWKTgZK8FnA==",
       "type": "package",
-      "path": "avalonia.freedesktop.atspi/12.1.0",
+      "path": "avalonia.freedesktop.atspi/12.1.2",
       "files": [
         ".nupkg.metadata",
         ".signature.p7s",
         "Icon.png",
         "_manifest/cyclonedx/bom.cdx.json",
-        "avalonia.freedesktop.atspi.12.1.0.nupkg.sha512",
+        "avalonia.freedesktop.atspi.12.1.2.nupkg.sha512",
         "avalonia.freedesktop.atspi.nuspec",
         "lib/net10.0/Avalonia.FreeDesktop.AtSpi.dll",
         "lib/net10.0/Avalonia.FreeDesktop.AtSpi.xml",
@@ -2545,16 +2544,16 @@
         "lib/net8.0/Avalonia.FreeDesktop.AtSpi.xml"
       ]
     },
-    "Avalonia.HarfBuzz/12.1.0": {
-      "sha512": "uWPa/kg+fmqhrUR5GzFC2ZL2MPszxcEy14hTSwu3VhjwTnaVarUozoPmggQjZG4A4s6w2bcGepsYYaCM/eOoMA==",
+    "Avalonia.HarfBuzz/12.1.2": {
+      "sha512": "CqYTMnOLuAXjGldTEMdEf5/ozMY1z5ZshpE4YF0i2s2o4ycsYq855BD/eQS0iBt5PbjtlJgk8njILrBwW0HteQ==",
       "type": "package",
-      "path": "avalonia.harfbuzz/12.1.0",
+      "path": "avalonia.harfbuzz/12.1.2",
       "files": [
         ".nupkg.metadata",
         ".signature.p7s",
         "Icon.png",
         "_manifest/cyclonedx/bom.cdx.json",
-        "avalonia.harfbuzz.12.1.0.nupkg.sha512",
+        "avalonia.harfbuzz.12.1.2.nupkg.sha512",
         "avalonia.harfbuzz.nuspec",
         "lib/net10.0/Avalonia.HarfBuzz.dll",
         "lib/net10.0/Avalonia.HarfBuzz.xml",
@@ -2562,16 +2561,16 @@
         "lib/net8.0/Avalonia.HarfBuzz.xml"
       ]
     },
-    "Avalonia.Native/12.1.0": {
-      "sha512": "mfNMtGP7rEVWSZoii0l40mlNhgNR6ZISTvHP7OAMn5YQHiK66EjfN26SL/kLnz1buy2VtMIiGVBbIttL8FYCZg==",
+    "Avalonia.Native/12.1.2": {
+      "sha512": "Co60A3FhDiCR022en90e/nUJqn2GtYal353cSUB0lWAd0qb/AuVRdScz9i0QCyglYw+PBfUXSP+9OfI2XvnfCg==",
       "type": "package",
-      "path": "avalonia.native/12.1.0",
+      "path": "avalonia.native/12.1.2",
       "files": [
         ".nupkg.metadata",
         ".signature.p7s",
         "Icon.png",
         "_manifest/cyclonedx/bom.cdx.json",
-        "avalonia.native.12.1.0.nupkg.sha512",
+        "avalonia.native.12.1.2.nupkg.sha512",
         "avalonia.native.nuspec",
         "lib/net10.0/Avalonia.Native.dll",
         "lib/net10.0/Avalonia.Native.xml",
@@ -2580,16 +2579,16 @@
         "runtimes/osx/native/libAvaloniaNative.dylib"
       ]
     },
-    "Avalonia.Remote.Protocol/12.1.0": {
-      "sha512": "p6OKt6O7vOub4TS2pAjaeW0Y13oxrPs4uixeVZpJByiSQKKk+LyApN5yRy2JerpfTMtI86Y5pNwugyKTHZJnAw==",
+    "Avalonia.Remote.Protocol/12.1.2": {
+      "sha512": "DdLTe9xKXxxfRcXmUw1trXZpBpz1YiZYWXx0DfMVPFAnkCszKsHLi67kaZfGJqtfQq2EySKd2qgRYX2QYkSxcg==",
       "type": "package",
-      "path": "avalonia.remote.protocol/12.1.0",
+      "path": "avalonia.remote.protocol/12.1.2",
       "files": [
         ".nupkg.metadata",
         ".signature.p7s",
         "Icon.png",
         "_manifest/cyclonedx/bom.cdx.json",
-        "avalonia.remote.protocol.12.1.0.nupkg.sha512",
+        "avalonia.remote.protocol.12.1.2.nupkg.sha512",
         "avalonia.remote.protocol.nuspec",
         "lib/net10.0/Avalonia.Remote.Protocol.dll",
         "lib/net10.0/Avalonia.Remote.Protocol.xml",
@@ -2599,16 +2598,16 @@
         "lib/netstandard2.0/Avalonia.Remote.Protocol.xml"
       ]
     },
-    "Avalonia.Skia/12.1.0": {
-      "sha512": "K63pwExQkcjVbsYJOiOq0hYAO4G5d7T42yK8MGNrvwBKv/bJVlV14jGvV4wXcsuYAU8IWlOHgqq5sMUiDfj4vw==",
+    "Avalonia.Skia/12.1.2": {
+      "sha512": "x0TDDdZgNepbxRd6gSQyv3A/hHoVJk3kYqjRa1baI43XPGPuO87lArf4DRKAERgWUxUp1ad28aTvVsE3x0JM0g==",
       "type": "package",
-      "path": "avalonia.skia/12.1.0",
+      "path": "avalonia.skia/12.1.2",
       "files": [
         ".nupkg.metadata",
         ".signature.p7s",
         "Icon.png",
         "_manifest/cyclonedx/bom.cdx.json",
-        "avalonia.skia.12.1.0.nupkg.sha512",
+        "avalonia.skia.12.1.2.nupkg.sha512",
         "avalonia.skia.nuspec",
         "lib/net10.0/Avalonia.Skia.dll",
         "lib/net10.0/Avalonia.Skia.xml",
@@ -2616,16 +2615,16 @@
         "lib/net8.0/Avalonia.Skia.xml"
       ]
     },
-    "Avalonia.Themes.Fluent/12.1.0": {
-      "sha512": "MVi5L9HymnNm+gP2aNXNcyrP2iKGJWFubQ5Bv8/Przflxca1aIT9QBpTUV6c3olA9rLYFY7MJRR/C/BZaUhemQ==",
+    "Avalonia.Themes.Fluent/12.1.2": {
+      "sha512": "EKw1PzlIfqB8n0+yGuHThR9cUEiqZYj0EHYp89jrTwSuudu8pji6I4SGe1UmdwJWdgWf+kuss8T7KT+0wsUyow==",
       "type": "package",
-      "path": "avalonia.themes.fluent/12.1.0",
+      "path": "avalonia.themes.fluent/12.1.2",
       "files": [
         ".nupkg.metadata",
         ".signature.p7s",
         "Icon.png",
         "_manifest/cyclonedx/bom.cdx.json",
-        "avalonia.themes.fluent.12.1.0.nupkg.sha512",
+        "avalonia.themes.fluent.12.1.2.nupkg.sha512",
         "avalonia.themes.fluent.nuspec",
         "lib/net10.0/Avalonia.Themes.Fluent.dll",
         "lib/net10.0/Avalonia.Themes.Fluent.xml",
@@ -2633,16 +2632,16 @@
         "lib/net8.0/Avalonia.Themes.Fluent.xml"
       ]
     },
-    "Avalonia.Win32/12.1.0": {
-      "sha512": "D0xxPtFeOK8cKK991ul92rlFtDO3II0E44dHM0ix4/8LVc9+1LaMdbf1eMnp1RclFwX2bt7HPhbySnrG5uArxA==",
+    "Avalonia.Win32/12.1.2": {
+      "sha512": "MjHc5aKNs7Hp/fiX13wTQ3pg+kG9lh+NfqSQGx6/SkfvdO1Hbmribk7Bt0pwFTxcJ6HGlzwGKp1Ur3Ib/tv0ew==",
       "type": "package",
-      "path": "avalonia.win32/12.1.0",
+      "path": "avalonia.win32/12.1.2",
       "files": [
         ".nupkg.metadata",
         ".signature.p7s",
         "Icon.png",
         "_manifest/cyclonedx/bom.cdx.json",
-        "avalonia.win32.12.1.0.nupkg.sha512",
+        "avalonia.win32.12.1.2.nupkg.sha512",
         "avalonia.win32.nuspec",
         "lib/net10.0/Avalonia.Win32.Automation.dll",
         "lib/net10.0/Avalonia.Win32.Automation.xml",
@@ -2654,16 +2653,16 @@
         "lib/net8.0/Avalonia.Win32.xml"
       ]
     },
-    "Avalonia.X11/12.1.0": {
-      "sha512": "6+YHVGf44ictmGj88diMCw9pC9tiwnMlUgosDi0VDmyUQFuy/mJIa4J0rZu6G+UMbjGuyLDQLmtvU4tTOhLMPg==",
+    "Avalonia.X11/12.1.2": {
+      "sha512": "wtCAY9k90yrvhzKmesDGGFxYHsgejmLaR7HY36A4VYJ+E1R8AguNZc3hFaVKywnQLpf/eLhAwQWUxoNVFu9h/w==",
       "type": "package",
-      "path": "avalonia.x11/12.1.0",
+      "path": "avalonia.x11/12.1.2",
       "files": [
         ".nupkg.metadata",
         ".signature.p7s",
         "Icon.png",
         "_manifest/cyclonedx/bom.cdx.json",
-        "avalonia.x11.12.1.0.nupkg.sha512",
+        "avalonia.x11.12.1.2.nupkg.sha512",
         "avalonia.x11.nuspec",
         "lib/net10.0/Avalonia.X11.dll",
         "lib/net10.0/Avalonia.X11.xml",
@@ -2711,47 +2710,41 @@
         "lib/netstandard2.0/Azure.Identity.xml"
       ]
     },
-    "BCrypt.Net-Next/4.0.3": {
-      "sha512": "W+U9WvmZQgi5cX6FS5GDtDoPzUCV4LkBLkywq/kRZhuDwcbavOzcDAr3LXJFqHUi952Yj3LEYoWW0jbEUQChsA==",
+    "BCrypt.Net-Next/4.2.0": {
+      "sha512": "gwLD2KfCuwQesP17aVh4h6lpiMPEVt5Lbpndo0ej903hNUUTtyxt3ARdDjmuydBRTAUICc7OVKVbaOvc6SQYXA==",
       "type": "package",
-      "path": "bcrypt.net-next/4.0.3",
+      "path": "bcrypt.net-next/4.2.0",
       "files": [
         ".nupkg.metadata",
         ".signature.p7s",
-        "bcrypt.net-next.4.0.3.nupkg.sha512",
+        "bcrypt.net-next.4.2.0.nupkg.sha512",
         "bcrypt.net-next.nuspec",
         "ico.png",
-        "lib/net20/BCrypt.Net-Next.dll",
-        "lib/net20/BCrypt.Net-Next.xml",
-        "lib/net35/BCrypt.Net-Next.dll",
-        "lib/net35/BCrypt.Net-Next.xml",
-        "lib/net462/BCrypt.Net-Next.dll",
+        "lib/net10.0/BCrypt-Net-Next.dll",
+        "lib/net10.0/BCrypt.Net-Next.xml",
+        "lib/net462/BCrypt-Net-Next.dll",
         "lib/net462/BCrypt.Net-Next.xml",
-        "lib/net472/BCrypt.Net-Next.dll",
+        "lib/net472/BCrypt-Net-Next.dll",
         "lib/net472/BCrypt.Net-Next.xml",
-        "lib/net48/BCrypt.Net-Next.dll",
+        "lib/net48/BCrypt-Net-Next.dll",
         "lib/net48/BCrypt.Net-Next.xml",
-        "lib/net5.0/BCrypt.Net-Next.dll",
-        "lib/net5.0/BCrypt.Net-Next.xml",
-        "lib/net6.0/BCrypt.Net-Next.dll",
-        "lib/net6.0/BCrypt.Net-Next.xml",
-        "lib/netstandard2.0/BCrypt.Net-Next.dll",
+        "lib/netstandard2.0/BCrypt-Net-Next.dll",
         "lib/netstandard2.0/BCrypt.Net-Next.xml",
-        "lib/netstandard2.1/BCrypt.Net-Next.dll",
+        "lib/netstandard2.1/BCrypt-Net-Next.dll",
         "lib/netstandard2.1/BCrypt.Net-Next.xml",
         "readme.md"
       ]
     },
-    "BouncyCastle.Cryptography/2.4.0": {
-      "sha512": "SwXsAV3sMvAU/Nn31pbjhWurYSjJ+/giI/0n6tCrYoupEK34iIHCuk3STAd9fx8yudM85KkLSVdn951vTng/vQ==",
+    "BouncyCastle.Cryptography/2.7.0": {
+      "sha512": "U+12df8UEWHgBi04YVf/Lgi2dy3SItlIYvHjjEVa/BngCQIzDCDRBk50DDByCfDvSbe5pRNFr3b7UrVK2kMcLw==",
       "type": "package",
-      "path": "bouncycastle.cryptography/2.4.0",
+      "path": "bouncycastle.cryptography/2.7.0",
       "files": [
         ".nupkg.metadata",
         ".signature.p7s",
         "LICENSE.md",
         "README.md",
-        "bouncycastle.cryptography.2.4.0.nupkg.sha512",
+        "bouncycastle.cryptography.2.7.0.nupkg.sha512",
         "bouncycastle.cryptography.nuspec",
         "lib/net461/BouncyCastle.Cryptography.dll",
         "lib/net461/BouncyCastle.Cryptography.xml",
@@ -2762,14 +2755,14 @@
         "packageIcon.png"
       ]
     },
-    "ClosedXML/0.104.2": {
-      "sha512": "gOkSjQ152MhpKmw70cBkJV+FnaZAWzDwM36luRf/7FlWYnNeH++9XYdGTd0Y4KQlVPkKVxy948M5MMsnsGC4GQ==",
+    "ClosedXML/0.105.1": {
+      "sha512": "X1ruIP9h2FBEK7jmO0peq3s6/Zqt5ve5a9f9kn6WUjdsUWvGbQlqxuGLz822xuFLlmnSeAfWFTGeX/tZlmAt+g==",
       "type": "package",
-      "path": "closedxml/0.104.2",
+      "path": "closedxml/0.105.1",
       "files": [
         ".nupkg.metadata",
         ".signature.p7s",
-        "closedxml.0.104.2.nupkg.sha512",
+        "closedxml.0.105.1.nupkg.sha512",
         "closedxml.nuspec",
         "lib/netstandard2.0/ClosedXML.dll",
         "lib/netstandard2.0/ClosedXML.pdb",
@@ -2780,15 +2773,15 @@
         "nuget-logo.png"
       ]
     },
-    "ClosedXML.Parser/1.2.0": {
-      "sha512": "w+/0tsxABS3lkSH8EUlA7IGme+mq5T/Puf3DbOiTckmSuUpAUO2LK29oXYByCcWkBv6wcRHxgWlQb1lxkwI0Tw==",
+    "ClosedXML.Parser/2.0.0": {
+      "sha512": "ngTqjYreDYNytG1W5d3ewHsw0ukmmrgV7EKnS4/40rXoYZGt07jrBvo+N+GxT49rcageUMUiprV0jYT4nwVBHQ==",
       "type": "package",
-      "path": "closedxml.parser/1.2.0",
+      "path": "closedxml.parser/2.0.0",
       "files": [
         ".nupkg.metadata",
         ".signature.p7s",
         "README.md",
-        "closedxml.parser.1.2.0.nupkg.sha512",
+        "closedxml.parser.2.0.0.nupkg.sha512",
         "closedxml.parser.nuspec",
         "lib/netstandard2.0/ClosedXML.Parser.dll",
         "lib/netstandard2.0/ClosedXML.Parser.xml",
@@ -2796,10 +2789,10 @@
         "lib/netstandard2.1/ClosedXML.Parser.xml"
       ]
     },
-    "CommunityToolkit.Mvvm/8.4.0": {
-      "sha512": "tqVU8yc/ADO9oiTRyTnwhFN68hCwvkliMierptWOudIAvWY1mWCh5VFh+guwHJmpMwfg0J0rY+yyd5Oy7ty9Uw==",
+    "CommunityToolkit.Mvvm/8.4.2": {
+      "sha512": "WadCzGEc2U+3e20avRLng4qNtt4zoOGWrdUISqJWrHe3/FSnrYjuM5Sb4yQb09LhkBXrrI4Zt3dLKgRMbItsrg==",
       "type": "package",
-      "path": "communitytoolkit.mvvm/8.4.0",
+      "path": "communitytoolkit.mvvm/8.4.2",
       "files": [
         ".nupkg.metadata",
         ".signature.p7s",
@@ -2812,6 +2805,8 @@
         "analyzers/dotnet/roslyn4.12/cs/CommunityToolkit.Mvvm.SourceGenerators.dll",
         "analyzers/dotnet/roslyn4.3/cs/CommunityToolkit.Mvvm.CodeFixers.dll",
         "analyzers/dotnet/roslyn4.3/cs/CommunityToolkit.Mvvm.SourceGenerators.dll",
+        "analyzers/dotnet/roslyn5.0/cs/CommunityToolkit.Mvvm.CodeFixers.dll",
+        "analyzers/dotnet/roslyn5.0/cs/CommunityToolkit.Mvvm.SourceGenerators.dll",
         "build/CommunityToolkit.Mvvm.FeatureSwitches.targets",
         "build/CommunityToolkit.Mvvm.SourceGenerators.targets",
         "build/CommunityToolkit.Mvvm.Windows.targets",
@@ -2822,19 +2817,15 @@
         "buildTransitive/CommunityToolkit.Mvvm.Windows.targets",
         "buildTransitive/CommunityToolkit.Mvvm.WindowsSdk.targets",
         "buildTransitive/CommunityToolkit.Mvvm.targets",
-        "communitytoolkit.mvvm.8.4.0.nupkg.sha512",
+        "communitytoolkit.mvvm.8.4.2.nupkg.sha512",
         "communitytoolkit.mvvm.nuspec",
         "lib/net8.0-windows10.0.17763/CommunityToolkit.Mvvm.dll",
-        "lib/net8.0-windows10.0.17763/CommunityToolkit.Mvvm.pdb",
         "lib/net8.0-windows10.0.17763/CommunityToolkit.Mvvm.xml",
         "lib/net8.0/CommunityToolkit.Mvvm.dll",
-        "lib/net8.0/CommunityToolkit.Mvvm.pdb",
         "lib/net8.0/CommunityToolkit.Mvvm.xml",
         "lib/netstandard2.0/CommunityToolkit.Mvvm.dll",
-        "lib/netstandard2.0/CommunityToolkit.Mvvm.pdb",
         "lib/netstandard2.0/CommunityToolkit.Mvvm.xml",
         "lib/netstandard2.1/CommunityToolkit.Mvvm.dll",
-        "lib/netstandard2.1/CommunityToolkit.Mvvm.pdb",
         "lib/netstandard2.1/CommunityToolkit.Mvvm.xml"
       ]
     },
@@ -3065,10 +3056,10 @@
         "runtimes/win-x86/native/libHarfBuzzSharp.pdb"
       ]
     },
-    "MailKit/4.7.1.1": {
-      "sha512": "Y3okmIxu8g/ZcoJiE2i+dCeKgnNyddsXmcJslZnCPGVPP0aRyeVINHV1h97V+OVMdqjQI6O12J2p8Duwq5UEqQ==",
+    "MailKit/4.18.0": {
+      "sha512": "Sk+n5f4uVKiQKECOCPcFcYtYpIt9rcli7dDboSkWM2TBbTYE7EpfudL+e5a6TFp9eMHOzNYOydzZh0b+zFGK4A==",
       "type": "package",
-      "path": "mailkit/4.7.1.1",
+      "path": "mailkit/4.18.0",
       "files": [
         ".nupkg.metadata",
         ".signature.p7s",
@@ -3077,35 +3068,31 @@
         "docs/GMailOAuth2.md",
         "docs/README.md",
         "icons/mailkit-50.png",
+        "lib/net10.0/MailKit.dll",
+        "lib/net10.0/MailKit.dll.config",
+        "lib/net10.0/MailKit.pdb",
+        "lib/net10.0/MailKit.xml",
         "lib/net462/MailKit.dll",
-        "lib/net462/MailKit.dll.config",
         "lib/net462/MailKit.pdb",
         "lib/net462/MailKit.xml",
         "lib/net47/MailKit.dll",
-        "lib/net47/MailKit.dll.config",
         "lib/net47/MailKit.pdb",
         "lib/net47/MailKit.xml",
         "lib/net48/MailKit.dll",
-        "lib/net48/MailKit.dll.config",
         "lib/net48/MailKit.pdb",
         "lib/net48/MailKit.xml",
-        "lib/net6.0/MailKit.dll",
-        "lib/net6.0/MailKit.dll.config",
-        "lib/net6.0/MailKit.pdb",
-        "lib/net6.0/MailKit.xml",
         "lib/net8.0/MailKit.dll",
         "lib/net8.0/MailKit.dll.config",
         "lib/net8.0/MailKit.pdb",
         "lib/net8.0/MailKit.xml",
         "lib/netstandard2.0/MailKit.dll",
-        "lib/netstandard2.0/MailKit.dll.config",
         "lib/netstandard2.0/MailKit.pdb",
         "lib/netstandard2.0/MailKit.xml",
         "lib/netstandard2.1/MailKit.dll",
         "lib/netstandard2.1/MailKit.dll.config",
         "lib/netstandard2.1/MailKit.pdb",
         "lib/netstandard2.1/MailKit.xml",
-        "mailkit.4.7.1.1.nupkg.sha512",
+        "mailkit.4.18.0.nupkg.sha512",
         "mailkit.nuspec"
       ]
     },
@@ -4578,45 +4565,41 @@
         "microting.entityframeworkcore.mysql.nuspec"
       ]
     },
-    "MimeKit/4.7.1": {
-      "sha512": "Qoj4aVvhX14A1FNvaJ33hzOP4VZI2j+Mr38I9wSGcjMq4BYDtWLJG89aJ9nRW2cNfH6Czjwyp7+Mh++xv3AZvg==",
+    "MimeKit/4.18.0": {
+      "sha512": "foq2guy0YL0l0WuHrW4CuYicooXDpXlTOG1kuzlw9VcWfZpaf6zu3nX2kV3n6VKTrMy24vQJgE2TepszntVd3A==",
       "type": "package",
-      "path": "mimekit/4.7.1",
+      "path": "mimekit/4.18.0",
       "files": [
         ".nupkg.metadata",
         ".signature.p7s",
         "docs/FAQ.md",
         "docs/README.md",
         "icons/mimekit-50.png",
+        "lib/net10.0/MimeKit.dll",
+        "lib/net10.0/MimeKit.dll.config",
+        "lib/net10.0/MimeKit.pdb",
+        "lib/net10.0/MimeKit.xml",
         "lib/net462/MimeKit.dll",
-        "lib/net462/MimeKit.dll.config",
         "lib/net462/MimeKit.pdb",
         "lib/net462/MimeKit.xml",
         "lib/net47/MimeKit.dll",
-        "lib/net47/MimeKit.dll.config",
         "lib/net47/MimeKit.pdb",
         "lib/net47/MimeKit.xml",
         "lib/net48/MimeKit.dll",
-        "lib/net48/MimeKit.dll.config",
         "lib/net48/MimeKit.pdb",
         "lib/net48/MimeKit.xml",
-        "lib/net6.0/MimeKit.dll",
-        "lib/net6.0/MimeKit.dll.config",
-        "lib/net6.0/MimeKit.pdb",
-        "lib/net6.0/MimeKit.xml",
         "lib/net8.0/MimeKit.dll",
         "lib/net8.0/MimeKit.dll.config",
         "lib/net8.0/MimeKit.pdb",
         "lib/net8.0/MimeKit.xml",
         "lib/netstandard2.0/MimeKit.dll",
-        "lib/netstandard2.0/MimeKit.dll.config",
         "lib/netstandard2.0/MimeKit.pdb",
         "lib/netstandard2.0/MimeKit.xml",
         "lib/netstandard2.1/MimeKit.dll",
         "lib/netstandard2.1/MimeKit.dll.config",
         "lib/netstandard2.1/MimeKit.pdb",
         "lib/netstandard2.1/MimeKit.xml",
-        "mimekit.4.7.1.nupkg.sha512",
+        "mimekit.4.18.0.nupkg.sha512",
         "mimekit.nuspec"
       ]
     },
@@ -4651,10 +4634,10 @@
         "mysqlconnector.nuspec"
       ]
     },
-    "RBush/4.0.0": {
-      "sha512": "j3GeRxxLUQdc+UrZnvythdQxi3bd8ayn87VDjfGXrvfodF550n9wR6SgQvpo+YiAv3GJezsu6lK0l47rRqnbdg==",
+    "RBush.Signed/4.0.0": {
+      "sha512": "aP5KQxL5RnFNGW1f0euYVBfCatkLw5iEzMRJcXKq8LWWP4Cp3+qoSq1tDDL2vvJ2rM0ychmVMa2VaEKLS6uX4w==",
       "type": "package",
-      "path": "rbush/4.0.0",
+      "path": "rbush.signed/4.0.0",
       "files": [
         ".nupkg.metadata",
         ".signature.p7s",
@@ -4664,20 +4647,24 @@
         "lib/net8.0/RBush.xml",
         "lib/netstandard2.0/RBush.dll",
         "lib/netstandard2.0/RBush.xml",
-        "rbush.4.0.0.nupkg.sha512",
-        "rbush.nuspec",
+        "rbush.signed.4.0.0.nupkg.sha512",
+        "rbush.signed.nuspec",
         "readme.md"
       ]
     },
-    "Serilog/4.2.0": {
-      "sha512": "gmoWVOvKgbME8TYR+gwMf7osROiWAURterc6Rt2dQyX7wtjZYpqFiA/pY6ztjGQKKV62GGCyOcmtP1UKMHgSmA==",
+    "Serilog/4.4.0": {
+      "sha512": "ZC6Le3rr4TVJJjS4KsQAesxeF1EhW9qcZmmG7eP5Y2G3+gTGkJEUXkq4+tZNPtyp05I0wWOxnIjwtxFweJsObw==",
       "type": "package",
-      "path": "serilog/4.2.0",
+      "path": "serilog/4.4.0",
       "files": [
         ".nupkg.metadata",
         ".signature.p7s",
         "README.md",
+        "build/Serilog.targets",
+        "buildTransitive/Serilog.targets",
         "icon.png",
+        "lib/net10.0/Serilog.dll",
+        "lib/net10.0/Serilog.xml",
         "lib/net462/Serilog.dll",
         "lib/net462/Serilog.xml",
         "lib/net471/Serilog.dll",
@@ -4690,18 +4677,20 @@
         "lib/net9.0/Serilog.xml",
         "lib/netstandard2.0/Serilog.dll",
         "lib/netstandard2.0/Serilog.xml",
-        "serilog.4.2.0.nupkg.sha512",
+        "serilog.4.4.0.nupkg.sha512",
         "serilog.nuspec"
       ]
     },
-    "Serilog.Extensions.Logging/9.0.0": {
-      "sha512": "NwSSYqPJeKNzl5AuXVHpGbr6PkZJFlNa14CdIebVjK3k/76kYj/mz5kiTRNVSsSaxM8kAIa1kpy/qyT9E4npRQ==",
+    "Serilog.Extensions.Logging/10.0.0": {
+      "sha512": "vx0kABKl2dWbBhhqAfTOk53/i8aV/5VaT3a6il9gn72Wqs2pM7EK2OB6No6xdqK2IaY6Zf9gdjLuK9BVa2rT+Q==",
       "type": "package",
-      "path": "serilog.extensions.logging/9.0.0",
+      "path": "serilog.extensions.logging/10.0.0",
       "files": [
         ".nupkg.metadata",
         ".signature.p7s",
         "README.md",
+        "lib/net10.0/Serilog.Extensions.Logging.dll",
+        "lib/net10.0/Serilog.Extensions.Logging.xml",
         "lib/net462/Serilog.Extensions.Logging.dll",
         "lib/net462/Serilog.Extensions.Logging.xml",
         "lib/net8.0/Serilog.Extensions.Logging.dll",
@@ -4713,14 +4702,14 @@
         "lib/netstandard2.1/Serilog.Extensions.Logging.dll",
         "lib/netstandard2.1/Serilog.Extensions.Logging.xml",
         "serilog-extension-nuget.png",
-        "serilog.extensions.logging.9.0.0.nupkg.sha512",
+        "serilog.extensions.logging.10.0.0.nupkg.sha512",
         "serilog.extensions.logging.nuspec"
       ]
     },
-    "Serilog.Sinks.File/6.0.0": {
-      "sha512": "lxjg89Y8gJMmFxVkbZ+qDgjl+T4yC5F7WSLTvA+5q0R04tfKVLRL/EHpYoJ/MEQd2EeCKDuylBIVnAYMotmh2A==",
+    "Serilog.Sinks.File/7.0.0": {
+      "sha512": "fKL7mXv7qaiNBUC71ssvn/dU0k9t0o45+qm2XgKAlSt19xF+ijjxyA3R6HmCgfKEKwfcfkwWjayuQtRueZFkYw==",
       "type": "package",
-      "path": "serilog.sinks.file/6.0.0",
+      "path": "serilog.sinks.file/7.0.0",
       "files": [
         ".nupkg.metadata",
         ".signature.p7s",
@@ -4733,10 +4722,12 @@
         "lib/net6.0/Serilog.Sinks.File.xml",
         "lib/net8.0/Serilog.Sinks.File.dll",
         "lib/net8.0/Serilog.Sinks.File.xml",
+        "lib/net9.0/Serilog.Sinks.File.dll",
+        "lib/net9.0/Serilog.Sinks.File.xml",
         "lib/netstandard2.0/Serilog.Sinks.File.dll",
         "lib/netstandard2.0/Serilog.Sinks.File.xml",
         "serilog-sink-nuget.png",
-        "serilog.sinks.file.6.0.0.nupkg.sha512",
+        "serilog.sinks.file.7.0.0.nupkg.sha512",
         "serilog.sinks.file.nuspec"
       ]
     },
@@ -5244,20 +5235,21 @@
         "useSharedDesignerContext.txt"
       ]
     },
-    "System.Security.Cryptography.Pkcs/9.0.4": {
-      "sha512": "cUFTcMlz/Qw9s90b2wnWSCvHdjv51Bau9FQqhsr4TlwSe1OX+7SoXUqphis5G74MLOvMOCghxPPlEqOdCrVVGA==",
+    "System.Security.Cryptography.Pkcs/10.0.0": {
+      "sha512": "UPWqLSygJlFerRi9XNIuM0a1VC8gHUIufyP24xQ0sc+XimqUAEcjpOz9DhKpyDjH+5B/wO3RpC0KpkEeDj/ddg==",
       "type": "package",
-      "path": "system.security.cryptography.pkcs/9.0.4",
+      "path": "system.security.cryptography.pkcs/10.0.0",
       "files": [
         ".nupkg.metadata",
         ".signature.p7s",
         "Icon.png",
-        "LICENSE.TXT",
         "THIRD-PARTY-NOTICES.TXT",
         "buildTransitive/net461/System.Security.Cryptography.Pkcs.targets",
         "buildTransitive/net462/_._",
         "buildTransitive/net8.0/_._",
         "buildTransitive/netcoreapp2.0/System.Security.Cryptography.Pkcs.targets",
+        "lib/net10.0/System.Security.Cryptography.Pkcs.dll",
+        "lib/net10.0/System.Security.Cryptography.Pkcs.xml",
         "lib/net462/System.Security.Cryptography.Pkcs.dll",
         "lib/net462/System.Security.Cryptography.Pkcs.xml",
         "lib/net8.0/System.Security.Cryptography.Pkcs.dll",
@@ -5268,11 +5260,13 @@
         "lib/netstandard2.0/System.Security.Cryptography.Pkcs.xml",
         "lib/netstandard2.1/System.Security.Cryptography.Pkcs.dll",
         "lib/netstandard2.1/System.Security.Cryptography.Pkcs.xml",
+        "runtimes/win/lib/net10.0/System.Security.Cryptography.Pkcs.dll",
+        "runtimes/win/lib/net10.0/System.Security.Cryptography.Pkcs.xml",
         "runtimes/win/lib/net8.0/System.Security.Cryptography.Pkcs.dll",
         "runtimes/win/lib/net8.0/System.Security.Cryptography.Pkcs.xml",
         "runtimes/win/lib/net9.0/System.Security.Cryptography.Pkcs.dll",
         "runtimes/win/lib/net9.0/System.Security.Cryptography.Pkcs.xml",
-        "system.security.cryptography.pkcs.9.0.4.nupkg.sha512",
+        "system.security.cryptography.pkcs.10.0.0.nupkg.sha512",
         "system.security.cryptography.pkcs.nuspec",
         "useSharedDesignerContext.txt"
       ]
@@ -5357,21 +5351,21 @@
   },
   "projectFileDependencyGroups": {
     "net10.0": [
-      "Avalonia >= 12.1.0",
-      "Avalonia.Desktop >= 12.1.0",
-      "Avalonia.Fonts.Inter >= 12.1.0",
-      "Avalonia.Themes.Fluent >= 12.1.0",
-      "ClosedXML >= 0.104.2",
-      "CommunityToolkit.Mvvm >= 8.4.0",
+      "Avalonia >= 12.1.2",
+      "Avalonia.Desktop >= 12.1.2",
+      "Avalonia.Fonts.Inter >= 12.1.2",
+      "Avalonia.Themes.Fluent >= 12.1.2",
+      "ClosedXML >= 0.105.1",
+      "CommunityToolkit.Mvvm >= 8.4.2",
       "ErganiManager.Core >= 1.0.0",
       "ErganiManager.Data >= 1.0.0",
       "ErganiManager.ErganiApi >= 1.0.0",
       "ErganiManager.LocalCache >= 1.0.0",
       "Microsoft.Extensions.DependencyInjection >= 10.0.10",
       "Microsoft.Extensions.Hosting >= 10.0.10",
-      "Serilog >= 4.2.0",
-      "Serilog.Extensions.Logging >= 9.0.0",
-      "Serilog.Sinks.File >= 6.0.0"
+      "Serilog >= 4.4.0",
+      "Serilog.Extensions.Logging >= 10.0.0",
+      "Serilog.Sinks.File >= 7.0.0"
     ]
   },
   "packageFolders": {
@@ -5443,32 +5437,32 @@
         "dependencies": {
           "Avalonia": {
             "target": "Package",
-            "version": "[12.1.0, )",
+            "version": "[12.1.2, )",
             "versionCentrallyManaged": true
           },
           "Avalonia.Desktop": {
             "target": "Package",
-            "version": "[12.1.0, )",
+            "version": "[12.1.2, )",
             "versionCentrallyManaged": true
           },
           "Avalonia.Fonts.Inter": {
             "target": "Package",
-            "version": "[12.1.0, )",
+            "version": "[12.1.2, )",
             "versionCentrallyManaged": true
           },
           "Avalonia.Themes.Fluent": {
             "target": "Package",
-            "version": "[12.1.0, )",
+            "version": "[12.1.2, )",
             "versionCentrallyManaged": true
           },
           "ClosedXML": {
             "target": "Package",
-            "version": "[0.104.2, )",
+            "version": "[0.105.1, )",
             "versionCentrallyManaged": true
           },
           "CommunityToolkit.Mvvm": {
             "target": "Package",
-            "version": "[8.4.0, )",
+            "version": "[8.4.2, )",
             "versionCentrallyManaged": true
           },
           "Microsoft.Extensions.DependencyInjection": {
@@ -5483,29 +5477,29 @@
           },
           "Serilog": {
             "target": "Package",
-            "version": "[4.2.0, )",
+            "version": "[4.4.0, )",
             "versionCentrallyManaged": true
           },
           "Serilog.Extensions.Logging": {
             "target": "Package",
-            "version": "[9.0.0, )",
+            "version": "[10.0.0, )",
             "versionCentrallyManaged": true
           },
           "Serilog.Sinks.File": {
             "target": "Package",
-            "version": "[6.0.0, )",
+            "version": "[7.0.0, )",
             "versionCentrallyManaged": true
           }
         },
         "centralPackageVersions": {
-          "Avalonia": "12.1.0",
-          "Avalonia.Desktop": "12.1.0",
-          "Avalonia.Fonts.Inter": "12.1.0",
-          "Avalonia.Themes.Fluent": "12.1.0",
-          "BCrypt.Net-Next": "4.0.3",
-          "ClosedXML": "0.104.2",
-          "CommunityToolkit.Mvvm": "8.4.0",
-          "MailKit": "4.7.1.1",
+          "Avalonia": "12.1.2",
+          "Avalonia.Desktop": "12.1.2",
+          "Avalonia.Fonts.Inter": "12.1.2",
+          "Avalonia.Themes.Fluent": "12.1.2",
+          "BCrypt.Net-Next": "4.2.0",
+          "ClosedXML": "0.105.1",
+          "CommunityToolkit.Mvvm": "8.4.2",
+          "MailKit": "4.18.0",
           "Microsoft.EntityFrameworkCore": "10.0.10",
           "Microsoft.EntityFrameworkCore.Design": "10.0.10",
           "Microsoft.EntityFrameworkCore.Sqlite": "10.0.10",
@@ -5517,9 +5511,9 @@
           "Microsoft.Extensions.Logging": "10.0.10",
           "Microsoft.Extensions.Logging.Abstractions": "10.0.10",
           "Microting.EntityFrameworkCore.MySql": "10.0.8",
-          "Serilog": "4.2.0",
-          "Serilog.Extensions.Logging": "9.0.0",
-          "Serilog.Sinks.File": "6.0.0"
+          "Serilog": "4.4.0",
+          "Serilog.Extensions.Logging": "10.0.0",
+          "Serilog.Sinks.File": "7.0.0"
         },
         "imports": [
           "net461",
@@ -5816,26 +5810,6 @@
     }
   },
   "logs": [
-    {
-      "code": "NU1902",
-      "level": "Warning",
-      "warningLevel": 1,
-      "message": "Package 'MailKit' 4.7.1.1 has a known moderate severity vulnerability, https://github.com/advisories/GHSA-9j88-vvj5-vhgr",
-      "libraryId": "MailKit",
-      "targetGraphs": [
-        "net10.0"
-      ]
-    },
-    {
-      "code": "NU1902",
-      "level": "Warning",
-      "warningLevel": 1,
-      "message": "Package 'MimeKit' 4.7.1 has a known moderate severity vulnerability, https://github.com/advisories/GHSA-g7hc-96xr-gvvx",
-      "libraryId": "MimeKit",
-      "targetGraphs": [
-        "net10.0"
-      ]
-    },
     {
       "code": "NU1903",
       "level": "Warning",

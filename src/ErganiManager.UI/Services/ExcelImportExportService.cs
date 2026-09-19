@@ -348,16 +348,15 @@ public class ExcelImportExportService
         wb.SaveAs(filePath);
         return filePath;
     }
+
+    // ── Employee Export ───────────────────────────────────────────────────────
 }
 
 public class ScheduleImportRow
 {
-    public DateOnly Date { get; init; }
-    public AppWorkType WorkType { get; init; }
-    public TimeOnly? StartTime { get; init; }
-    public TimeOnly? EndTime { get; init; }
-    public string? Comments { get; init; }
+    public DateOnly    Date      { get; init; }
+    public AppWorkType WorkType  { get; init; }
+    public TimeOnly?   StartTime { get; init; }
+    public TimeOnly?   EndTime   { get; init; }
+    public string?     Comments  { get; init; }
 }
-
-    // ── Employee Export ───────────────────────────────────────────────────────
-
