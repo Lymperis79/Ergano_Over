@@ -40,6 +40,7 @@ public partial class AdminShellViewModel : ViewModelBase
     private readonly IServiceProvider _services;
     private readonly ICompanyContext _companyContext;
     private readonly ICompanyService _companyService;
+    private readonly ICacheSyncService _cacheSync;
 
     private readonly Dictionary<AdminSection, ViewModelBase> _sectionCache = new();
 
@@ -72,6 +73,37 @@ public partial class AdminShellViewModel : ViewModelBase
     [RelayCommand]
     private void DismissNotification() => HasNotification = false;
 
+    // ── Cache sync ────────────────────────────────────────────────────────────
+
+    private async Task SyncCacheAsync(int companyId)
+    {
+        try
+        {
+            var result = await _cacheSync
+                .RefreshCacheFromMainDatabaseAsync(companyId).ConfigureAwait(false);
+            if (result.Success)
+                ShowNotification(
+                    $"✅ Offline cache updated: {result.EmployeesSynced} employees, " +
+                    $"{result.SchedulesSynced} schedules.");
+            else
+                ShowError($"⚠️ Cache sync failed: {result.ErrorMessage}");
+        }
+        catch (Exception ex)
+        {
+            ShowError($"⚠️ Cache sync error: {ex.Message}");
+        }
+    }
+
+    [RelayCommand]
+    private void RefreshCache()
+    {
+        var companyId = _companyContext.ActiveCompanyId;
+        if (companyId.HasValue)
+            _ = SyncCacheAsync(companyId.Value);
+        else
+            ShowError("Select a company first.");
+    }
+
     [RelayCommand]
     private void OpenScanWindow()
     {
@@ -85,11 +117,13 @@ public partial class AdminShellViewModel : ViewModelBase
 
     private UserSession? _session;
 
-    public AdminShellViewModel(IServiceProvider services, ICompanyContext companyContext, ICompanyService companyService)
+    public AdminShellViewModel(IServiceProvider services, ICompanyContext companyContext,
+        ICompanyService companyService, ICacheSyncService cacheSync)
     {
-        _services = services;
+        _services      = services;
         _companyContext = companyContext;
         _companyService = companyService;
+        _cacheSync      = cacheSync;
         LanguageSelector = services.GetRequiredService<LanguageSelectorViewModel>();
     }
 
@@ -120,6 +154,12 @@ public partial class AdminShellViewModel : ViewModelBase
         }
 
         NavigateTo(nameof(AdminSection.Companies));
+
+        // Populate the local offline cache for this company on background thread.
+        // This ensures the terminal scan window works offline and has fresh data.
+        var companyId = _companyContext.ActiveCompanyId;
+        if (companyId.HasValue)
+            _ = SyncCacheAsync(companyId.Value);
     }
 
     partial void OnSelectedSwitchCompanyChanged(CompanyDto? value)
@@ -138,6 +178,9 @@ public partial class AdminShellViewModel : ViewModelBase
             if (kvp.Value is IAdminSectionViewModel sectionVm)
                 sectionVm.Initialize(BuildSessionForActiveCompany());
         }
+
+        // Refresh offline cache for the newly selected company
+        _ = SyncCacheAsync(value.Id);
     }
 
     /// <summary>

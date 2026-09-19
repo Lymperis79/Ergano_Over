@@ -29,6 +29,11 @@
                             Command="{Binding OpenScanWindowCommand}"
                             VerticalAlignment="Center" />
 
+                    <!-- Sync offline cache -->
+                    <Button Content="🔄 Sync Cache"
+                            Command="{Binding RefreshCacheCommand}"
+                            VerticalAlignment="Center" />
+
                     <!-- Language picker (always visible) -->
                     <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
                         <TextBlock Text="{Binding Loc[Language]}" Foreground="#AAAAAA"

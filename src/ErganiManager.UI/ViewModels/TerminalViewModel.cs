@@ -27,6 +27,7 @@ public partial class TerminalViewModel : ViewModelBase
     private readonly IConnectionStateService _connectionState;
     private readonly IWorkCardSubmitter _workCardSubmitter;
     private readonly IEmailAlertService _emailAlertService;
+    private readonly ICacheSyncService _cacheSync;
     private readonly System.Timers.Timer _clockTimer;
     private readonly System.Timers.Timer _popupAutoCloseTimer;
 
@@ -54,11 +55,13 @@ public partial class TerminalViewModel : ViewModelBase
     public TerminalViewModel(
         IConnectionStateService connectionState,
         IWorkCardSubmitter workCardSubmitter,
-        IEmailAlertService emailAlertService)
+        IEmailAlertService emailAlertService,
+        ICacheSyncService cacheSync)
     {
         _connectionState = connectionState;
         _workCardSubmitter = workCardSubmitter;
         _emailAlertService = emailAlertService;
+        _cacheSync = cacheSync;
 
         _clockTimer = new System.Timers.Timer(1000);
         _clockTimer.Elapsed += (_, _) => UpdateClock();
@@ -75,6 +78,10 @@ public partial class TerminalViewModel : ViewModelBase
         CompanyName = session.CompanyName ?? "Unknown Company";
         BranchName = session.BranchName ?? "All Branches";
         IsOfflineMode = session.IsOfflineSession;
+
+        // Sync offline cache so scan lookups have fresh employee/schedule data
+        if (session.CompanyId.HasValue)
+            _ = Task.Run(() => _cacheSync.RefreshCacheFromMainDatabaseAsync(session.CompanyId.Value));
     }
 
     private void UpdateClock()

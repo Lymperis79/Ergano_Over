@@ -358,5 +358,6 @@ public class ScheduleImportRow
     public TimeOnly? EndTime { get; init; }
     public string? Comments { get; init; }
 }
+
     // ── Employee Export ───────────────────────────────────────────────────────
 
