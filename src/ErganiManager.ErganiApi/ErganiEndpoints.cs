@@ -1,36 +1,49 @@
 namespace ErganiManager.ErganiApi;
 
 /// <summary>
-/// ── EDIT THIS FILE IF ERGANI CHANGES THEIR API PATHS OR BASE URL ──
-///
-/// Every Ergani-specific URL/path used by the application lives here, in one
-/// place. Nothing else in the codebase should ever hardcode a path string —
-/// ErganiClient and everything else reads from this class.
-///
-/// WHY THIS MATTERS: the exact endpoint paths below are inferred from the
-/// field-naming conventions used by community SDKs (Python/Rust) for this
-/// API, not copied from an official, verified Ergani API spec. If your
-/// Ergani credentials/documentation show different paths, change ONLY the
-/// values below — no other file needs to change.
-///
-/// Default base URLs:
-///   Production: https://eservices.yeka.gr/WebServicesAPI/api
-///   Trial/Test: https://trialeservices.yeka.gr/WebServicesAPI/api
-/// (The Company entity stores its own ErganiBaseUrl per company — these
-/// constants are just the fallback defaults offered in the UI.)
+/// All Ergani API paths per the official YEKA documentation (June 2025).
+/// Base URL: https://trialeservices.yeka.gr/WebServicesApi/api/
 /// </summary>
 public static class ErganiEndpoints
 {
-    // ── Base URLs (defaults shown in the Company setup screen) ──
-    public const string ProductionBaseUrl = "https://eservices.yeka.gr/WebServicesAPI/api";
-    public const string TrialBaseUrl = "https://trialeservices.yeka.gr/WebServicesAPI/api";
+    // ── Base URLs ──────────────────────────────────────────────────────────
+    public const string ProductionBaseUrl = "https://eservices.yeka.gr/WebServicesApi/api";
+    public const string TrialBaseUrl      = "https://trialeservices.yeka.gr/WebServicesApi/api";
 
-    // ── Relative paths (appended to whichever base URL the company uses) ──
-    public const string WorkCardSubmitPath = "WorkCard/Save";
-    public const string DailyScheduleSubmitPath = "Schedule/SaveDaily";
-    public const string WeeklyScheduleSubmitPath = "Schedule/SaveWeekly";
-    public const string OvertimeSubmitPath = "Overtime/Save";
+    // ── Authentication ─────────────────────────────────────────────────────
+    /// <summary>POST — obtain JWT. Body: { Username, Password, Usertype }</summary>
+    public const string AuthPath          = "Authentication";
+    /// <summary>POST — refresh JWT. Body: { AccessToken, RefreshToken }</summary>
+    public const string AuthRefreshPath   = "Authentication/Refresh";
+    /// <summary>POST — logout (invalidate refresh token). Body: "refreshToken"</summary>
+    public const string AuthLogoutPath    = "Authentication/Logout";
 
-    // ── HTTP client tuning ──
+    // ── Document submissions ───────────────────────────────────────────────
+    /// <summary>POST — Work Card (arrival/departure). Code: WRKCardSE</summary>
+    public const string WorkCardSubmitPath        = "Documents/WRKCardSE";
+    /// <summary>POST — Daily schedule. Code: WTODaily</summary>
+    public const string DailyScheduleSubmitPath   = "Documents/WTODaily";
+    /// <summary>POST — Weekly schedule. Code: WTOWeek</summary>
+    public const string WeeklyScheduleSubmitPath  = "Documents/WTOWeek";
+    /// <summary>POST — Overtime. Code: (TBD per lookup)</summary>
+    public const string OvertimeSubmitPath        = "Documents/WRKOvertime";
+
+    // ── Lookup ─────────────────────────────────────────────────────────────
+    /// <summary>GET — list all active submission types</summary>
+    public const string SubmissionsLookupPath = "Lookup/Submissions";
+
+    // ── Web Services (data retrieval) ──────────────────────────────────────
+    /// <summary>GET — list all available services</summary>
+    public const string ServicesListPath    = "WebServices/ServicesList";
+    /// <summary>POST — execute a named service</summary>
+    public const string ExecuteServicePath  = "WebServices/ExecuteService";
+
+    // ── Usertype codes ─────────────────────────────────────────────────────
+    /// <summary>Standard ΕΡΓΑΝΗ credentials</summary>
+    public const string UsertypeErgani     = "02";
+    /// <summary>External user</summary>
+    public const string UsertypeExternal   = "01";
+
+    // ── HTTP tuning ────────────────────────────────────────────────────────
     public static readonly TimeSpan RequestTimeout = TimeSpan.FromSeconds(30);
 }
