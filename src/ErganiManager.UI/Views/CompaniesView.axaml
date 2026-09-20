@@ -71,6 +71,33 @@
                         <TextBlock Text="{Binding Loc[ErganiBaseUrl]}" FontWeight="SemiBold" />
                         <TextBox Text="{Binding FormErganiBaseUrl}" />
 
+                        <!-- Ergani credential test -->
+                        <Grid ColumnDefinitions="*,Auto" Margin="0,4,0,0">
+                            <Border Grid.Column="0" CornerRadius="4" Padding="8,4"
+                                    IsVisible="{Binding ErganiTestResult,
+                                        Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                                <Border.Background>
+                                    <SolidColorBrush Color="{Binding ErganiTestSuccess,
+                                        Converter={x:Static vm:BoolToBackgroundConverter.Instance}}" />
+                                </Border.Background>
+                                <TextBlock Text="{Binding ErganiTestResult}"
+                                           Foreground="White" FontSize="12" />
+                            </Border>
+                            <Button Grid.Column="1" Content="🔑 Test Connection"
+                                    Command="{Binding TestErganiCredentialsCommand}"
+                                    IsEnabled="{Binding !IsTesting}"
+                                    Margin="8,0,0,0" />
+                        </Grid>
+
+                        <!-- Import from Ergani (only shown when saved and test passed) -->
+                        <Button Content="⬇ Import Branches &amp; Employees from Ergani"
+                                Command="{Binding ImportFromErganiCommand}"
+                                IsEnabled="{Binding !IsImporting}"
+                                IsVisible="{Binding ErganiTestSuccess}"
+                                HorizontalAlignment="Stretch"
+                                HorizontalContentAlignment="Center"
+                                Margin="0,4,0,0" />
+
                         <CheckBox Content="{Binding Loc[Active]}" IsChecked="{Binding FormIsActive}" />
 
                         <Separator />

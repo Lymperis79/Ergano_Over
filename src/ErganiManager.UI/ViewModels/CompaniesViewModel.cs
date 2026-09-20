@@ -6,25 +6,32 @@ using CommunityToolkit.Mvvm.Input;
 using ErganiManager.Core.Interfaces;
 using ErganiManager.Core.Models;
 using ErganiManager.ErganiApi;
+using ErganiManager.ErganiApi.Models;
+using ErganiManager.ErganiApi.Services;
 
 namespace ErganiManager.UI.ViewModels;
 
 public partial class CompaniesViewModel : ViewModelBase, IAdminSectionViewModel
 {
     private readonly ICompanyService _companyService;
+    private readonly IErganiDataImportService _erganiImport;
+    private readonly ICredentialProtector _credentialProtector;
     private UserSession? _session;
 
-    /// <summary>Raised after the company list changes (create, edit, toggle
-    /// active) so the AdminShell's company-switcher dropdown can refresh.</summary>
     public event EventHandler? CompaniesChanged;
-
     public ObservableCollection<CompanyDto> Companies { get; } = new();
 
     [ObservableProperty] private CompanyDto? _selectedCompany;
     [ObservableProperty] private bool _isEditing;
     [ObservableProperty] private string _statusMessage = string.Empty;
 
-    // Form fields (bound while creating/editing)
+    // Ergani credential test result
+    [ObservableProperty] private string _erganiTestResult = string.Empty;
+    [ObservableProperty] private bool _erganiTestSuccess;
+    [ObservableProperty] private bool _isTesting;
+    [ObservableProperty] private bool _isImporting;
+
+    // Form fields
     [ObservableProperty] private int _formId;
     [ObservableProperty] private string _formName = string.Empty;
     [ObservableProperty] private string _formTaxId = string.Empty;
@@ -44,9 +51,13 @@ public partial class CompaniesViewModel : ViewModelBase, IAdminSectionViewModel
     [ObservableProperty] private string _formSmtpPassword = string.Empty;
     [ObservableProperty] private bool _formSmtpUseTls = true;
 
-    public CompaniesViewModel(ICompanyService companyService)
+    public CompaniesViewModel(ICompanyService companyService,
+        IErganiDataImportService erganiImport,
+        ICredentialProtector credentialProtector)
     {
-        _companyService = companyService;
+        _companyService      = companyService;
+        _erganiImport        = erganiImport;
+        _credentialProtector = credentialProtector;
     }
 
     public void Initialize(UserSession session)
@@ -208,7 +219,107 @@ public partial class CompaniesViewModel : ViewModelBase, IAdminSectionViewModel
 
     // Simple confirm: returns true always for now; 
     // replace with a dialog service if desired.
-    private static Task<bool> ConfirmDeleteAsync(object item) 
+    private static Task<bool> ConfirmDeleteAsync(object item)
         => Task.FromResult(true);
 
+    // ── Ergani credential test & data import ──────────────────────────────
+
+    [RelayCommand]
+    private async Task TestErganiCredentialsAsync()
+    {
+        if (string.IsNullOrWhiteSpace(FormErganiUsername) ||
+            string.IsNullOrWhiteSpace(FormErganiPassword))
+        {
+            ErganiTestResult  = "❌ Enter username and password first.";
+            ErganiTestSuccess = false;
+            return;
+        }
+
+        IsTesting         = true;
+        ErganiTestResult  = "⏳ Testing…";
+        ErganiTestSuccess = false;
+
+        try
+        {
+            var creds = new ErganiCredentials
+            {
+                Username = FormErganiUsername,
+                Password = FormErganiPassword,
+                BaseUrl  = string.IsNullOrWhiteSpace(FormErganiBaseUrl)
+                    ? ErganiEndpoints.TrialBaseUrl : FormErganiBaseUrl
+            };
+
+            var (valid, companyName, error) =
+                await _erganiImport.TestCredentialsAsync(creds).ConfigureAwait(false);
+
+            await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() =>
+            {
+                ErganiTestSuccess = valid;
+                ErganiTestResult  = valid
+                    ? $"✅ Connected{(companyName != null ? $" — {companyName}" : "")}"
+                    : $"❌ {error ?? "Authentication failed."}";
+
+                // Auto-fill company name if found and form is empty
+                if (valid && companyName != null && string.IsNullOrEmpty(FormName))
+                    FormName = companyName;
+            });
+        }
+        catch (Exception ex)
+        {
+            await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() =>
+            {
+                ErganiTestResult  = $"❌ {ex.Message}";
+                ErganiTestSuccess = false;
+            });
+        }
+        finally
+        {
+            IsTesting = false;
+        }
+    }
+
+    [RelayCommand]
+    private async Task ImportFromErganiAsync()
+    {
+        if (FormId == 0) { StatusMessage = "❌ Save the company first, then import."; return; }
+        if (!ErganiTestSuccess)
+        {
+            StatusMessage = "❌ Test the Ergani credentials first.";
+            return;
+        }
+
+        IsImporting = true;
+        StatusMessage = "⏳ Importing branches and employees from Ergani…";
+
+        try
+        {
+            var creds = new ErganiCredentials
+            {
+                Username = FormErganiUsername,
+                Password = FormErganiPassword,
+                BaseUrl  = string.IsNullOrWhiteSpace(FormErganiBaseUrl)
+                    ? ErganiEndpoints.TrialBaseUrl : FormErganiBaseUrl
+            };
+
+            var result = await _erganiImport
+                .ImportCompanyDataAsync(FormId, creds).ConfigureAwait(false);
+
+            await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() =>
+            {
+                StatusMessage = result.Success
+                    ? $"✅ Import complete: {result.BranchesImported} branch(es), " +
+                      $"{result.EmployeesImported} employee(s) added/updated."
+                    : $"❌ Import failed: {result.ErrorMessage}";
+            });
+        }
+        catch (Exception ex)
+        {
+            await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() =>
+                StatusMessage = $"❌ {ex.Message}");
+        }
+        finally
+        {
+            IsImporting = false;
+        }
+    }
 }
