@@ -26,7 +26,14 @@ public static class ServiceCollectionExtensions
         services.AddTransient<IUserManagementService, UserManagementService>();
         services.AddTransient<IScheduleService, ScheduleService>();
         services.AddTransient<IWorkCardHistoryService, WorkCardHistoryService>();
+        services.AddTransient<ITodayStatusService, TodayStatusService>();
         services.AddTransient<IOvertimeService, OvertimeService>();
+        services.AddTransient<IImportLogService, ImportLogService>();
+        services.AddSingleton<IRoundingSettingsService, RoundingSettingsService>();
+        services.AddSingleton<IPortalSettingsService, PortalSettingsService>();
+        services.AddTransient<IReportService, ReportService>();
+        services.AddTransient<ILeaveService, LeaveService>();
+        services.AddTransient<IDatabaseMaintenanceService, DatabaseMaintenanceService>();
 
         return services;
     }

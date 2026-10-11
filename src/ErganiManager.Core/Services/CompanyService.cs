@@ -43,6 +43,7 @@ public class CompanyService : ICompanyService
             TaxId = dto.TaxId.Trim(),
             ErganiUsername = dto.ErganiUsername.Trim(),
             ErganiPasswordEncrypted = _credentialProtector.Protect(dto.ErganiPasswordPlainText ?? string.Empty),
+            ErganiUsertype = dto.ErganiUsertype,
             ErganiBaseUrl = dto.ErganiBaseUrl,
             IsActive = dto.IsActive,
             EarlyClockInBlockMinutes = dto.EarlyClockInBlockMinutes,
@@ -76,6 +77,7 @@ public class CompanyService : ICompanyService
         entity.Name = dto.Name.Trim();
         entity.TaxId = dto.TaxId.Trim();
         entity.ErganiUsername = dto.ErganiUsername.Trim();
+        entity.ErganiUsertype = dto.ErganiUsertype;
         entity.ErganiBaseUrl = dto.ErganiBaseUrl;
         entity.IsActive = dto.IsActive;
         entity.EarlyClockInBlockMinutes = dto.EarlyClockInBlockMinutes;
@@ -129,6 +131,7 @@ public class CompanyService : ICompanyService
         TaxId = c.TaxId,
         ErganiUsername = c.ErganiUsername,
         ErganiPasswordPlainText = null, // never expose the encrypted/decrypted password on read
+        ErganiUsertype = c.ErganiUsertype,
         ErganiBaseUrl = c.ErganiBaseUrl,
         IsActive = c.IsActive,
         EarlyClockInBlockMinutes = c.EarlyClockInBlockMinutes,

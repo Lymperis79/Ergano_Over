@@ -23,6 +23,7 @@ public class Company
     // Default mirrors ErganiEndpoints.TrialBaseUrl in ErganiManager.ErganiApi.
     // Kept as a plain string here (not a cross-project constant reference)
     // because ErganiManager.Data must not depend on ErganiManager.ErganiApi.
+    public string ErganiUsertype { get; set; } = "01";
     public string ErganiBaseUrl { get; set; } = "https://trialeservices.yeka.gr/WebServicesAPI/api";
 
     public bool IsActive { get; set; } = true;

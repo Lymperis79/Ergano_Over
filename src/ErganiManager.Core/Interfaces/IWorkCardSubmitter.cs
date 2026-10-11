@@ -15,6 +15,12 @@ public class WorkCardSubmissionOutcome
     public string? Protocol { get; set; }
     public string? SubmissionId { get; set; }
     public string? ErrorMessage { get; set; }
+
+    /// <summary>
+    /// True when Ergani itself rejected the card (a business/validation error).
+    /// Resending the same card unchanged will not help, unlike a network/service outage.
+    /// </summary>
+    public bool IsBusinessError { get; set; }
 }
 
 /// <summary>
@@ -27,5 +33,5 @@ public class WorkCardSubmissionOutcome
 /// </summary>
 public interface IWorkCardSubmitter
 {
-    Task<WorkCardSubmissionOutcome> SubmitAsync(WorkCardSubmissionRequest request);
+    Task<WorkCardSubmissionOutcome> SubmitAsync(WorkCardSubmissionRequest request, string? aitiologia = null);
 }

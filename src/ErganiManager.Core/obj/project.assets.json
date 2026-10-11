@@ -2218,11 +2218,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Users\\ThinkPad\\Desktop\\ErganiManager\\src\\ErganiManager.Core\\ErganiManager.Core.csproj",
+      "projectUniqueName": "C:\\Users\\ThinkPad\\Desktop\\ErganiII\\src\\ErganiManager.Core\\ErganiManager.Core.csproj",
       "projectName": "ErganiManager.Core",
-      "projectPath": "C:\\Users\\ThinkPad\\Desktop\\ErganiManager\\src\\ErganiManager.Core\\ErganiManager.Core.csproj",
+      "projectPath": "C:\\Users\\ThinkPad\\Desktop\\ErganiII\\src\\ErganiManager.Core\\ErganiManager.Core.csproj",
       "packagesPath": "C:\\Users\\ThinkPad\\.nuget\\packages\\",
-      "outputPath": "C:\\Users\\ThinkPad\\Desktop\\ErganiManager\\src\\ErganiManager.Core\\obj\\",
+      "outputPath": "C:\\Users\\ThinkPad\\Desktop\\ErganiII\\src\\ErganiManager.Core\\obj\\",
       "projectStyle": "PackageReference",
       "centralPackageVersionsManagementEnabled": true,
       "fallbackFolders": [
@@ -2246,11 +2246,11 @@
           "framework": "net10.0",
           "targetAlias": "net10.0",
           "projectReferences": {
-            "C:\\Users\\ThinkPad\\Desktop\\ErganiManager\\src\\ErganiManager.Data\\ErganiManager.Data.csproj": {
-              "projectPath": "C:\\Users\\ThinkPad\\Desktop\\ErganiManager\\src\\ErganiManager.Data\\ErganiManager.Data.csproj"
+            "C:\\Users\\ThinkPad\\Desktop\\ErganiII\\src\\ErganiManager.Data\\ErganiManager.Data.csproj": {
+              "projectPath": "C:\\Users\\ThinkPad\\Desktop\\ErganiII\\src\\ErganiManager.Data\\ErganiManager.Data.csproj"
             },
-            "C:\\Users\\ThinkPad\\Desktop\\ErganiManager\\src\\ErganiManager.LocalCache\\ErganiManager.LocalCache.csproj": {
-              "projectPath": "C:\\Users\\ThinkPad\\Desktop\\ErganiManager\\src\\ErganiManager.LocalCache\\ErganiManager.LocalCache.csproj"
+            "C:\\Users\\ThinkPad\\Desktop\\ErganiII\\src\\ErganiManager.LocalCache\\ErganiManager.LocalCache.csproj": {
+              "projectPath": "C:\\Users\\ThinkPad\\Desktop\\ErganiII\\src\\ErganiManager.LocalCache\\ErganiManager.LocalCache.csproj"
             }
           }
         }
@@ -2308,6 +2308,7 @@
           "Microsoft.Extensions.Logging": "10.0.10",
           "Microsoft.Extensions.Logging.Abstractions": "10.0.10",
           "Microting.EntityFrameworkCore.MySql": "10.0.8",
+          "Selenium.WebDriver": "4.27.0",
           "Serilog": "4.4.0",
           "Serilog.Extensions.Logging": "10.0.0",
           "Serilog.Sinks.File": "7.0.0"

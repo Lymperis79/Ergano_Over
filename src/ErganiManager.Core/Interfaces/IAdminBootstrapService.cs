@@ -28,4 +28,9 @@ public interface IAdminBootstrapService
     /// credentials. Fails if any user already exists, to prevent this from
     /// being used as a backdoor after initial setup.</summary>
     Task<BootstrapResult> CreateFirstAdminAsync(CreateFirstAdminRequest request);
+
+    /// <summary>Creates the offline (local cache) database if needed and copies all active
+    /// main-database users into it. Called after the database and the first administrator
+    /// exist, so offline login works from the very first run.</summary>
+    Task SeedOfflineCacheAsync();
 }

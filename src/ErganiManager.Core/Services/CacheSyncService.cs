@@ -67,6 +67,7 @@ public class CacheSyncService : ICacheSyncService
             cachedEmp.CompanyId = emp.CompanyId;
             cachedEmp.BranchId = emp.BranchId;
             cachedEmp.BarcodeId = emp.BarcodeId;
+            cachedEmp.TaxId = emp.TaxId;
             cachedEmp.FullName = emp.FullName;
             cachedEmp.IsActive = emp.IsActive;
             cachedEmp.LastSyncAt = DateTime.UtcNow;

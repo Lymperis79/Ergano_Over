@@ -29,6 +29,9 @@ public class OvertimeDto
     public bool IsCancelled { get; set; }
     public bool SubmittedToErgani { get; set; }
     public string? Protocol { get; set; }
+    public string? SubmissionId { get; set; }
+    public string? ResponseRawJson { get; set; }
+    public DateOnly? SubmittedDate { get; set; }
     public DateTime CreatedAt { get; set; }
 
     public string JustificationLabel => Justification switch

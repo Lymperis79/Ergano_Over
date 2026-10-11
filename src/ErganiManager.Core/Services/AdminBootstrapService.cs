@@ -1,6 +1,7 @@
 using ErganiManager.Core.Interfaces;
 using ErganiManager.Data;
 using ErganiManager.Data.Entities;
+using ErganiManager.LocalCache;
 using Microsoft.EntityFrameworkCore;
 
 namespace ErganiManager.Core.Services;
@@ -64,5 +65,26 @@ public class AdminBootstrapService : IAdminBootstrapService
         await db.SaveChangesAsync();
 
         return new BootstrapResult { Success = true };
+    }
+
+    public async Task SeedOfflineCacheAsync()
+    {
+        var config = _connectionState.LoadConfig()
+            ?? throw new InvalidOperationException("Database is not configured.");
+
+        var optionsBuilder = new DbContextOptionsBuilder<AppDbContext>();
+        DbProviderFactory.Configure(optionsBuilder, config);
+        await using var db = new AppDbContext(optionsBuilder.Options);
+
+        var users = await db.Users
+            .Include(u => u.Company)
+            .Include(u => u.Branch)
+            .Where(u => u.IsActive)
+            .ToListAsync();
+
+        using var cache = LocalCacheDbContextFactory.Create();
+        foreach (var user in users)
+            await OfflineUserCache.UpsertAsync(cache, user);
+        await cache.SaveChangesAsync();
     }
 }

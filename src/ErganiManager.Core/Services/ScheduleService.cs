@@ -84,6 +84,10 @@ public class ScheduleService : IScheduleService
 
         await using var db = OpenDb();
 
+        // A day imported from the Ergani export is already declared there: it is stored as
+        // submitted so it is never sent again. Ordinary edits still reset the flag (below).
+        var alreadyAtErgani = dto.Source == ErganiManager.Core.Interfaces.ScheduleSource.ErganiImported && dto.SubmittedToErgani;
+
         var existing = await db.Schedules
             .FirstOrDefaultAsync(s => s.EmployeeId == dto.EmployeeId && s.ScheduleDate == dto.ScheduleDate);
 
@@ -95,9 +99,11 @@ public class ScheduleService : IScheduleService
                 BranchId = dto.BranchId,
                 ScheduleDate = dto.ScheduleDate,
                 WorkType = ToEntityWorkType(dto.WorkType),
+                Source = ToEntityScheduleSource(dto.Source),
                 StartTime = dto.StartTime,
                 EndTime = dto.EndTime,
                 Comments = dto.Comments,
+                SubmittedToErgani = alreadyAtErgani,
                 CreatedAt = DateTime.UtcNow
             };
             db.Schedules.Add(entity);
@@ -107,12 +113,17 @@ public class ScheduleService : IScheduleService
 
         existing.BranchId = dto.BranchId;
         existing.WorkType = ToEntityWorkType(dto.WorkType);
+        existing.Source = ToEntityScheduleSource(dto.Source);
         existing.StartTime = dto.StartTime;
         existing.EndTime = dto.EndTime;
         existing.Comments = dto.Comments;
         existing.UpdatedAt = DateTime.UtcNow;
 
-        if (existing.SubmittedToErgani)
+        if (alreadyAtErgani)
+        {
+            existing.SubmittedToErgani = true; // keep any protocol we already know
+        }
+        else if (existing.SubmittedToErgani)
         {
             existing.SubmittedToErgani = false;
             existing.SubmissionId = null;
@@ -132,6 +143,54 @@ public class ScheduleService : IScheduleService
             db.Schedules.Remove(entity);
             await db.SaveChangesAsync();
         }
+    }
+
+    public async Task<int> DeleteDaysAsync(int employeeId, IReadOnlyCollection<DateOnly> dates)
+    {
+        if (dates.Count == 0) return 0;
+
+        await using var db = OpenDb();
+
+        var wanted = dates.ToHashSet();
+        var from = wanted.Min();
+        var to   = wanted.Max();
+
+        var inRange = await db.Schedules
+            .Where(s => s.EmployeeId == employeeId && s.ScheduleDate >= from && s.ScheduleDate <= to)
+            .ToListAsync();
+
+        var toRemove = inRange.Where(s => wanted.Contains(s.ScheduleDate)).ToList();
+        if (toRemove.Count == 0) return 0;
+
+        db.Schedules.RemoveRange(toRemove);
+        await db.SaveChangesAsync();
+        return toRemove.Count;
+    }
+
+    public async Task<List<ScheduleSubmissionLogDto>> GetSubmissionLogAsync(
+        int companyId, int employeeId, int take = 200)
+    {
+        await using var db = OpenDb();
+
+        var rows = await db.ApiSubmissionLogs
+            .Where(l => l.CompanyId == companyId
+                     && l.EmployeeId == employeeId
+                     && l.SubmissionType == "DailySchedule")
+            .OrderByDescending(l => l.SubmissionDate)
+            .Take(take)
+            .ToListAsync();
+
+        return rows.Select(l => new ScheduleSubmissionLogDto
+        {
+            Id              = l.Id,
+            ScheduleDate    = l.ScheduleDate,
+            SubmissionDate  = l.SubmissionDate,
+            Success         = l.Success,
+            Protocol        = l.Protocol,
+            ErrorMessage    = l.ErrorMessage,
+            HttpStatusCode  = l.HttpStatusCode,
+            ResponseRawJson = l.ResponseRawJson
+        }).ToList();
     }
 
     public async Task<int> BulkSetAsync(
@@ -161,6 +220,7 @@ public class ScheduleService : IScheduleService
             {
                 existing.BranchId = branchId;
                 existing.WorkType = ToEntityWorkType(workType);
+                existing.Source = Data.Entities.ScheduleSource.Manual;
                 existing.StartTime = startTime;
                 existing.EndTime = endTime;
                 existing.UpdatedAt = DateTime.UtcNow;
@@ -179,6 +239,7 @@ public class ScheduleService : IScheduleService
                     BranchId = branchId,
                     ScheduleDate = date,
                     WorkType = ToEntityWorkType(workType),
+                    Source = Data.Entities.ScheduleSource.Manual,
                     StartTime = startTime,
                     EndTime = endTime,
                     CreatedAt = DateTime.UtcNow
@@ -209,6 +270,18 @@ public class ScheduleService : IScheduleService
         _ => throw new ArgumentOutOfRangeException(nameof(t))
     };
 
+    private static Data.Entities.ScheduleSource ToEntityScheduleSource(Core.Interfaces.ScheduleSource source) => source switch
+    {
+        Core.Interfaces.ScheduleSource.ErganiImported => Data.Entities.ScheduleSource.ErganiImported,
+        _ => Data.Entities.ScheduleSource.Manual
+    };
+
+    private static Core.Interfaces.ScheduleSource ToAppScheduleSource(Data.Entities.ScheduleSource source) => source switch
+    {
+        Data.Entities.ScheduleSource.ErganiImported => Core.Interfaces.ScheduleSource.ErganiImported,
+        _ => Core.Interfaces.ScheduleSource.Manual
+    };
+
     private static ScheduleDayDto ToDto(EmployeeSchedule s, List<WorkCard>? dayCards) => new()
     {
         Id = s.Id,
@@ -216,6 +289,7 @@ public class ScheduleService : IScheduleService
         BranchId = s.BranchId,
         ScheduleDate = s.ScheduleDate,
         WorkType = ToAppWorkType(s.WorkType),
+        Source = ToAppScheduleSource(s.Source),
         StartTime = s.StartTime,
         EndTime = s.EndTime,
         SubmittedToErgani = s.SubmittedToErgani,
@@ -264,6 +338,7 @@ public class ScheduleService : IScheduleService
                     BranchId         = src.BranchId,
                     ScheduleDate     = src.ScheduleDate,
                     WorkType         = src.WorkType,
+                    Source           = Data.Entities.ScheduleSource.Manual,
                     StartTime        = src.StartTime,
                     EndTime          = src.EndTime,
                     Comments         = src.Comments,

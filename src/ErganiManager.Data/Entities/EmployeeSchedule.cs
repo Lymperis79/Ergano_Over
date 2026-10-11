@@ -16,6 +16,12 @@ public enum ScheduleType
     Weekly = 1
 }
 
+public enum ScheduleSource
+{
+    Manual = 0,
+    ErganiImported = 1
+}
+
 public class EmployeeSchedule
 {
     public int Id { get; set; }
@@ -30,6 +36,7 @@ public class EmployeeSchedule
 
     public WorkType WorkType { get; set; } = WorkType.Office;
     public ScheduleType ScheduleType { get; set; } = ScheduleType.Daily;
+    public ScheduleSource Source { get; set; } = ScheduleSource.Manual;
 
     public TimeOnly? StartTime { get; set; }
     public TimeOnly? EndTime { get; set; }

@@ -52,7 +52,7 @@ public class OvertimeService : IOvertimeService
             WeeklyWorkdaysNumber = dto.WeeklyWorkdaysNumber,
             AseeApproval         = dto.AseeApproval,
             IsCancelled          = false,
-            SubmittedToErgani    = false,
+            SubmittedToErgani    = dto.SubmittedToErgani, // true for records imported from Ergani
             CreatedAt            = DateTime.UtcNow
         };
 
@@ -124,6 +124,9 @@ public class OvertimeService : IOvertimeService
         IsCancelled          = o.IsCancelled,
         SubmittedToErgani    = o.SubmittedToErgani,
         Protocol             = o.Protocol,
+        SubmissionId         = o.SubmissionId,
+        ResponseRawJson      = o.ResponseRawJson,
+        SubmittedDate        = o.SubmittedDate,
         CreatedAt            = o.CreatedAt
     };
 }

@@ -33,28 +33,46 @@ public class AuthService : IAuthService
         if (string.IsNullOrWhiteSpace(username) || string.IsNullOrWhiteSpace(password))
             return LoginResult.Fail("Username and password are required.");
 
+        username = username.Trim();
+
+        // 1. Does the main database exist, is it reachable and is its schema there?
         var state = await _connectionState.EvaluateAsync();
 
+        // 2. Yes -> log in against the main database with this account.
         if (state == AppConnectionState.Normal)
         {
-            var onlineResult = await TryOnlineLoginAsync(username, password);
-            if (onlineResult.Success)
-                return onlineResult;
-
-            // Wrong credentials against a reachable DB is a hard failure —
-            // we do NOT fall back to cache here, since that could let someone
-            // log in with a stale/revoked cached password while the real DB
-            // is sitting right there telling us the password is wrong.
-            return onlineResult;
+            try
+            {
+                // Wrong credentials against a reachable DB is a hard failure — we do NOT fall
+                // back to the cache, since that could let someone in with a stale/revoked
+                // cached password while the real DB is telling us the password is wrong.
+                return await TryOnlineLoginAsync(username, password);
+            }
+            catch (Exception ex)
+            {
+                // The database disappeared between the check and the query: treat as unavailable.
+                _logger.LogError(ex, "Online login failed unexpectedly; trying the offline user database.");
+            }
         }
 
-        // FirstRun should never reach here (UI should route to setup wizard first),
-        // but guard anyway.
-        if (state == AppConnectionState.FirstRun)
-            return LoginResult.Fail("Database is not configured yet. Please run setup first.");
+        // 3. No -> check the offline user database. It is never created here as a side effect.
+        if (!await _connectionState.HasCachedUsersAsync())
+        {
+            _logger.LogWarning(
+                "Login blocked for {Username}: main database state {State} ({Reason}) and no offline users exist.",
+                username, state, _connectionState.LastFailureReason);
 
-        // Degraded: main DB unreachable, fall back to local cache.
-        _logger.LogWarning("Main database unreachable. Falling back to offline login for user {Username}.", username);
+            var reason = string.IsNullOrWhiteSpace(_connectionState.LastFailureReason)
+                ? string.Empty
+                : $" ({_connectionState.LastFailureReason})";
+
+            return LoginResult.Fail(state == AppConnectionState.SchemaIncomplete
+                ? $"The database schema is incomplete{reason}. Restart the application to run database setup."
+                : $"The database is not available and there is no offline user database yet{reason}. Restart the application to run database setup.");
+        }
+
+        _logger.LogWarning("Main database not available ({State}). Falling back to offline login for user {Username}.",
+            state, username);
         return await TryOfflineLoginAsync(username, password);
     }
 
@@ -106,7 +124,14 @@ public class AuthService : IAuthService
 
     private async Task<LoginResult> TryOfflineLoginAsync(string username, string password)
     {
-        using var cache = LocalCacheDbContextFactory.Create();
+        var cachePath = ErganiManager.LocalCache.AppPaths.GetLocalCacheDbPath();
+        if (!File.Exists(cachePath))
+            return LoginResult.Fail("Database setup is required. No local offline user database exists.");
+
+        var options = new DbContextOptionsBuilder<LocalCacheDbContext>()
+            .UseSqlite($"Data Source={cachePath}")
+            .Options;
+        using var cache = new LocalCacheDbContext(options);
 
         var cachedUser = await cache.CachedUsers
             .FirstOrDefaultAsync(u => u.Username == username && u.IsActive);
@@ -133,30 +158,20 @@ public class AuthService : IAuthService
         return LoginResult.Ok(session);
     }
 
-    private static async Task RefreshCachedUserAsync(AppUser user)
+    private async Task RefreshCachedUserAsync(AppUser user)
     {
-        using var cache = LocalCacheDbContextFactory.Create();
-
-        var existing = await cache.CachedUsers
-            .FirstOrDefaultAsync(u => u.SourceUserId == user.Id);
-
-        if (existing == null)
+        // The offline copy is a convenience: failing to write it must never fail a login
+        // that already succeeded against the main database.
+        try
         {
-            existing = new CachedUser { SourceUserId = user.Id };
-            cache.CachedUsers.Add(existing);
+            using var cache = LocalCacheDbContextFactory.Create();
+            await OfflineUserCache.UpsertAsync(cache, user);
+            await cache.SaveChangesAsync();
         }
-
-        existing.Username = user.Username;
-        existing.PasswordHash = user.PasswordHash;
-        existing.Role = user.Role.ToString();
-        existing.CompanyId = user.CompanyId;
-        existing.CompanyName = user.Company?.Name;
-        existing.BranchId = user.BranchId;
-        existing.BranchName = user.Branch?.Name;
-        existing.IsActive = user.IsActive;
-        existing.LastSyncAt = DateTime.UtcNow;
-
-        await cache.SaveChangesAsync();
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Could not refresh the offline copy of user {Username}.", user.Username);
+        }
     }
 
     public void Logout()

@@ -8,6 +8,12 @@ public enum AppWorkType
     Absent
 }
 
+public enum ScheduleSource
+{
+    Manual,
+    ErganiImported
+}
+
 public class ScheduleDayDto
 {
     public int Id { get; set; }
@@ -15,6 +21,7 @@ public class ScheduleDayDto
     public int BranchId { get; set; }
     public DateOnly ScheduleDate { get; set; }
     public AppWorkType WorkType { get; set; } = AppWorkType.Office;
+    public ScheduleSource Source { get; set; } = ScheduleSource.Manual;
     public TimeOnly? StartTime { get; set; }
     public TimeOnly? EndTime { get; set; }
     public bool SubmittedToErgani { get; set; }
@@ -25,6 +32,20 @@ public class ScheduleDayDto
     // lets the day-edit dialog show "what actually happened" next to the plan.
     public DateTime? ActualArrival { get; set; }
     public DateTime? ActualDeparture { get; set; }
+}
+
+/// <summary>One Ergani schedule submission attempt, read back from the API log.</summary>
+public class ScheduleSubmissionLogDto
+{
+    public int Id { get; set; }
+    public DateOnly? ScheduleDate { get; set; }
+    /// <summary>UTC time of the attempt.</summary>
+    public DateTime SubmissionDate { get; set; }
+    public bool Success { get; set; }
+    public string? Protocol { get; set; }
+    public string? ErrorMessage { get; set; }
+    public int? HttpStatusCode { get; set; }
+    public string? ResponseRawJson { get; set; }
 }
 
 public interface IScheduleService
@@ -42,6 +63,14 @@ public interface IScheduleService
     Task<int> UpsertDayAsync(ScheduleDayDto dto);
 
     Task DeleteDayAsync(int scheduleId);
+
+    /// <summary>Deletes the schedule of one or more days for an employee (local records only —
+    /// nothing is withdrawn from Ergani). Returns how many schedule rows were removed.</summary>
+    Task<int> DeleteDaysAsync(int employeeId, IReadOnlyCollection<DateOnly> dates);
+
+    /// <summary>Ergani schedule submission attempts (successful and failed) for an employee,
+    /// newest first.</summary>
+    Task<List<ScheduleSubmissionLogDto>> GetSubmissionLogAsync(int companyId, int employeeId, int take = 200);
 
     /// <summary>Applies the same work type/time range to every day in a date
     /// range that matches the given days-of-week filter — used for "set this

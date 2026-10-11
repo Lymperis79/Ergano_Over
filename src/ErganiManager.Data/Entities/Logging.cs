@@ -25,6 +25,21 @@ public class ApiSubmissionLog
     public bool Success { get; set; }
     public string? ErrorMessage { get; set; }
     public long DurationMs { get; set; }
+
+    /// <summary>
+    /// How many manual retries have been made on THIS row (0 = original attempt only).
+    /// Retries update the row in place instead of creating a new log line.
+    /// </summary>
+    public int RetryCount { get; set; }
+
+    /// <summary>UTC time of the most recent manual retry.</summary>
+    public DateTime? LastRetryAt { get; set; }
+
+    /// <summary>The WorkCard this attempt belongs to, so retries update one row instead of adding new ones.</summary>
+    public int? WorkCardId { get; set; }
+
+    /// <summary>For DailySchedule submissions: the schedule day this attempt was for.</summary>
+    public DateOnly? ScheduleDate { get; set; }
 }
 
 public class AppLog

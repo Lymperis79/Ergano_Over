@@ -27,7 +27,7 @@ public class Employee
     [Required, MaxLength(50)]
     public string BarcodeId { get; set; } = string.Empty; // what the scanner reads
 
-    [Required, MaxLength(20)]
+    [Required, MaxLength(400)]
     public string ProfessionCode { get; set; } = string.Empty;
 
     public int WeeklyWorkdays { get; set; } = 5; // 5 or 6

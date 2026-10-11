@@ -7,6 +7,7 @@ public class CompanyDto
     public string TaxId { get; set; } = string.Empty;
     public string ErganiUsername { get; set; } = string.Empty;
     public string? ErganiPasswordPlainText { get; set; } // only set when updating; never returned on read
+    public string ErganiUsertype { get; set; } = "01";
     public string ErganiBaseUrl { get; set; } = string.Empty;
     public bool IsActive { get; set; } = true;
 

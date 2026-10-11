@@ -43,5 +43,10 @@ public class Overtime
     [MaxLength(100)]
     public string? Protocol { get; set; }
 
+    public string? ResponseRawJson { get; set; }
+    public string? RequestPayloadJson { get; set; }
+    public DateOnly? SubmittedDate { get; set; }
+    public int? HttpStatusCode { get; set; }
+
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 }

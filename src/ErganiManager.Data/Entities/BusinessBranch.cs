@@ -31,8 +31,6 @@ public class BusinessBranch
 
     public bool IsActive { get; set; } = true;
 
-    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-
     // Navigation
     public List<Employee> Employees { get; set; } = new();
 }
