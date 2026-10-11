@@ -1,0 +1,199 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:ErganiManager.UI.ViewModels"
+             x:Class="ErganiManager.UI.Views.AdministrationView"
+             x:DataType="vm:AdministrationViewModel">
+
+    <Grid>
+        <ScrollViewer>
+            <StackPanel Spacing="16" MaxWidth="820" HorizontalAlignment="Left">
+                <TextBlock Text="{Binding Loc[AdminTitle]}" FontSize="22" FontWeight="Bold" />
+
+                <TabControl>
+                    <TabItem Header="{Binding Loc[AdminGeneralSettings]}">
+                        <StackPanel Spacing="16" Margin="0,12,0,0">
+                            <Border Background="#1A1D23" CornerRadius="8" Padding="20">
+                                <StackPanel Spacing="10">
+                                    <TextBlock Text="{Binding Loc[AdminDatabaseSettings]}" FontSize="16" FontWeight="SemiBold" />
+                                    <TextBlock Text="{Binding DatabaseInfo}" Foreground="Gray" TextWrapping="Wrap" />
+                                    <Button Content="{Binding Loc[AdminBackup]}" Click="OnBackupClick" IsEnabled="{Binding !IsBusy}" />
+                                </StackPanel>
+                            </Border>
+
+                            <Border Background="#1A1D23" CornerRadius="8" Padding="20">
+                                <StackPanel Spacing="10">
+                                    <TextBlock Text="{Binding Loc[AdminLocalCache]}" FontSize="16" FontWeight="SemiBold" />
+                                    <TextBlock Text="{Binding CacheInfo}" Foreground="Gray" TextWrapping="Wrap" />
+                                    <Button Content="{Binding Loc[AdminDeleteCache]}" Command="{Binding AskDeleteCacheCommand}" IsEnabled="{Binding !IsBusy}" />
+                                </StackPanel>
+                            </Border>
+                        </StackPanel>
+                    </TabItem>
+
+                    <TabItem Header="{Binding Loc[AdminHoursSettings]}">
+                        <StackPanel Spacing="16" Margin="0,12,0,0">
+                            <Border Background="#1A1D23" CornerRadius="8" Padding="20">
+                                <StackPanel Spacing="10">
+                                    <TextBlock Text="{Binding Loc[AdminShifts]}" FontSize="16" FontWeight="SemiBold" />
+                                    <TextBlock Text="{Binding Loc[AdminShiftsDescription]}" Foreground="Gray" FontSize="12" TextWrapping="Wrap" />
+                                    <Grid ColumnDefinitions="*,180,180" ColumnSpacing="10">
+                                        <TextBlock Grid.Column="0" Text="{Binding Loc[ShiftName]}" Foreground="Gray" FontSize="11" />
+                                        <TextBlock Grid.Column="1" Text="{Binding Loc[ShiftStart]}" Foreground="Gray" FontSize="11" />
+                                        <TextBlock Grid.Column="2" Text="{Binding Loc[ShiftEnd]}" Foreground="Gray" FontSize="11" />
+                                    </Grid>
+                                    <ItemsControl ItemsSource="{Binding Shifts}">
+                                        <ItemsControl.ItemsPanel>
+                                            <ItemsPanelTemplate><StackPanel Spacing="8" /></ItemsPanelTemplate>
+                                        </ItemsControl.ItemsPanel>
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate x:DataType="vm:ShiftEdit">
+                                                <Grid ColumnDefinitions="*,180,180" ColumnSpacing="10">
+                                                    <TextBox Grid.Column="0" Text="{Binding Name}" />
+                                                    <TimePicker Grid.Column="1" SelectedTime="{Binding StartTime}" ClockIdentifier="24HourClock" />
+                                                    <TimePicker Grid.Column="2" SelectedTime="{Binding EndTime}" ClockIdentifier="24HourClock" />
+                                                </Grid>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                    <TextBlock Text="{Binding RoundingStatus}" TextWrapping="Wrap" />
+                                </StackPanel>
+                            </Border>
+
+                            <Border Background="#1A1D23" CornerRadius="8" Padding="20">
+                                <StackPanel Spacing="10">
+                                    <TextBlock Text="⏱ Working time rounding" FontSize="16" FontWeight="SemiBold" />
+                                    <TextBlock TextWrapping="Wrap" Foreground="Gray" FontSize="12"
+                                               Text="Used by the 'Rounded' column of the Declared vs actual report. The worked time is taken from the exact clock-in, then its minutes are matched to a range and rounded to the whole hour plus the 'Round to' minutes (60 = next hour). Minutes not covered by any range stay as they are." />
+                                    <Grid ColumnDefinitions="110,110,130,*" ColumnSpacing="8">
+                                        <TextBlock Grid.Column="0" Text="From minute" Foreground="Gray" FontSize="11" />
+                                        <TextBlock Grid.Column="1" Text="To minute" Foreground="Gray" FontSize="11" />
+                                        <TextBlock Grid.Column="2" Text="Round to (min)" Foreground="Gray" FontSize="11" />
+                                    </Grid>
+                                    <ItemsControl ItemsSource="{Binding RoundingBands}">
+                                        <ItemsControl.ItemsPanel>
+                                            <ItemsPanelTemplate><StackPanel Spacing="6" /></ItemsPanelTemplate>
+                                        </ItemsControl.ItemsPanel>
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate x:DataType="vm:RoundingBandEdit">
+                                                <Grid ColumnDefinitions="110,110,130,*" ColumnSpacing="8">
+                                                    <NumericUpDown Grid.Column="0" Value="{Binding From}" Minimum="0" Maximum="59" Increment="1" FormatString="0" />
+                                                    <NumericUpDown Grid.Column="1" Value="{Binding To}" Minimum="0" Maximum="59" Increment="1" FormatString="0" />
+                                                    <NumericUpDown Grid.Column="2" Value="{Binding RoundTo}" Minimum="0" Maximum="60" Increment="15" FormatString="0" />
+                                                    <Button Grid.Column="3" Content="✕" HorizontalAlignment="Left"
+                                                            Command="{Binding $parent[ItemsControl].((vm:AdministrationViewModel)DataContext).RemoveRoundingBandCommand}"
+                                                            CommandParameter="{Binding}" />
+                                                </Grid>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                    <StackPanel Orientation="Horizontal" Spacing="8">
+                                        <Button Content="＋ Add range" Command="{Binding AddRoundingBandCommand}" />
+                                        <Button Content="↺ Restore defaults" Command="{Binding RestoreRoundingDefaultsCommand}" />
+                                        <Button Content="{Binding Loc[Save]}" Command="{Binding SaveRoundingCommand}" Classes="accent" />
+                                    </StackPanel>
+                                </StackPanel>
+                            </Border>
+
+                            <Border Background="#1A1D23" CornerRadius="8" Padding="20">
+                                <StackPanel Spacing="10">
+                                    <TextBlock Text="{Binding Loc[NightWorkingHours]}" FontSize="16" FontWeight="SemiBold" />
+                                    <TextBlock Text="{Binding Loc[NightWorkingHoursDescription]}" Foreground="Gray" FontSize="12" TextWrapping="Wrap" />
+                                    <Grid ColumnDefinitions="180,180" ColumnSpacing="12">
+                                        <StackPanel Grid.Column="0" Spacing="4">
+                                            <TextBlock Text="{Binding Loc[NightStart]}" Foreground="Gray" FontSize="11" />
+                                            <TimePicker SelectedTime="{Binding NightStartTime}" ClockIdentifier="24HourClock" MinuteIncrement="1" />
+                                        </StackPanel>
+                                        <StackPanel Grid.Column="1" Spacing="4">
+                                            <TextBlock Text="{Binding Loc[NightEnd]}" Foreground="Gray" FontSize="11" />
+                                            <TimePicker SelectedTime="{Binding NightEndTime}" ClockIdentifier="24HourClock" MinuteIncrement="1" />
+                                        </StackPanel>
+                                    </Grid>
+                                    <TextBlock Text="{Binding NightStatus}" TextWrapping="Wrap" />
+                                    <Button Content="{Binding Loc[Save]}" Command="{Binding SaveNightHoursCommand}" Classes="accent" HorizontalAlignment="Left" />
+                                </StackPanel>
+                            </Border>
+                        </StackPanel>
+                    </TabItem>
+
+                    <TabItem Header="{Binding Loc[AdminPortalSettings]}">
+                        <StackPanel Spacing="16" Margin="0,12,0,0">
+                            <Border Background="#1A1D23" CornerRadius="8" Padding="20">
+                                <StackPanel Spacing="10">
+                                    <TextBlock Text="{Binding Loc[SchedulePortal]}" FontSize="16" FontWeight="SemiBold" />
+                                    <TextBlock TextWrapping="Wrap" Foreground="Gray" FontSize="12" Text="{Binding Loc[SchedulePortalDescription]}" />
+                                    <TextBlock Text="{Binding Loc[PortalBaseAddress]}" FontWeight="SemiBold" />
+                                    <TextBox Text="{Binding SchedulePortalBaseUrl}" PlaceholderText="{Binding Loc[PortalBaseAddress]}" />
+                                    <TextBlock Text="{Binding Loc[PortalTargetPage]}" FontWeight="SemiBold" />
+                                    <TextBox Text="{Binding SchedulePortalTargetUrl}" PlaceholderText="{Binding Loc[PortalTargetPage]}" />
+                                    <TextBlock Text="{Binding Loc[PortalFromDateFieldId]}" FontWeight="SemiBold" />
+                                    <TextBox Text="{Binding SchedulePortalFromField}" />
+                                    <TextBlock Text="{Binding Loc[PortalToDateFieldId]}" FontWeight="SemiBold" />
+                                    <TextBox Text="{Binding SchedulePortalToField}" />
+                                    <TextBlock Text="{Binding Loc[PortalDateFormat]}" FontWeight="SemiBold" />
+                                    <TextBox Text="{Binding SchedulePortalDateFormat}" PlaceholderText="{Binding Loc[PortalDateFormatPlaceholder]}" Width="160" HorizontalAlignment="Left" />
+                                    <CheckBox IsChecked="{Binding SchedulePortalAutoSearch}" Content="{Binding Loc[PortalAutoSearch]}" />
+                                    <CheckBox IsChecked="{Binding SchedulePortalAutoDownload}" Content="{Binding Loc[PortalAutoDownload]}" />
+                                    <TextBlock Text="{Binding Loc[PortalSearchButtonId]}" FontWeight="SemiBold" />
+                                    <TextBox Text="{Binding SchedulePortalSearchButton}" />
+                                    <TextBlock Text="{Binding Loc[PortalDownloadFolder]}" FontWeight="SemiBold" />
+                                    <TextBox Text="{Binding SchedulePortalDownloadFolder}" PlaceholderText="{Binding Loc[PortalDownloadFolderPlaceholder]}" />
+                                    <StackPanel Orientation="Horizontal" Spacing="10" Margin="0,6,0,0">
+                                        <Button Content="{Binding Loc[SaveSchedulePortal]}" Command="{Binding SaveSchedulePortalCommand}" Classes="accent" />
+                                        <TextBlock Text="{Binding SchedulePortalStatus}" TextWrapping="Wrap" VerticalAlignment="Center" />
+                                    </StackPanel>
+                                </StackPanel>
+                            </Border>
+
+                            <Border Background="#1A1D23" CornerRadius="8" Padding="20">
+                                <StackPanel Spacing="10">
+                                    <TextBlock Text="{Binding Loc[WorkCardsPortal]}" FontSize="16" FontWeight="SemiBold" />
+                                    <TextBlock TextWrapping="Wrap" Foreground="Gray" FontSize="12" Text="{Binding Loc[WorkCardsPortalDescription]}" />
+                                    <TextBlock Text="{Binding Loc[PortalBaseAddress]}" FontWeight="SemiBold" />
+                                    <TextBox Text="{Binding WorkCardsPortalBaseUrl}" PlaceholderText="{Binding Loc[PortalBaseAddress]}" />
+                                    <TextBlock Text="{Binding Loc[PortalTargetPage]}" FontWeight="SemiBold" />
+                                    <TextBox Text="{Binding WorkCardsPortalTargetUrl}" PlaceholderText="{Binding Loc[PortalTargetPage]}" />
+                                    <TextBlock Text="{Binding Loc[PortalFromDateFieldId]}" FontWeight="SemiBold" />
+                                    <TextBox Text="{Binding WorkCardsPortalFromField}" />
+                                    <TextBlock Text="{Binding Loc[PortalToDateFieldId]}" FontWeight="SemiBold" />
+                                    <TextBox Text="{Binding WorkCardsPortalToField}" />
+                                    <TextBlock Text="{Binding Loc[PortalDateFormat]}" FontWeight="SemiBold" />
+                                    <TextBox Text="{Binding WorkCardsPortalDateFormat}" PlaceholderText="{Binding Loc[PortalDateFormatPlaceholder]}" Width="160" HorizontalAlignment="Left" />
+                                    <CheckBox IsChecked="{Binding WorkCardsPortalAutoSearch}" Content="{Binding Loc[PortalAutoSearch]}" />
+                                    <TextBlock Text="{Binding Loc[PortalSearchButtonId]}" FontWeight="SemiBold" />
+                                    <TextBox Text="{Binding WorkCardsPortalSearchButton}" />
+                                    <StackPanel Orientation="Horizontal" Spacing="10" Margin="0,6,0,0">
+                                        <Button Content="{Binding Loc[SaveWorkCardsPortal]}" Command="{Binding SaveWorkCardsPortalCommand}" Classes="accent" />
+                                        <TextBlock Text="{Binding WorkCardsPortalStatus}" TextWrapping="Wrap" VerticalAlignment="Center" />
+                                    </StackPanel>
+                                </StackPanel>
+                            </Border>
+                        </StackPanel>
+                    </TabItem>
+
+                    <TabItem Header="{Binding Loc[AdminDangerZone]}">
+                        <Border Background="#2A1A1A" BorderBrush="#EF5350" BorderThickness="1" CornerRadius="8" Padding="20" Margin="0,12,0,0">
+                            <StackPanel Spacing="10">
+                                <TextBlock Text="{Binding Loc[AdminDangerZone]}" FontSize="16" FontWeight="SemiBold" Foreground="#EF9A9A" />
+                                <Button Content="{Binding Loc[AdminDeleteDb]}" Command="{Binding AskDeleteDatabaseCommand}" IsEnabled="{Binding !IsBusy}" Foreground="#EF9A9A" />
+                            </StackPanel>
+                        </Border>
+                    </TabItem>
+                </TabControl>
+
+                <TextBlock Text="{Binding StatusMessage}" TextWrapping="Wrap" />
+            </StackPanel>
+        </ScrollViewer>
+
+        <Border IsVisible="{Binding IsConfirmOpen}" Background="#CC000000" ZIndex="50">
+            <Border Background="#1E2128" CornerRadius="10" Padding="24" Width="460" HorizontalAlignment="Center" VerticalAlignment="Center">
+                <StackPanel Spacing="16">
+                    <TextBlock Text="{Binding ConfirmText}" TextWrapping="Wrap" />
+                    <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
+                        <Button Grid.Column="0" Content="{Binding Loc[Cancel]}" Command="{Binding CancelConfirmCommand}" HorizontalAlignment="Stretch" />
+                        <Button Grid.Column="1" Content="{Binding Loc[AdminConfirm]}" Command="{Binding ConfirmCommand}" Classes="accent" HorizontalAlignment="Stretch" />
+                    </Grid>
+                </StackPanel>
+            </Border>
+        </Border>
+    </Grid>
+</UserControl>

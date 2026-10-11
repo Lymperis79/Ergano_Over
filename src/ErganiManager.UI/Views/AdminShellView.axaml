@@ -3,6 +3,7 @@
         xmlns:vm="using:ErganiManager.UI.ViewModels"
         xmlns:views="using:ErganiManager.UI.Views"
         x:Class="ErganiManager.UI.Views.AdminShellView"
+        Icon="avares://ErganiManager.UI/Assets/icon.png"
         x:DataType="vm:AdminShellViewModel"
         Title="Ergani Manager — Admin"
         Width="1200" Height="760"
@@ -119,11 +120,25 @@
             <Button Content="📟 Scan" Classes="navItem"
                     Command="{Binding NavigateToCommand}" CommandParameter="WorkCardScan"
                     HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" />
+            <Button Content="📊 Daily status" Classes="navItem"
+                    Command="{Binding NavigateToCommand}" CommandParameter="Today"
+                    HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" />
             <Button Content="{Binding Loc[NavOvertime]}" Classes="navItem"
                     Command="{Binding NavigateToCommand}" CommandParameter="Overtime"
                     HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" />
+            <Button Content="{Binding Loc[NavReports]}" Classes="navItem"
+                    Command="{Binding NavigateToCommand}" CommandParameter="Reports"
+                    HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" />
             <Button Content="{Binding Loc[NavApiLog]}" Classes="navItem"
                     Command="{Binding NavigateToCommand}" CommandParameter="SubmissionLog"
+                    HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" />
+            <Button Content="{Binding Loc[NavHelp]}" Classes="navItem"
+                    Command="{Binding NavigateToCommand}" CommandParameter="Help"
+                    HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" />
+            <!-- Super administrator only: backup / delete database / delete local cache -->
+            <Button Content="{Binding Loc[NavAdmin]}" Classes="navItem"
+                    IsVisible="{Binding IsSuperAdmin}"
+                    Command="{Binding NavigateToCommand}" CommandParameter="Administration"
                     HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" />
         </StackPanel>
 

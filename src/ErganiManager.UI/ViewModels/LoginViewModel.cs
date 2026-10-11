@@ -17,6 +17,7 @@ public partial class LoginViewModel : ViewModelBase
 {
     private readonly IAuthService _authService;
     private readonly IErganiHealthCheckService _erganiHealth;
+    private readonly IConnectionStateService _connectionState;
 
     public event EventHandler<UserSession>? LoginSucceeded;
 
@@ -25,6 +26,9 @@ public partial class LoginViewModel : ViewModelBase
     [ObservableProperty] private string _errorMessage = string.Empty;
     [ObservableProperty] private bool _isBusy;
     [ObservableProperty] private bool _isDegradedMode;
+
+    /// <summary>Shown when new tables/columns could not be added to the database (see the log for details).</summary>
+    [ObservableProperty] private string _upgradeWarning = string.Empty;
 
     // Ergani status
     [ObservableProperty] private string _erganiStatusIcon  = "⚪";
@@ -35,10 +39,13 @@ public partial class LoginViewModel : ViewModelBase
     public string DegradedBannerText =>
         "⚠️ Database unavailable — working in offline mode. Only previously synced users can log in.";
 
-    public LoginViewModel(IAuthService authService, IErganiHealthCheckService erganiHealth)
+    public LoginViewModel(IAuthService authService, IErganiHealthCheckService erganiHealth,
+        IConnectionStateService connectionState)
     {
         _authService  = authService;
         _erganiHealth = erganiHealth;
+        _connectionState = connectionState;
+        UpgradeWarning = connectionState.UpgradeWarning ?? string.Empty;
     }
 
     [RelayCommand]
@@ -61,8 +68,14 @@ public partial class LoginViewModel : ViewModelBase
             else
                 ErrorMessage = result.ErrorMessage ?? "Login failed.";
         }
+        catch (Exception ex)
+        {
+            Serilog.Log.Error(ex, "Unexpected error during login.");
+            ErrorMessage = $"Login error: {ex.Message}";
+        }
         finally
         {
+            UpgradeWarning = _connectionState.UpgradeWarning ?? string.Empty;
             IsBusy = false;
         }
     }

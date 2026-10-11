@@ -1,13 +1,16 @@
-using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using ErganiManager.Core.Interfaces;
 using ErganiManager.Core.Models;
+using ErganiManager.Data.Entities;
+using ErganiManager.ErganiApi.Services;
 using ErganiManager.LocalCache;
 using ErganiManager.LocalCache.Entities;
 using Microsoft.EntityFrameworkCore;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace ErganiManager.UI.ViewModels;
 
@@ -25,7 +28,7 @@ public enum ScanPopupKind
 public partial class TerminalViewModel : ViewModelBase
 {
     private readonly IConnectionStateService _connectionState;
-    private readonly IWorkCardSubmitter _workCardSubmitter;
+    private readonly ErganiRetryService _retryService;
     private readonly IEmailAlertService _emailAlertService;
     private readonly ICacheSyncService _cacheSync;
     private readonly System.Timers.Timer _clockTimer;
@@ -51,15 +54,18 @@ public partial class TerminalViewModel : ViewModelBase
     [ObservableProperty] private string _popupDetailLine1 = string.Empty;
     [ObservableProperty] private string _popupDetailLine2 = string.Empty;
     [ObservableProperty] private string _popupDetailLine3 = string.Empty;
+    
+    [ObservableProperty] private bool _isArrival = true;
+    [ObservableProperty] private bool _autoDetect = true;
 
     public TerminalViewModel(
         IConnectionStateService connectionState,
-        IWorkCardSubmitter workCardSubmitter,
+        ErganiRetryService retryService,
         IEmailAlertService emailAlertService,
         ICacheSyncService cacheSync)
     {
         _connectionState = connectionState;
-        _workCardSubmitter = workCardSubmitter;
+        _retryService = retryService;
         _emailAlertService = emailAlertService;
         _cacheSync = cacheSync;
 
@@ -111,8 +117,15 @@ public partial class TerminalViewModel : ViewModelBase
         if (string.IsNullOrWhiteSpace(barcode) || _session?.CompanyId == null || IsProcessing)
             return;
 
-        // Cooldown check — block repeat scan within 20 seconds
-        if (_lastScanTime.TryGetValue(barcode, out var lastTime))
+        // Use the same cooldown key for a plain AFM and an Ergani
+        // serialized scan containing that AFM.
+        var afm = ExtractAfm(barcode);
+        var cooldownKey = afm != null
+            ? $"AFM:{afm}"
+            : $"BARCODE:{barcode}";
+
+        // Cooldown check — block repeat scans of the same employee within 20 seconds.
+        if (_lastScanTime.TryGetValue(cooldownKey, out var lastTime))
         {
             var elapsed = DateTime.Now - lastTime;
             if (elapsed < ScanCooldown)
@@ -120,7 +133,7 @@ public partial class TerminalViewModel : ViewModelBase
                 var remaining = (int)Math.Ceiling((ScanCooldown - elapsed).TotalSeconds);
                 ShowPopup(ScanPopupKind.TooEarlyBlocked,
                     "⏳ ALREADY SCANNED", "",
-                    $"This badge was scanned {(int)elapsed.TotalSeconds}s ago.",
+                    $"This employee was scanned {(int)elapsed.TotalSeconds}s ago.",
                     $"Please wait {remaining} more second(s).", "");
                 return;
             }
@@ -130,12 +143,67 @@ public partial class TerminalViewModel : ViewModelBase
         try
         {
             await HandleScanAsync(barcode, _session.CompanyId.Value);
-            _lastScanTime[barcode] = DateTime.Now;
+            _lastScanTime[cooldownKey] = DateTime.Now;
         }
         finally
         {
             IsProcessing = false;
         }
+
+    }
+
+    /// <summary>
+    /// Returns a normalized AFM from either a plain nine-digit value or
+    /// a serialized Ergani scanner string such as:
+    /// ergInm:NAME;In:FIRSTNAME;afm:AFMno;id:idNo
+    /// </summary>
+    private static string? ExtractAfm(string input)
+    {
+        if (string.IsNullOrWhiteSpace(input))
+            return null;
+
+        var value = input.Trim();
+
+        // Plain AFM: require exactly nine digits. This avoids treating
+        // arbitrary text containing nine digits as an AFM.
+        if (value.Length == 9 && value.All(char.IsDigit))
+            return value;
+
+        // Serialized Ergani scanner input: parse key/value pairs separated by ';'.
+        if (!value.Contains(':'))
+            return null;
+
+        var values = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var part in value.Split(';', StringSplitOptions.RemoveEmptyEntries))
+        {
+            var separator = part.IndexOf(':');
+            if (separator <= 0)
+                continue;
+
+            var key = part[..separator].Trim();
+            var fieldValue = part[(separator + 1)..].Trim();
+
+            if (key.Length > 0)
+                values[key] = fieldValue;
+        }
+
+        if (!values.TryGetValue("afm", out var afm))
+            return null;
+
+        return NormalizeAfm(afm);
+    }
+
+    private static string? NormalizeAfm(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+            return null;
+
+        // AFM is stored as a string so leading zeroes are preserved.
+        // Accept separators/spaces in the scanned field, but require nine digits.
+        var digits = new string(value.Where(char.IsDigit).ToArray());
+
+        return digits.Length == 9 ? digits : null;
     }
 
     private async Task HandleScanAsync(string barcode, int companyId)
@@ -145,13 +213,36 @@ public partial class TerminalViewModel : ViewModelBase
         // kept warm by CacheSyncService while online.
         using var cache = LocalCacheDbContextFactory.Create();
 
+        var scanValue = barcode.Trim();
+        var afm = ExtractAfm(scanValue);
+
+        // First try an exact barcode match. This preserves existing barcode
+        // behavior, including barcodes that happen to contain nine digits.
         var employee = await cache.CachedEmployees
-            .FirstOrDefaultAsync(e => e.CompanyId == companyId && e.BarcodeId == barcode && e.IsActive);
+            .FirstOrDefaultAsync(e =>
+                e.CompanyId == companyId &&
+                e.BarcodeId == scanValue &&
+                e.IsActive);
+
+        // If no barcode matches, try the AFM/TaxId. ExtractAfm supports both
+        // a plain nine-digit AFM and serialized Ergani scanner data.
+        if (employee == null && afm != null)
+        {
+            employee = await cache.CachedEmployees
+                .FirstOrDefaultAsync(e =>
+                    e.CompanyId == companyId &&
+                    e.TaxId == afm &&
+                    e.IsActive);
+        }
 
         if (employee == null)
         {
+            var detail = afm != null
+                ? $"No active employee with AFM '{afm}' was found for this company."
+                : $"Barcode '{scanValue}' is not recognized.";
+
             ShowPopup(ScanPopupKind.UnknownBadge, Loc[L.UnknownBadge], "",
-                $"Barcode '{barcode}' is not recognized.", "Please contact your administrator.", "");
+                detail, "Please contact your administrator.", "");
             return;
         }
 
@@ -160,8 +251,9 @@ public partial class TerminalViewModel : ViewModelBase
         var schedule = await cache.CachedSchedules
             .FirstOrDefaultAsync(s => s.EmployeeId == employee.Id && s.ScheduleDate == today);
 
-        var connState = await _connectionState.EvaluateAsync();
-        var isOnline = connState == AppConnectionState.Normal;
+        // Cached state, refreshed in the background — probing the database here could hold up
+        // the next person in the queue for as long as a connection timeout.
+        var isOnline = _connectionState.CurrentState == AppConnectionState.Normal;
 
         var movementType = await DetermineMovementTypeAsync(cache, employee.Id);
 
@@ -196,7 +288,7 @@ public partial class TerminalViewModel : ViewModelBase
                 }
             }
 
-            await SubmitOrQueueAsync(cache, employee, companyId, "Arrival", now);
+            await QueueScanAsync(cache, employee, companyId, "Arrival", now);
 
             var shiftText = schedule is { StartTime: not null, EndTime: not null }
                 ? $"{Loc[L.ShiftLabel]}: {schedule.StartTime:HH:mm} → {schedule.EndTime:HH:mm}"
@@ -223,7 +315,7 @@ public partial class TerminalViewModel : ViewModelBase
                 }
             }
 
-            await SubmitOrQueueAsync(cache, employee, companyId, "Departure", now, isEarly, earlyMinutes);
+            await QueueScanAsync(cache, employee, companyId, "Departure", now);
 
             if (isEarly)
             {
@@ -286,32 +378,15 @@ public partial class TerminalViewModel : ViewModelBase
         return "Arrival";
     }
 
-    private async Task SubmitOrQueueAsync(
+    /// <summary>
+    /// Save-first: the scan is written to the local cache (a few milliseconds) and the background
+    /// service sends it to Ergani, retrying for as long as the connection is down. The terminal is
+    /// free for the next person immediately, whatever the state of the network or Ergani.
+    /// </summary>
+    private async Task QueueScanAsync(
         LocalCacheDbContext cache, CachedEmployee employee, int companyId,
-        string movementType, DateTime scannedAt, bool isEarly = false, int earlyMinutes = 0)
+        string movementType, DateTime scannedAt)
     {
-        var connState = await _connectionState.EvaluateAsync();
-
-        if (connState == AppConnectionState.Normal)
-        {
-            var request = new WorkCardSubmissionRequest
-            {
-                EmployeeId = employee.Id,
-                CompanyId = companyId,
-                BranchId = employee.BranchId,
-                MovementType = movementType,
-                MovementDateTime = scannedAt
-            };
-
-            var outcome = await _workCardSubmitter.SubmitAsync(request);
-
-            if (outcome.Success)
-                return;
-
-            // Fall through to queueing if the live submission failed despite
-            // being "online" (e.g. Ergani itself is down, not just our DB).
-        }
-
         cache.PendingSubmissions.Add(new PendingSubmission
         {
             EmployeeId = employee.Id,
@@ -323,6 +398,9 @@ public partial class TerminalViewModel : ViewModelBase
             Synced = false
         });
         await cache.SaveChangesAsync();
+
+        // Wake the background sender now; this returns immediately.
+        _retryService.TriggerNow();
     }
 
     private static async Task LogBlockedAttemptAsync(LocalCacheDbContext cache, CachedEmployee employee, int companyId)

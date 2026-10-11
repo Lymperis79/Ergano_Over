@@ -13,16 +13,16 @@
 
             <StackPanel IsVisible="{Binding HasActiveCompany}" Spacing="14">
 
-                <Grid ColumnDefinitions="*,Auto,Auto">
+                <Grid ColumnDefinitions="*,Auto,Auto,Auto">
                     <TextBlock Grid.Column="0" Text="{Binding Loc[Overtime]}" FontSize="22" FontWeight="Bold" />
                     <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8">
-                        <TextBox Text="{Binding FilterFrom, Converter={x:Static vm:DateOffsetStringConverter.Instance}, Mode=TwoWay}" Watermark="dd/mm/yyyy" />
+                        <DatePicker SelectedDate="{Binding FilterFrom, Mode=TwoWay}" HorizontalAlignment="Stretch" MinWidth="150" />
                         <TextBlock Text="→" VerticalAlignment="Center" />
-                        <TextBox Text="{Binding FilterTo, Converter={x:Static vm:DateOffsetStringConverter.Instance}, Mode=TwoWay}" Watermark="dd/mm/yyyy" />
+                        <DatePicker SelectedDate="{Binding FilterTo, Mode=TwoWay}" HorizontalAlignment="Stretch" MinWidth="150" />
                         <Button Content="{Binding Loc[Load]}" Command="{Binding LoadRecordsCommand}" />
                     </StackPanel>
-                    <Button Grid.Column="2" Content="{Binding Loc[New]}" Command="{Binding StartCreateCommand}"
-                            Classes="accent" Margin="8,0,0,0" />
+                    <Button Grid.Column="2" Content="Submit Selected" Command="{Binding SubmitSelectedCommand}" IsEnabled="{Binding HasSelection}" Margin="8,0,0,0" />
+                    <Button Grid.Column="3" Content="{Binding Loc[New]}" Command="{Binding StartCreateCommand}" Classes="accent" Margin="8,0,0,0" />
                 </Grid>
 
                 <TextBlock Text="{Binding StatusMessage}" Foreground="Gray" FontSize="12" />
@@ -35,24 +35,25 @@
                     <ItemsControl.ItemTemplate>
                         <DataTemplate>
                             <Border Background="#1A1D23" CornerRadius="8" Padding="14,10">
-                                <Grid ColumnDefinitions="*,Auto,Auto,Auto,Auto">
-                                    <StackPanel Grid.Column="0">
+                                <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto,Auto,Auto,Auto,Auto">
+                                    <CheckBox Grid.Column="0" Tag="{Binding}" Click="OnSelectionClick" VerticalAlignment="Center" Margin="0,0,10,0" />
+                                    <StackPanel Grid.Column="1">
                                         <TextBlock Text="{Binding EmployeeFullName}" FontWeight="SemiBold" FontSize="14" />
                                         <TextBlock Text="{Binding BranchName}" FontSize="11" Foreground="Gray" />
                                     </StackPanel>
 
-                                    <StackPanel Grid.Column="1" Margin="12,0" VerticalAlignment="Center">
+                                    <StackPanel Grid.Column="2" Margin="12,0" VerticalAlignment="Center">
                                         <TextBlock Text="{Binding OvertimeDate, StringFormat='{}{0:dd/MM/yyyy}'}"
                                                    FontSize="13" FontWeight="SemiBold" />
                                         <TextBlock Text="{Binding StartTime, StringFormat='{}{0:HH:mm}'}"
                                                    FontSize="12" Foreground="Gray" />
                                     </StackPanel>
 
-                                    <TextBlock Grid.Column="2" VerticalAlignment="Center" Margin="8,0"
+                                    <TextBlock Grid.Column="3" VerticalAlignment="Center" Margin="8,0"
                                                Text="{Binding EndTime, StringFormat='→ {0:HH:mm}'}"
                                                Foreground="#AAAAAA" FontSize="12" />
 
-                                    <StackPanel Grid.Column="3" VerticalAlignment="Center" Margin="8,0" Spacing="4">
+                                    <StackPanel Grid.Column="4" VerticalAlignment="Center" Margin="8,0" Spacing="4">
                                         <Border CornerRadius="10" Padding="8,3"
                                                 Background="{Binding IsCancelled, Converter={x:Static vm:BoolToBackgroundConverter.Instance}}">
                                             <TextBlock Text="{Binding IsCancelled, Converter={x:Static vm:CancelledTextConverter.Instance}}"
@@ -62,11 +63,13 @@
                                                    IsVisible="{Binding Protocol, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
                                     </StackPanel>
 
-                                    <Button Grid.Column="4" Content="Cancel" Tag="{Binding}"
+                                    <Button Grid.Column="5" Content="Response" Tag="{Binding}" Click="OnResponseClick" IsEnabled="{Binding SubmittedToErgani}" Margin="0,0,6,0" />
+                                    <Button Grid.Column="6" Content="PDF" Tag="{Binding}" Click="OnPdfClick" IsEnabled="{Binding SubmittedToErgani}" Margin="0,0,6,0" />
+                                    <Button Grid.Column="7" Content="Cancel" Tag="{Binding}"
                                             Click="OnCancelClick"
                                             IsEnabled="{Binding !IsCancelled}"
                                             Margin="0,0,6,0" />
-                                    <Button Content="Delete" Tag="{Binding}"
+                                    <Button Grid.Column="8" Content="Delete" Tag="{Binding}"
                                             Click="OnDeleteClick" />
                                 </Grid>
                             </Border>
@@ -76,6 +79,17 @@
 
             </StackPanel>
         </StackPanel>
+
+        <!-- Ergani response viewer -->
+        <Border IsVisible="{Binding IsResponseOpen}" Background="#AA000000" ZIndex="100">
+            <Border Background="#1E2128" CornerRadius="12" Padding="20" Width="800" Height="600" VerticalAlignment="Center" HorizontalAlignment="Center">
+                <Grid RowDefinitions="Auto,*,Auto" RowSpacing="12">
+                    <TextBlock Grid.Row="0" Text="{Binding ResponseTitle}" FontSize="17" FontWeight="Bold" />
+                    <TextBox Grid.Row="1" Text="{Binding ResponseText}" IsReadOnly="True" AcceptsReturn="True" TextWrapping="NoWrap" ScrollViewer.VerticalScrollBarVisibility="{x:Static ScrollBarVisibility.Auto}" ScrollViewer.HorizontalScrollBarVisibility="{x:Static ScrollBarVisibility.Auto}" FontFamily="Consolas" />
+                    <Button Grid.Row="2" Content="Close" Command="{Binding CloseResponseCommand}" HorizontalAlignment="Right" Width="100" />
+                </Grid>
+            </Border>
+        </Border>
 
         <!-- New overtime form overlay -->
         <Border IsVisible="{Binding IsCreating}" Background="#AA000000">
@@ -102,7 +116,7 @@
                     </ComboBox>
 
                     <TextBlock Text="{Binding Loc[OvertimeDate]}" FontWeight="SemiBold" />
-                    <TextBox Text="{Binding FormDate, Converter={x:Static vm:DateOffsetStringConverter.Instance}, Mode=TwoWay}" Watermark="dd/mm/yyyy" />
+                    <DatePicker SelectedDate="{Binding FormDate, Mode=TwoWay}" HorizontalAlignment="Stretch" MinWidth="150" />
 
                     <Grid ColumnDefinitions="*,Auto,*">
                         <StackPanel Grid.Column="0" Spacing="4">

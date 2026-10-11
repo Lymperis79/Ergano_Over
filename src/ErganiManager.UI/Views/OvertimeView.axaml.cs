@@ -18,6 +18,24 @@ public partial class OvertimeView : UserControl
             vm.CancelOvertimeCommand.Execute(record);
     }
 
+    private void OnSelectionClick(object? sender, RoutedEventArgs e)
+    {
+        if (sender is CheckBox { Tag: OvertimeDto record, IsChecked: var checkedValue } && DataContext is OvertimeViewModel vm)
+            vm.SetSelected(record, checkedValue == true);
+    }
+
+    private void OnResponseClick(object? sender, RoutedEventArgs e)
+    {
+        if (sender is Button { Tag: OvertimeDto record } && DataContext is OvertimeViewModel vm)
+            vm.ShowResponseForCommand.Execute(record);
+    }
+
+    private void OnPdfClick(object? sender, RoutedEventArgs e)
+    {
+        if (sender is Button { Tag: OvertimeDto record } && DataContext is OvertimeViewModel vm)
+            _ = vm.DownloadPdfCommand.ExecuteAsync(record);
+    }
+
     private void OnDeleteClick(object? sender, RoutedEventArgs e)
     {
         if (sender is Button { Tag: OvertimeDto record } && DataContext is OvertimeViewModel vm)

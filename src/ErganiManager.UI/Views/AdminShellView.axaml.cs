@@ -56,8 +56,12 @@ public class SectionViewModelTemplateSelector : IDataTemplate
             SchedulesViewModel => new SchedulesView { DataContext = data },
             WorkCardHistoryViewModel => new WorkCardHistoryView { DataContext = data },
             WorkCardScanViewModel   => new WorkCardScanView    { DataContext = data },
+            TodayBoardViewModel     => new TodayBoardView      { DataContext = data },
             OvertimeViewModel       => new OvertimeView        { DataContext = data },
+            ReportsViewModel        => new ReportsView         { DataContext = data },
             SubmissionLogViewModel => new SubmissionLogView { DataContext = data },
+            AdministrationViewModel => new AdministrationView { DataContext = data },
+            HelpViewModel           => new HelpView           { DataContext = data },
             _ => null
         };
     }

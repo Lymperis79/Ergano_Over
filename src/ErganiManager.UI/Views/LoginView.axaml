@@ -2,6 +2,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:vm="using:ErganiManager.UI.ViewModels"
         x:Class="ErganiManager.UI.Views.LoginView"
+        Icon="avares://ErganiManager.UI/Assets/icon.png"
         x:DataType="vm:LoginViewModel"
         Title="Ergani Manager"
         Width="420" Height="440"
@@ -22,14 +23,18 @@
             </Border>
 
             <TextBlock Text="{Binding Loc[Username]}" FontWeight="SemiBold" />
-            <TextBox Text="{Binding Username}" Watermark="{Binding Loc[Username]}" />
+            <TextBox Text="{Binding Username}" PlaceholderText="{Binding Loc[Username]}" />
 
             <TextBlock Text="{Binding Loc[Password]}" FontWeight="SemiBold" />
             <TextBox Text="{Binding Password}" PasswordChar="•"
-                     Watermark="{Binding Loc[Password]}" />
+                     PlaceholderText="{Binding Loc[Password]}" />
 
             <TextBlock Text="{Binding ErrorMessage}" Foreground="Red" TextWrapping="Wrap"
                        IsVisible="{Binding ErrorMessage,
+                           Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+
+            <TextBlock Text="{Binding UpgradeWarning}" Foreground="#FFB74D" TextWrapping="Wrap" FontSize="12"
+                       IsVisible="{Binding UpgradeWarning,
                            Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
 
             <Button Content="{Binding Loc[SignIn]}"

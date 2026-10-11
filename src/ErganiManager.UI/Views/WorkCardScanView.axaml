@@ -28,7 +28,7 @@
                                    FontWeight="SemiBold" FontSize="14" />
 
                         <TextBox Text="{Binding BarcodeInput}"
-                                 Watermark="Scan badge or type barcode and press Enter..."
+                                 PlaceholderText="Scan badge or type barcode and press Enter..."
                                  FontSize="18"
                                  FontFamily="Consolas,Menlo,monospace"
                                  IsEnabled="{Binding !IsProcessing}">
@@ -52,7 +52,7 @@
                             </StackPanel>
 
                             <TextBlock Text="Date" FontWeight="SemiBold" />
-                            <TextBox Text="{Binding MovementDate, Converter={x:Static vm:DateOffsetStringConverter.Instance}, Mode=TwoWay}" Watermark="dd/mm/yyyy" />
+                            <DatePicker SelectedDate="{Binding MovementDate, Mode=TwoWay}" HorizontalAlignment="Stretch" MinWidth="150" />
 
                             <TextBlock Text="Time" FontWeight="SemiBold" />
                             <TimePicker SelectedTime="{Binding MovementTime}"
@@ -164,6 +164,44 @@
             </Grid>
         </Grid>
 
+
+        <!-- ── Retry dialog — shown when submission fails ── -->
+        <Border IsVisible="{Binding IsRetryDialogOpen}"
+                Background="#BB000000" ZIndex="99">
+            <Border Background="#1E2128" CornerRadius="12" Padding="24"
+                    Width="440" VerticalAlignment="Center" HorizontalAlignment="Center">
+                <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto">
+                    <TextBlock Grid.Row="0" Text="⚠️ Submission Failed — Resubmit with Justification?"
+                               FontSize="15" FontWeight="Bold" Margin="0,0,0,8" />
+                    <StackPanel Grid.Row="1" Spacing="4" Margin="0,0,0,12">
+                        <TextBlock Text="{Binding RetryEmployeeName}" FontWeight="SemiBold" />
+                        <TextBlock Text="{Binding RetryMovementType}" Foreground="Gray" FontSize="12" />
+                        <TextBlock Text="{Binding RetryDateTime, StringFormat=&#39;{}{0:dd/MM/yyyy HH:mm:ss}&#39;}"
+                                   Foreground="Gray" FontSize="12" />
+                    </StackPanel>
+                    <TextBlock Grid.Row="2" Text="Select reason for late submission (f_aitiologia):"
+                               FontWeight="SemiBold" Margin="0,0,0,6" />
+                    <ComboBox Grid.Row="3" ItemsSource="{Binding AvailableAitiologiai}"
+                              SelectedValueBinding="{Binding Code}"
+                              SelectedValue="{Binding RetryAitiologia}"
+                              HorizontalAlignment="Stretch" Margin="0,0,0,16">
+                        <ComboBox.ItemTemplate>
+                            <DataTemplate x:DataType="vm:LocalizedCodeOption">
+                                <TextBlock Text="{Binding Display}" TextWrapping="Wrap" />
+                            </DataTemplate>
+                        </ComboBox.ItemTemplate>
+                    </ComboBox>
+                    <Grid Grid.Row="4" ColumnDefinitions="*,*" ColumnSpacing="8">
+                        <Button Grid.Column="0" Content="Cancel"
+                                Command="{Binding CloseRetryDialogCommand}"
+                                HorizontalAlignment="Stretch" />
+                        <Button Grid.Column="1" Content="🔄 Retry Submission"
+                                Command="{Binding SubmitRetryCommand}"
+                                Classes="accent" HorizontalAlignment="Stretch" />
+                    </Grid>
+                </Grid>
+            </Border>
+        </Border>
     </Grid>
 
 </UserControl>

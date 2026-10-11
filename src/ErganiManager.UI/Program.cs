@@ -111,8 +111,12 @@ internal static class Program
         services.AddTransient<ViewModels.SchedulesViewModel>();
         services.AddTransient<ViewModels.WorkCardHistoryViewModel>();
         services.AddTransient<ViewModels.WorkCardScanViewModel>();
+        services.AddTransient<ViewModels.TodayBoardViewModel>();
         services.AddTransient<ViewModels.OvertimeViewModel>();
+        services.AddTransient<ViewModels.ReportsViewModel>();
         services.AddTransient<ViewModels.SubmissionLogViewModel>();
+        services.AddTransient<ViewModels.AdministrationViewModel>();
+        services.AddTransient<ViewModels.HelpViewModel>();
 
         return services.BuildServiceProvider();
     }

@@ -1,37 +1,65 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:ErganiManager.UI.ViewModels"
+             xmlns:views="using:ErganiManager.UI.Views"
+             xmlns:core="using:ErganiManager.Core.Interfaces"
              x:Class="ErganiManager.UI.Views.SchedulesView"
              x:DataType="vm:SchedulesViewModel">
 
     <Grid RowDefinitions="Auto,Auto,Auto,*">
 
-        <!-- Row 0: Header -->
-        <Grid Grid.Row="0" ColumnDefinitions="*,Auto,Auto,Auto,Auto,Auto,Auto" Margin="0,0,0,8">
-            <TextBlock Grid.Column="0" Text="{Binding Loc[Schedules]}" FontSize="22" FontWeight="Bold" />
-            <Button Grid.Column="1" Content="⬆ Import"
-                    Command="{Binding RequestImportCommand}"
-                    Margin="0,0,6,0" IsEnabled="{Binding HasActiveCompany}" />
-            <Button Grid.Column="2" Content="📋 Bulk Apply"
-                    Command="{Binding OpenBulkDialogCommand}"
-                    Margin="0,0,6,0" IsEnabled="{Binding HasActiveCompany}" />
-            <Button Grid.Column="3" Content="👥 Clone to..."
-                    Command="{Binding OpenCloneDialogCommand}"
-                    Margin="0,0,6,0" IsEnabled="{Binding HasActiveCompany}" />
-            <Button Grid.Column="4" Content="{Binding Loc[ExportMonth]}"
-                    Command="{Binding ExportMonthCommand}"
-                    Margin="0,0,6,0" IsEnabled="{Binding HasActiveCompany}" />
-            <Button Grid.Column="5" Content="📤 Submit Schedule"
-                    Command="{Binding SubmitScheduleToErganiCommand}"
-                    Margin="0,0,6,0" IsEnabled="{Binding HasActiveCompany}" />
-            <Button Grid.Column="6" Content="⏱ Submit Overtime"
-                    Command="{Binding SubmitOvertimesCommand}"
-                    IsEnabled="{Binding HasActiveCompany}" />
-        </Grid>
+        <!-- Row 0: Header — title + two lines of buttons.
+             Each line is a WrapPanel, so on a small window the buttons flow onto
+             the next line instead of being cut off. -->
+        <StackPanel Grid.Row="0" Margin="0,0,0,8" Spacing="6">
+
+            <TextBlock Text="{Binding Loc[Schedules]}" FontSize="22" FontWeight="Bold" />
+
+            <!-- Line 1: working with the schedule data -->
+            <WrapPanel Orientation="Horizontal">
+                <Button Content="⬆ Import"
+                        Command="{Binding RequestImportCommand}"
+                        Margin="0,0,6,6" IsEnabled="{Binding HasActiveCompany}" />
+                <Button Content="📜 Import history"
+                        Command="{Binding OpenImportHistoryCommand}"
+                        Margin="0,0,6,6" IsEnabled="{Binding HasActiveCompany}" />
+                <Button Content="📋 Bulk Apply"
+                        Command="{Binding OpenBulkDialogCommand}"
+                        Margin="0,0,6,6" IsEnabled="{Binding HasActiveCompany}" />
+                <Button Content="👥 Clone to..."
+                        Command="{Binding OpenCloneDialogCommand}"
+                        Margin="0,0,6,6" IsEnabled="{Binding HasActiveCompany}" />
+                <Button Content="{Binding Loc[ExportMonth]}"
+                        Command="{Binding ExportMonthCommand}"
+                        Margin="0,0,6,6" IsEnabled="{Binding HasActiveCompany}" />
+                <Button Content="🏖 Holidays"
+                        Command="{Binding OpenHolidaysCommand}"
+                        Margin="0,0,6,6" IsEnabled="{Binding HasActiveCompany}" />
+                <Button Content="📜 Log"
+                        Command="{Binding OpenLogCommand}"
+                        Margin="0,0,6,6" IsEnabled="{Binding HasActiveCompany}" />
+            </WrapPanel>
+
+            <!-- Line 2: sending to Ergani -->
+            <WrapPanel Orientation="Horizontal">
+                <Button Content="{Binding SubmitScheduleButtonText}"
+                        Command="{Binding SubmitScheduleToErganiCommand}"
+                        Margin="0,0,6,6" IsEnabled="{Binding HasActiveCompany}" />
+                <Button Content="{Binding SubmitOvertimeButtonText}"
+                        Command="{Binding SubmitOvertimesCommand}"
+                        Margin="0,0,6,6" IsEnabled="{Binding HasActiveCompany}" />
+                <Button Content="{Binding SubmitHolidaysButtonText}"
+                        Command="{Binding SubmitHolidaysCommand}"
+                        Margin="0,0,6,6" IsEnabled="{Binding HasActiveCompany}" />
+                <Button Content="{Binding Loc[OpenErganiPortal]}"
+                        Command="{Binding OpenErganiPortalCommand}"
+                        Margin="0,0,6,6" IsEnabled="{Binding HasActiveCompany}" />
+            </WrapPanel>
+        </StackPanel>
 
         <!-- Row 1: Controls bar -->
         <Border Grid.Row="1" Background="#1A1D23" CornerRadius="8" Padding="12" Margin="0,0,0,8">
-            <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto,Auto,Auto,Auto">
+            <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto,Auto,Auto,Auto,Auto">
 
                 <!-- Employee picker -->
                 <TextBlock Grid.Column="0" Text="Employee:" VerticalAlignment="Center" Margin="0,0,8,0" />
@@ -79,6 +107,10 @@
                 </Border>
                 <Button Grid.Column="6" Content="✕ Clear" IsVisible="{Binding HasSelection}"
                         Command="{Binding ClearSelectionCommand}" Margin="0,0,4,0" />
+                <Button Grid.Column="7" Content="{Binding DeleteSelectedButtonText}"
+                        IsVisible="{Binding HasSelection}"
+                        Command="{Binding DeleteSelectedCommand}"
+                        Foreground="#EF9A9A" Margin="0,0,4,0" />
 
             </Grid>
         </Border>
@@ -93,7 +125,7 @@
             <StackPanel>
 
                 <!-- Tip -->
-                <TextBlock Text="Click a day to open it · Ctrl+Click to multi-select · Select days then press Bulk Apply"
+                <TextBlock Text="Click a day to open it · Ctrl+Click to select days, then Submit / Bulk Apply / Delete act on just those days"
                            FontSize="11" Foreground="#666" Margin="0,0,0,8" />
 
                 <!-- Day-of-week headers -->
@@ -108,15 +140,16 @@
                 </Grid>
 
                 <!-- Calendar cells -->
+                <!-- Keep exactly seven equal columns so the cells always align with the weekday header. -->
                 <ItemsControl ItemsSource="{Binding Cells}">
                     <ItemsControl.ItemsPanel>
                         <ItemsPanelTemplate>
-                            <WrapPanel Orientation="Horizontal" />
+                            <UniformGrid Columns="7" />
                         </ItemsPanelTemplate>
                     </ItemsControl.ItemsPanel>
                     <ItemsControl.ItemTemplate>
                         <DataTemplate x:DataType="vm:CalendarCellViewModel">
-                            <Panel Width="120" Height="90" Margin="2">
+                            <Panel Height="110" Margin="2">
 
                                 <!-- Empty filler -->
                                 <Border IsVisible="{Binding !IsInMonth}" />
@@ -140,7 +173,7 @@
                                         <SolidColorBrush Color="#3A3F4B" />
                                     </Border.BorderBrush>
 
-                                    <StackPanel>
+                                    <StackPanel ToolTip.Tip="{Binding HolidayTooltip}">
                                         <Grid ColumnDefinitions="*,Auto">
                                             <TextBlock Grid.Column="0" Text="{Binding DayNumberText}"
                                                        FontSize="13" FontWeight="SemiBold"
@@ -151,6 +184,25 @@
                                         </Grid>
                                         <TextBlock Text="{Binding TimeRangeText}" FontSize="10"
                                                    Foreground="#AAAAAA" TextWrapping="Wrap" />
+                                        <TextBlock Text="{Binding OvertimeText}" FontSize="10"
+                                                   Foreground="#FFB74D" TextWrapping="Wrap"
+                                                   IsVisible="{Binding HasOvertimeText}" />
+                                        <Border IsVisible="{Binding HasOfficialHoliday}"
+                                                Background="#3A2F1B" CornerRadius="3"
+                                                Padding="4,1" Margin="0,2,0,0">
+                                            <TextBlock Text="{Binding OfficialHolidayText}" FontSize="9"
+                                                       Foreground="#FFD180" TextTrimming="CharacterEllipsis" />
+                                        </Border>
+                                        <Border IsVisible="{Binding HasUserHoliday}"
+                                                Background="#1E3545" CornerRadius="3"
+                                                Padding="4,1" Margin="0,2,0,0">
+                                            <TextBlock Text="{Binding UserHolidayText}" FontSize="9"
+                                                       Foreground="#90CAF9" TextTrimming="CharacterEllipsis" />
+                                        </Border>
+                                        <TextBlock Text="📤 sent" FontSize="9" Foreground="#81C784"
+                                                   IsVisible="{Binding IsSubmitted}" />
+                                        <TextBlock Text="🇬🇷 Ergani imported" FontSize="9" Foreground="#64B5F6"
+                                                   IsVisible="{Binding IsErganiImported}" />
                                         <!-- Selected indicator -->
                                         <Border IsVisible="{Binding IsSelected}"
                                                 Background="#1B5E20" CornerRadius="3"
@@ -168,12 +220,139 @@
             </StackPanel>
         </ScrollViewer>
 
+        <!-- ── Ergani Excel import confirmation ── -->
+        <Border Grid.Row="0" Grid.RowSpan="4"
+                IsVisible="{Binding IsImportDialogOpen}"
+                Background="#BB000000" ZIndex="80">
+            <Border Background="#1E2128" CornerRadius="12" Padding="24"
+                    Width="620" MaxHeight="620"
+                    VerticalAlignment="Center" HorizontalAlignment="Center">
+                <Grid RowDefinitions="Auto,*,Auto" RowSpacing="12">
+                    <TextBlock Grid.Row="0"
+                               Text="🇬🇷 Import declared schedule from Ergani"
+                               FontSize="18" FontWeight="Bold" />
+
+                    <ScrollViewer Grid.Row="1">
+                        <StackPanel Spacing="10">
+                            <TextBlock Text="{Binding ImportSummary}"
+                                       TextWrapping="Wrap" />
+                            <Border Background="#242832" CornerRadius="6" Padding="10"
+                                    IsVisible="{Binding ImportWarnings, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                                <StackPanel Spacing="6">
+                                    <TextBlock Text="Warnings / rows not imported"
+                                               FontWeight="SemiBold" Foreground="#FFCC80" />
+                                    <TextBlock Text="{Binding ImportWarnings}"
+                                               FontSize="11" Foreground="#BDBDBD"
+                                               TextWrapping="Wrap" />
+                                </StackPanel>
+                            </Border>
+                            <TextBlock Text="Only after you press Import will the database be changed. Existing schedules for the same employee/date will be updated and marked Ergani imported."
+                                       FontSize="12" Foreground="#90CAF9" TextWrapping="Wrap" />
+                        </StackPanel>
+                    </ScrollViewer>
+
+                    <StackPanel Grid.Row="2" Orientation="Horizontal"
+                                HorizontalAlignment="Right" Spacing="8">
+                        <Button Content="{Binding Loc[Cancel]}"
+                                Command="{Binding CancelImportCommand}" />
+                        <Button Content="Import to database"
+                                Command="{Binding ConfirmImportCommand}"
+                                Classes="accent" />
+                    </StackPanel>
+                </Grid>
+            </Border>
+        </Border>
+
+        <!-- ── Import history ── -->
+        <Border Grid.Row="0" Grid.RowSpan="4"
+                IsVisible="{Binding IsImportHistoryOpen}"
+                Background="#BB000000" ZIndex="85">
+            <Border Background="#1E2128" CornerRadius="12" Padding="24"
+                    Width="680" MaxHeight="560"
+                    VerticalAlignment="Center" HorizontalAlignment="Center">
+                <Grid RowDefinitions="Auto,*,Auto" RowSpacing="12">
+                    <TextBlock Grid.Row="0" Text="📜 Ergani import history"
+                               FontSize="18" FontWeight="Bold" />
+                    <ScrollViewer Grid.Row="1">
+                        <ItemsControl ItemsSource="{Binding ImportHistory}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="core:ImportLogDto">
+                                    <Border Background="#242832" CornerRadius="6" Padding="10" Margin="0,0,0,6">
+                                        <StackPanel Spacing="2">
+                                            <TextBlock Text="{Binding PeriodText}" FontWeight="SemiBold" />
+                                            <TextBlock Text="{Binding CountsText}" FontSize="12" />
+                                            <TextBlock FontSize="11" Foreground="#9E9E9E">
+                                                <Run Text="{Binding ImportedAtText}" />
+                                                <Run Text=" · " />
+                                                <Run Text="{Binding DetailsText}" />
+                                            </TextBlock>
+                                        </StackPanel>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </ScrollViewer>
+                    <Button Grid.Row="2" Content="Close" HorizontalAlignment="Right"
+                            Command="{Binding CloseImportHistoryCommand}" />
+                </Grid>
+            </Border>
+        </Border>
+
+        <!-- ── Existing data on the imported dates: replace or keep? ── -->
+        <Border Grid.Row="0" Grid.RowSpan="4"
+                IsVisible="{Binding IsConflictDialogOpen}"
+                Background="#BB000000" ZIndex="95">
+            <Border Background="#1E2128" CornerRadius="12" Padding="24"
+                    Width="620" MaxHeight="620"
+                    VerticalAlignment="Center" HorizontalAlignment="Center">
+                <Grid RowDefinitions="Auto,*,Auto" RowSpacing="12">
+                    <TextBlock Grid.Row="0" Text="⚠ Existing data found"
+                               FontSize="18" FontWeight="Bold" Foreground="#FFB74D" />
+                    <ScrollViewer Grid.Row="1">
+                        <TextBlock Text="{Binding ConflictText}" TextWrapping="Wrap" />
+                    </ScrollViewer>
+                    <StackPanel Grid.Row="2" Orientation="Horizontal"
+                                HorizontalAlignment="Right" Spacing="8">
+                        <Button Content="No, keep old data"
+                                Command="{Binding KeepExistingCommand}" />
+                        <Button Content="Yes, replace"
+                                Command="{Binding ReplaceExistingCommand}"
+                                Classes="accent" />
+                    </StackPanel>
+                </Grid>
+            </Border>
+        </Border>
+
+        <!-- ── Portal download finished: import it now? ── -->
+        <Border Grid.Row="0" Grid.RowSpan="4"
+                IsVisible="{Binding IsPortalImportPromptOpen}"
+                Background="#BB000000" ZIndex="90">
+            <Border Background="#1E2128" CornerRadius="12" Padding="24"
+                    Width="460"
+                    VerticalAlignment="Center" HorizontalAlignment="Center">
+                <StackPanel Spacing="16">
+                    <TextBlock Text="🇬🇷 Import from Ergani?"
+                               FontSize="18" FontWeight="Bold" />
+                    <TextBlock Text="{Binding PortalImportPromptText}"
+                               TextWrapping="Wrap" />
+                    <StackPanel Orientation="Horizontal"
+                                HorizontalAlignment="Right" Spacing="8">
+                        <Button Content="No"
+                                Command="{Binding DismissPortalImportCommand}" />
+                        <Button Content="Yes, import"
+                                Command="{Binding ImportPortalFileCommand}"
+                                Classes="accent" />
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+        </Border>
+
         <!-- ── Day dialog overlay ── -->
         <Border Grid.Row="0" Grid.RowSpan="4"
                 IsVisible="{Binding IsDayDialogOpen}"
                 Background="#BB000000" ZIndex="50">
             <Border Background="#1E2128" CornerRadius="12" Padding="24"
-                    Width="440" MaxHeight="520"
+                    Width="500" MaxHeight="520"
                     VerticalAlignment="Center" HorizontalAlignment="Center">
                 <Grid RowDefinitions="*,Auto">
                     <ScrollViewer Grid.Row="0">
@@ -195,19 +374,30 @@
                                         <DataTemplate><TextBlock Text="{Binding Name}" /></DataTemplate>
                                     </ComboBox.ItemTemplate>
                                 </ComboBox>
-                                <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
-                                    <StackPanel Grid.Column="0" Spacing="4">
-                                        <TextBlock Text="{Binding Loc[StartTime]}" FontWeight="SemiBold" />
-                                        <TimePicker SelectedTime="{Binding EditingStartTime}"
-                                                    ClockIdentifier="24HourClock" />
-                                    </StackPanel>
-                                    <StackPanel Grid.Column="1" Spacing="4">
-                                        <TextBlock Text="{Binding Loc[EndTime]}" FontWeight="SemiBold" />
-                                        <TimePicker SelectedTime="{Binding EditingEndTime}"
-                                                    ClockIdentifier="24HourClock" />
-                                    </StackPanel>
-                                </Grid>
+                                <TextBlock Text="{Binding Loc[ShiftSelection]}" FontWeight="SemiBold" />
+                                <TextBlock Text="{Binding Loc[ShiftSelectionDescription]}" Foreground="Gray" FontSize="11" TextWrapping="Wrap" />
+                                <ComboBox ItemsSource="{Binding AvailableShifts}"
+                                          SelectedItem="{Binding SelectedEditingShift}"
+                                          HorizontalAlignment="Stretch">
+                                    <ComboBox.ItemTemplate>
+                                        <DataTemplate>
+                                            <TextBlock Text="{Binding Name}" />
+                                        </DataTemplate>
+                                    </ComboBox.ItemTemplate>
+                                </ComboBox>
+                                <!-- The selected shift fills these values; they remain editable for this schedule. -->
+                                <StackPanel Spacing="4">
+                                    <TextBlock Text="{Binding Loc[StartTime]}" FontWeight="SemiBold" />
+                                    <TimePicker SelectedTime="{Binding EditingStartTime}" ClockIdentifier="24HourClock" HorizontalAlignment="Stretch" />
+                                    <TextBlock Text="{Binding Loc[EndTime]}" FontWeight="SemiBold" />
+                                    <TimePicker SelectedTime="{Binding EditingEndTime}" ClockIdentifier="24HourClock" HorizontalAlignment="Stretch" />
+                                </StackPanel>
                             </StackPanel>
+
+                            <TextBlock Text="{Binding EditingOvertimeNote}" Foreground="#FFB74D"
+                                       FontSize="12" TextWrapping="Wrap"
+                                       IsVisible="{Binding EditingOvertimeNote,
+                                           Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
 
                             <TextBlock Text="{Binding Loc[Comments]}" FontWeight="SemiBold" />
                             <TextBox Text="{Binding EditingComments}" />
@@ -222,18 +412,20 @@
                         </StackPanel>
                     </ScrollViewer>
 
-                    <Grid Grid.Row="1" ColumnDefinitions="*,*,*" Margin="0,12,0,0" ColumnSpacing="8">
-                        <Button Grid.Column="0" Content="{Binding Loc[Cancel]}"
-                                Command="{Binding CloseDayDialogCommand}"
-                                HorizontalAlignment="Stretch" />
-                        <Button Grid.Column="1" Content="Delete"
+                    <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Right"
+                                Spacing="8" Margin="0,12,0,0">
+                        <Button Content="{Binding Loc[Cancel]}"
+                                Command="{Binding CloseDayDialogCommand}" />
+                        <Button Content="🗑 Delete"
                                 Command="{Binding DeleteDayCommand}"
                                 IsVisible="{Binding IsEditingExisting}"
-                                Foreground="#EF9A9A" HorizontalAlignment="Stretch" />
-                        <Button Grid.Column="2" Content="{Binding Loc[Save]}"
-                                Command="{Binding SaveDayCommand}" Classes="accent"
-                                HorizontalAlignment="Stretch" />
-                    </Grid>
+                                Foreground="#EF9A9A" />
+                        <Button Content="📤 Save &amp; Submit"
+                                Command="{Binding SaveAndSubmitDayCommand}"
+                                IsVisible="{Binding CanSubmitEditingDay}" />
+                        <Button Content="{Binding Loc[Save]}"
+                                Command="{Binding SaveDayCommand}" Classes="accent" />
+                    </StackPanel>
                 </Grid>
             </Border>
         </Border>
@@ -263,18 +455,24 @@
                                     <DataTemplate><TextBlock Text="{Binding Name}" /></DataTemplate>
                                 </ComboBox.ItemTemplate>
                             </ComboBox>
-                            <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
-                                <StackPanel Grid.Column="0" Spacing="4">
-                                    <TextBlock Text="{Binding Loc[StartTime]}" FontWeight="SemiBold" />
-                                    <TimePicker SelectedTime="{Binding BulkStartTime}"
-                                                ClockIdentifier="24HourClock" />
-                                </StackPanel>
-                                <StackPanel Grid.Column="1" Spacing="4">
-                                    <TextBlock Text="{Binding Loc[EndTime]}" FontWeight="SemiBold" />
-                                    <TimePicker SelectedTime="{Binding BulkEndTime}"
-                                                ClockIdentifier="24HourClock" />
-                                </StackPanel>
-                            </Grid>
+                            <TextBlock Text="{Binding Loc[ShiftSelection]}" FontWeight="SemiBold" />
+                            <TextBlock Text="{Binding Loc[ShiftSelectionDescription]}" Foreground="Gray" FontSize="11" TextWrapping="Wrap" />
+                            <ComboBox ItemsSource="{Binding AvailableShifts}"
+                                      SelectedItem="{Binding SelectedBulkShift}"
+                                      HorizontalAlignment="Stretch">
+                                <ComboBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Text="{Binding Name}" />
+                                    </DataTemplate>
+                                </ComboBox.ItemTemplate>
+                            </ComboBox>
+                            <!-- The selected shift fills these values; they remain editable for this bulk operation. -->
+                            <StackPanel Spacing="4">
+                                <TextBlock Text="{Binding Loc[StartTime]}" FontWeight="SemiBold" />
+                                <TimePicker SelectedTime="{Binding BulkStartTime}" ClockIdentifier="24HourClock" HorizontalAlignment="Stretch" />
+                                <TextBlock Text="{Binding Loc[EndTime]}" FontWeight="SemiBold" />
+                                <TimePicker SelectedTime="{Binding BulkEndTime}" ClockIdentifier="24HourClock" HorizontalAlignment="Stretch" />
+                            </StackPanel>
                         </StackPanel>
 
                         <!-- Day of week checkboxes — only shown when no specific days selected -->
@@ -353,6 +551,97 @@
             </Border>
         </Border>
 
+        <!-- ── Holidays form ── -->
+        <Panel Grid.Row="0" Grid.RowSpan="4" ZIndex="45" IsVisible="{Binding Holidays.IsOpen}">
+            <views:HolidayDialogView DataContext="{Binding Holidays}" />
+        </Panel>
+
+        <!-- ── Submission log dialog (Ergani responses + PDF) ── -->
+        <Border Grid.Row="0" Grid.RowSpan="4"
+                IsVisible="{Binding IsLogOpen}"
+                Background="#BB000000" ZIndex="50">
+            <Border Background="#1E2128" CornerRadius="12" Padding="20"
+                    Width="900" Height="560"
+                    VerticalAlignment="Center" HorizontalAlignment="Center">
+                <Grid RowDefinitions="Auto,*,Auto,Auto" RowSpacing="10">
+                    <TextBlock Grid.Row="0" Text="{Binding LogTitle}" FontSize="17" FontWeight="Bold" />
+
+                    <Panel Grid.Row="1">
+                        <TextBlock Text="No schedule has been submitted to Ergani for this employee yet."
+                                   Foreground="Gray" IsVisible="{Binding !HasLogRows}" />
+                        <ScrollViewer IsVisible="{Binding HasLogRows}">
+                            <ItemsControl ItemsSource="{Binding LogRows}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate x:DataType="vm:ScheduleLogRow">
+                                        <Border Background="#22252C" CornerRadius="6"
+                                                Padding="10,8" Margin="0,0,0,4">
+                                            <Grid ColumnDefinitions="Auto,100,150,*,Auto,Auto" ColumnSpacing="10">
+                                                <TextBlock Grid.Column="0" Text="{Binding StatusIcon}"
+                                                           VerticalAlignment="Center" />
+                                                <TextBlock Grid.Column="1" Text="{Binding ScheduleDateText}"
+                                                           FontWeight="SemiBold" VerticalAlignment="Center" />
+                                                <TextBlock Grid.Column="2" Text="{Binding SubmittedAtText}"
+                                                           Foreground="#AAAAAA" FontSize="12"
+                                                           VerticalAlignment="Center" />
+                                                <TextBlock Grid.Column="3" Text="{Binding Summary}"
+                                                           TextWrapping="Wrap" VerticalAlignment="Center" />
+                                                <Button Grid.Column="4" Content="Response"
+                                                        Tag="{Binding}" Click="OnLogResponseClick" />
+                                                <Button Grid.Column="5" Content="PDF"
+                                                        Tag="{Binding}" Click="OnLogPdfClick"
+                                                        IsEnabled="{Binding HasProtocol}" />
+                                            </Grid>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </ScrollViewer>
+                    </Panel>
+
+                    <TextBlock Grid.Row="2" Text="{Binding LogStatus}" Foreground="Gray" FontSize="12"
+                               IsVisible="{Binding LogStatus, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                    <Button Grid.Row="3" Content="Close" Command="{Binding CloseLogCommand}"
+                            HorizontalAlignment="Right" Width="100" />
+                </Grid>
+            </Border>
+        </Border>
+
+        <!-- ── Raw Ergani response ── -->
+        <Border Grid.Row="0" Grid.RowSpan="4"
+                IsVisible="{Binding IsResponseOpen}"
+                Background="#AA000000" ZIndex="60">
+            <Border Background="#1E2128" CornerRadius="12" Padding="20"
+                    Width="800" Height="560"
+                    VerticalAlignment="Center" HorizontalAlignment="Center">
+                <Grid RowDefinitions="Auto,*,Auto" RowSpacing="12">
+                    <TextBlock Grid.Row="0" Text="{Binding ResponseTitle}" FontSize="17" FontWeight="Bold" />
+                    <TextBox Grid.Row="1" Text="{Binding ResponseText}" IsReadOnly="True"
+                             AcceptsReturn="True" TextWrapping="NoWrap" FontFamily="Consolas"
+                             ScrollViewer.VerticalScrollBarVisibility="{x:Static ScrollBarVisibility.Auto}"
+                             ScrollViewer.HorizontalScrollBarVisibility="{x:Static ScrollBarVisibility.Auto}" />
+                    <Button Grid.Row="2" Content="Close" Command="{Binding CloseResponseCommand}"
+                            HorizontalAlignment="Right" Width="100" />
+                </Grid>
+            </Border>
+        </Border>
+
+        <!-- ── Delete confirmation ── -->
+        <Border Grid.Row="0" Grid.RowSpan="4"
+                IsVisible="{Binding IsConfirmDeleteOpen}"
+                Background="#BB000000" ZIndex="70">
+            <Border Background="#1E2128" CornerRadius="12" Padding="24"
+                    Width="440" VerticalAlignment="Center" HorizontalAlignment="Center">
+                <StackPanel Spacing="16">
+                    <TextBlock Text="🗑 Delete schedule" FontSize="16" FontWeight="Bold" />
+                    <TextBlock Text="{Binding ConfirmDeleteMessage}" TextWrapping="Wrap" />
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8">
+                        <Button Content="{Binding Loc[Cancel]}" Command="{Binding CancelDeleteCommand}" />
+                        <Button Content="Delete" Command="{Binding ConfirmDeleteCommand}"
+                                Foreground="#EF9A9A" />
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+        </Border>
 
     </Grid>
 

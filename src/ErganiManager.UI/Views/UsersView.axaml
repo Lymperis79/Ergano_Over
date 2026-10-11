@@ -102,7 +102,7 @@
                     <TextBlock Text="{Binding ResettingUser.Username, StringFormat='Reset password for {0}'}"
                                FontSize="16" FontWeight="SemiBold" />
                     <TextBox Text="{Binding ResetPasswordValue}" PasswordChar="•"
-                             Watermark="New password (min 8 characters)" />
+                             PlaceholderText="New password (min 8 characters)" />
                     <TextBlock Text="{Binding StatusMessage}" Foreground="Red" TextWrapping="Wrap" />
                 </StackPanel>
             </Border>

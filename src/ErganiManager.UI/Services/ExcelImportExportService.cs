@@ -2,6 +2,9 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Globalization;
+using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using ClosedXML.Excel;
 using ErganiManager.Core.Interfaces;
@@ -247,55 +250,275 @@ public class ExcelImportExportService
         return filePath;
     }
 
-    // ── Schedule Import ───────────────────────────────────────────────────────
+    // ── Ergani declared-schedule import ─────────────────────────────────────
 
+    public sealed class ErganiScheduleImportRow
+    {
+        public int RowNumber { get; init; }
+        public string TaxId { get; init; } = string.Empty;
+        public string FirstName { get; init; } = string.Empty;
+        public string LastName { get; init; } = string.Empty;
+        public int BranchNumber { get; init; }
+        public DateOnly Date { get; init; }
+        public string Employment { get; init; } = string.Empty;
+        public AppWorkType WorkType { get; init; }
+        public TimeOnly? StartTime { get; init; }
+        public TimeOnly? EndTime { get; init; }
+        public bool HasOvertime => OvertimeRanges.Count > 0;
+        public bool HasLeave { get; init; }
+        public string? LeaveDescription { get; init; }
+
+        /// <summary>The "Υπερωρία hh:mm-hh:mm" parts of the declaration. They are kept apart from
+        /// <see cref="StartTime"/>/<see cref="EndTime"/> (the "ΕΡΓΑΣΙΑ" part) so work and
+        /// overtime are imported as two separate things, never as one block.</summary>
+        public IReadOnlyList<(TimeOnly Start, TimeOnly End)> OvertimeRanges { get; init; }
+            = Array.Empty<(TimeOnly, TimeOnly)>();
+
+        /// <summary>Ergani leave code resolved from the description (e.g. "Κανονική άδεια" → ΑΔΚΑΝ).</summary>
+        public string? LeaveTypeCode { get; init; }
+        public int? LeaveReferenceYear { get; init; }
+
+        /// <summary>A whole-day leave: a holiday, NOT an absence and NOT a work day.</summary>
+        public bool IsLeaveOnly => HasLeave && !(StartTime.HasValue && EndTime.HasValue);
+    }
+
+    public sealed class ErganiScheduleImportResult
+    {
+        public List<ErganiScheduleImportRow> Rows { get; } = new();
+        public List<string> Warnings { get; } = new();
+        public int TotalRows { get; set; }
+    }
+
+    /// <summary>
+    /// Parses the schedule export downloaded from the Ergani portal.
+    /// Expected columns are identified by their Greek header names rather than
+    /// fixed positions so minor column reordering does not break the import.
+    /// </summary>
+    public static ErganiScheduleImportResult ParseErganiScheduleExport(string filePath)
+    {
+        using var wb = new XLWorkbook(filePath);
+        var ws = wb.Worksheets.First();
+        var result = new ErganiScheduleImportResult();
+
+        var headerMap = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+        var headerRow = ws.FirstRowUsed()?.RowNumber() ?? 1;
+        foreach (var cell in ws.Row(headerRow).CellsUsed())
+        {
+            var h = NormalizeHeader(cell.GetString());
+            if (!string.IsNullOrWhiteSpace(h))
+                headerMap[h] = cell.Address.ColumnNumber;
+        }
+
+        int Col(params string[] names)
+        {
+            foreach (var name in names)
+                if (headerMap.TryGetValue(NormalizeHeader(name), out var c)) return c;
+            return 0;
+        }
+
+        var branchCol = Col("ΑΑ Παραρτήματος", "ΑΑ Παραρτήματος");
+        var afmCol = Col("ΑΦΜ", "AFM", "Tax ID");
+        var firstCol = Col("Όνομα", "Ονομα", "First Name");
+        var lastCol = Col("Επώνυμο", "Επωνυμο", "Last Name");
+        var dateCol = Col("Ημ/νια", "Ημ/νία", "Ημερομηνία", "Date");
+        var employmentCol = Col("Απασχόληση", "Απασχοληση", "Employment");
+
+        if (afmCol == 0 || dateCol == 0 || employmentCol == 0)
+            throw new InvalidDataException(
+                "This does not appear to be an Ergani declared schedule export. " +
+                "Required columns: ΑΦΜ, Ημ/νια and Απασχόληση.");
+
+        var lastRow = ws.LastRowUsed()?.RowNumber() ?? headerRow;
+        for (int r = headerRow + 1; r <= lastRow; r++)
+        {
+            if (ws.Row(r).CellsUsed().All(c => string.IsNullOrWhiteSpace(c.GetString())))
+                continue;
+
+            result.TotalRows++;
+
+            var afm = DigitsOnly(ws.Cell(r, afmCol).GetString());
+            if (afm.Length > 0 && afm.Length < 9) afm = afm.PadLeft(9, '0');
+            var employment = ws.Cell(r, employmentCol).GetString().Trim();
+            if (string.IsNullOrWhiteSpace(afm) || string.IsNullOrWhiteSpace(employment))
+            {
+                result.Warnings.Add($"Excel row {r}: missing AFM or employment description.");
+                continue;
+            }
+
+            if (!TryReadDate(ws.Cell(r, dateCol), out var date))
+            {
+                result.Warnings.Add($"Excel row {r}: invalid date.");
+                continue;
+            }
+
+            // Keyword matching ignores accents and case ("Υπερωρία" = "ΥΠΕΡΩΡΙΑ").
+            var folded = NormalizeHeader(employment);
+
+            var (start, end) = ParseWorkRange(folded);
+            var overtimeRanges = ParseOvertimeRanges(folded);
+            if (overtimeRanges.Count == 0 && Regex.IsMatch(folded, @"ΥΠΕΡΩΡΙΑ", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant))
+                result.Warnings.Add($"Excel row {r}: overtime mentioned but no hh:mm-hh:mm range found ({employment}).");
+
+            var hasLeave = Regex.IsMatch(folded, @"\bΑΔΕΙΑ\b", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+            string? leaveCode = null;
+            int? leaveYear = null;
+            if (hasLeave)
+                (leaveCode, leaveYear) = ResolveLeaveType(folded);
+
+            if (hasLeave && start.HasValue && end.HasValue)
+                result.Warnings.Add($"Excel row {r}: work time and leave on the same day — only the work time is imported ({employment}).");
+
+            // A day without a work range is a rest day. Whole-day leave is handled separately
+            // (IsLeaveOnly): it becomes a holiday record, it is never stored as "Absent".
+            var workType = start.HasValue && end.HasValue
+                ? AppWorkType.Office
+                : AppWorkType.Rest;
+
+            int branchNumber = 0;
+            if (branchCol != 0)
+                int.TryParse(ws.Cell(r, branchCol).GetString().Trim(), out branchNumber);
+
+            result.Rows.Add(new ErganiScheduleImportRow
+            {
+                RowNumber = r,
+                TaxId = afm,
+                FirstName = firstCol == 0 ? string.Empty : ws.Cell(r, firstCol).GetString().Trim(),
+                LastName = lastCol == 0 ? string.Empty : ws.Cell(r, lastCol).GetString().Trim(),
+                BranchNumber = branchNumber,
+                Date = date,
+                Employment = employment,
+                WorkType = workType,
+                StartTime = start,
+                EndTime = end,
+                OvertimeRanges = overtimeRanges,
+                HasLeave = hasLeave,
+                LeaveDescription = hasLeave ? employment : null,
+                LeaveTypeCode = leaveCode,
+                LeaveReferenceYear = leaveYear
+            });
+        }
+
+        return result;
+    }
+
+    private static string NormalizeHeader(string value)
+    {
+        var normalized = value.Trim().Replace("\u00A0", " ").Normalize(NormalizationForm.FormD);
+        return new string(normalized
+            .Where(c => CharUnicodeInfo.GetUnicodeCategory(c) != UnicodeCategory.NonSpacingMark)
+            .ToArray())
+            .Normalize(NormalizationForm.FormC);
+    }
+
+    private static string DigitsOnly(string value) =>
+        new(value.Where(char.IsDigit).ToArray());
+
+    private static bool TryReadDate(IXLCell cell, out DateOnly date)
+    {
+        if (cell.DataType == XLDataType.DateTime)
+        {
+            date = DateOnly.FromDateTime(cell.GetDateTime());
+            return true;
+        }
+
+        var text = cell.GetString().Trim();
+        if (DateOnly.TryParse(text, new CultureInfo("el-GR"), DateTimeStyles.None, out date))
+            return true;
+        if (DateTime.TryParse(text, new CultureInfo("el-GR"), DateTimeStyles.None, out var dt))
+        {
+            date = DateOnly.FromDateTime(dt);
+            return true;
+        }
+        date = default;
+        return false;
+    }
+
+    /// <summary>All "Υπερωρία hh:mm-hh:mm" ranges of a declaration (text already accent-folded).</summary>
+    private static List<(TimeOnly Start, TimeOnly End)> ParseOvertimeRanges(string foldedText)
+    {
+        var list = new List<(TimeOnly, TimeOnly)>();
+        foreach (Match m in Regex.Matches(foldedText,
+                     @"ΥΠΕΡΩΡΙΑΣ?\D*?(?<start>\d{1,2}:\d{2})\s*-\s*(?<end>\d{1,2}:\d{2})",
+                     RegexOptions.IgnoreCase | RegexOptions.CultureInvariant))
+        {
+            if (TimeOnly.TryParse(m.Groups["start"].Value, out var s) &&
+                TimeOnly.TryParse(m.Groups["end"].Value, out var e) && e > s)
+                list.Add((s, e));
+        }
+        return list;
+    }
+
+    /// <summary>Maps the leave text to an Ergani leave code and reads "Έτος 2026" when present.</summary>
+    private static (string Code, int? Year) ResolveLeaveType(string foldedText)
+    {
+        int? year = null;
+        var ym = Regex.Match(foldedText, @"ΕΤΟΣ\s*[:\-]?\s*(?<y>\d{4})", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+        if (ym.Success && int.TryParse(ym.Groups["y"].Value, out var y)) year = y;
+
+        // Longest description first so "Άδεια ... (πιο ειδική)" wins over a shorter prefix.
+        foreach (var type in ErganiManager.Core.Models.LeaveTypes.All
+                     .Where(t => !t.IsHourly)
+                     .OrderByDescending(t => t.Description.Length))
+        {
+            if (foldedText.Contains(NormalizeHeader(type.Description), StringComparison.OrdinalIgnoreCase))
+                return (type.Code, year);
+        }
+
+        return ("ΑΔΑΛ", year); // "Άδεια Άλλη" — an unrecognised leave text
+    }
+
+    private static (TimeOnly? Start, TimeOnly? End) ParseWorkRange(string text)
+    {
+        var m = Regex.Match(text, @"\b(?:ΕΡΓΑΣΙΑ|ΕΡΓΑΣΙΑΣ)\s+(?<start>\d{1,2}:\d{2})\s*-\s*(?<end>\d{1,2}:\d{2})",
+            RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+        if (!m.Success) return (null, null);
+
+        return (
+            TimeOnly.TryParse(m.Groups["start"].Value, out var start) ? start : null,
+            TimeOnly.TryParse(m.Groups["end"].Value, out var end) ? end : null);
+    }
+
+    // Backwards-compatible parser for the application's own simple export format.
     public static List<ScheduleImportRow> ParseScheduleImportFile(string filePath)
     {
         using var wb = new XLWorkbook(filePath);
-        var ws   = wb.Worksheets.First();
+        var ws = wb.Worksheets.First();
         var rows = new List<ScheduleImportRow>();
         int lastRow = ws.LastRowUsed()?.RowNumber() ?? 1;
 
         for (int r = 2; r <= lastRow; r++)
         {
-            var dateCell = ws.Cell(r, 1);
-            if (dateCell.IsEmpty()) continue;
-
-            DateOnly date;
-            if (dateCell.DataType == XLDataType.DateTime)
-                date = DateOnly.FromDateTime(dateCell.GetDateTime());
-            else if (DateOnly.TryParse(dateCell.GetValue<string>(), out var parsed))
-                date = parsed;
-            else
-                continue;
+            if (ws.Cell(r, 1).IsEmpty()) continue;
+            if (!TryReadDate(ws.Cell(r, 1), out var date)) continue;
 
             var workTypeStr = ws.Cell(r, 2).GetValue<string>().Trim().ToLowerInvariant();
             var workType = workTypeStr switch
             {
                 "office" or "work" => (AppWorkType?)AppWorkType.Office,
-                "home"             => AppWorkType.Home,
-                "rest"             => AppWorkType.Rest,
-                "absent"           => AppWorkType.Absent,
-                _                  => null
+                "home" => AppWorkType.Home,
+                "rest" => AppWorkType.Rest,
+                "absent" => AppWorkType.Absent,
+                _ => null
             };
             if (workType == null) continue;
 
             TimeOnly? start = null, end = null;
-            if (TimeOnly.TryParse(ws.Cell(r, 3).GetValue<string>(), out var s)) start = s;
-            if (TimeOnly.TryParse(ws.Cell(r, 4).GetValue<string>(), out var e)) end   = e;
+            if (TimeOnly.TryParse(ws.Cell(r, 3).GetValue<string>(), out var st)) start = st;
+            if (TimeOnly.TryParse(ws.Cell(r, 4).GetValue<string>(), out var et)) end = et;
 
             var comments = ws.Cell(r, 5).GetValue<string>().Trim();
             rows.Add(new ScheduleImportRow
             {
-                Date      = date,
-                WorkType  = workType.Value,
+                Date = date,
+                WorkType = workType.Value,
                 StartTime = start,
-                EndTime   = end,
-                Comments  = string.IsNullOrEmpty(comments) ? null : comments
+                EndTime = end,
+                Comments = string.IsNullOrEmpty(comments) ? null : comments
             });
         }
         return rows;
     }
+
     public static string ExportEmployees(
         IReadOnlyList<ErganiManager.Core.Interfaces.EmployeeDto> employees,
         IReadOnlyDictionary<int, string> branchNames,

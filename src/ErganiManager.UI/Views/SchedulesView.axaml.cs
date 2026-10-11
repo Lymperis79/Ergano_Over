@@ -1,6 +1,7 @@
 using System.Linq;
 using Avalonia.Controls;
 using Avalonia.Input;
+using Avalonia.Interactivity;
 using Avalonia.Platform.Storage;
 using ErganiManager.UI.ViewModels;
 
@@ -29,6 +30,18 @@ public partial class SchedulesView : UserControl
         }
     }
 
+    private void OnLogResponseClick(object? sender, RoutedEventArgs e)
+    {
+        if (sender is Button { Tag: ScheduleLogRow row } && DataContext is SchedulesViewModel vm)
+            vm.ShowResponseCommand.Execute(row);
+    }
+
+    private void OnLogPdfClick(object? sender, RoutedEventArgs e)
+    {
+        if (sender is Button { Tag: ScheduleLogRow row } && DataContext is SchedulesViewModel vm)
+            _ = vm.DownloadPdfCommand.ExecuteAsync(row);
+    }
+
     private async void OnImportRequested(object? sender, System.EventArgs e)
     {
         if (DataContext is not SchedulesViewModel vm) return;
@@ -52,6 +65,6 @@ public partial class SchedulesView : UserControl
 
         var path = file.TryGetLocalPath();
         if (path != null)
-            await vm.ImportFromFileAsync(path);
+            await vm.PrepareErganiImportFromFileAsync(path);
     }
 }

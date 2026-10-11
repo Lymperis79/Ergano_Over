@@ -1741,6 +1741,22 @@
           }
         }
       },
+      "Selenium.WebDriver/4.27.0": {
+        "type": "package",
+        "compile": {
+          "lib/net8.0/WebDriver.dll": {
+            "related": ".xml"
+          }
+        },
+        "runtime": {
+          "lib/net8.0/WebDriver.dll": {
+            "related": ".xml"
+          }
+        },
+        "build": {
+          "buildTransitive/Selenium.WebDriver.targets": {}
+        }
+      },
       "Serilog/4.4.0": {
         "type": "package",
         "compile": {
@@ -2288,7 +2304,8 @@
           "ErganiManager.Data": "1.0.0",
           "MailKit": "4.18.0",
           "Microsoft.Extensions.Http": "10.0.10",
-          "Microsoft.Extensions.Logging.Abstractions": "10.0.10"
+          "Microsoft.Extensions.Logging.Abstractions": "10.0.10",
+          "Selenium.WebDriver": "4.27.0"
         },
         "compile": {
           "bin/placeholder/ErganiManager.ErganiApi.dll": {}
@@ -4652,6 +4669,28 @@
         "readme.md"
       ]
     },
+    "Selenium.WebDriver/4.27.0": {
+      "sha512": "bMIpqwpBfYLa1lh8gPVa6A1i9LeWNsfc2mR9why0DutEKI7ck3GVxzco1bB/8bv+7IA6rk4sR9WpZLRUnH/AAw==",
+      "type": "package",
+      "path": "selenium.webdriver/4.27.0",
+      "files": [
+        ".nupkg.metadata",
+        ".signature.p7s",
+        "README.md",
+        "build/Selenium.WebDriver.targets",
+        "buildTransitive/Selenium.WebDriver.targets",
+        "icon.png",
+        "lib/net8.0/WebDriver.dll",
+        "lib/net8.0/WebDriver.xml",
+        "lib/netstandard2.0/WebDriver.dll",
+        "lib/netstandard2.0/WebDriver.xml",
+        "manager/linux/selenium-manager",
+        "manager/macos/selenium-manager",
+        "manager/windows/selenium-manager.exe",
+        "selenium.webdriver.4.27.0.nupkg.sha512",
+        "selenium.webdriver.nuspec"
+      ]
+    },
     "Serilog/4.4.0": {
       "sha512": "ZC6Le3rr4TVJJjS4KsQAesxeF1EhW9qcZmmG7eP5Y2G3+gTGkJEUXkq4+tZNPtyp05I0wWOxnIjwtxFweJsObw==",
       "type": "package",
@@ -5375,11 +5414,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Users\\ThinkPad\\Desktop\\ErganiManager\\src\\ErganiManager.UI\\ErganiManager.UI.csproj",
+      "projectUniqueName": "C:\\Users\\ThinkPad\\Desktop\\ErganiII\\src\\ErganiManager.UI\\ErganiManager.UI.csproj",
       "projectName": "ErganiManager.UI",
-      "projectPath": "C:\\Users\\ThinkPad\\Desktop\\ErganiManager\\src\\ErganiManager.UI\\ErganiManager.UI.csproj",
+      "projectPath": "C:\\Users\\ThinkPad\\Desktop\\ErganiII\\src\\ErganiManager.UI\\ErganiManager.UI.csproj",
       "packagesPath": "C:\\Users\\ThinkPad\\.nuget\\packages\\",
-      "outputPath": "C:\\Users\\ThinkPad\\Desktop\\ErganiManager\\src\\ErganiManager.UI\\obj\\",
+      "outputPath": "C:\\Users\\ThinkPad\\Desktop\\ErganiII\\src\\ErganiManager.UI\\obj\\",
       "projectStyle": "PackageReference",
       "centralPackageVersionsManagementEnabled": true,
       "fallbackFolders": [
@@ -5403,17 +5442,17 @@
           "framework": "net10.0",
           "targetAlias": "net10.0",
           "projectReferences": {
-            "C:\\Users\\ThinkPad\\Desktop\\ErganiManager\\src\\ErganiManager.Core\\ErganiManager.Core.csproj": {
-              "projectPath": "C:\\Users\\ThinkPad\\Desktop\\ErganiManager\\src\\ErganiManager.Core\\ErganiManager.Core.csproj"
+            "C:\\Users\\ThinkPad\\Desktop\\ErganiII\\src\\ErganiManager.Core\\ErganiManager.Core.csproj": {
+              "projectPath": "C:\\Users\\ThinkPad\\Desktop\\ErganiII\\src\\ErganiManager.Core\\ErganiManager.Core.csproj"
             },
-            "C:\\Users\\ThinkPad\\Desktop\\ErganiManager\\src\\ErganiManager.Data\\ErganiManager.Data.csproj": {
-              "projectPath": "C:\\Users\\ThinkPad\\Desktop\\ErganiManager\\src\\ErganiManager.Data\\ErganiManager.Data.csproj"
+            "C:\\Users\\ThinkPad\\Desktop\\ErganiII\\src\\ErganiManager.Data\\ErganiManager.Data.csproj": {
+              "projectPath": "C:\\Users\\ThinkPad\\Desktop\\ErganiII\\src\\ErganiManager.Data\\ErganiManager.Data.csproj"
             },
-            "C:\\Users\\ThinkPad\\Desktop\\ErganiManager\\src\\ErganiManager.ErganiApi\\ErganiManager.ErganiApi.csproj": {
-              "projectPath": "C:\\Users\\ThinkPad\\Desktop\\ErganiManager\\src\\ErganiManager.ErganiApi\\ErganiManager.ErganiApi.csproj"
+            "C:\\Users\\ThinkPad\\Desktop\\ErganiII\\src\\ErganiManager.ErganiApi\\ErganiManager.ErganiApi.csproj": {
+              "projectPath": "C:\\Users\\ThinkPad\\Desktop\\ErganiII\\src\\ErganiManager.ErganiApi\\ErganiManager.ErganiApi.csproj"
             },
-            "C:\\Users\\ThinkPad\\Desktop\\ErganiManager\\src\\ErganiManager.LocalCache\\ErganiManager.LocalCache.csproj": {
-              "projectPath": "C:\\Users\\ThinkPad\\Desktop\\ErganiManager\\src\\ErganiManager.LocalCache\\ErganiManager.LocalCache.csproj"
+            "C:\\Users\\ThinkPad\\Desktop\\ErganiII\\src\\ErganiManager.LocalCache\\ErganiManager.LocalCache.csproj": {
+              "projectPath": "C:\\Users\\ThinkPad\\Desktop\\ErganiII\\src\\ErganiManager.LocalCache\\ErganiManager.LocalCache.csproj"
             }
           }
         }
@@ -5511,6 +5550,7 @@
           "Microsoft.Extensions.Logging": "10.0.10",
           "Microsoft.Extensions.Logging.Abstractions": "10.0.10",
           "Microting.EntityFrameworkCore.MySql": "10.0.8",
+          "Selenium.WebDriver": "4.27.0",
           "Serilog": "4.4.0",
           "Serilog.Extensions.Logging": "10.0.0",
           "Serilog.Sinks.File": "7.0.0"

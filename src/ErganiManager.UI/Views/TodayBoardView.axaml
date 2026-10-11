@@ -1,0 +1,119 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:ErganiManager.UI.ViewModels"
+             xmlns:core="using:ErganiManager.Core.Interfaces"
+             x:Class="ErganiManager.UI.Views.TodayBoardView"
+             x:DataType="vm:TodayBoardViewModel">
+
+    <UserControl.Styles>
+        <Style Selector="Border.row">
+            <Setter Property="Background" Value="#242832" />
+        </Style>
+        <Style Selector="Border.row.err">
+            <Setter Property="Background" Value="#4A2226" />
+        </Style>
+        <Style Selector="Border.row.warn">
+            <Setter Property="Background" Value="#4A3B1F" />
+        </Style>
+        <Style Selector="Border.chip">
+            <Setter Property="Background" Value="#2B303B" />
+            <Setter Property="CornerRadius" Value="6" />
+            <Setter Property="Padding" Value="10,4" />
+        </Style>
+    </UserControl.Styles>
+
+    <Grid RowDefinitions="Auto,Auto,Auto,*,Auto" RowSpacing="10">
+
+        <!-- No company -->
+        <Border Grid.Row="0" IsVisible="{Binding !HasActiveCompany}"
+                Background="#332D9CDB" CornerRadius="6" Padding="14">
+            <TextBlock Text="Select a company first." TextWrapping="Wrap" />
+        </Border>
+
+        <!-- Toolbar -->
+        <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="10"
+                    IsVisible="{Binding HasActiveCompany}">
+            <TextBlock Text="📊 Daily status" FontSize="18" FontWeight="Bold"
+                       VerticalAlignment="Center" />
+            <DatePicker SelectedDate="{Binding SelectedDate, Mode=TwoWay}" />
+            <Button Content="Today" Command="{Binding GoTodayCommand}" />
+            <Button Content="🔄 Refresh" Command="{Binding RefreshCommand}" />
+            <TextBlock Text="Late after (min):" VerticalAlignment="Center" Margin="8,0,0,0" />
+            <ComboBox ItemsSource="{Binding GraceOptions}" SelectedItem="{Binding GraceMinutes}" />
+            <CheckBox Content="Only problems" IsChecked="{Binding OnlyProblems}" />
+            <CheckBox Content="Auto refresh (30s)" IsChecked="{Binding AutoRefresh}" />
+            <TextBlock Text="{Binding LastUpdatedText}" Foreground="#9E9E9E"
+                       VerticalAlignment="Center" />
+            <TextBlock Text="{Binding StatusMessage}" Foreground="#FF8A80"
+                       VerticalAlignment="Center" />
+        </StackPanel>
+
+        <!-- Summary -->
+        <WrapPanel Grid.Row="2" IsVisible="{Binding HasActiveCompany}">
+            <Border Classes="chip" Margin="0,0,8,0"><TextBlock>
+                <Run Text="👥 Expected: " /><Run Text="{Binding TotalCount}" FontWeight="Bold" /></TextBlock></Border>
+            <Border Classes="chip" Margin="0,0,8,0"><TextBlock>
+                <Run Text="🟢 Working: " /><Run Text="{Binding WorkingCount}" FontWeight="Bold" /></TextBlock></Border>
+            <Border Classes="chip" Margin="0,0,8,0"><TextBlock>
+                <Run Text="🔴 Left: " /><Run Text="{Binding LeftCount}" FontWeight="Bold" /></TextBlock></Border>
+            <Border Classes="chip" Margin="0,0,8,0"><TextBlock>
+                <Run Text="⚪ Not arrived: " /><Run Text="{Binding NotArrivedCount}" FontWeight="Bold" /></TextBlock></Border>
+            <Border Classes="chip" Margin="0,0,8,0"><TextBlock Foreground="#FF8A80">
+                <Run Text="❌ Errors: " /><Run Text="{Binding ErrorCount}" FontWeight="Bold" /></TextBlock></Border>
+            <Border Classes="chip" Margin="0,0,8,0"><TextBlock Foreground="#FFB74D">
+                <Run Text="⚠ Warnings: " /><Run Text="{Binding WarningCount}" FontWeight="Bold" /></TextBlock></Border>
+        </WrapPanel>
+
+        <!-- List -->
+        <Grid Grid.Row="3" RowDefinitions="Auto,*" IsVisible="{Binding HasActiveCompany}">
+            <Grid Grid.Row="0" ColumnDefinitions="220,150,170,170,170,*" Margin="10,0,10,4">
+                <TextBlock Grid.Column="0" Text="Employee" FontWeight="SemiBold" />
+                <TextBlock Grid.Column="1" Text="Planned" FontWeight="SemiBold" />
+                <TextBlock Grid.Column="2" Text="Clock-in / Ergani" FontWeight="SemiBold" />
+                <TextBlock Grid.Column="3" Text="Clock-out / Ergani" FontWeight="SemiBold" />
+                <TextBlock Grid.Column="4" Text="Now" FontWeight="SemiBold" />
+                <TextBlock Grid.Column="5" Text="Problems" FontWeight="SemiBold" />
+            </Grid>
+
+            <ListBox Grid.Row="1" ItemsSource="{Binding Rows}"
+                     SelectedItem="{Binding SelectedRow}">
+                <ListBox.ItemTemplate>
+                    <DataTemplate x:DataType="core:TodayEmployeeStatusDto">
+                        <Border Classes="row" Classes.err="{Binding IsError}" Classes.warn="{Binding IsWarning}"
+                                CornerRadius="6" Padding="10,8"
+                                ToolTip.Tip="{Binding DetailsText}">
+                            <Grid ColumnDefinitions="220,150,170,170,170,*">
+                                <StackPanel Grid.Column="0">
+                                    <TextBlock Text="{Binding FullName}" FontWeight="SemiBold" />
+                                    <TextBlock Text="{Binding BranchName}" FontSize="11" Foreground="#9E9E9E" />
+                                </StackPanel>
+                                <TextBlock Grid.Column="1" Text="{Binding ScheduleText}" VerticalAlignment="Center" />
+                                <StackPanel Grid.Column="2" VerticalAlignment="Center">
+                                    <TextBlock Text="{Binding ArrivalText}" FontWeight="SemiBold" />
+                                    <TextBlock Text="{Binding ArrivalErgani}" FontSize="11" TextWrapping="Wrap" />
+                                </StackPanel>
+                                <StackPanel Grid.Column="3" VerticalAlignment="Center">
+                                    <TextBlock Text="{Binding DepartureText}" FontWeight="SemiBold" />
+                                    <TextBlock Text="{Binding DepartureErgani}" FontSize="11" TextWrapping="Wrap" />
+                                </StackPanel>
+                                <TextBlock Grid.Column="4" Text="{Binding PresenceText}"
+                                           VerticalAlignment="Center" TextWrapping="Wrap" />
+                                <TextBlock Grid.Column="5" Text="{Binding IssuesText}"
+                                           VerticalAlignment="Center" TextWrapping="Wrap" />
+                            </Grid>
+                        </Border>
+                    </DataTemplate>
+                </ListBox.ItemTemplate>
+            </ListBox>
+        </Grid>
+
+        <!-- Details of the selected employee -->
+        <Border Grid.Row="4" Background="#1E2128" CornerRadius="6" Padding="12"
+                IsVisible="{Binding SelectedRow, Converter={x:Static ObjectConverters.IsNotNull}}">
+            <StackPanel Spacing="4">
+                <TextBlock Text="{Binding SelectedRow.FullName}" FontWeight="Bold" />
+                <TextBlock Text="{Binding SelectedRow.DetailsText}" TextWrapping="Wrap" FontFamily="Consolas, Menlo, monospace" />
+            </StackPanel>
+        </Border>
+    </Grid>
+</UserControl>

@@ -30,10 +30,10 @@ C:\Users\ThinkPad\.nuget\packages\closedxml.parser\2.0.0\lib\netstandard2.1\Clos
 C:\Users\ThinkPad\.nuget\packages\communitytoolkit.mvvm\8.4.2\lib\net8.0\CommunityToolkit.Mvvm.dll
 C:\Users\ThinkPad\.nuget\packages\documentformat.openxml\3.1.1\lib\net8.0\DocumentFormat.OpenXml.dll
 C:\Users\ThinkPad\.nuget\packages\documentformat.openxml.framework\3.1.1\lib\net8.0\DocumentFormat.OpenXml.Framework.dll
-C:\Users\ThinkPad\Desktop\ErganiManager\src\ErganiManager.Core\obj\Debug\net10.0\ref\ErganiManager.Core.dll
-C:\Users\ThinkPad\Desktop\ErganiManager\src\ErganiManager.Data\obj\Debug\net10.0\ref\ErganiManager.Data.dll
-C:\Users\ThinkPad\Desktop\ErganiManager\src\ErganiManager.ErganiApi\obj\Debug\net10.0\ref\ErganiManager.ErganiApi.dll
-C:\Users\ThinkPad\Desktop\ErganiManager\src\ErganiManager.LocalCache\obj\Debug\net10.0\ref\ErganiManager.LocalCache.dll
+C:\Users\ThinkPad\Desktop\ErganiII\src\ErganiManager.Core\obj\Debug\net10.0\ref\ErganiManager.Core.dll
+C:\Users\ThinkPad\Desktop\ErganiII\src\ErganiManager.Data\obj\Debug\net10.0\ref\ErganiManager.Data.dll
+C:\Users\ThinkPad\Desktop\ErganiII\src\ErganiManager.ErganiApi\obj\Debug\net10.0\ref\ErganiManager.ErganiApi.dll
+C:\Users\ThinkPad\Desktop\ErganiII\src\ErganiManager.LocalCache\obj\Debug\net10.0\ref\ErganiManager.LocalCache.dll
 C:\Users\ThinkPad\.nuget\packages\excelnumberformat\1.1.0\lib\netstandard2.0\ExcelNumberFormat.dll
 C:\Users\ThinkPad\.nuget\packages\harfbuzzsharp\8.3.1.3\lib\net8.0\HarfBuzzSharp.dll
 C:\Users\ThinkPad\.nuget\packages\mailkit\4.18.0\lib\net10.0\MailKit.dll
@@ -273,4 +273,5 @@ C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.11\ref\net10.0\Syst
 C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.11\ref\net10.0\System.Xml.XPath.dll
 C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.11\ref\net10.0\System.Xml.XPath.XDocument.dll
 C:\Users\ThinkPad\.nuget\packages\tmds.dbus.protocol\0.94.1\lib\net9.0\Tmds.DBus.Protocol.dll
+C:\Users\ThinkPad\.nuget\packages\selenium.webdriver\4.27.0\lib\net8.0\WebDriver.dll
 C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.11\ref\net10.0\WindowsBase.dll

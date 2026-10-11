@@ -2,6 +2,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:vm="using:ErganiManager.UI.ViewModels"
         x:Class="ErganiManager.UI.Views.EmployeeImportView"
+        Icon="avares://ErganiManager.UI/Assets/icon.png"
         x:DataType="vm:EmployeeImportViewModel"
         Title="Import Employees from Excel"
         Width="780" Height="620"
@@ -30,7 +31,7 @@
                     <TextBlock Text="Step 2 — Select your completed file" FontWeight="SemiBold" />
                     <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
                         <TextBox Grid.Column="0" Text="{Binding SelectedFilePath}"
-                                 Watermark="Click Browse to select a file..." IsReadOnly="True" />
+                                 PlaceholderText="Click Browse to select a file..." IsReadOnly="True" />
                         <Button Grid.Column="1" Content="Browse…" Click="OnBrowseClick" />
                     </Grid>
                 </StackPanel>

@@ -11,315 +11,881 @@ using ErganiManager.ErganiApi.Services;
 
 namespace ErganiManager.UI.ViewModels;
 
-public partial class CompaniesViewModel : ViewModelBase, IAdminSectionViewModel
+public partial class CompaniesViewModel :
+ViewModelBase,
+IAdminSectionViewModel
 {
     private readonly ICompanyService _companyService;
-    private readonly IErganiDataImportService _erganiImport;
-    private readonly ICredentialProtector _credentialProtector;
+
+
+private readonly IErganiDataImportService _erganiImport;
+
     private UserSession? _session;
 
     public event EventHandler? CompaniesChanged;
-    public ObservableCollection<CompanyDto> Companies { get; } = new();
 
-    [ObservableProperty] private CompanyDto? _selectedCompany;
-    [ObservableProperty] private bool _isEditing;
-    [ObservableProperty] private string _statusMessage = string.Empty;
+    public ObservableCollection<CompanyDto> Companies { get; }
+        = new();
 
-    // Ergani credential test result
-    [ObservableProperty] private string _erganiTestResult = string.Empty;
-    [ObservableProperty] private bool _erganiTestSuccess;
-    [ObservableProperty] private bool _isTesting;
-    [ObservableProperty] private bool _isImporting;
+    /*
+     * Ergani user types (stored as the code, shown as a localized description):
+     *
+     * 01 = External
+     * 02 = Login with ERGANI credentials
+     * 03 = Login with EFKA credentials (construction works)
+     */
+    public ObservableCollection<LocalizedCodeOption> AvailableUsertypes { get; }
+        = new();
 
-    // Form fields
-    [ObservableProperty] private int _formId;
-    [ObservableProperty] private string _formName = string.Empty;
-    [ObservableProperty] private string _formTaxId = string.Empty;
-    [ObservableProperty] private string _formErganiUsername = string.Empty;
-    [ObservableProperty] private string _formErganiPassword = string.Empty;
-    [ObservableProperty] private string _formErganiBaseUrl = ErganiEndpoints.TrialBaseUrl;
-    [ObservableProperty] private bool _formIsActive = true;
-    [ObservableProperty] private int _formEarlyClockInBlockMinutes = 15;
-    [ObservableProperty] private int _formEarlyDepartureAlertMinutes = 10;
-    [ObservableProperty] private bool _formBlockClockInWithoutSchedule = true;
-    [ObservableProperty] private bool _formAlertEmailEnabled;
-    [ObservableProperty] private string _formAlertEmailRecipients = string.Empty;
-    [ObservableProperty] private bool _formAutoRetryFailedSubmissions = true;
-    [ObservableProperty] private string _formSmtpHost = string.Empty;
-    [ObservableProperty] private int? _formSmtpPort = 587;
-    [ObservableProperty] private string _formSmtpUser = string.Empty;
-    [ObservableProperty] private string _formSmtpPassword = string.Empty;
-    [ObservableProperty] private bool _formSmtpUseTls = true;
-
-    public CompaniesViewModel(ICompanyService companyService,
-        IErganiDataImportService erganiImport,
-        ICredentialProtector credentialProtector)
+    private void InitUsertypes()
     {
-        _companyService      = companyService;
-        _erganiImport        = erganiImport;
-        _credentialProtector = credentialProtector;
+        AvailableUsertypes.Add(new LocalizedCodeOption("01", L.UsertypeExternal, Loc));
+        AvailableUsertypes.Add(new LocalizedCodeOption("02", L.UsertypeErgani, Loc));
+        AvailableUsertypes.Add(new LocalizedCodeOption("03", L.UsertypeEfka, Loc));
+
+        // Re-render the descriptions when the language changes
+        Loc.LanguageChanged += (_, _) =>
+        {
+            foreach (var o in AvailableUsertypes) o.Refresh();
+        };
     }
 
-    public void Initialize(UserSession session)
+    [ObservableProperty]
+    private CompanyDto? _selectedCompany;
+
+    [ObservableProperty]
+    private bool _isEditing;
+
+    [ObservableProperty]
+    private string _statusMessage =
+        string.Empty;
+
+    // ---------------------------------------------------------------------
+    // Ergani status
+    // ---------------------------------------------------------------------
+
+    [ObservableProperty]
+    private string _erganiTestResult =
+        string.Empty;
+
+    [ObservableProperty]
+    private bool _erganiTestSuccess;
+
+    [ObservableProperty]
+    private bool _isTesting;
+
+    [ObservableProperty]
+    private bool _isImporting;
+
+    // ---------------------------------------------------------------------
+    // Company form
+    // ---------------------------------------------------------------------
+
+    [ObservableProperty]
+    private int _formId;
+
+    [ObservableProperty]
+    private string _formName =
+        string.Empty;
+
+    [ObservableProperty]
+    private string _formTaxId =
+        string.Empty;
+
+    [ObservableProperty]
+    private string _formErganiUsername =
+        string.Empty;
+
+    [ObservableProperty]
+    private string _formErganiPassword =
+        string.Empty;
+
+    [ObservableProperty]
+    private string _formErganiUsertype =
+        "01";
+
+    [ObservableProperty]
+    private string _formErganiBaseUrl =
+        ErganiEndpoints.TrialBaseUrl;
+
+    [ObservableProperty]
+    private bool _formIsActive =
+        true;
+
+    // ---------------------------------------------------------------------
+    // Time rules
+    // ---------------------------------------------------------------------
+
+    [ObservableProperty]
+    private int _formEarlyClockInBlockMinutes =
+        15;
+
+    [ObservableProperty]
+    private int _formEarlyDepartureAlertMinutes =
+        10;
+
+    [ObservableProperty]
+    private bool _formBlockClockInWithoutSchedule =
+        true;
+
+    // ---------------------------------------------------------------------
+    // Email / SMTP
+    // ---------------------------------------------------------------------
+
+    [ObservableProperty]
+    private bool _formAlertEmailEnabled;
+
+    [ObservableProperty]
+    private string _formAlertEmailRecipients =
+        string.Empty;
+
+    [ObservableProperty]
+    private bool _formAutoRetryFailedSubmissions =
+        true;
+
+    [ObservableProperty]
+    private string _formSmtpHost =
+        string.Empty;
+
+    [ObservableProperty]
+    private int? _formSmtpPort =
+        587;
+
+    [ObservableProperty]
+    private string _formSmtpUser =
+        string.Empty;
+
+    [ObservableProperty]
+    private string _formSmtpPassword =
+        string.Empty;
+
+    [ObservableProperty]
+    private bool _formSmtpUseTls =
+        true;
+
+    // ---------------------------------------------------------------------
+    // Constructor
+    // ---------------------------------------------------------------------
+
+    public CompaniesViewModel(
+        ICompanyService companyService,
+        IErganiDataImportService erganiImport)
     {
-        _session = session;
+        _companyService =
+            companyService;
+
+        _erganiImport =
+            erganiImport;
+
+        InitUsertypes();
+    }
+
+    // ---------------------------------------------------------------------
+    // Initialize
+    // ---------------------------------------------------------------------
+
+    public void Initialize(
+        UserSession session)
+    {
+        _session =
+            session;
+
         _ = LoadAsync();
     }
+
+    // ---------------------------------------------------------------------
+    // Load
+    // ---------------------------------------------------------------------
 
     [RelayCommand]
     private async Task LoadAsync()
     {
-        var list = await _companyService.GetAllAsync().ConfigureAwait(false);
-        // Must update ObservableCollection on UI thread
-        await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() =>
+        try
         {
-            Companies.Clear();
-            foreach (var c in list)
-                Companies.Add(c);
-        });
-        CompaniesChanged?.Invoke(this, EventArgs.Empty);
+            var list =
+                await _companyService
+                    .GetAllAsync()
+                    .ConfigureAwait(false);
+
+            await Avalonia.Threading.Dispatcher.UIThread
+                .InvokeAsync(() =>
+                {
+                    Companies.Clear();
+
+                    foreach (var company in list)
+                    {
+                        Companies.Add(company);
+                    }
+                });
+
+            CompaniesChanged?.Invoke(
+                this,
+                EventArgs.Empty);
+        }
+        catch (Exception ex)
+        {
+            await Avalonia.Threading.Dispatcher.UIThread
+                .InvokeAsync(() =>
+                {
+                    StatusMessage =
+                        $"❌ Failed to load companies: {ex.Message}";
+                });
+        }
     }
+
+    // ---------------------------------------------------------------------
+    // Create
+    // ---------------------------------------------------------------------
 
     [RelayCommand]
     private void StartCreate()
     {
         SelectedCompany = null;
+
         FormId = 0;
-        FormName = string.Empty;
-        FormTaxId = string.Empty;
-        FormErganiUsername = string.Empty;
-        FormErganiPassword = string.Empty;
-        FormErganiBaseUrl = ErganiEndpoints.TrialBaseUrl;
-        FormIsActive = true;
-        FormEarlyClockInBlockMinutes = 15;
-        FormEarlyDepartureAlertMinutes = 10;
-        FormBlockClockInWithoutSchedule = true;
-        FormAlertEmailEnabled = false;
-        FormAutoRetryFailedSubmissions = true;
-        FormAlertEmailRecipients = string.Empty;
-        FormSmtpHost = string.Empty;
-        FormSmtpPort = 587;
-        FormSmtpUser = string.Empty;
-        FormSmtpPassword = string.Empty;
-        FormSmtpUseTls = true;
-        StatusMessage = string.Empty;
-        IsEditing = true;
+
+        FormName =
+            string.Empty;
+
+        FormTaxId =
+            string.Empty;
+
+        FormErganiUsername =
+            string.Empty;
+
+        FormErganiPassword =
+            string.Empty;
+
+        FormErganiUsertype =
+            "01";
+
+        FormErganiBaseUrl =
+            ErganiEndpoints.TrialBaseUrl;
+
+        FormIsActive =
+            true;
+
+        FormEarlyClockInBlockMinutes =
+            15;
+
+        FormEarlyDepartureAlertMinutes =
+            10;
+
+        FormBlockClockInWithoutSchedule =
+            true;
+
+        FormAlertEmailEnabled =
+            false;
+
+        FormAutoRetryFailedSubmissions =
+            true;
+
+        FormAlertEmailRecipients =
+            string.Empty;
+
+        FormSmtpHost =
+            string.Empty;
+
+        FormSmtpPort =
+            587;
+
+        FormSmtpUser =
+            string.Empty;
+
+        FormSmtpPassword =
+            string.Empty;
+
+        FormSmtpUseTls =
+            true;
+
+        ErganiTestResult =
+            string.Empty;
+
+        ErganiTestSuccess =
+            false;
+
+        StatusMessage =
+            string.Empty;
+
+        IsEditing =
+            true;
     }
 
+    // ---------------------------------------------------------------------
+    // Edit
+    // ---------------------------------------------------------------------
+
     [RelayCommand]
-    private void StartEdit(CompanyDto company)
+    private void StartEdit(
+        CompanyDto company)
     {
-        SelectedCompany = company;
-        FormId = company.Id;
-        FormName = company.Name;
-        FormTaxId = company.TaxId;
-        FormErganiUsername = company.ErganiUsername;
-        FormErganiPassword = string.Empty; // never pre-filled — blank means "leave unchanged"
-        FormErganiBaseUrl = company.ErganiBaseUrl;
-        FormIsActive = company.IsActive;
-        FormEarlyClockInBlockMinutes = company.EarlyClockInBlockMinutes;
-        FormEarlyDepartureAlertMinutes = company.EarlyDepartureAlertMinutes;
-        FormBlockClockInWithoutSchedule = company.BlockClockInWithoutSchedule;
-        FormAlertEmailEnabled = company.AlertEmailEnabled;
-        FormAutoRetryFailedSubmissions = company.AutoRetryFailedSubmissions;
-        FormAlertEmailRecipients = company.AlertEmailRecipients ?? string.Empty;
-        FormSmtpHost = company.SmtpHost ?? string.Empty;
-        FormSmtpPort = company.SmtpPort ?? 587;
-        FormSmtpUser = company.SmtpUser ?? string.Empty;
-        FormSmtpPassword = string.Empty;
-        FormSmtpUseTls = company.SmtpUseTls;
-        StatusMessage = string.Empty;
-        IsEditing = true;
+        SelectedCompany =
+            company;
+
+        FormId =
+            company.Id;
+
+        FormName =
+            company.Name;
+
+        FormTaxId =
+            company.TaxId;
+
+        FormErganiUsername =
+            company.ErganiUsername;
+
+        /*
+         * Passwords are never returned by CompanyService.
+         *
+         * The user enters the password again when performing an Ergani
+         * import/test.
+         */
+        FormErganiPassword =
+            string.Empty;
+
+        FormErganiUsertype =
+            string.IsNullOrWhiteSpace(
+                company.ErganiUsertype)
+                ? "01"
+                : company.ErganiUsertype;
+
+        FormErganiBaseUrl =
+            string.IsNullOrWhiteSpace(
+                company.ErganiBaseUrl)
+                ? ErganiEndpoints.TrialBaseUrl
+                : company.ErganiBaseUrl;
+
+        FormIsActive =
+            company.IsActive;
+
+        FormEarlyClockInBlockMinutes =
+            company.EarlyClockInBlockMinutes;
+
+        FormEarlyDepartureAlertMinutes =
+            company.EarlyDepartureAlertMinutes;
+
+        FormBlockClockInWithoutSchedule =
+            company.BlockClockInWithoutSchedule;
+
+        FormAlertEmailEnabled =
+            company.AlertEmailEnabled;
+
+        FormAutoRetryFailedSubmissions =
+            company.AutoRetryFailedSubmissions;
+
+        FormAlertEmailRecipients =
+            company.AlertEmailRecipients
+            ?? string.Empty;
+
+        FormSmtpHost =
+            company.SmtpHost
+            ?? string.Empty;
+
+        FormSmtpPort =
+            company.SmtpPort
+            ?? 587;
+
+        FormSmtpUser =
+            company.SmtpUser
+            ?? string.Empty;
+
+        FormSmtpPassword =
+            string.Empty;
+
+        FormSmtpUseTls =
+            company.SmtpUseTls;
+
+        ErganiTestResult =
+            string.Empty;
+
+        ErganiTestSuccess =
+            false;
+
+        StatusMessage =
+            string.Empty;
+
+        IsEditing =
+            true;
     }
+
+    // ---------------------------------------------------------------------
+    // Cancel
+    // ---------------------------------------------------------------------
 
     [RelayCommand]
     private void CancelEdit()
     {
-        IsEditing = false;
-        StatusMessage = string.Empty;
+        IsEditing =
+            false;
+
+        StatusMessage =
+            string.Empty;
     }
+
+    // ---------------------------------------------------------------------
+    // Manual Save
+    // ---------------------------------------------------------------------
 
     [RelayCommand]
     private async Task SaveAsync()
     {
-        if (string.IsNullOrWhiteSpace(FormName) || string.IsNullOrWhiteSpace(FormTaxId))
+        if (string.IsNullOrWhiteSpace(
+                FormName))
         {
-            StatusMessage = "Name and Tax ID are required.";
+            StatusMessage =
+                "Name is required.";
+
             return;
         }
 
-        var dto = new CompanyDto
+        if (string.IsNullOrWhiteSpace(
+                FormTaxId))
         {
-            Id = FormId,
-            Name = FormName,
-            TaxId = FormTaxId,
-            ErganiUsername = FormErganiUsername,
-            ErganiPasswordPlainText = string.IsNullOrWhiteSpace(FormErganiPassword) ? null : FormErganiPassword,
-            ErganiBaseUrl = FormErganiBaseUrl,
-            IsActive = FormIsActive,
-            EarlyClockInBlockMinutes = FormEarlyClockInBlockMinutes,
-            EarlyDepartureAlertMinutes = FormEarlyDepartureAlertMinutes,
-            BlockClockInWithoutSchedule = FormBlockClockInWithoutSchedule,
-            AlertEmailEnabled = FormAlertEmailEnabled,
-            AutoRetryFailedSubmissions = FormAutoRetryFailedSubmissions,
-            AlertEmailRecipients = FormAlertEmailRecipients,
-            SmtpHost = FormSmtpHost,
-            SmtpPort = FormSmtpPort,
-            SmtpUser = FormSmtpUser,
-            SmtpPasswordPlainText = string.IsNullOrWhiteSpace(FormSmtpPassword) ? null : FormSmtpPassword,
-            SmtpUseTls = FormSmtpUseTls
-        };
+            StatusMessage =
+                "Tax ID is required.";
+
+            return;
+        }
+
+        var dto =
+            new CompanyDto
+            {
+                Id =
+                    FormId,
+
+                Name =
+                    FormName.Trim(),
+
+                TaxId =
+                    FormTaxId.Trim(),
+
+                ErganiUsername =
+                    FormErganiUsername.Trim(),
+
+                ErganiPasswordPlainText =
+                    string.IsNullOrWhiteSpace(
+                        FormErganiPassword)
+                        ? null
+                        : FormErganiPassword,
+
+                ErganiUsertype =
+                    string.IsNullOrWhiteSpace(
+                        FormErganiUsertype)
+                        ? "01"
+                        : FormErganiUsertype,
+
+                ErganiBaseUrl =
+                    string.IsNullOrWhiteSpace(
+                        FormErganiBaseUrl)
+                        ? ErganiEndpoints.TrialBaseUrl
+                        : FormErganiBaseUrl.Trim(),
+
+                IsActive =
+                    FormIsActive,
+
+                EarlyClockInBlockMinutes =
+                    FormEarlyClockInBlockMinutes,
+
+                EarlyDepartureAlertMinutes =
+                    FormEarlyDepartureAlertMinutes,
+
+                BlockClockInWithoutSchedule =
+                    FormBlockClockInWithoutSchedule,
+
+                AlertEmailEnabled =
+                    FormAlertEmailEnabled,
+
+                AutoRetryFailedSubmissions =
+                    FormAutoRetryFailedSubmissions,
+
+                AlertEmailRecipients =
+                    string.IsNullOrWhiteSpace(
+                        FormAlertEmailRecipients)
+                        ? null
+                        : FormAlertEmailRecipients.Trim(),
+
+                SmtpHost =
+                    string.IsNullOrWhiteSpace(
+                        FormSmtpHost)
+                        ? null
+                        : FormSmtpHost.Trim(),
+
+                SmtpPort =
+                    FormSmtpPort,
+
+                SmtpUser =
+                    string.IsNullOrWhiteSpace(
+                        FormSmtpUser)
+                        ? null
+                        : FormSmtpUser.Trim(),
+
+                SmtpPasswordPlainText =
+                    string.IsNullOrWhiteSpace(
+                        FormSmtpPassword)
+                        ? null
+                        : FormSmtpPassword,
+
+                SmtpUseTls =
+                    FormSmtpUseTls
+            };
 
         try
         {
             if (FormId == 0)
             {
-                if (string.IsNullOrWhiteSpace(FormErganiPassword))
+                if (string.IsNullOrWhiteSpace(
+                        FormErganiPassword))
                 {
-                    StatusMessage = "Ergani password is required for a new company.";
+                    StatusMessage =
+                        "Ergani password is required when creating a new company.";
+
                     return;
                 }
-                await _companyService.CreateAsync(dto);
+
+                var newId =
+                    await _companyService
+                        .CreateAsync(dto);
+
+                FormId =
+                    newId;
+
+                StatusMessage =
+                    "✅ Company saved.";
             }
             else
             {
-                await _companyService.UpdateAsync(dto);
+                await _companyService
+                    .UpdateAsync(dto);
+
+                StatusMessage =
+                    "✅ Company updated.";
             }
 
-            IsEditing = false;
+            IsEditing =
+                false;
+
             await LoadAsync();
         }
         catch (Exception ex)
         {
-            StatusMessage = $"❌ {ex.Message}";
+            StatusMessage =
+                $"❌ {ex.Message}";
         }
     }
 
-    [RelayCommand]
-    private async Task ToggleActiveAsync(CompanyDto company)
-    {
-        await _companyService.SetActiveAsync(company.Id, !company.IsActive);
-        await LoadAsync();
-    }
+    // ---------------------------------------------------------------------
+    // Toggle active
+    // ---------------------------------------------------------------------
 
     [RelayCommand]
-    private async Task DeleteAsync(CompanyDto item)
+    private async Task ToggleActiveAsync(
+        CompanyDto company)
     {
-        if (!await ConfirmDeleteAsync(item)) return;
         try
         {
-            await _companyService.DeleteAsync(item.Id);
-            await LoadCommand.ExecuteAsync(null);
+            await _companyService
+                .SetActiveAsync(
+                    company.Id,
+                    !company.IsActive);
+
+            await LoadAsync();
         }
         catch (Exception ex)
         {
-            StatusMessage = $"❌ {ex.Message}";
+            StatusMessage =
+                $"❌ {ex.Message}";
         }
     }
 
-    // Simple confirm: returns true always for now; 
-    // replace with a dialog service if desired.
-    private static Task<bool> ConfirmDeleteAsync(object item)
+    // ---------------------------------------------------------------------
+    // Delete
+    // ---------------------------------------------------------------------
+
+    [RelayCommand]
+    private async Task DeleteAsync(
+        CompanyDto item)
+    {
+        if (!await ConfirmDeleteAsync(item))
+            return;
+
+        try
+        {
+            await _companyService
+                .DeleteAsync(item.Id);
+
+            await LoadCommand
+                .ExecuteAsync(null);
+
+            StatusMessage =
+                "Company deleted.";
+        }
+        catch (Exception ex)
+        {
+            StatusMessage =
+                $"❌ {ex.Message}";
+        }
+    }
+
+    private static Task<bool> ConfirmDeleteAsync(
+        object item)
         => Task.FromResult(true);
 
-    // ── Ergani credential test & data import ──────────────────────────────
+    // ---------------------------------------------------------------------
+    // Test Ergani
+    // ---------------------------------------------------------------------
 
     [RelayCommand]
     private async Task TestErganiCredentialsAsync()
     {
-        if (string.IsNullOrWhiteSpace(FormErganiUsername) ||
-            string.IsNullOrWhiteSpace(FormErganiPassword))
+        if (string.IsNullOrWhiteSpace(
+                FormErganiUsername))
         {
-            ErganiTestResult  = "❌ Enter username and password first.";
-            ErganiTestSuccess = false;
+            ErganiTestResult =
+                "❌ Enter the Ergani username.";
+
+            ErganiTestSuccess =
+                false;
+
             return;
         }
 
-        IsTesting         = true;
-        ErganiTestResult  = "⏳ Testing…";
-        ErganiTestSuccess = false;
+        if (string.IsNullOrWhiteSpace(
+                FormErganiPassword))
+        {
+            ErganiTestResult =
+                "❌ Enter the Ergani password.";
+
+            ErganiTestSuccess =
+                false;
+
+            return;
+        }
+
+        IsTesting =
+            true;
+
+        ErganiTestResult =
+            "⏳ Connecting to Ergani...";
+
+        ErganiTestSuccess =
+            false;
 
         try
         {
-            var creds = new ErganiCredentials
-            {
-                Username = FormErganiUsername,
-                Password = FormErganiPassword,
-                BaseUrl  = string.IsNullOrWhiteSpace(FormErganiBaseUrl)
-                    ? ErganiEndpoints.TrialBaseUrl : FormErganiBaseUrl
-            };
+            var credentials =
+                BuildCredentials();
 
-            var (valid, companyName, error) =
-                await _erganiImport.TestCredentialsAsync(creds).ConfigureAwait(false);
+            var test =
+                await _erganiImport
+                    .TestCredentialsAsync(
+                        credentials)
+                    .ConfigureAwait(false);
 
-            await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() =>
-            {
-                ErganiTestSuccess = valid;
-                ErganiTestResult  = valid
-                    ? $"✅ Connected{(companyName != null ? $" — {companyName}" : "")}"
-                    : $"❌ {error ?? "Authentication failed."}";
+            await Avalonia.Threading.Dispatcher.UIThread
+                .InvokeAsync(() =>
+                {
+                    ErganiTestSuccess =
+                        test.Valid;
 
-                // Auto-fill company name if found and form is empty
-                if (valid && companyName != null && string.IsNullOrEmpty(FormName))
-                    FormName = companyName;
-            });
+                    if (test.Valid)
+                    {
+                        ErganiTestResult =
+                            string.IsNullOrWhiteSpace(
+                                test.CompanyName)
+                                ? "✅ Ergani connection successful."
+                                : $"✅ Connected — {test.CompanyName}";
+
+                        if (!string.IsNullOrWhiteSpace(
+                                test.CompanyName))
+                        {
+                            FormName =
+                                test.CompanyName;
+                        }
+                    }
+                    else
+                    {
+                        ErganiTestResult =
+                            $"❌ {test.Error ?? "Authentication failed."}";
+                    }
+                });
         }
         catch (Exception ex)
         {
-            await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() =>
-            {
-                ErganiTestResult  = $"❌ {ex.Message}";
-                ErganiTestSuccess = false;
-            });
+            await Avalonia.Threading.Dispatcher.UIThread
+                .InvokeAsync(() =>
+                {
+                    ErganiTestResult =
+                        $"❌ {ex.Message}";
+
+                    ErganiTestSuccess =
+                        false;
+                });
         }
         finally
         {
-            IsTesting = false;
+            IsTesting =
+                false;
         }
     }
+
+    // ---------------------------------------------------------------------
+    // COMPLETE IMPORT FROM ERGANI
+    // ---------------------------------------------------------------------
 
     [RelayCommand]
     private async Task ImportFromErganiAsync()
     {
-        if (FormId == 0) { StatusMessage = "❌ Save the company first, then import."; return; }
-        if (!ErganiTestSuccess)
+        if (string.IsNullOrWhiteSpace(
+                FormErganiUsername))
         {
-            StatusMessage = "❌ Test the Ergani credentials first.";
+            StatusMessage =
+                "❌ Enter the Ergani username.";
+
             return;
         }
 
-        IsImporting = true;
-        StatusMessage = "⏳ Importing branches and employees from Ergani…";
+        if (string.IsNullOrWhiteSpace(
+                FormErganiPassword))
+        {
+            StatusMessage =
+                "❌ Enter the Ergani password.";
+
+            return;
+        }
+
+        IsImporting =
+            true;
+
+        StatusMessage =
+            "⏳ Connecting to Ergani and retrieving company information...";
 
         try
         {
-            var creds = new ErganiCredentials
-            {
-                Username = FormErganiUsername,
-                Password = FormErganiPassword,
-                BaseUrl  = string.IsNullOrWhiteSpace(FormErganiBaseUrl)
-                    ? ErganiEndpoints.TrialBaseUrl : FormErganiBaseUrl
-            };
+            var credentials =
+                BuildCredentials();
 
-            var result = await _erganiImport
-                .ImportCompanyDataAsync(FormId, creds).ConfigureAwait(false);
+            /*
+             * IMPORTANT:
+             *
+             * We do NOT check FormId here.
+             *
+             * The import service will:
+             *
+             * 1. Authenticate
+             * 2. Call EX_BASE_01
+             * 3. Obtain AFM + company name
+             * 4. Create or update the company
+             * 5. Import branches
+             * 6. Import employees
+             */
+            var result =
+                await _erganiImport
+                    .ImportFromErganiAsync(
+                        credentials)
+                    .ConfigureAwait(false);
 
-            await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() =>
-            {
-                StatusMessage = result.Success
-                    ? $"✅ Import complete: {result.BranchesImported} branch(es), " +
-                      $"{result.EmployeesImported} employee(s) added/updated."
-                    : $"❌ Import failed: {result.ErrorMessage}";
-            });
+            await Avalonia.Threading.Dispatcher.UIThread
+                .InvokeAsync(async () =>
+                {
+                    if (!result.Success)
+                    {
+                        StatusMessage =
+                            $"❌ Import failed: {result.ErrorMessage}";
+
+                        return;
+                    }
+
+                    /*
+                     * Update the form with the official Ergani information.
+                     */
+                    FormId =
+                        result.CompanyId;
+
+                    if (!string.IsNullOrWhiteSpace(
+                            result.CompanyName))
+                    {
+                        FormName =
+                            result.CompanyName;
+                    }
+
+                    if (!string.IsNullOrWhiteSpace(
+                            result.CompanyTaxId))
+                    {
+                        FormTaxId =
+                            result.CompanyTaxId;
+                    }
+
+                    var companyMessage =
+                        result.CompanyCreated
+                            ? "Company created"
+                            : "Company updated";
+
+                    StatusMessage =
+                        $"✅ {companyMessage}. " +
+                        $"AFM: {result.CompanyTaxId}. " +
+                        $"Branches: {result.TotalBranches}. " +
+                        $"Employees: {result.TotalEmployees}.";
+
+                    if (result.Warnings.Count > 0)
+                    {
+                        StatusMessage +=
+                            Environment.NewLine +
+                            Environment.NewLine +
+                            string.Join(
+                                Environment.NewLine,
+                                result.Warnings);
+                    }
+
+                    /*
+                     * Refresh company list so the newly created company
+                     * immediately appears in the UI.
+                     */
+                    await LoadAsync();
+                });
         }
         catch (Exception ex)
         {
-            await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() =>
-                StatusMessage = $"❌ {ex.Message}");
+            await Avalonia.Threading.Dispatcher.UIThread
+                .InvokeAsync(() =>
+                {
+                    StatusMessage =
+                        $"❌ {ex.Message}";
+                });
         }
         finally
         {
-            IsImporting = false;
+            IsImporting =
+                false;
         }
     }
+
+    // ---------------------------------------------------------------------
+    // Credentials
+    // ---------------------------------------------------------------------
+
+    private ErganiCredentials BuildCredentials()
+    {
+        return new ErganiCredentials
+        {
+            Username =
+                FormErganiUsername.Trim(),
+
+            Password =
+                FormErganiPassword,
+
+            Usertype =
+                string.IsNullOrWhiteSpace(
+                    FormErganiUsertype)
+                    ? "01"
+                    : FormErganiUsertype,
+
+            BaseUrl =
+                string.IsNullOrWhiteSpace(
+                    FormErganiBaseUrl)
+                    ? ErganiEndpoints.TrialBaseUrl
+                    : FormErganiBaseUrl.Trim()
+        };
+    }
+
+
 }

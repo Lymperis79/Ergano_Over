@@ -1,0 +1,158 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:ErganiManager.UI.ViewModels"
+             xmlns:cm="using:ErganiManager.Core.Models"
+             x:Class="ErganiManager.UI.Views.HolidayDialogView"
+             x:DataType="vm:HolidayDialogViewModel">
+
+    <Grid>
+        <!-- ── Holidays form + list ── -->
+        <Border Background="#BB000000">
+            <Border Background="#1E2128" CornerRadius="12" Padding="20"
+                    Width="920" Height="700"
+                    VerticalAlignment="Center" HorizontalAlignment="Center">
+                <Grid RowDefinitions="Auto,Auto,Auto,Auto,*,Auto" RowSpacing="10">
+
+                    <TextBlock Grid.Row="0" Text="{Binding Title}" FontSize="17" FontWeight="Bold" />
+
+                    <!-- Form -->
+                    <Grid Grid.Row="1" ColumnDefinitions="*,*,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto"
+                          ColumnSpacing="12" RowSpacing="8">
+
+                        <StackPanel Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2" Spacing="4">
+                            <TextBlock Text="Holiday type" FontWeight="SemiBold" />
+                            <ComboBox ItemsSource="{Binding LeaveTypeOptions}"
+                                      SelectedItem="{Binding SelectedType}"
+                                      PlaceholderText="Select the holiday type…"
+                                      HorizontalAlignment="Stretch">
+                                <ComboBox.ItemTemplate>
+                                    <DataTemplate x:DataType="cm:LeaveTypeInfo">
+                                        <TextBlock Text="{Binding Label}" TextTrimming="CharacterEllipsis" />
+                                    </DataTemplate>
+                                </ComboBox.ItemTemplate>
+                            </ComboBox>
+                        </StackPanel>
+
+                        <StackPanel Grid.Row="0" Grid.Column="2" Spacing="4">
+                            <TextBlock Text="Branch" FontWeight="SemiBold" />
+                            <ComboBox ItemsSource="{Binding Branches}"
+                                      SelectedItem="{Binding SelectedBranch}"
+                                      HorizontalAlignment="Stretch">
+                                <ComboBox.ItemTemplate>
+                                    <DataTemplate><TextBlock Text="{Binding Name}" /></DataTemplate>
+                                </ComboBox.ItemTemplate>
+                            </ComboBox>
+                        </StackPanel>
+
+                        <StackPanel Grid.Row="1" Grid.Column="0" Spacing="4">
+                            <TextBlock Text="From" FontWeight="SemiBold" />
+                            <DatePicker SelectedDate="{Binding FromDate, Mode=TwoWay}" HorizontalAlignment="Stretch" MinWidth="150" />
+                        </StackPanel>
+                        <StackPanel Grid.Row="1" Grid.Column="1" Spacing="4">
+                            <TextBlock Text="To (inclusive)" FontWeight="SemiBold" />
+                            <DatePicker SelectedDate="{Binding ToDate, Mode=TwoWay}" HorizontalAlignment="Stretch" MinWidth="150" />
+                        </StackPanel>
+                        <CheckBox Grid.Row="1" Grid.Column="2" Content="Skip Saturday / Sunday"
+                                  IsChecked="{Binding SkipWeekends}" VerticalAlignment="Bottom" />
+
+                        <StackPanel Grid.Row="2" Grid.Column="0" Spacing="4" IsVisible="{Binding IsHourlyType}">
+                            <TextBlock Text="Hours from (hourly types)" FontWeight="SemiBold" />
+                            <TimePicker SelectedTime="{Binding StartTime}" ClockIdentifier="24HourClock" />
+                        </StackPanel>
+                        <StackPanel Grid.Row="2" Grid.Column="1" Spacing="4" IsVisible="{Binding IsHourlyType}">
+                            <TextBlock Text="Hours to" FontWeight="SemiBold" />
+                            <TimePicker SelectedTime="{Binding EndTime}" ClockIdentifier="24HourClock" />
+                        </StackPanel>
+
+                        <StackPanel Grid.Row="3" Grid.Column="0" Spacing="4">
+                            <TextBlock Text="Reference year (optional)" FontWeight="SemiBold" />
+                            <TextBox Text="{Binding ReferenceYear}" PlaceholderText="e.g. 2026" MaxLength="4" />
+                        </StackPanel>
+                        <StackPanel Grid.Row="3" Grid.Column="1" Spacing="4">
+                            <TextBlock Text="Entitled leave days (optional)" FontWeight="SemiBold" />
+                            <TextBox Text="{Binding EntitledDays}" PlaceholderText="e.g. 20" MaxLength="3" />
+                        </StackPanel>
+
+                        <StackPanel Grid.Row="4" Grid.Column="0" Grid.ColumnSpan="3" Spacing="4">
+                            <TextBlock Text="Comments (optional, max 200)" FontWeight="SemiBold" />
+                            <TextBox Text="{Binding Comments}" MaxLength="200" />
+                        </StackPanel>
+                    </Grid>
+
+                    <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8">
+                        <Button Content="💾 Save" Command="{Binding SaveCommand}" />
+                        <Button Content="📤 Save &amp; Submit" Command="{Binding SaveAndSubmitCommand}" Classes="accent" />
+                    </StackPanel>
+
+                    <!-- List header -->
+                    <Grid Grid.Row="3" ColumnDefinitions="*,Auto">
+                        <TextBlock Grid.Column="0" Text="Holidays of this employee" FontWeight="SemiBold"
+                                   VerticalAlignment="Center" />
+                        <Button Grid.Column="1" Content="{Binding SubmitUnsentText}"
+                                Command="{Binding SubmitUnsentCommand}" />
+                    </Grid>
+
+                    <!-- List -->
+                    <Panel Grid.Row="4">
+                        <TextBlock Text="No holidays recorded for this employee yet."
+                                   Foreground="Gray" IsVisible="{Binding !HasRows}" />
+                        <ScrollViewer IsVisible="{Binding HasRows}">
+                            <ItemsControl ItemsSource="{Binding Rows}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate x:DataType="vm:HolidayRow">
+                                        <Border Background="#22252C" CornerRadius="6" Padding="10,6" Margin="0,0,0,4">
+                                            <Grid ColumnDefinitions="Auto,92,*,100,230,Auto,Auto,Auto" ColumnSpacing="10">
+                                                <TextBlock Grid.Column="0" Text="{Binding StatusIcon}" VerticalAlignment="Center" />
+                                                <TextBlock Grid.Column="1" Text="{Binding DateText}" FontWeight="SemiBold"
+                                                           VerticalAlignment="Center" />
+                                                <TextBlock Grid.Column="2" Text="{Binding TypeText}" FontSize="12"
+                                                           TextTrimming="CharacterEllipsis" VerticalAlignment="Center"
+                                                           ToolTip.Tip="{Binding TypeText}" />
+                                                <TextBlock Grid.Column="3" Text="{Binding HoursText}" FontSize="12"
+                                                           Foreground="#AAAAAA" VerticalAlignment="Center" />
+                                                <TextBlock Grid.Column="4" Text="{Binding Summary}" FontSize="12"
+                                                           TextTrimming="CharacterEllipsis" VerticalAlignment="Center"
+                                                           ToolTip.Tip="{Binding Summary}" />
+                                                <Button Grid.Column="5" Content="Response"
+                                                        Tag="{Binding}" Click="OnResponseClick" />
+                                                <Button Grid.Column="6" Content="PDF"
+                                                        Tag="{Binding}" Click="OnPdfClick"
+                                                        IsEnabled="{Binding HasProtocol}" />
+                                                <Button Grid.Column="7" Content="🗑"
+                                                        Tag="{Binding}" Click="OnDeleteClick"
+                                                        IsVisible="{Binding IsUnsent}" Foreground="#EF9A9A" />
+                                            </Grid>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </ScrollViewer>
+                    </Panel>
+
+                    <Grid Grid.Row="5" ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                        <TextBlock Grid.Column="0" Text="{Binding StatusMessage}" TextWrapping="Wrap"
+                                   VerticalAlignment="Center" Foreground="Gray" />
+                        <Button Grid.Column="1" Content="Close" Command="{Binding CloseCommand}" Width="100" />
+                    </Grid>
+                </Grid>
+            </Border>
+        </Border>
+
+        <!-- ── Raw Ergani response ── -->
+        <Border Background="#AA000000" IsVisible="{Binding IsResponseOpen}">
+            <Border Background="#1E2128" CornerRadius="12" Padding="20"
+                    Width="800" Height="520"
+                    VerticalAlignment="Center" HorizontalAlignment="Center">
+                <Grid RowDefinitions="Auto,*,Auto" RowSpacing="12">
+                    <TextBlock Grid.Row="0" Text="{Binding ResponseTitle}" FontSize="17" FontWeight="Bold" />
+                    <TextBox Grid.Row="1" Text="{Binding ResponseText}" IsReadOnly="True"
+                             AcceptsReturn="True" TextWrapping="NoWrap" FontFamily="Consolas"
+                             ScrollViewer.VerticalScrollBarVisibility="{x:Static ScrollBarVisibility.Auto}"
+                             ScrollViewer.HorizontalScrollBarVisibility="{x:Static ScrollBarVisibility.Auto}" />
+                    <Button Grid.Row="2" Content="Close" Command="{Binding CloseResponseCommand}"
+                            HorizontalAlignment="Right" Width="100" />
+                </Grid>
+            </Border>
+        </Border>
+    </Grid>
+</UserControl>

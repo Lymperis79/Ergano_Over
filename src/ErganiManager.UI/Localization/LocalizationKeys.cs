@@ -25,6 +25,8 @@ public static class L
     public const string Search          = nameof(Search);
     public const string Refresh         = nameof(Refresh);
     public const string RetryNow        = nameof(RetryNow);
+    public const string RetrySelected   = nameof(RetrySelected);
+    public const string SelectAllFailed = nameof(SelectAllFailed);
     public const string TestConnection  = nameof(TestConnection);
 
     // Auth / Login
@@ -64,6 +66,12 @@ public static class L
     public const string ErganiBaseUrl       = nameof(ErganiBaseUrl);
     public const string Active              = nameof(Active);
     public const string TimeRules           = nameof(TimeRules);
+    public const string NightWorkingHours   = nameof(NightWorkingHours);
+    public const string NightWorkingHoursDescription = nameof(NightWorkingHoursDescription);
+    public const string NightStart          = nameof(NightStart);
+    public const string NightEnd            = nameof(NightEnd);
+    public const string NightSettingsSaved  = nameof(NightSettingsSaved);
+    public const string NightSettingsApply  = nameof(NightSettingsApply);
     public const string EarlyClockInBlock   = nameof(EarlyClockInBlock);
     public const string EarlyDepartureAlert = nameof(EarlyDepartureAlert);
     public const string BlockNoSchedule     = nameof(BlockNoSchedule);
@@ -130,6 +138,32 @@ public static class L
     public const string MinutesEarly        = nameof(MinutesEarly);
     public const string Protocol            = nameof(Protocol);
 
+    // Portal automation
+    public const string OpenErganiPortal = nameof(OpenErganiPortal);
+    public const string OpenWorkCardsPortal = nameof(OpenWorkCardsPortal);
+    public const string SchedulePortal = nameof(SchedulePortal);
+    public const string SchedulePortalDescription = nameof(SchedulePortalDescription);
+    public const string WorkCardsPortal = nameof(WorkCardsPortal);
+    public const string WorkCardsPortalDescription = nameof(WorkCardsPortalDescription);
+    public const string PortalBaseAddress = nameof(PortalBaseAddress);
+    public const string PortalTargetPage = nameof(PortalTargetPage);
+    public const string PortalFromDateFieldId = nameof(PortalFromDateFieldId);
+    public const string PortalToDateFieldId = nameof(PortalToDateFieldId);
+    public const string PortalDateFormat = nameof(PortalDateFormat);
+    public const string PortalAutoSearch = nameof(PortalAutoSearch);
+    public const string PortalAutoDownload = nameof(PortalAutoDownload);
+    public const string PortalSearchButtonId = nameof(PortalSearchButtonId);
+    public const string PortalDownloadFolder = nameof(PortalDownloadFolder);
+    public const string SaveSchedulePortal = nameof(SaveSchedulePortal);
+    public const string SaveWorkCardsPortal = nameof(SaveWorkCardsPortal);
+    public const string SchedulePortalSaved = nameof(SchedulePortalSaved);
+    public const string WorkCardsPortalSaved = nameof(WorkCardsPortalSaved);
+    public const string CouldNotSaveSchedulePortal = nameof(CouldNotSaveSchedulePortal);
+    public const string CouldNotSaveWorkCardsPortal = nameof(CouldNotSaveWorkCardsPortal);
+    public const string PortalInvalidUrl = nameof(PortalInvalidUrl);
+    public const string PortalDateFormatPlaceholder = nameof(PortalDateFormatPlaceholder);
+    public const string PortalDownloadFolderPlaceholder = nameof(PortalDownloadFolderPlaceholder);
+
     // Overtime
     public const string Overtime            = nameof(Overtime);
     public const string OvertimeDate        = nameof(OvertimeDate);
@@ -152,6 +186,51 @@ public static class L
     public const string Pending             = nameof(Pending);
     public const string ErrorPrefix         = nameof(ErrorPrefix);
     public const string SuccessPrefix       = nameof(SuccessPrefix);
+
+    // Ergani user types
+    public const string UsertypeExternal    = nameof(UsertypeExternal);
+    public const string UsertypeErgani      = nameof(UsertypeErgani);
+    public const string UsertypeEfka        = nameof(UsertypeEfka);
+    public const string UserType            = nameof(UserType);
+
+    // Late reasons (f_aitiologia)
+    public const string AitiologiaPower     = nameof(AitiologiaPower);
+    public const string AitiologiaEmployer  = nameof(AitiologiaEmployer);
+    public const string AitiologiaErgani    = nameof(AitiologiaErgani);
+
+    // Reports
+    public const string NavReports          = nameof(NavReports);
+
+    // Administration / Help
+    public const string ReportNightHours   = nameof(ReportNightHours);
+    public const string NavHelp             = nameof(NavHelp);
+    public const string NavAdmin            = nameof(NavAdmin);
+    public const string AdminTitle          = nameof(AdminTitle);
+    public const string AdminDatabase       = nameof(AdminDatabase);
+    public const string AdminBackup         = nameof(AdminBackup);
+    public const string AdminLocalCache     = nameof(AdminLocalCache);
+    public const string AdminDeleteCache    = nameof(AdminDeleteCache);
+    public const string AdminDangerZone     = nameof(AdminDangerZone);
+    public const string AdminDeleteDb       = nameof(AdminDeleteDb);
+    public const string AdminConfirm        = nameof(AdminConfirm);
+    public const string AdminGeneralSettings = nameof(AdminGeneralSettings);
+    public const string AdminHoursSettings   = nameof(AdminHoursSettings);
+    public const string AdminPortalSettings  = nameof(AdminPortalSettings);
+    public const string AdminDatabaseSettings = nameof(AdminDatabaseSettings);
+    public const string AdminShifts          = nameof(AdminShifts);
+    public const string AdminShiftsDescription = nameof(AdminShiftsDescription);
+    public const string ShiftName            = nameof(ShiftName);
+    public const string ShiftStart           = nameof(ShiftStart);
+    public const string ShiftEnd             = nameof(ShiftEnd);
+    public const string ShiftSelection       = nameof(ShiftSelection);
+    public const string ShiftSelectionDescription = nameof(ShiftSelectionDescription);
+    public const string ThreeShiftsRequired  = nameof(ThreeShiftsRequired);
+    public const string ShiftValuesRequired  = nameof(ShiftValuesRequired);
+    public const string ShiftTimesInvalid    = nameof(ShiftTimesInvalid);
+    public const string ShiftTimesEqual      = nameof(ShiftTimesEqual);
+    public const string HelpTitle           = nameof(HelpTitle);
+    public const string HelpEditAction      = nameof(HelpEditAction);
+    public const string HelpResetDefault    = nameof(HelpResetDefault);
 
     // Language
     public const string Language            = nameof(Language);

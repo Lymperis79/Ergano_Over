@@ -56,7 +56,7 @@
                         <TextBlock Text="Branch Details" FontSize="17" FontWeight="SemiBold" />
 
                         <TextBlock Text="{Binding Loc[BranchNumber]}" FontWeight="SemiBold" />
-                        <NumericUpDown Value="{Binding FormBranchNumber}" Minimum="1" Maximum="9999" />
+                        <NumericUpDown Value="{Binding FormBranchNumber}" Minimum="0" Maximum="9999" />
 
                         <TextBlock Text="Display Name" FontWeight="SemiBold" />
                         <TextBox Text="{Binding FormName}" />

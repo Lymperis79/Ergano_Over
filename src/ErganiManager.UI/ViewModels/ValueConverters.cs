@@ -56,6 +56,18 @@ public class CancelledTextConverter : IValueConverter
         => throw new NotImplementedException();
 }
 
+/// <summary>bool SubmittedToErgani -> "Sent" / "Not sent".</summary>
+public class SentTextConverter : IValueConverter
+{
+    public static readonly SentTextConverter Instance = new();
+
+    public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
+        => value is true ? "✅ Sent" : "Not sent";
+
+    public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
+        => throw new NotImplementedException();
+}
+
 /// <summary>Converts AppOvertimeJustification enum value to its human-readable label.</summary>
 public class OvertimeJustificationConverter : IValueConverter
 {

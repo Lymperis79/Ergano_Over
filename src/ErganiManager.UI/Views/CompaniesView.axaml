@@ -71,6 +71,18 @@
                         <TextBlock Text="{Binding Loc[ErganiBaseUrl]}" FontWeight="SemiBold" />
                         <TextBox Text="{Binding FormErganiBaseUrl}" />
 
+                        <TextBlock Text="{Binding Loc[UserType]}" FontWeight="SemiBold" />
+                        <ComboBox ItemsSource="{Binding AvailableUsertypes}"
+                                  SelectedValueBinding="{Binding Code}"
+                                  SelectedValue="{Binding FormErganiUsertype}"
+                                  HorizontalAlignment="Stretch">
+                            <ComboBox.ItemTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding Display}" TextWrapping="Wrap" />
+                                </DataTemplate>
+                            </ComboBox.ItemTemplate>
+                        </ComboBox>
+
                         <!-- Ergani credential test -->
                         <Grid ColumnDefinitions="*,Auto" Margin="0,4,0,0">
                             <Border Grid.Column="0" CornerRadius="4" Padding="8,4"
@@ -120,7 +132,7 @@
                             <TextBlock Text="Alert email recipients (comma-separated)" FontWeight="SemiBold" />
                             <TextBox Text="{Binding FormAlertEmailRecipients}" />
                             <TextBlock Text="SMTP Host" FontWeight="SemiBold" />
-                            <TextBox Text="{Binding FormSmtpHost}" Watermark="smtp.example.com" />
+                            <TextBox Text="{Binding FormSmtpHost}" PlaceholderText="smtp.example.com" />
                             <TextBlock Text="SMTP Port" FontWeight="SemiBold" />
                             <NumericUpDown Value="{Binding FormSmtpPort}" Minimum="1" Maximum="65535" />
                             <TextBlock Text="SMTP Username" FontWeight="SemiBold" />

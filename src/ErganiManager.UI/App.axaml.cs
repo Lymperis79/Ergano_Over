@@ -50,6 +50,8 @@ public partial class App : Application
         var splash = new Window
         {
             Title = "Ergani Manager",
+            Icon = new WindowIcon(Avalonia.Platform.AssetLoader.Open(
+                new Uri("avares://ErganiManager.UI/Assets/icon.png"))),
             Width = 340,
             Height = 160,
             WindowStartupLocation = WindowStartupLocation.CenterScreen,
@@ -72,14 +74,38 @@ public partial class App : Application
         {
             var connectionState = Program.Services.GetRequiredService<IConnectionStateService>();
             var state = await Task.Run(() => connectionState.EvaluateAsync());
-            Log.Information("Startup connection state: {State}.", state);
+
+            // Never allow a fresh installation into the offline login screen.
+            // This is an explicit startup guard in addition to EvaluateAsync(),
+            // so a stale/corrupt cache or a future state change cannot route a
+            // new installation into the "previously synced users" login path.
+            if (state == AppConnectionState.Degraded &&
+                !await connectionState.HasCachedUsersAsync())
+            {
+                Log.Information("Database unavailable and no cached users exist; routing to database setup.");
+                state = AppConnectionState.FirstRun;
+            }
+
+            // Database exists but setup stopped before the first administrator was created:
+            // a login screen could never succeed, so resume the wizard at the user step.
+            if (state == AppConnectionState.Normal &&
+                await Program.Services.GetRequiredService<IAdminBootstrapService>().NeedsFirstAdminAsync())
+            {
+                Log.Information("Database ready but no users exist; resuming setup at the administrator step.");
+                ShowDatabaseSetup(desktop, resumeAtAdmin: true);
+                return;
+            }
+
+            Log.Information("Startup connection state: {State}. Reason: {Reason}",
+                state, connectionState.LastFailureReason);
 
             switch (state)
             {
                 case AppConnectionState.FirstRun:
                 case AppConnectionState.SchemaIncomplete:
                     ShowDatabaseSetup(desktop,
-                        isRetry: state == AppConnectionState.SchemaIncomplete);
+                        isRetry: state == AppConnectionState.SchemaIncomplete,
+                        failureReason: connectionState.LastFailureReason);
                     break;
 
                 case AppConnectionState.Normal:
@@ -136,18 +162,31 @@ public partial class App : Application
             {
                 if (w != sender) w.Close();
             }
+
+            // Selenium browsers/drivers are external processes. Close them before
+            // terminating the application so ChromeDriver/EdgeDriver is not left behind.
+            try
+            {
+                ErganiManager.ErganiApi.Services.ErganiPortalService.ShutdownAllBrowsers();
+            }
+            catch { /* shutdown must never prevent application exit */ }
         }
         Environment.Exit(0);
     }
 
     public void ShowDatabaseSetup(
-        IClassicDesktopStyleApplicationLifetime desktop, bool isRetry = false)
+        IClassicDesktopStyleApplicationLifetime desktop, bool isRetry = false,
+        bool resumeAtAdmin = false, string? failureReason = null)
     {
         var vm = Program.Services.GetRequiredService<DatabaseSetupViewModel>();
 
-        if (isRetry)
+        if (resumeAtAdmin)
+            vm.ResumeAtAdminStep();
+        else if (isRetry)
             vm.StatusMessage =
-                "⚠️ A previous setup attempt failed. Fix the settings below and try again.";
+                "⚠️ The database schema is incomplete" +
+                (string.IsNullOrWhiteSpace(failureReason) ? "" : $" ({failureReason})") +
+                ". Check the settings below and continue to repair it.";
 
         vm.SetupCompleted += (_, _) => ShowLogin(desktop, isDegraded: false);
 

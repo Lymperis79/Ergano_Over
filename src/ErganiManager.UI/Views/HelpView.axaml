@@ -1,0 +1,39 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:ErganiManager.UI.ViewModels"
+             x:Class="ErganiManager.UI.Views.HelpView"
+             x:DataType="vm:HelpViewModel">
+
+    <Grid RowDefinitions="Auto,*,Auto">
+        <Grid Grid.Row="0" ColumnDefinitions="*,Auto,Auto" Margin="0,0,0,12">
+            <TextBlock Text="{Binding Loc[HelpTitle]}" FontSize="22" FontWeight="Bold" />
+            <Button Grid.Column="1" Content="{Binding Loc[HelpResetDefault]}"
+                    Command="{Binding RestoreDefaultCommand}" Margin="0,0,6,0"
+                    IsVisible="{Binding IsEditing}" />
+            <Button Grid.Column="2" Content="{Binding Loc[HelpEditAction]}"
+                    Command="{Binding StartEditCommand}" IsVisible="{Binding !IsEditing}" />
+        </Grid>
+
+        <!-- Read mode -->
+        <ScrollViewer Grid.Row="1" IsVisible="{Binding !IsEditing}">
+            <Border Background="#1A1D23" CornerRadius="8" Padding="20">
+                <SelectableTextBlock Text="{Binding HelpText}" TextWrapping="Wrap" />
+            </Border>
+        </ScrollViewer>
+
+        <!-- Edit mode -->
+        <Grid Grid.Row="1" Grid.RowSpan="2" IsVisible="{Binding IsEditing}" RowDefinitions="*,Auto">
+            <TextBox Grid.Row="0" Text="{Binding EditText}" AcceptsReturn="True"
+                     TextWrapping="Wrap" VerticalContentAlignment="Top" />
+            <Grid Grid.Row="1" ColumnDefinitions="*,*" ColumnSpacing="8" Margin="0,8,0,0">
+                <Button Grid.Column="0" Content="{Binding Loc[Cancel]}"
+                        Command="{Binding CancelEditCommand}" HorizontalAlignment="Stretch" />
+                <Button Grid.Column="1" Content="{Binding Loc[Save]}"
+                        Command="{Binding SaveEditCommand}" Classes="accent" HorizontalAlignment="Stretch" />
+            </Grid>
+        </Grid>
+
+        <TextBlock Grid.Row="2" Text="{Binding StatusMessage}" Margin="0,8,0,0"
+                   IsVisible="{Binding !IsEditing}" />
+    </Grid>
+</UserControl>

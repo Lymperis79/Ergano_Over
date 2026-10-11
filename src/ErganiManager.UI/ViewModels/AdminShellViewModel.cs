@@ -1,3 +1,4 @@
+
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -22,20 +23,20 @@ public enum AdminSection
     Schedules,
     WorkCards,
     WorkCardScan,
+    Today,
     Overtime,
-    SubmissionLog
+    Reports,
+    SubmissionLog,
+    Help,
+    Administration
 }
 
 /// <summary>
-/// Admin shell with sidebar navigation. Hosts one section ViewModel at a time
-/// in CurrentSectionViewModel; views are resolved lazily via DI the first
-/// time each section is opened, then cached for the rest of the session.
+/// Admin shell with sidebar navigation.
 ///
-/// For super-admins (session.CompanyId == null), a company picker is shown.
-/// Selecting a company calls ICompanyContext.SwitchCompany, which raises
-/// CompanyChanged — every cached section ViewModel is then re-initialized
-/// with the newly active company so Branches/Employees/Users immediately
-/// reflect the switch without needing to be re-opened.
+/// For Super Admin users, the shell provides a company selector.
+/// The selected company is stored in ICompanyContext and is also
+/// passed to child ViewModels through BuildSessionForActiveCompany().
 /// </summary>
 public partial class AdminShellViewModel : ViewModelBase
 {
@@ -47,51 +48,86 @@ public partial class AdminShellViewModel : ViewModelBase
 
     private readonly Dictionary<AdminSection, ViewModelBase> _sectionCache = new();
 
-    [ObservableProperty] private string _welcomeText = string.Empty;
-    [ObservableProperty] private string _companyDisplayText = string.Empty;
-    [ObservableProperty] private AdminSection _activeSection = AdminSection.Companies;
-    [ObservableProperty] private ViewModelBase? _currentSectionViewModel;
+    [ObservableProperty]
+    private string _welcomeText = string.Empty;
 
-    [ObservableProperty] private bool _isSuperAdmin;
-    [ObservableProperty] private bool _hasActiveCompany;
+    [ObservableProperty]
+    private string _companyDisplayText = string.Empty;
+
+    [ObservableProperty]
+    private AdminSection _activeSection = AdminSection.Companies;
+
+    [ObservableProperty]
+    private ViewModelBase? _currentSectionViewModel;
+
+    [ObservableProperty]
+    private bool _isSuperAdmin;
+
+    [ObservableProperty]
+    private bool _hasActiveCompany;
+
     public ObservableCollection<CompanyDto> SwitchableCompanies { get; } = new();
-    [ObservableProperty] private CompanyDto? _selectedSwitchCompany;
+
+    [ObservableProperty]
+    private CompanyDto? _selectedSwitchCompany;
 
     // ── Ergani API status ────────────────────────────────────────────────────
-    [ObservableProperty] private string _erganiStatusIcon  = "⚪";
-    [ObservableProperty] private string _erganiStatusText  = "Ergani: Unknown";
-    [ObservableProperty] private string _erganiStatusColor = "#888888";
 
-    // ── Global notification bar ───────────────────────────────────────────────
-    [ObservableProperty] private string _notificationMessage = string.Empty;
-    [ObservableProperty] private bool _isNotificationError;
-    [ObservableProperty] private bool _hasNotification;
+    [ObservableProperty]
+    private string _erganiStatusIcon = "⚪";
 
-    public void ShowNotification(string message, bool isError = false)
+    [ObservableProperty]
+    private string _erganiStatusText = "Ergani: Unknown";
+
+    [ObservableProperty]
+    private string _erganiStatusColor = "#888888";
+
+    // ── Global notification bar ──────────────────────────────────────────────
+
+    [ObservableProperty]
+    private string _notificationMessage = string.Empty;
+
+    [ObservableProperty]
+    private bool _isNotificationError;
+
+    [ObservableProperty]
+    private bool _hasNotification;
+
+    public void ShowNotification(
+        string message,
+        bool isError = false)
     {
         NotificationMessage = message;
         IsNotificationError = isError;
         HasNotification = true;
-        _ = System.Threading.Tasks.Task.Delay(6000).ContinueWith(_ =>
-            Avalonia.Threading.Dispatcher.UIThread.Post(() => HasNotification = false));
+
+        _ = Task.Delay(6000).ContinueWith(_ =>
+            Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+                HasNotification = false));
     }
 
-    public void ShowError(string message) => ShowNotification(message, isError: true);
+    public void ShowError(string message) =>
+        ShowNotification(message, isError: true);
 
     [RelayCommand]
-    private void DismissNotification() => HasNotification = false;
+    private void DismissNotification() =>
+        HasNotification = false;
 
-    // ── Ergani API status ─────────────────────────────────────────────────────
+    // ── Ergani API status ────────────────────────────────────────────────────
 
-    private void ApplyErganiStatus(ErganiManager.ErganiApi.Services.ErganiServiceStatus status)
+    private void ApplyErganiStatus(
+        ErganiManager.ErganiApi.Services.ErganiServiceStatus status)
     {
         (ErganiStatusIcon, ErganiStatusText, ErganiStatusColor) = status switch
         {
-            ErganiManager.ErganiApi.Services.ErganiServiceStatus.Online  =>
-                ("🟢", "Ergani: Online",  "#4CAF50"),
+            ErganiManager.ErganiApi.Services.ErganiServiceStatus.Online =>
+                ("🟢", "Ergani: Online", "#4CAF50"),
+
             ErganiManager.ErganiApi.Services.ErganiServiceStatus.Offline =>
                 ("🔴", "Ergani: Offline", "#EF5350"),
-            _ => ("⚪", "Ergani: Unknown", "#888888")
+
+            _ =>
+                ("⚪", "Ergani: Unknown", "#888888")
         };
     }
 
@@ -99,86 +135,147 @@ public partial class AdminShellViewModel : ViewModelBase
     private async Task CheckErganiNowAsync()
     {
         var companyId = _companyContext.ActiveCompanyId;
-        if (companyId == null) return; // no company yet — silent skip
+
+        if (companyId == null)
+            return;
 
         Avalonia.Threading.Dispatcher.UIThread.Post(() =>
         {
-            ErganiStatusIcon  = "⏳";
-            ErganiStatusText  = "Ergani: Checking…";
+            ErganiStatusIcon = "⏳";
+            ErganiStatusText = "Ergani: Checking…";
             ErganiStatusColor = "#888888";
         });
 
         try
         {
-            await using var db = new ErganiManager.Data.AppDbContext(
-                _services.GetRequiredService<IConnectionStateService>().GetDbOptions());
-            var company = await db.Companies.FindAsync(companyId.Value);
-            if (company == null) return;
+            await using var db =
+                new ErganiManager.Data.AppDbContext(
+                    _services
+                        .GetRequiredService<IConnectionStateService>()
+                        .GetDbOptions());
 
-            var protector   = _services.GetRequiredService<ICredentialProtector>();
-            var credentials = new ErganiManager.ErganiApi.Models.ErganiCredentials
-            {
-                Username = company.ErganiUsername,
-                Password = protector.Unprotect(company.ErganiPasswordEncrypted),
-                BaseUrl  = company.ErganiBaseUrl
-            };
+            var company =
+                await db.Companies.FindAsync(companyId.Value);
 
-            var status = await _erganiHealth.CheckAsync(credentials).ConfigureAwait(false);
-            Avalonia.Threading.Dispatcher.UIThread.Post(() => ApplyErganiStatus(status));
+            if (company == null)
+                return;
+
+            var protector =
+                _services.GetRequiredService<ICredentialProtector>();
+
+            var credentials =
+                new ErganiManager.ErganiApi.Models.ErganiCredentials
+                {
+                    Username = company.ErganiUsername,
+
+                    Password = protector.Unprotect(
+                        company.ErganiPasswordEncrypted),
+
+                    BaseUrl = company.ErganiBaseUrl
+                };
+
+            var status =
+                await _erganiHealth
+                    .CheckAsync(credentials)
+                    .ConfigureAwait(false);
+
+            Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+                ApplyErganiStatus(status));
         }
         catch (Exception ex)
         {
             Avalonia.Threading.Dispatcher.UIThread.Post(() =>
             {
-                ErganiStatusIcon  = "❌";
-                ErganiStatusText  = "Ergani: Error";
+                ErganiStatusIcon = "❌";
+                ErganiStatusText = "Ergani: Error";
                 ErganiStatusColor = "#EF5350";
-                ShowError($"Ergani check failed: {ex.Message}");
+
+                ShowError(
+                    $"Ergani check failed: {ex.Message}");
             });
         }
     }
 
-    // ── Cache sync ────────────────────────────────────────────────────────────
+    // ── Cache sync ───────────────────────────────────────────────────────────
 
     private async Task SyncCacheAsync(int companyId)
     {
         try
         {
-            var result = await _cacheSync
-                .RefreshCacheFromMainDatabaseAsync(companyId).ConfigureAwait(false);
+            var result =
+                await _cacheSync
+                    .RefreshCacheFromMainDatabaseAsync(companyId)
+                    .ConfigureAwait(false);
+
             Avalonia.Threading.Dispatcher.UIThread.Post(() =>
             {
                 if (result.Success)
+                {
                     ShowNotification(
-                        $"✅ Offline cache updated: {result.EmployeesSynced} employees, " +
+                        $"✅ Offline cache updated: " +
+                        $"{result.EmployeesSynced} employees, " +
                         $"{result.SchedulesSynced} schedules.");
+                }
                 else
-                    ShowError($"⚠️ Cache sync failed: {result.ErrorMessage}");
+                {
+                    ShowError(
+                        $"⚠️ Cache sync failed: " +
+                        $"{result.ErrorMessage}");
+                }
             });
         }
         catch (Exception ex)
         {
             Avalonia.Threading.Dispatcher.UIThread.Post(() =>
-                ShowError($"⚠️ Cache sync error: {ex.Message}"));
+                ShowError(
+                    $"⚠️ Cache sync error: {ex.Message}"));
         }
     }
 
     [RelayCommand]
     private void RefreshCache()
     {
-        var companyId = _companyContext.ActiveCompanyId;
+        var companyId =
+            _companyContext.ActiveCompanyId;
+
         if (companyId.HasValue)
+        {
             _ = SyncCacheAsync(companyId.Value);
+        }
         else
+        {
             ShowError("Select a company first.");
+        }
     }
+
+    // ── Barcode scan window ──────────────────────────────────────────────────
 
     [RelayCommand]
     private void OpenScanWindow()
     {
-        var vm = _services.GetRequiredService<WorkCardScanViewModel>();
-        if (_session != null) vm.Initialize(_session);
-        var win = new ErganiManager.UI.Views.BarcodeScanWindow { DataContext = vm };
+        var vm =
+            _services.GetRequiredService<WorkCardScanViewModel>();
+
+        /*
+         * IMPORTANT:
+         *
+         * A Super Admin's original session has CompanyId == null.
+         *
+         * The scan window must receive a session containing the
+         * company currently selected in the main window.
+         */
+        if (_session != null)
+        {
+            vm.Initialize(
+                BuildSessionForActiveCompany());
+        }
+
+        var win =
+            new ErganiManager.UI.Views.BarcodeScanWindow
+            {
+                DataContext = vm
+            };
+
         win.Show();
     }
 
@@ -186,53 +283,111 @@ public partial class AdminShellViewModel : ViewModelBase
 
     private UserSession? _session;
 
-    public AdminShellViewModel(IServiceProvider services, ICompanyContext companyContext,
-        ICompanyService companyService, ICacheSyncService cacheSync,
+    public AdminShellViewModel(
+        IServiceProvider services,
+        ICompanyContext companyContext,
+        ICompanyService companyService,
+        ICacheSyncService cacheSync,
         IErganiHealthCheckService erganiHealth)
     {
-        _services       = services;
-        _companyContext  = companyContext;
-        _companyService  = companyService;
-        _cacheSync       = cacheSync;
-        _erganiHealth    = erganiHealth;
-        LanguageSelector = services.GetRequiredService<LanguageSelectorViewModel>();
+        _services = services;
+        _companyContext = companyContext;
+        _companyService = companyService;
+        _cacheSync = cacheSync;
+        _erganiHealth = erganiHealth;
 
-        // Update status indicator whenever health check fires
+        LanguageSelector =
+            services.GetRequiredService<
+                LanguageSelectorViewModel>();
+
         _erganiHealth.StatusChanged += (_, status) =>
-            Avalonia.Threading.Dispatcher.UIThread.Post(() => ApplyErganiStatus(status));
+            Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+                ApplyErganiStatus(status));
     }
 
     public async void Initialize(UserSession session)
     {
         _session = session;
-        WelcomeText = $"Welcome, {session.Username}";
-        IsSuperAdmin = session.IsSuperAdmin;
-        HasActiveCompany = _companyContext.ActiveCompanyId.HasValue;
+
+        WelcomeText =
+            $"Welcome, {session.Username}";
+
+        IsSuperAdmin =
+            session.IsSuperAdmin;
+
+        HasActiveCompany =
+            _companyContext.ActiveCompanyId.HasValue;
 
         if (session.IsSuperAdmin)
         {
-            // Run DB fetch on background thread, update collection on UI thread
-            var companies = await _companyService.GetAllAsync().ConfigureAwait(false);
-            await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() =>
+            var companies =
+                await _companyService
+                    .GetAllAsync()
+                    .ConfigureAwait(false);
+
+            await Avalonia.Threading.Dispatcher.UIThread
+                .InvokeAsync(() =>
+                {
+                    SwitchableCompanies.Clear();
+
+                    foreach (var company in
+                             companies.Where(c => c.IsActive))
+                    {
+                        SwitchableCompanies.Add(company);
+                    }
+
+                    /*
+                     * IMPORTANT:
+                     *
+                     * First try the company already stored in
+                     * ICompanyContext.
+                     *
+                     * Only if there is no active company do we
+                     * fall back to the first active company.
+                     */
+                    var activeCompanyId =
+                        _companyContext.ActiveCompanyId;
+
+                    if (activeCompanyId.HasValue)
+                    {
+                        SelectedSwitchCompany =
+                            SwitchableCompanies.FirstOrDefault(
+                                c => c.Id ==
+                                     activeCompanyId.Value);
+                    }
+
+                    if (SelectedSwitchCompany == null &&
+                        SwitchableCompanies.Count > 0)
+                    {
+                        SelectedSwitchCompany =
+                            SwitchableCompanies[0];
+                    }
+                });
+
+            if (SelectedSwitchCompany != null)
             {
-                SwitchableCompanies.Clear();
-                foreach (var c in companies.Where(c => c.IsActive))
-                    SwitchableCompanies.Add(c);
-                if (SwitchableCompanies.Count > 0)
-                    SelectedSwitchCompany = SwitchableCompanies[0];
-            });
-            CompanyDisplayText = "Super Admin — select a company above";
+                CompanyDisplayText =
+                    $"Managing: {SelectedSwitchCompany.Name}";
+            }
+            else
+            {
+                CompanyDisplayText =
+                    "Super Admin — select a company above";
+            }
         }
         else
         {
-            CompanyDisplayText = session.CompanyName ?? "No company assigned";
+            CompanyDisplayText =
+                session.CompanyName ??
+                "No company assigned";
         }
 
-        NavigateTo(nameof(AdminSection.Companies));
+        NavigateTo(
+            nameof(AdminSection.Companies));
 
-        // Populate the local offline cache for this company on background thread.
-        // This ensures the terminal scan window works offline and has fresh data.
-        var companyId = _companyContext.ActiveCompanyId;
+        var companyId =
+            _companyContext.ActiveCompanyId;
+
         if (companyId.HasValue)
         {
             _ = SyncCacheAsync(companyId.Value);
@@ -240,41 +395,51 @@ public partial class AdminShellViewModel : ViewModelBase
         }
     }
 
+
     partial void OnSelectedSwitchCompanyChanged(CompanyDto? value)
     {
         if (value == null || _session == null)
             return;
 
-        _companyContext.SwitchCompany(value.Id, value.Name);
+        // Update the displayed name, but don't refresh everything
+        // if this is already the active company.
         CompanyDisplayText = $"Managing: {value.Name}";
+
+        if (_companyContext.ActiveCompanyId == value.Id)
+        {
+            HasActiveCompany = true;
+            return;
+        }
+
+        // Only perform the expensive operations on a real company switch.
+        _companyContext.SwitchCompany(value.Id, value.Name);
         HasActiveCompany = true;
 
-        // Re-initialize every already-opened section so it picks up the new
-        // ActiveCompanyId immediately, rather than only on next navigation.
         foreach (var kvp in _sectionCache)
         {
             if (kvp.Value is IAdminSectionViewModel sectionVm)
+            {
                 sectionVm.Initialize(BuildSessionForActiveCompany());
+            }
         }
 
-        // Refresh offline cache for the newly selected company
         _ = SyncCacheAsync(value.Id);
-
-        // Check Ergani API status for the selected company
         _ = CheckErganiNowAsync();
     }
 
+
     /// <summary>
-    /// Section ViewModels read CompanyId off the session they're handed.
-    /// For a super-admin, that's not the original login session (which has
-    /// CompanyId == null) but a constructed view of "the session, but scoped
-    /// to whichever company is currently active" — built fresh on every
-    /// switch and on every section's first Initialize call.
+    /// Creates a company-scoped session for the currently
+    /// selected company.
+    ///
+    /// Super Admin login itself has CompanyId == null.
+    /// Child ViewModels, however, need the active CompanyId.
     /// </summary>
     private UserSession BuildSessionForActiveCompany()
     {
         if (_session == null)
-            throw new InvalidOperationException("Session not set.");
+            throw new InvalidOperationException(
+                "Session not set.");
 
         if (!_session.IsSuperAdmin)
             return _session;
@@ -284,10 +449,18 @@ public partial class AdminShellViewModel : ViewModelBase
             UserId = _session.UserId,
             Username = _session.Username,
             Role = _session.Role,
-            CompanyId = _companyContext.ActiveCompanyId,
-            CompanyName = SelectedSwitchCompany?.Name,
+
+            CompanyId =
+                _companyContext.ActiveCompanyId,
+
+            CompanyName =
+                SelectedSwitchCompany?.Name,
+
             BranchId = null,
-            IsOfflineSession = _session.IsOfflineSession
+            BranchName = null,
+
+            IsOfflineSession =
+                _session.IsOfflineSession
         };
     }
 
@@ -296,60 +469,165 @@ public partial class AdminShellViewModel : ViewModelBase
         if (_session is not { IsSuperAdmin: true })
             return;
 
-        var companies = await _companyService.GetAllAsync();
-        var previouslySelectedId = SelectedSwitchCompany?.Id;
+        var companies =
+            await _companyService
+                .GetAllAsync();
 
-        SwitchableCompanies.Clear();
-        foreach (var c in companies.Where(c => c.IsActive))
-            SwitchableCompanies.Add(c);
+        var previouslySelectedId =
+            SelectedSwitchCompany?.Id;
 
-        if (previouslySelectedId.HasValue)
-            SelectedSwitchCompany = SwitchableCompanies.FirstOrDefault(c => c.Id == previouslySelectedId.Value);
+        await Avalonia.Threading.Dispatcher.UIThread
+            .InvokeAsync(() =>
+            {
+                SwitchableCompanies.Clear();
+
+                foreach (var company in
+                         companies.Where(c => c.IsActive))
+                {
+                    SwitchableCompanies.Add(company);
+                }
+
+                if (previouslySelectedId.HasValue)
+                {
+                    SelectedSwitchCompany =
+                        SwitchableCompanies.FirstOrDefault(
+                            c => c.Id ==
+                                 previouslySelectedId.Value);
+                }
+
+                if (SelectedSwitchCompany == null)
+                {
+                    var activeId =
+                        _companyContext.ActiveCompanyId;
+
+                    if (activeId.HasValue)
+                    {
+                        SelectedSwitchCompany =
+                            SwitchableCompanies.FirstOrDefault(
+                                c => c.Id == activeId.Value);
+                    }
+                }
+            });
     }
 
     [RelayCommand]
     private void NavigateTo(string sectionName)
     {
-        if (!Enum.TryParse<AdminSection>(sectionName, out var section))
+        if (!Enum.TryParse<AdminSection>(
+                sectionName,
+                out var section))
         {
-            Serilog.Log.Warning("Unknown AdminSection: {SectionName}", sectionName);
+            Serilog.Log.Warning(
+                "Unknown AdminSection: {SectionName}",
+                sectionName);
+
             return;
         }
 
         ActiveSection = section;
 
-        if (!_sectionCache.TryGetValue(section, out var vm))
+        if (!_sectionCache.TryGetValue(
+                section,
+                out var vm))
         {
             vm = section switch
             {
-                AdminSection.Companies => (ViewModelBase)_services.GetRequiredService<CompaniesViewModel>(),
-                AdminSection.Branches => _services.GetRequiredService<BranchesViewModel>(),
-                AdminSection.Employees => _services.GetRequiredService<EmployeesViewModel>(),
-                AdminSection.Users => _services.GetRequiredService<UsersViewModel>(),
-                AdminSection.Schedules => _services.GetRequiredService<SchedulesViewModel>(),
-                AdminSection.WorkCards    => _services.GetRequiredService<WorkCardHistoryViewModel>(),
-                AdminSection.WorkCardScan => _services.GetRequiredService<WorkCardScanViewModel>(),
-                AdminSection.Overtime     => _services.GetRequiredService<OvertimeViewModel>(),
-                AdminSection.SubmissionLog => _services.GetRequiredService<SubmissionLogViewModel>(),
-                _ => throw new ArgumentOutOfRangeException(nameof(section))
+                AdminSection.Companies =>
+                    (ViewModelBase)
+                        _services
+                            .GetRequiredService<
+                                CompaniesViewModel>(),
+
+                AdminSection.Branches =>
+                    _services
+                        .GetRequiredService<
+                            BranchesViewModel>(),
+
+                AdminSection.Employees =>
+                    _services
+                        .GetRequiredService<
+                            EmployeesViewModel>(),
+
+                AdminSection.Users =>
+                    _services
+                        .GetRequiredService<
+                            UsersViewModel>(),
+
+                AdminSection.Schedules =>
+                    _services
+                        .GetRequiredService<
+                            SchedulesViewModel>(),
+
+                AdminSection.WorkCards =>
+                    _services
+                        .GetRequiredService<
+                            WorkCardHistoryViewModel>(),
+
+                AdminSection.WorkCardScan =>
+                    _services
+                        .GetRequiredService<
+                            WorkCardScanViewModel>(),
+
+                AdminSection.Today =>
+                    _services
+                        .GetRequiredService<
+                            TodayBoardViewModel>(),
+
+                AdminSection.Reports =>
+                    _services
+                        .GetRequiredService<
+                            ReportsViewModel>(),
+
+                AdminSection.Overtime =>
+                    _services
+                        .GetRequiredService<
+                            OvertimeViewModel>(),
+
+                AdminSection.SubmissionLog =>
+                    _services
+                        .GetRequiredService<
+                            SubmissionLogViewModel>(),
+
+                AdminSection.Help =>
+                    _services
+                        .GetRequiredService<
+                            HelpViewModel>(),
+
+                AdminSection.Administration =>
+                    _services
+                        .GetRequiredService<
+                            AdministrationViewModel>(),
+
+                _ =>
+                    throw new ArgumentOutOfRangeException(
+                        nameof(section))
             };
+
             _sectionCache[section] = vm;
 
             if (vm is CompaniesViewModel companiesVm)
-                companiesVm.CompaniesChanged += async (_, _) => await RefreshSwitchableCompaniesAsync();
+            {
+                companiesVm.CompaniesChanged +=
+                    async (_, _) =>
+                        await RefreshSwitchableCompaniesAsync();
+            }
 
-            // Each section ViewModel implements IAdminSectionViewModel so the
-            // shell can hand it the session without every case needing a cast.
-            if (vm is IAdminSectionViewModel sectionVm && _session != null)
-                sectionVm.Initialize(BuildSessionForActiveCompany());
+            if (vm is IAdminSectionViewModel sectionVm &&
+                _session != null)
+            {
+                sectionVm.Initialize(
+                    BuildSessionForActiveCompany());
+            }
         }
 
         CurrentSectionViewModel = vm;
     }
 }
 
-/// <summary>Implemented by every Admin section ViewModel so the shell can
-/// initialize it with the current session/company context uniformly.</summary>
+/// <summary>
+/// Implemented by every Admin section ViewModel so the shell
+/// can initialize it with the current session/company context.
+/// </summary>
 public interface IAdminSectionViewModel
 {
     void Initialize(UserSession session);

@@ -6,6 +6,8 @@ using CommunityToolkit.Mvvm.Input;
 using ErganiManager.Core.Interfaces;
 using ErganiManager.Data;
 using ErganiManager.LocalCache;
+using Microsoft.EntityFrameworkCore;
+using Serilog;
 
 namespace ErganiManager.UI.ViewModels;
 
@@ -148,8 +150,19 @@ public partial class DatabaseSetupViewModel : ViewModelBase
             }
             else
             {
-                StatusMessage = $"❌ Connection failed: {error}";
-                ConnectionVerified = false;
+                // The database itself may simply not exist yet — that is fine on a fresh
+                // installation, it is created by "Save and continue".
+                var (serverOk, serverError) = await DbProviderFactory.TestServerAsync(config);
+                if (serverOk)
+                {
+                    StatusMessage = "✅ Server reachable. The database does not exist yet and will be created when you continue.";
+                    ConnectionVerified = true;
+                }
+                else
+                {
+                    StatusMessage = $"❌ Connection failed: {serverError ?? error}";
+                    ConnectionVerified = false;
+                }
             }
         }
         catch (Exception ex)
@@ -163,6 +176,13 @@ public partial class DatabaseSetupViewModel : ViewModelBase
         }
     }
 
+    /// <summary>Resumes a setup that stopped after the database step (database ready, no user yet).</summary>
+    public void ResumeAtAdminStep()
+    {
+        IsDatabaseStepComplete = true;
+        AdminStatusMessage = "The database is ready. Create the first administrator to finish setup.";
+    }
+
     [RelayCommand]
     private async Task SaveAndContinueAsync()
     {
@@ -171,31 +191,49 @@ public partial class DatabaseSetupViewModel : ViewModelBase
         {
             var config = BuildConfig();
 
-            // Always re-verify right before saving — the user may have edited
-            // a field after the last successful test.
-            var (success, error) = await DbProviderFactory.TestConnectionAsync(config);
-            if (!success)
+            // STEP 1 — create the database (server-side database / SQLite file). No-op if it exists.
+            StatusMessage = "Step 1/3: creating the database…";
+            try
             {
-                StatusMessage = $"❌ Cannot save — connection failed: {error}";
+                await DbProviderFactory.EnsureDatabaseExistsAsync(config);
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, "Setup: cannot create/access the database.");
+                StatusMessage = $"❌ Cannot create/access the database: {ex.Message}";
                 ConnectionVerified = false;
                 return;
             }
 
-            // Apply schema BEFORE saving connection.json so that if EnsureCreated
-            // fails the app doesn't get into a state where connection.json exists
-            // but the schema is broken — which would skip this wizard on next launch.
-            var optionsBuilder = new Microsoft.EntityFrameworkCore.DbContextOptionsBuilder<AppDbContext>();
+            // The database must now exist and accept connections.
+            var (success, error) = await DbProviderFactory.TestConnectionAsync(config);
+            if (!success)
+            {
+                Log.Error("Setup: cannot connect to the database: {Error}", error);
+                StatusMessage = $"❌ Cannot connect to the database: {error}";
+                ConnectionVerified = false;
+                return;
+            }
+
+            // STEP 2 — create the tables and verify them BEFORE saving connection.json, so a
+            // failure never leaves a config behind that skips this wizard on the next launch.
+            StatusMessage = "Step 2/3: creating the tables…";
+            await DatabaseMigrator.ApplyAsync(config);
+
+            var optionsBuilder = new DbContextOptionsBuilder<AppDbContext>();
             DbProviderFactory.Configure(optionsBuilder, config);
-            await using var db = new AppDbContext(optionsBuilder.Options);
-            await db.Database.EnsureCreatedAsync();
+            await using (var db = new AppDbContext(optionsBuilder.Options))
+            {
+                _ = await db.Companies.AnyAsync();
+                _ = await db.Users.AnyAsync();
+            }
 
-            // Schema is confirmed — now safe to persist the connection config.
+            // STEP 3 — the schema is confirmed, persist the connection configuration.
             _connectionState.SaveConfig(config);
+            StatusMessage = "✅ Database created. Step 3/3: administrator account.";
 
-            StatusMessage = "✅ Database configured and schema applied.";
-
-            // If users already exist (e.g. re-pointing to an existing DB),
-            // skip straight to login instead of showing the admin creation step.
+            // If users already exist (e.g. re-pointing to an existing DB), make sure the offline
+            // copy exists and go straight to login; otherwise ask for the first administrator.
             var needsAdmin = await _adminBootstrap.NeedsFirstAdminAsync();
             if (needsAdmin)
             {
@@ -203,11 +241,14 @@ public partial class DatabaseSetupViewModel : ViewModelBase
             }
             else
             {
+                try { await _adminBootstrap.SeedOfflineCacheAsync(); }
+                catch (Exception ex) { Log.Error(ex, "Setup: could not initialize the offline database."); }
                 SetupCompleted?.Invoke(this, EventArgs.Empty);
             }
         }
         catch (Exception ex)
         {
+            Log.Error(ex, "Setup failed.");
             StatusMessage = $"❌ Setup failed: {ex.Message}";
         }
         finally
@@ -250,6 +291,20 @@ public partial class DatabaseSetupViewModel : ViewModelBase
 
             if (result.Success)
             {
+                // Only now — main database AND first administrator exist — create the offline
+                // database and copy the administrator into it. If this fails the administrator
+                // is still valid: the offline copy is rebuilt on the first successful login.
+                try
+                {
+                    await _adminBootstrap.SeedOfflineCacheAsync();
+                    AdminStatusMessage = "✅ Administrator created and offline database initialized.";
+                }
+                catch (Exception ex)
+                {
+                    Log.Error(ex, "Setup: administrator created but the offline database could not be initialized.");
+                    AdminStatusMessage = $"⚠️ Administrator created, but the offline database could not be initialized: {ex.Message}";
+                }
+
                 SetupCompleted?.Invoke(this, EventArgs.Empty);
             }
             else
