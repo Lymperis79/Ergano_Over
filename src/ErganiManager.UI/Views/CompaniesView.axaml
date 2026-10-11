@@ -121,6 +121,9 @@
                         <TextBlock Text="{Binding Loc[EarlyDepartureAlert]}" FontWeight="SemiBold" />
                         <NumericUpDown Value="{Binding FormEarlyDepartureAlertMinutes}" Minimum="0" Maximum="120" />
 
+                        <CheckBox Content="{Binding Loc[BlockRestAbsent]}"
+                                  IsChecked="{Binding FormBlockClockInOnRestOrAbsentDay}" />
+
                         <CheckBox Content="{Binding Loc[BlockNoSchedule]}"
                                   IsChecked="{Binding FormBlockClockInWithoutSchedule}" />
 

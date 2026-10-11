@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.ObjectModel;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -16,9 +16,8 @@ ViewModelBase,
 IAdminSectionViewModel
 {
     private readonly ICompanyService _companyService;
-
-
-private readonly IErganiDataImportService _erganiImport;
+    private readonly IErganiDataImportService _erganiImport;
+    private readonly ICacheSyncService _cacheSyncService;
 
     private UserSession? _session;
 
@@ -128,6 +127,10 @@ private readonly IErganiDataImportService _erganiImport;
     private bool _formBlockClockInWithoutSchedule =
         true;
 
+    [ObservableProperty]
+    private bool _formBlockClockInOnRestOrAbsentDay =
+        true;
+
     // ---------------------------------------------------------------------
     // Email / SMTP
     // ---------------------------------------------------------------------
@@ -169,13 +172,17 @@ private readonly IErganiDataImportService _erganiImport;
 
     public CompaniesViewModel(
         ICompanyService companyService,
-        IErganiDataImportService erganiImport)
+        IErganiDataImportService erganiImport,
+        ICacheSyncService cacheSyncService)
     {
         _companyService =
             companyService;
 
         _erganiImport =
             erganiImport;
+
+        _cacheSyncService =
+            cacheSyncService;
 
         InitUsertypes();
     }
@@ -274,6 +281,9 @@ private readonly IErganiDataImportService _erganiImport;
         FormBlockClockInWithoutSchedule =
             true;
 
+        FormBlockClockInOnRestOrAbsentDay =
+            true;
+
         FormAlertEmailEnabled =
             false;
 
@@ -366,6 +376,9 @@ private readonly IErganiDataImportService _erganiImport;
 
         FormBlockClockInWithoutSchedule =
             company.BlockClockInWithoutSchedule;
+
+        FormBlockClockInOnRestOrAbsentDay =
+            company.BlockClockInOnRestOrAbsentDay;
 
         FormAlertEmailEnabled =
             company.AlertEmailEnabled;
@@ -492,6 +505,9 @@ private readonly IErganiDataImportService _erganiImport;
                 BlockClockInWithoutSchedule =
                     FormBlockClockInWithoutSchedule,
 
+                BlockClockInOnRestOrAbsentDay =
+                    FormBlockClockInOnRestOrAbsentDay,
+
                 AlertEmailEnabled =
                     FormAlertEmailEnabled,
 
@@ -563,6 +579,27 @@ private readonly IErganiDataImportService _erganiImport;
 
             IsEditing =
                 false;
+
+            // Company time rules are cached for offline terminal scans. Refresh
+            // the cache immediately after saving so changing the checkbox takes
+            // effect without requiring an application restart or manual sync.
+            try
+            {
+                if (FormId > 0)
+                {
+                    var syncResult = await _cacheSyncService.RefreshCacheFromMainDatabaseAsync(FormId);
+                    if (!syncResult.Success)
+                    {
+                        StatusMessage = "Company saved, but terminal settings could not be refreshed. Sync the terminal before scanning. " + syncResult.ErrorMessage;
+                    }
+                }
+            }
+            catch (Exception syncEx)
+            {
+                // Do not undo a successfully saved company because cache refresh
+                // failed; surface a clear warning so the operator knows to sync.
+                StatusMessage = "Company saved, but terminal settings could not be refreshed. Sync the terminal before scanning. " + syncEx.Message;
+            }
 
             await LoadAsync();
         }

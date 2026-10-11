@@ -305,6 +305,63 @@ public partial class AdminShellViewModel : ViewModelBase
                 ApplyErganiStatus(status));
     }
 
+    // ── Menu visibility (per user) and menu groups ───────────────────────
+
+    [ObservableProperty] private bool _showCompanies = true;
+    [ObservableProperty] private bool _showBranches = true;
+    [ObservableProperty] private bool _showEmployees = true;
+    [ObservableProperty] private bool _showUsers = true;
+    [ObservableProperty] private bool _showSchedules = true;
+    [ObservableProperty] private bool _showWorkCards = true;
+    [ObservableProperty] private bool _showScan = true;
+    [ObservableProperty] private bool _showToday = true;
+    [ObservableProperty] private bool _showOvertime = true;
+    [ObservableProperty] private bool _showReports = true;
+    [ObservableProperty] private bool _showApiLog = true;
+    [ObservableProperty] private bool _showHelp = true;
+    [ObservableProperty] private bool _showAdministration;
+
+    // A group is shown only when at least one of its menus is visible for the user.
+    [ObservableProperty] private bool _showMasterData = true;
+    [ObservableProperty] private bool _showAdminGroup = true;
+
+    [ObservableProperty] private bool _isMasterDataExpanded = true;
+    [ObservableProperty] private bool _isAdminGroupExpanded = true;
+
+    public string MasterDataHeader => (IsMasterDataExpanded ? "▾ " : "▸ ") + Loc["NavMasterData"];
+    public string AdminGroupHeader => (IsAdminGroupExpanded ? "▾ " : "▸ ") + Loc["NavAdminGroup"];
+
+    partial void OnIsMasterDataExpandedChanged(bool value) => OnPropertyChanged(nameof(MasterDataHeader));
+    partial void OnIsAdminGroupExpandedChanged(bool value) => OnPropertyChanged(nameof(AdminGroupHeader));
+
+    [RelayCommand] private void ToggleMasterData() => IsMasterDataExpanded = !IsMasterDataExpanded;
+    [RelayCommand] private void ToggleAdminGroup() => IsAdminGroupExpanded = !IsAdminGroupExpanded;
+
+    /// <summary>Shows only the menus the logged-in user is allowed to see.</summary>
+    private void ApplyMenuAccess(UserSession session)
+    {
+        ShowCompanies      = session.CanSee(MenuKeys.Companies);
+        ShowBranches       = session.CanSee(MenuKeys.Branches);
+        ShowEmployees      = session.CanSee(MenuKeys.Employees);
+        ShowUsers          = session.CanSee(MenuKeys.Users);
+        ShowSchedules      = session.CanSee(MenuKeys.Schedules);
+        ShowWorkCards      = session.CanSee(MenuKeys.WorkCards);
+        ShowScan           = session.CanSee(MenuKeys.Scan);
+        ShowToday          = session.CanSee(MenuKeys.Today);
+        ShowOvertime       = session.CanSee(MenuKeys.Overtime);
+        ShowReports        = session.CanSee(MenuKeys.Reports);
+        ShowApiLog         = session.CanSee(MenuKeys.ApiLog);
+        ShowHelp           = session.CanSee(MenuKeys.Help);
+        ShowAdministration = session.CanSee(MenuKeys.Administration);
+
+        ShowMasterData = ShowCompanies || ShowBranches || ShowEmployees;
+        ShowAdminGroup = ShowUsers || ShowAdministration;
+    }
+
+    /// <summary>The first menu the user can open (the section shown right after login).</summary>
+    private static string FirstAllowedSection(UserSession session)
+        => MenuKeys.Configurable.FirstOrDefault(session.CanSee) ?? MenuKeys.Help;
+
     public async void Initialize(UserSession session)
     {
         _session = session;
@@ -314,6 +371,8 @@ public partial class AdminShellViewModel : ViewModelBase
 
         IsSuperAdmin =
             session.IsSuperAdmin;
+
+        ApplyMenuAccess(session);
 
         HasActiveCompany =
             _companyContext.ActiveCompanyId.HasValue;
@@ -382,8 +441,7 @@ public partial class AdminShellViewModel : ViewModelBase
                 "No company assigned";
         }
 
-        NavigateTo(
-            nameof(AdminSection.Companies));
+        NavigateTo(FirstAllowedSection(session));
 
         var companyId =
             _companyContext.ActiveCompanyId;
@@ -523,6 +581,10 @@ public partial class AdminShellViewModel : ViewModelBase
 
             return;
         }
+
+        // A menu hidden for this user cannot be opened (also not through a stale command).
+        if (_session != null && !_session.CanSee(sectionName))
+            return;
 
         ActiveSection = section;
 

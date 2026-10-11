@@ -648,6 +648,10 @@ public partial class WorkCardScanViewModel :
 
             if (elapsed < ScanCooldown)
             {
+                Serilog.Log.Warning(
+                    "Blocked scan: Source={ScanSource}, CompanyId={CompanyId}, ScanKey={ScanKey}, AttemptedAction={AttemptedAction}, Reason={Reason}, Time={ScanTime}",
+                    "WorkCardScanView", companyId.Value, cooldownKey, AutoDetect ? "Auto-detect" : (IsArrival ? "Arrival" : "Departure"),
+                    "Duplicate scan cooldown", DateTime.Now);
                 var remaining =
                     (int)Math.Ceiling(
                         (ScanCooldown - elapsed)
@@ -754,6 +758,48 @@ public partial class WorkCardScanViewModel :
 
                 scanTime =
                     date + time;
+            }
+
+            // Enforce the same schedule rules as the dedicated barcode terminal.
+            // Use the date selected for this scan (not necessarily today's date when
+            // the operator is entering a historical/manual movement).
+            var scanDate = DateOnly.FromDateTime(scanTime);
+            var schedule = await cache.CachedSchedules
+                .FirstOrDefaultAsync(s => s.EmployeeId == employee.Id && s.ScheduleDate == scanDate);
+            var companySettings = await cache.CachedCompanySettings.FindAsync(companyId.Value);
+
+            if (schedule != null && schedule.WorkType is 2 or 3 &&
+                (companySettings == null || companySettings.BlockClockInOnRestOrAbsentDay))
+            {
+                var dayType = schedule.WorkType == 2 ? "rest day" : "absence day";
+                LogBlockedScan("WorkCardScanView", employee, companyId.Value, movement,
+                    $"Schedule marked as {dayType}", scanTime);
+                ShowResponse(false, "🚫 Scan blocked",
+                    $"This date is marked as a {dayType}. Clock-in and clock-out are not allowed.");
+                return;
+            }
+
+            if (movement == "Arrival" && schedule == null &&
+                companySettings?.BlockClockInWithoutSchedule == true)
+            {
+                LogBlockedScan("WorkCardScanView", employee, companyId.Value, movement,
+                    "Clock-in blocked: no schedule", scanTime);
+                ShowResponse(false, "🚫 Scan blocked",
+                    "No schedule exists for this date. Clock-in is blocked by the company settings.");
+                return;
+            }
+
+            if (movement == "Arrival" && schedule?.StartTime != null && companySettings != null)
+            {
+                var earliestAllowed = schedule.StartTime.Value.AddMinutes(-companySettings.EarlyClockInBlockMinutes);
+                if (TimeOnly.FromDateTime(scanTime) < earliestAllowed)
+                {
+                    LogBlockedScan("WorkCardScanView", employee, companyId.Value, movement,
+                        $"Clock-in blocked: too early; shift starts {schedule.StartTime:HH:mm}, earliest allowed {earliestAllowed:HH:mm}", scanTime);
+                    ShowResponse(false, "🚫 Too early to clock in",
+                        $"Shift starts at {schedule.StartTime:HH:mm}. Earliest allowed clock-in is {earliestAllowed:HH:mm}.");
+                    return;
+                }
             }
 
             /*
@@ -1121,4 +1167,15 @@ public partial class WorkCardScanViewModel :
     {
         RecentScans.Clear();
     }
+    private static void LogBlockedScan(
+        string source, CachedEmployee employee, int companyId,
+        string attemptedAction, string reason, DateTime scanTime)
+    {
+        // Audit-only. Blocked scans must never create a PendingSubmission.
+        Serilog.Log.Warning(
+            "Blocked scan: Source={ScanSource}, EmployeeId={EmployeeId}, EmployeeName={EmployeeName}, Barcode={Barcode}, CompanyId={CompanyId}, AttemptedAction={AttemptedAction}, Reason={Reason}, Time={ScanTime}",
+            source, employee.Id, employee.FullName, employee.BarcodeId, companyId,
+            attemptedAction, reason, scanTime);
+    }
+
 }

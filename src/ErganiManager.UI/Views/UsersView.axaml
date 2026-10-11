@@ -21,9 +21,13 @@
                 <ItemsControl.ItemTemplate>
                     <DataTemplate>
                         <Border Background="#1A1D23" CornerRadius="8" Padding="16">
-                            <Grid ColumnDefinitions="*,Auto,Auto,Auto,Auto,Auto">
+                            <Grid ColumnDefinitions="*,Auto,Auto,Auto,Auto,Auto,Auto">
                                 <StackPanel Grid.Column="0">
-                                    <TextBlock Text="{Binding Username}" FontWeight="SemiBold" FontSize="14" />
+                                    <StackPanel Orientation="Horizontal" Spacing="6">
+                                        <TextBlock Text="{Binding Username}" FontWeight="SemiBold" FontSize="14" />
+                                        <TextBlock Text="🔒" IsVisible="{Binding HasMenuRestrictions}"
+                                                   ToolTip.Tip="This user sees only some menus" />
+                                    </StackPanel>
                                     <TextBlock Text="{Binding BranchName}" FontSize="12" Foreground="Gray" />
                                 </StackPanel>
                                 <Border Grid.Column="1" CornerRadius="10" Padding="8,3"
@@ -33,11 +37,13 @@
                                 <TextBlock Grid.Column="2" Text="{Binding IsActive}"
                                            VerticalAlignment="Center" Foreground="#999999"
                                            Margin="8,0" FontSize="12" />
-                                <Button Grid.Column="3" Content="Reset Password"
+                                <Button Grid.Column="3" Content="Menus"
+                                        Tag="{Binding}" Click="OnEditMenusClick" Margin="0,0,6,0" />
+                                <Button Grid.Column="4" Content="Reset Password"
                                         Tag="{Binding}" Click="OnResetPasswordClick" Margin="0,0,6,0" />
-                                <Button Grid.Column="4" Content="Active"
+                                <Button Grid.Column="5" Content="Active"
                                         Tag="{Binding}" Click="OnToggleActiveClick" Margin="0,0,6,0" />
-                                <Button Grid.Column="5" Content="Delete"
+                                <Button Grid.Column="6" Content="Delete"
                                         Tag="{Binding}" Click="OnDeleteClick" Foreground="#EF9A9A" />
                             </Grid>
                         </Border>
@@ -77,6 +83,30 @@
                             </ComboBox>
                         </StackPanel>
 
+                        <!-- Which menus this user sees (administrators) -->
+                        <StackPanel IsVisible="{Binding IsFormRoleAdmin}" Spacing="6" Margin="0,6,0,0">
+                            <TextBlock Text="{Binding Loc[UsersMenus]}" FontWeight="SemiBold" />
+                            <TextBlock Text="{Binding Loc[UsersMenusHint]}" Foreground="#9E9E9E"
+                                       FontSize="12" TextWrapping="Wrap" />
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <Button Content="{Binding Loc[UsersSelectAll]}" Command="{Binding SelectAllMenusCommand}" />
+                                <Button Content="{Binding Loc[UsersClearAll]}" Command="{Binding ClearMenusCommand}" />
+                            </StackPanel>
+                            <ItemsControl ItemsSource="{Binding MenuChoices}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="vm:MenuChoiceViewModel">
+                                    <CheckBox Content="{Binding Label}" IsChecked="{Binding IsSelected, Mode=TwoWay}"
+                                              MinWidth="190" Margin="0,0,12,4" />
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                        </StackPanel>
+                        <TextBlock Text="{Binding Loc[UsersMenusAdminOnly]}" Foreground="#9E9E9E" FontSize="12"
+                                   TextWrapping="Wrap" IsVisible="{Binding IsFormRoleOperator}" />
+
                         <TextBlock Text="{Binding StatusMessage}" Foreground="Red"
                                    TextWrapping="Wrap" Margin="0,8,0,0" />
                     </StackPanel>
@@ -113,6 +143,46 @@
                         HorizontalAlignment="Stretch" Margin="0,0,6,0" />
                 <Button Grid.Column="1" Content="{Binding Loc[Save]}"
                         Command="{Binding ConfirmResetPasswordCommand}" Classes="accent"
+                        HorizontalAlignment="Stretch" Margin="6,0,0,0" />
+            </Grid>
+        </Grid>
+
+        <!-- Edit the menus of an existing user -->
+        <Grid Grid.Row="1"
+              IsVisible="{Binding EditingMenusUser, Converter={x:Static ObjectConverters.IsNotNull}}"
+              RowDefinitions="*,Auto">
+            <ScrollViewer Grid.Row="0">
+                <Border Background="#1A1D23" CornerRadius="8" Padding="20">
+                    <StackPanel Spacing="10">
+                        <TextBlock Text="{Binding MenusPanelTitle}" FontSize="16" FontWeight="SemiBold" />
+                        <TextBlock Text="{Binding Loc[UsersMenusHint]}" Foreground="#9E9E9E"
+                                   FontSize="12" TextWrapping="Wrap" />
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <Button Content="{Binding Loc[UsersSelectAll]}" Command="{Binding SelectAllMenusCommand}" />
+                            <Button Content="{Binding Loc[UsersClearAll]}" Command="{Binding ClearMenusCommand}" />
+                        </StackPanel>
+                        <ItemsControl ItemsSource="{Binding MenuChoices}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="vm:MenuChoiceViewModel">
+                                    <CheckBox Content="{Binding Label}" IsChecked="{Binding IsSelected, Mode=TwoWay}"
+                                              MinWidth="190" Margin="0,0,12,4" />
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                        <TextBlock Text="{Binding StatusMessage}" Foreground="Red" TextWrapping="Wrap" />
+                    </StackPanel>
+                </Border>
+            </ScrollViewer>
+
+            <Grid Grid.Row="1" ColumnDefinitions="*,*" Margin="0,8,0,0">
+                <Button Grid.Column="0" Content="{Binding Loc[Cancel]}"
+                        Command="{Binding CancelEditMenusCommand}"
+                        HorizontalAlignment="Stretch" Margin="0,0,6,0" />
+                <Button Grid.Column="1" Content="{Binding Loc[Save]}"
+                        Command="{Binding SaveMenusCommand}" Classes="accent"
                         HorizontalAlignment="Stretch" Margin="6,0,0,0" />
             </Grid>
         </Grid>

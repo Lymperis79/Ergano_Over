@@ -131,6 +131,9 @@ public partial class TerminalViewModel : ViewModelBase
             if (elapsed < ScanCooldown)
             {
                 var remaining = (int)Math.Ceiling((ScanCooldown - elapsed).TotalSeconds);
+                Serilog.Log.Warning(
+                    "Blocked scan: Source={ScanSource}, CompanyId={CompanyId}, ScanKey={ScanKey}, AttemptedAction={AttemptedAction}, Reason={Reason}, Time={ScanTime}",
+                    "BarcodeScanView", _session.CompanyId.Value, cooldownKey, "Unknown", "Duplicate scan cooldown", DateTime.Now);
                 ShowPopup(ScanPopupKind.TooEarlyBlocked,
                     "⏳ ALREADY SCANNED", "",
                     $"This employee was scanned {(int)elapsed.TotalSeconds}s ago.",
@@ -259,10 +262,26 @@ public partial class TerminalViewModel : ViewModelBase
 
         var now = DateTime.Now;
 
+        // Explicit Rest/Absent schedule entries block BOTH directions. This check
+        // must run before movement-specific logic so a second scan cannot clock out
+        // an employee after a blocked rest-day clock-in attempt.
+        // Controlled by the company setting; a company without cached settings keeps the safe default (block).
+        if (schedule != null && schedule.WorkType is 2 or 3 &&
+            (settings == null || settings.BlockClockInOnRestOrAbsentDay))
+        {
+            var dayType = schedule.WorkType == 2 ? "rest day" : "absence day";
+            await LogBlockedAttemptAsync(cache, employee, companyId, movementType, $"Schedule marked as {dayType}");
+            ShowPopup(ScanPopupKind.NoScheduleBlocked, Loc[L.NoSchedule], employee.FullName,
+                $"Today is marked as a {dayType}.",
+                "Clock-in/out is blocked because the employee is not scheduled to work today.", "");
+            return;
+        }
+
         if (movementType == "Arrival")
         {
             if (schedule == null && settings != null && settings.BlockClockInWithoutSchedule)
             {
+                await LogBlockedAttemptAsync(cache, employee, companyId, movementType, "Clock-in blocked: no schedule");
                 ShowPopup(ScanPopupKind.NoScheduleBlocked, Loc[L.NoSchedule], employee.FullName,
                     "No schedule found for today.", "Clock-in is blocked until a schedule is entered.", "");
                 return;
@@ -278,7 +297,8 @@ public partial class TerminalViewModel : ViewModelBase
                     var minutesRemaining = (int)Math.Ceiling(
                         (earliestAllowed.ToTimeSpan() - nowTimeOnly.ToTimeSpan()).TotalMinutes);
 
-                    await LogBlockedAttemptAsync(cache, employee, companyId);
+                    await LogBlockedAttemptAsync(cache, employee, companyId, movementType,
+                        $"Clock-in blocked: too early; shift starts {schedule.StartTime:HH:mm}, earliest allowed {earliestAllowed:HH:mm}");
 
                     ShowPopup(ScanPopupKind.TooEarlyBlocked, Loc[L.TooEarly], employee.FullName,
                         $"{Loc[L.ShiftLabel]}: {schedule.StartTime:HH:mm}    Earliest: {earliestAllowed:HH:mm}",
@@ -403,18 +423,16 @@ public partial class TerminalViewModel : ViewModelBase
         _retryService.TriggerNow();
     }
 
-    private static async Task LogBlockedAttemptAsync(LocalCacheDbContext cache, CachedEmployee employee, int companyId)
+    private static Task LogBlockedAttemptAsync(
+        LocalCacheDbContext cache, CachedEmployee employee, int companyId,
+        string attemptedAction, string reason)
     {
-        // Blocked early-clock-in attempts are audit-only and are never sent to
-        // Ergani. Recorded here as a queued-but-marked record would overload
-        // PendingSubmission's meaning, so for this phase it is logged via
-        // Serilog; a dedicated BlockedAttempt cache table is a natural
-        // follow-up once the Admin "blocked attempts" log viewer is built.
+        // Audit-only: blocked scans are never queued or submitted to Ergani.
         Serilog.Log.Warning(
-            "Blocked early clock-in attempt: Employee {EmployeeId} ({Name}), Company {CompanyId}, at {Time}",
-            employee.Id, employee.FullName, companyId, DateTime.Now);
-
-        await Task.CompletedTask;
+            "Blocked scan: Source={ScanSource}, EmployeeId={EmployeeId}, EmployeeName={EmployeeName}, Barcode={Barcode}, CompanyId={CompanyId}, AttemptedAction={AttemptedAction}, Reason={Reason}, Time={ScanTime}",
+            "BarcodeScanView", employee.Id, employee.FullName, employee.BarcodeId,
+            companyId, attemptedAction, reason, DateTime.Now);
+        return Task.CompletedTask;
     }
 
     private void ShowPopup(ScanPopupKind kind, string title, string employeeName, string line1, string line2, string line3)

@@ -24,6 +24,12 @@ public partial class UsersView : UserControl
             vm.StartResetPasswordCommand.Execute(user);
     }
 
+    private void OnEditMenusClick(object? sender, RoutedEventArgs e)
+    {
+        if (sender is Button { Tag: AppUserDto user } && DataContext is UsersViewModel vm)
+            vm.StartEditMenusCommand.Execute(user);
+    }
+
     private void OnDeleteClick(object? sender, RoutedEventArgs e)
     {
         if (sender is Button { Tag: AppUserDto item } && DataContext is UsersViewModel vm)

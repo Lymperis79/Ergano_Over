@@ -8,6 +8,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using ErganiManager.Core.Interfaces;
 using ErganiManager.Core.Models;
+using ErganiManager.UI.Localization;
 
 namespace ErganiManager.UI.ViewModels;
 
@@ -23,7 +24,9 @@ public partial class TodayBoardViewModel : ViewModelBase, IAdminSectionViewModel
     private DispatcherTimer? _timer;
     private bool _refreshing;
 
-    public ObservableCollection<TodayEmployeeStatusDto> Rows { get; } = new();
+    public ObservableCollection<TodayRowViewModel> Rows { get; } = new();
+    private List<TodayRowViewModel> _allRows = new();
+    private DateTime? _lastUpdated;
     public int[] GraceOptions { get; } = { 0, 5, 10, 15, 30 };
 
     [ObservableProperty] private bool _hasActiveCompany;
@@ -33,8 +36,11 @@ public partial class TodayBoardViewModel : ViewModelBase, IAdminSectionViewModel
     [ObservableProperty] private bool _autoRefresh = true;
     [ObservableProperty] private bool _isLoading;
     [ObservableProperty] private string _statusMessage = string.Empty;
-    [ObservableProperty] private string _lastUpdatedText = string.Empty;
-    [ObservableProperty] private TodayEmployeeStatusDto? _selectedRow;
+    [ObservableProperty] private TodayRowViewModel? _selectedRow;
+
+    public string LastUpdatedText => _lastUpdated.HasValue
+        ? string.Format(Loc[L.TodayUpdated], _lastUpdated.Value.ToString("HH:mm:ss"))
+        : string.Empty;
 
     [ObservableProperty] private int _totalCount;
     [ObservableProperty] private int _workingCount;
@@ -46,6 +52,13 @@ public partial class TodayBoardViewModel : ViewModelBase, IAdminSectionViewModel
     public TodayBoardViewModel(ITodayStatusService statusService)
     {
         _statusService = statusService;
+
+        // The texts of the rows are built from the language files: rebuild them when the language changes.
+        Loc.LanguageChanged += (_, _) =>
+            Dispatcher.UIThread.Post(() =>
+            {
+                foreach (var row in _allRows) row.Refresh();
+            });
     }
 
     public void Initialize(UserSession session)
@@ -75,8 +88,10 @@ public partial class TodayBoardViewModel : ViewModelBase, IAdminSectionViewModel
         {
             var date = DateOnly.FromDateTime((SelectedDate ?? DateTimeOffset.Now).DateTime);
             _all = await _statusService.GetAsync(companyId, date, GraceMinutes);
+            _allRows = _all.Select(d => new TodayRowViewModel(d, Loc)).ToList();
             ApplyFilter();
-            LastUpdatedText = $"Updated {DateTime.Now:HH:mm:ss}";
+            _lastUpdated = DateTime.Now;
+            OnPropertyChanged(nameof(LastUpdatedText));
             StatusMessage = string.Empty;
         }
         catch (Exception ex)
@@ -105,7 +120,7 @@ public partial class TodayBoardViewModel : ViewModelBase, IAdminSectionViewModel
         WarningCount    = _all.Count(r => r.IsWarning);
 
         Rows.Clear();
-        foreach (var r in _all.Where(r => !OnlyProblems || r.HasIssues))
+        foreach (var r in _allRows.Where(r => !OnlyProblems || r.HasIssues))
             Rows.Add(r);
 
         SelectedRow = keepId.HasValue ? Rows.FirstOrDefault(r => r.EmployeeId == keepId.Value) : null;

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.ObjectModel;
+using System.Linq;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -29,8 +30,98 @@ public partial class UsersViewModel : ViewModelBase, IAdminSectionViewModel
     [ObservableProperty] private BranchDto? _formBranch;
 
     public bool IsFormRoleOperator => FormRole == AppUserRole.Operator;
+    public bool IsFormRoleAdmin => FormRole == AppUserRole.Admin;
 
-    partial void OnFormRoleChanged(AppUserRole value) => OnPropertyChanged(nameof(IsFormRoleOperator));
+    partial void OnFormRoleChanged(AppUserRole value)
+    {
+        OnPropertyChanged(nameof(IsFormRoleOperator));
+        OnPropertyChanged(nameof(IsFormRoleAdmin));
+    }
+
+    // ── Which menus the user may see (create form and "Menus" editor share the list) ──
+    public ObservableCollection<MenuChoiceViewModel> MenuChoices { get; } = new();
+    [ObservableProperty] private AppUserDto? _editingMenusUser;
+    [ObservableProperty] private string _menusPanelTitle = string.Empty;
+
+    private static string MenuLabelKey(string menuKey) => menuKey switch
+    {
+        MenuKeys.Companies => "NavCompanies",
+        MenuKeys.Branches  => "NavBranches",
+        MenuKeys.Employees => "NavEmployees",
+        MenuKeys.Users     => "NavUsers",
+        MenuKeys.Schedules => "NavSchedules",
+        MenuKeys.WorkCards => "NavWorkCards",
+        MenuKeys.Scan      => "NavScan",
+        MenuKeys.Today     => "NavToday",
+        MenuKeys.Overtime  => "NavOvertime",
+        MenuKeys.Reports   => "NavReports",
+        MenuKeys.ApiLog    => "NavApiLog",
+        _                  => "NavHelp"
+    };
+
+    /// <summary>Fills the checkbox list; <paramref name="allowed"/> null = every menu ticked.</summary>
+    private void BuildMenuChoices(System.Collections.Generic.HashSet<string>? allowed)
+    {
+        MenuChoices.Clear();
+        foreach (var key in MenuKeys.Configurable)
+            MenuChoices.Add(new MenuChoiceViewModel(key, Loc[MenuLabelKey(key)], allowed == null || allowed.Contains(key)));
+    }
+
+    private string? SelectedMenusOrNull()
+        => MenuKeys.Serialize(MenuChoices.Where(m => m.IsSelected).Select(m => m.Key));
+
+    [RelayCommand]
+    private void SelectAllMenus()
+    {
+        foreach (var m in MenuChoices) m.IsSelected = true;
+    }
+
+    [RelayCommand]
+    private void ClearMenus()
+    {
+        foreach (var m in MenuChoices) m.IsSelected = false;
+    }
+
+    [RelayCommand]
+    private void StartEditMenus(AppUserDto user)
+    {
+        StatusMessage = string.Empty;
+        if (user.Role != AppUserRole.Admin)
+        {
+            StatusMessage = Loc["UsersMenusAdminOnly"];
+            return;
+        }
+
+        EditingMenusUser = user;
+        MenusPanelTitle = string.Format(Loc["UsersMenusFor"], user.Username);
+        BuildMenuChoices(MenuKeys.Parse(user.AllowedMenus));
+    }
+
+    [RelayCommand]
+    private void CancelEditMenus() => EditingMenusUser = null;
+
+    [RelayCommand]
+    private async Task SaveMenusAsync()
+    {
+        if (EditingMenusUser == null) return;
+        if (!MenuChoices.Any(m => m.IsSelected))
+        {
+            StatusMessage = Loc["UsersMenusNeedOne"];
+            return;
+        }
+
+        try
+        {
+            await _userService.UpdateMenusAsync(EditingMenusUser.Id, SelectedMenusOrNull());
+            EditingMenusUser = null;
+            StatusMessage = Loc["UsersMenusSaved"];
+            await LoadAsync();
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = $"❌ {ex.Message}";
+        }
+    }
 
     // Password reset (per-row)
     [ObservableProperty] private AppUserDto? _resettingUser;
@@ -84,6 +175,7 @@ public partial class UsersViewModel : ViewModelBase, IAdminSectionViewModel
         FormPassword = string.Empty;
         FormRole = AppUserRole.Operator;
         FormBranch = AvailableBranches.Count > 0 ? AvailableBranches[0] : null;
+        BuildMenuChoices(null);   // every menu ticked by default
         StatusMessage = string.Empty;
         IsCreating = true;
     }
@@ -103,6 +195,12 @@ public partial class UsersViewModel : ViewModelBase, IAdminSectionViewModel
             return;
         }
 
+        if (FormRole == AppUserRole.Admin && !MenuChoices.Any(m => m.IsSelected))
+        {
+            StatusMessage = Loc["UsersMenusNeedOne"];
+            return;
+        }
+
         try
         {
             await _userService.CreateAsync(new CreateUserRequest
@@ -111,7 +209,9 @@ public partial class UsersViewModel : ViewModelBase, IAdminSectionViewModel
                 Password = FormPassword,
                 Role = FormRole,
                 CompanyId = companyId,
-                BranchId = FormRole == AppUserRole.Operator ? FormBranch?.Id : null
+                BranchId = FormRole == AppUserRole.Operator ? FormBranch?.Id : null,
+                // Menu restrictions apply to administrators (operators use the scanning terminal).
+                AllowedMenus = FormRole == AppUserRole.Admin ? SelectedMenusOrNull() : null
             });
 
             IsCreating = false;
@@ -185,4 +285,20 @@ public partial class UsersViewModel : ViewModelBase, IAdminSectionViewModel
     private static Task<bool> ConfirmDeleteAsync(object item) 
         => Task.FromResult(true);
 
+}
+
+/// <summary>One tick box of the "visible menus" list.</summary>
+public partial class MenuChoiceViewModel : ObservableObject
+{
+    public MenuChoiceViewModel(string key, string label, bool isSelected)
+    {
+        Key = key;
+        Label = label;
+        _isSelected = isSelected;
+    }
+
+    public string Key { get; }
+    public string Label { get; }
+
+    [ObservableProperty] private bool _isSelected;
 }

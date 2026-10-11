@@ -179,7 +179,7 @@ public partial class ReportsViewModel : ViewModelBase, IAdminSectionViewModel
             {
                 foreach (var d in m.Days)
                     sb.AppendLine(string.Join(";", Q(m.EmployeeName), m.MonthLabel, d.Date.ToString("dd/MM/yyyy", inv),
-                        Q(d.DeclaredText), d.DeclaredHoursText, Q(d.ActualText), d.ActualHoursText, d.NightHoursText, d.RoundedHoursText, d.RoundedInOutText, CsvDiff(d.DiffHours),
+                        Q(d.DeclaredText), d.DeclaredHoursText, Q(d.ActualText), d.ActualHoursText, d.NightHoursText, d.RoundedHoursText, Q(d.RoundedInOutCsvText), CsvDiff(d.DiffHours),
                         Q(d.OvertimeRanges), d.OvertimeHours > 0 ? ReportFormat.Hours(d.OvertimeHours) : string.Empty));
                 sb.AppendLine(string.Join(";", Q(m.EmployeeName), m.MonthLabel, Q("MONTH TOTAL"), "",
                     ReportFormat.Hours(m.DeclaredHours), "", ReportFormat.Hours(m.ActualHours),
