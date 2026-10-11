@@ -32,5 +32,8 @@ internal static class OfflineUserCache
         existing.BranchName = user.Branch?.Name;
         existing.IsActive = user.IsActive;
         existing.LastSyncAt = DateTime.UtcNow;
+
+        // Menu restrictions live in a small file next to the cache (see OfflineMenuStore).
+        OfflineMenuStore.Set(user.Id, user.AllowedMenus);
     }
 }

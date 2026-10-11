@@ -80,8 +80,8 @@ public class TodayStatusService : ITodayStatusService
         // "Later than <t> + grace" without wrapping past midnight.
         bool After(TimeOnly t) => nowTime.ToTimeSpan() > t.ToTimeSpan() + grace;
 
-        var issues = new List<(StatusLevel Level, string Text)>();
-        void Add(StatusLevel level, string text) => issues.Add((level, text));
+        var issues = new List<TodayIssueDto>();
+        void Add(TodayIssueDto issue) => issues.Add(issue);
 
         var wholeDayLeave = leaves.FirstOrDefault(l => l.StartTime == null);
         var leaveName = wholeDayLeave == null ? null
@@ -94,51 +94,77 @@ public class TodayStatusService : ITodayStatusService
         TimeOnly? plannedEnd   = sched?.EndTime;
 
         // ── plan ─────────────────────────────────────────────
-        if (wholeDayLeave != null) dto.ScheduleText = $"🏖 {leaveName}";
-        else if (sched == null) dto.ScheduleText = "No schedule";
-        else if (isWorkDay)
-            dto.ScheduleText = $"{plannedStart:HH:mm}–{plannedEnd:HH:mm} {(sched.WorkType == Entities.WorkType.Home ? "🏠" : "🏢")}";
-        else dto.ScheduleText = sched.WorkType == Entities.WorkType.Absent ? "🚫 Absent" : "💤 Rest day";
+        dto.PlannedStart = isWorkDay ? plannedStart : null;
+        dto.PlannedEnd   = isWorkDay ? plannedEnd : null;
+        dto.IsHome       = sched?.WorkType == Entities.WorkType.Home;
+        dto.LeaveName    = leaveName;
+        dto.ScheduleKind = wholeDayLeave != null ? TodayScheduleKind.Leave
+                         : sched == null ? TodayScheduleKind.None
+                         : isWorkDay ? TodayScheduleKind.Work
+                         : sched.WorkType == Entities.WorkType.Absent ? TodayScheduleKind.Absent
+                         : TodayScheduleKind.Rest;
         dto.IsExpectedToday = isWorkDay;
 
         // ── clockings ────────────────────────────────────────
         var arrivals   = cards.Where(c => c.MovementType == "Arrival").ToList();
         var departures = cards.Where(c => c.MovementType == "Departure").ToList();
 
-        (string Text, StatusLevel Level) CardStatus(WorkCardHistoryDto c)
-        {
-            var level = c.IsLocalFailed ? StatusLevel.Error
-                      : c.IsLocalPending ? StatusLevel.Warning
-                      : c.SubmittedToErgani ? StatusLevel.Ok
-                      : StatusLevel.Error;
-            return (c.StatusText, level);
-        }
+        TodaySendState SendStateOf(WorkCardHistoryDto c)
+            => c.IsLocalFailed ? TodaySendState.Failed
+             : c.IsLocalPending ? (c.RetryAttempts > 0 ? TodaySendState.Retrying : TodaySendState.Waiting)
+             : c.SubmittedToErgani ? TodaySendState.Sent
+             : TodaySendState.NotSubmitted;
 
-        string Side(List<WorkCardHistoryDto> list, bool first, out string errorStatus)
+        StatusLevel LevelOf(TodaySendState st) => st switch
         {
-            errorStatus = string.Empty;
-            if (list.Count == 0) return "—";
-            // The status shown is the worst one of that side, so one failed card is never hidden.
-            var worst = list.Select(c => (Card: c, St: CardStatus(c)))
-                            .OrderByDescending(x => (int)x.St.Level).ThenBy(x => x.Card.MovementDateTime).First();
-            errorStatus = worst.St.Text;
+            TodaySendState.Sent => StatusLevel.Ok,
+            TodaySendState.Waiting or TodaySendState.Retrying => StatusLevel.Warning,
+            _ => StatusLevel.Error
+        };
+
+        dto.Movements = cards.Select(c => new TodayMovementDto
+        {
+            IsArrival = c.MovementType == "Arrival",
+            Time      = TimeOnly.FromDateTime(c.MovementDateTime),
+            SendState = SendStateOf(c),
+            Protocol  = c.Protocol,
+            Attempts  = c.RetryAttempts,
+            Detail    = c.RetryError
+        }).ToList();
+
+        // The status shown for a side is the worst one of that side, so one failed card is never hidden.
+        void Side(List<WorkCardHistoryDto> list, bool first,
+            out TimeOnly? time, out int extra, out TodaySendState send, out string? protocol, out int attempts)
+        {
+            time = null; extra = 0; send = TodaySendState.None; protocol = null; attempts = 0;
+            if (list.Count == 0) return;
+            var worst = list.Select(c => (Card: c, St: SendStateOf(c)))
+                            .OrderByDescending(x => (int)LevelOf(x.St)).ThenBy(x => x.Card.MovementDateTime).First();
             var shown = first ? list.First() : list.Last();
-            return $"{shown.MovementDateTime:HH:mm}" + (list.Count > 1 ? $" (+{list.Count - 1})" : string.Empty);
+            time = TimeOnly.FromDateTime(shown.MovementDateTime);
+            extra = list.Count - 1;
+            send = worst.St;
+            protocol = worst.Card.Protocol;
+            attempts = worst.Card.RetryAttempts;
         }
 
-        dto.ArrivalText   = Side(arrivals, first: true,  out var arrivalStatus);
-        dto.DepartureText = Side(departures, first: false, out var departureStatus);
-        dto.ArrivalErgani   = arrivalStatus;
-        dto.DepartureErgani = departureStatus;
+        Side(arrivals, true, out var aTime, out var aExtra, out var aSend, out var aProto, out var aTry);
+        dto.ArrivalTime = aTime; dto.ArrivalExtra = aExtra; dto.ArrivalSend = aSend; dto.ArrivalProtocol = aProto; dto.ArrivalAttempts = aTry;
+        Side(departures, false, out var dTime, out var dExtra, out var dSend, out var dProto, out var dTry);
+        dto.DepartureTime = dTime; dto.DepartureExtra = dExtra; dto.DepartureSend = dSend; dto.DepartureProtocol = dProto; dto.DepartureAttempts = dTry;
 
         // ── Ergani status problems ───────────────────────────
         foreach (var c in cards)
         {
-            var (text, level) = CardStatus(c);
-            if (level == StatusLevel.Ok) continue;
-            var kind = c.MovementType == "Arrival" ? "Clock-in" : "Clock-out";
-            var detail = string.IsNullOrWhiteSpace(c.RetryError) ? string.Empty : $" ({c.RetryError})";
-            Add(level, $"{kind} {c.MovementDateTime:HH:mm}: {text.TrimStart('❌', '⏳', ' ')}{detail}");
+            var state = SendStateOf(c);
+            if (LevelOf(state) == StatusLevel.Ok) continue;
+            Add(new TodayIssueDto
+            {
+                Code = TodayIssueCode.SendProblem, Level = LevelOf(state),
+                IsArrival = c.MovementType == "Arrival",
+                Time = TimeOnly.FromDateTime(c.MovementDateTime),
+                SendState = state, Protocol = c.Protocol, Attempts = c.RetryAttempts, Detail = c.RetryError
+            });
         }
 
         // ── plan vs. reality ─────────────────────────────────
@@ -147,72 +173,78 @@ public class TodayStatusService : ITodayStatusService
 
         if (firstArrival != null && isWorkDay && plannedStart.HasValue)
         {
-            var late = TimeOnly.FromDateTime(firstArrival.MovementDateTime) - plannedStart.Value;
+            var arrivalTime = TimeOnly.FromDateTime(firstArrival.MovementDateTime);
+            var late = arrivalTime - plannedStart.Value;
             if (late > grace)
-                Add(StatusLevel.Warning, $"Late clock-in: {firstArrival.MovementDateTime:HH:mm} (planned {plannedStart:HH:mm}, +{(int)late.TotalMinutes} min)");
+                Add(new TodayIssueDto { Code = TodayIssueCode.LateClockIn, Level = StatusLevel.Warning,
+                    Time = arrivalTime, Planned = plannedStart, Minutes = (int)late.TotalMinutes });
         }
 
         if (arrivals.Count == 0 && isWorkDay && plannedStart.HasValue && After(plannedStart.Value) && departures.Count == 0)
-            Add(StatusLevel.Error, $"No clock-in (planned {plannedStart:HH:mm})");
+            Add(new TodayIssueDto { Code = TodayIssueCode.NoClockIn, Level = StatusLevel.Error, Planned = plannedStart });
 
         if (arrivals.Count == 0 && departures.Count > 0)
-            Add(StatusLevel.Error, "Clock-out without a clock-in");
+            Add(new TodayIssueDto { Code = TodayIssueCode.ClockOutWithoutIn, Level = StatusLevel.Error });
 
         if (last is { MovementType: "Arrival" })
         {
             if (isWorkDay && plannedEnd.HasValue && plannedEnd > plannedStart && After(plannedEnd.Value))
-                Add(isPastDay ? StatusLevel.Error : StatusLevel.Warning, $"No clock-out (planned {plannedEnd:HH:mm})");
+                Add(new TodayIssueDto { Code = TodayIssueCode.NoClockOut,
+                    Level = isPastDay ? StatusLevel.Error : StatusLevel.Warning, Planned = plannedEnd });
             else if (!isWorkDay && isPastDay)
-                Add(StatusLevel.Error, "No clock-out");
+                Add(new TodayIssueDto { Code = TodayIssueCode.NoClockOutPastDay, Level = StatusLevel.Error });
         }
 
         foreach (var c in departures.Where(d => d.WasEarlyDeparture))
-            Add(StatusLevel.Warning, $"Early clock-out {c.MovementDateTime:HH:mm}" +
-                (c.EarlyDepartureMinutes.HasValue ? $" ({c.EarlyDepartureMinutes} min early)" : string.Empty));
+            Add(new TodayIssueDto { Code = TodayIssueCode.EarlyClockOut, Level = StatusLevel.Warning,
+                Time = TimeOnly.FromDateTime(c.MovementDateTime), Minutes = c.EarlyDepartureMinutes });
 
         for (var i = 1; i < cards.Count; i++)
         {
-            if (cards[i].MovementType == cards[i - 1].MovementType)
-                Add(StatusLevel.Warning,
-                    $"Two {(cards[i].MovementType == "Arrival" ? "clock-ins" : "clock-outs")} in a row " +
-                    $"({cards[i - 1].MovementDateTime:HH:mm}, {cards[i].MovementDateTime:HH:mm})");
+            if (cards[i].MovementType != cards[i - 1].MovementType) continue;
+            Add(new TodayIssueDto
+            {
+                Code = cards[i].MovementType == "Arrival" ? TodayIssueCode.DoubleClockIn : TodayIssueCode.DoubleClockOut,
+                Level = StatusLevel.Warning,
+                Time = TimeOnly.FromDateTime(cards[i - 1].MovementDateTime),
+                Time2 = TimeOnly.FromDateTime(cards[i].MovementDateTime)
+            });
         }
 
         if (cards.Count > 0 && !isWorkDay)
         {
-            Add(StatusLevel.Warning,
-                wholeDayLeave != null ? "Clocked in/out while on leave"
-                : sched == null       ? "Clocked in/out but there is no schedule for this day"
-                                      : "Clocked in/out on a rest/absent day");
+            Add(new TodayIssueDto
+            {
+                Level = StatusLevel.Warning,
+                Code = wholeDayLeave != null ? TodayIssueCode.ClockedOnLeave
+                     : sched == null ? TodayIssueCode.ClockedNoSchedule
+                     : TodayIssueCode.ClockedRestDay
+            });
         }
 
-        dto.Issues = issues.Select(i => i.Text).Distinct().ToList();
+        dto.Issues = issues;
         dto.Level  = issues.Count == 0 ? StatusLevel.Ok : (StatusLevel)issues.Max(i => (int)i.Level);
 
         // ── presence ─────────────────────────────────────────
         if (last is { MovementType: "Arrival" })
         {
             dto.IsWorking = true;
-            dto.PresenceText = $"🟢 Working since {firstArrival!.MovementDateTime:HH:mm}";
+            dto.Presence = TodayPresenceKind.Working;
+            dto.PresenceTime = TimeOnly.FromDateTime(firstArrival!.MovementDateTime);
         }
         else if (last != null)
         {
             dto.HasLeft = true;
-            dto.PresenceText = $"🔴 Left at {last.MovementDateTime:HH:mm}";
+            dto.Presence = TodayPresenceKind.Left;
+            dto.PresenceTime = TimeOnly.FromDateTime(last.MovementDateTime);
         }
-        else if (wholeDayLeave != null) dto.PresenceText = "🏖 On leave";
+        else if (wholeDayLeave != null) dto.Presence = TodayPresenceKind.OnLeave;
         else if (isWorkDay && plannedStart.HasValue)
         {
-            if (After(plannedStart.Value)) { dto.IsNotArrived = true; dto.PresenceText = "⚪ Not arrived"; }
-            else dto.PresenceText = $"⏳ Expected {plannedStart:HH:mm}";
+            if (After(plannedStart.Value)) { dto.IsNotArrived = true; dto.Presence = TodayPresenceKind.NotArrived; }
+            else { dto.Presence = TodayPresenceKind.Expected; dto.PresenceTime = plannedStart; }
         }
-        else dto.PresenceText = sched == null ? "—" : "💤 Not working";
-
-        // ── details ──────────────────────────────────────────
-        var lines = cards.Select(c => $"{c.MovementDateTime:HH:mm}  {(c.MovementType == "Arrival" ? "Clock-in " : "Clock-out")}  {c.StatusText}").ToList();
-        if (lines.Count == 0) lines.Add("No clock-in/out recorded.");
-        if (dto.Issues.Count > 0) { lines.Add(string.Empty); lines.Add("Problems:"); lines.AddRange(dto.Issues.Select(i => "• " + i)); }
-        dto.DetailsText = string.Join("\n", lines);
+        else dto.Presence = sched == null ? TodayPresenceKind.None : TodayPresenceKind.NotWorking;
 
         return dto;
     }

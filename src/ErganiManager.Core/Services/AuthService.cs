@@ -110,6 +110,7 @@ public class AuthService : IAuthService
             CompanyName = user.Company?.Name,
             BranchId = user.BranchId,
             BranchName = user.Branch?.Name,
+            AllowedMenus = MenuKeys.Parse(user.AllowedMenus),
             IsOfflineSession = false
         };
 
@@ -151,6 +152,7 @@ public class AuthService : IAuthService
             CompanyName = cachedUser.CompanyName,
             BranchId = cachedUser.BranchId,
             BranchName = cachedUser.BranchName,
+            AllowedMenus = MenuKeys.Parse(OfflineMenuStore.Get(cachedUser.SourceUserId)),
             IsOfflineSession = true
         };
 

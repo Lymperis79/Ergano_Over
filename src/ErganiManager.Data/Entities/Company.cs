@@ -33,6 +33,10 @@ public class Company
     public int EarlyDepartureAlertMinutes { get; set; } = 10;
     public bool BlockClockInWithoutSchedule { get; set; } = true;
 
+    /// <summary>When true (default) clock-in/out is blocked on days the schedule marks as Rest or Absent.
+    /// When false the scan is accepted on those days.</summary>
+    public bool BlockClockInOnRestOrAbsentDay { get; set; } = true;
+
     // Email / SMTP settings
     public bool AlertEmailEnabled { get; set; } = false;
 

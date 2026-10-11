@@ -47,6 +47,7 @@ public class CacheSyncService : ICacheSyncService
             cachedSettings.EarlyClockInBlockMinutes = company.EarlyClockInBlockMinutes;
             cachedSettings.EarlyDepartureAlertMinutes = company.EarlyDepartureAlertMinutes;
             cachedSettings.BlockClockInWithoutSchedule = company.BlockClockInWithoutSchedule;
+            cachedSettings.BlockClockInOnRestOrAbsentDay = company.BlockClockInOnRestOrAbsentDay;
             cachedSettings.LastSyncAt = DateTime.UtcNow;
         }
 
@@ -102,6 +103,7 @@ public class CacheSyncService : ICacheSyncService
 
             cachedSched.StartTime = sched.StartTime;
             cachedSched.EndTime = sched.EndTime;
+            cachedSched.WorkType = (int)sched.WorkType;
             cachedSched.LastSyncAt = DateTime.UtcNow;
         }
         result.SchedulesSynced = schedules.Count;

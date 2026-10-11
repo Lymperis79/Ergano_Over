@@ -28,6 +28,11 @@ public class AppUser
     public int? BranchId { get; set; }
     public BusinessBranch? Branch { get; set; }
 
+    /// <summary>Comma separated menu keys this user may see in the main window.
+    /// Null = no restriction (all menus).</summary>
+    [MaxLength(500)]
+    public string? AllowedMenus { get; set; }
+
     public bool IsActive { get; set; } = true;
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime? LastLoginAt { get; set; }

@@ -71,6 +71,7 @@ public class UserManagementService : IUserManagementService
             Role = request.Role == AppUserRole.Admin ? UserRole.Admin : UserRole.Operator,
             CompanyId = request.CompanyId,
             BranchId = request.BranchId,
+            AllowedMenus = request.AllowedMenus,
             IsActive = true,
             CreatedAt = DateTime.UtcNow
         };
@@ -90,6 +91,16 @@ public class UserManagementService : IUserManagementService
             ?? throw new InvalidOperationException($"User {userId} not found.");
 
         user.PasswordHash = _passwordHasher.Hash(newPassword);
+        await db.SaveChangesAsync();
+    }
+
+    public async Task UpdateMenusAsync(int userId, string? allowedMenus)
+    {
+        await using var db = OpenDb();
+        var user = await db.Users.FindAsync(userId)
+            ?? throw new InvalidOperationException($"User {userId} not found.");
+
+        user.AllowedMenus = allowedMenus;
         await db.SaveChangesAsync();
     }
 
@@ -128,7 +139,8 @@ public class UserManagementService : IUserManagementService
         BranchId = u.BranchId,
         BranchName = u.Branch?.Name,
         IsActive = u.IsActive,
-        LastLoginAt = u.LastLoginAt
+        LastLoginAt = u.LastLoginAt,
+        AllowedMenus = u.AllowedMenus
     };
 
     public async Task DeleteAsync(int userId)

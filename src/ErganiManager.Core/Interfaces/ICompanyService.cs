@@ -14,6 +14,7 @@ public class CompanyDto
     public int EarlyClockInBlockMinutes { get; set; } = 15;
     public int EarlyDepartureAlertMinutes { get; set; } = 10;
     public bool BlockClockInWithoutSchedule { get; set; } = true;
+    public bool BlockClockInOnRestOrAbsentDay { get; set; } = true;
 
     public bool AlertEmailEnabled { get; set; }
     public bool AutoRetryFailedSubmissions { get; set; } = true;

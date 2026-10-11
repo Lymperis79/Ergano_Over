@@ -29,6 +29,13 @@ public class AppDbContext : DbContext
         modelBuilder.Entity<Company>(e =>
         {
             e.HasIndex(c => c.TaxId);
+
+            // Existing companies keep the old behaviour (Rest/Absent days blocked) when the column is
+            // added to an existing database. ValueGeneratedNever makes EF always write the value, so an
+            // unticked box (false) is saved as false instead of being replaced by the default.
+            e.Property(c => c.BlockClockInOnRestOrAbsentDay)
+                .HasDefaultValue(true)
+                .ValueGeneratedNever();
         });
 
         // ── BusinessBranch ───────────────────────────────────

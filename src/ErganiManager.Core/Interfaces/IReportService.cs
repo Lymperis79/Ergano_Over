@@ -114,17 +114,45 @@ public sealed class DayTimeRow
     public string RoundedHoursText => RoundedHours is { } r ? ReportFormat.Hours(r) : string.Empty;
 
     /// <summary>
-    /// Clock-out after rounding: the real last clock-out moved by the rounding (rounded − actual hours),
-    /// so with one in/out pair it is simply first clock-in + rounded hours.
+    /// Every clock-in/out pair after rounding. The rounding difference (rounded − actual hours) is added to
+    /// the FIRST complete pair's clock-out, so the first clock-in keeps its real time and the first block of
+    /// work absorbs the rounding; later pairs stay exactly as scanned. A negative difference larger than the
+    /// first pair carries over to the next pair. Total of the pairs = <see cref="RoundedHours"/>.
     /// </summary>
-    public DateTime? RoundedClockOut =>
-        ActualDeparture is { } dep && ActualHours is { } act && RoundedHours is { } rnd
-            ? dep + TimeSpan.FromHours(rnd - act)
-            : null;
+    public List<ScanPair> RoundedPairs
+    {
+        get
+        {
+            if (ActualHours is not { } act || RoundedHours is not { } rnd) return new List<ScanPair>();
 
-    /// <summary>First exact clock-in → rounded clock-out, e.g. "07:56 → 15:56".</summary>
+            var remaining = TimeSpan.FromHours(rnd - act);
+            var result = new List<ScanPair>();
+            foreach (var p in Pairs)
+            {
+                if (p.In is { } i && p.Out is { } o && o > i && remaining != TimeSpan.Zero)
+                {
+                    var newOut = o + remaining;
+                    if (newOut < i)            // rounded away more than this pair holds: carry the rest on
+                    {
+                        remaining = newOut - i;
+                        newOut = i;
+                    }
+                    else remaining = TimeSpan.Zero;
+                    result.Add(new ScanPair { In = i, Out = newOut });
+                }
+                else result.Add(p);
+            }
+            return result;
+        }
+    }
+
+    /// <summary>Rounded in → out, one line per pair, e.g. "07:56 → 12:10" / "13:00 → 17:00".</summary>
     public string RoundedInOutText =>
-        ActualArrival is { } a && RoundedClockOut is { } o ? $"{a:HH:mm} → {o:HH:mm}" : string.Empty;
+        string.Join("\n", RoundedPairs.Select(p => p.Text));
+
+    /// <summary>Same as <see cref="RoundedInOutText"/> on a single line (for CSV export).</summary>
+    public string RoundedInOutCsvText =>
+        string.Join(" | ", RoundedPairs.Select(p => p.Text));
 
     /// <summary>Actual − declared, only when both are known.</summary>
     public double? DiffHours { get; init; }

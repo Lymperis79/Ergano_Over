@@ -49,6 +49,7 @@ public class CompanyService : ICompanyService
             EarlyClockInBlockMinutes = dto.EarlyClockInBlockMinutes,
             EarlyDepartureAlertMinutes = dto.EarlyDepartureAlertMinutes,
             BlockClockInWithoutSchedule = dto.BlockClockInWithoutSchedule,
+            BlockClockInOnRestOrAbsentDay = dto.BlockClockInOnRestOrAbsentDay,
             AlertEmailEnabled = dto.AlertEmailEnabled,
             AutoRetryFailedSubmissions = dto.AutoRetryFailedSubmissions,
             AlertEmailRecipients = dto.AlertEmailRecipients,
@@ -83,6 +84,7 @@ public class CompanyService : ICompanyService
         entity.EarlyClockInBlockMinutes = dto.EarlyClockInBlockMinutes;
         entity.EarlyDepartureAlertMinutes = dto.EarlyDepartureAlertMinutes;
         entity.BlockClockInWithoutSchedule = dto.BlockClockInWithoutSchedule;
+        entity.BlockClockInOnRestOrAbsentDay = dto.BlockClockInOnRestOrAbsentDay;
         entity.AlertEmailEnabled = dto.AlertEmailEnabled;
         entity.AutoRetryFailedSubmissions = dto.AutoRetryFailedSubmissions;
         entity.AlertEmailRecipients = dto.AlertEmailRecipients;
@@ -137,6 +139,7 @@ public class CompanyService : ICompanyService
         EarlyClockInBlockMinutes = c.EarlyClockInBlockMinutes,
         EarlyDepartureAlertMinutes = c.EarlyDepartureAlertMinutes,
         BlockClockInWithoutSchedule = c.BlockClockInWithoutSchedule,
+        BlockClockInOnRestOrAbsentDay = c.BlockClockInOnRestOrAbsentDay,
         AlertEmailEnabled = c.AlertEmailEnabled,
         AutoRetryFailedSubmissions = c.AutoRetryFailedSubmissions,
         AlertEmailRecipients = c.AlertEmailRecipients,

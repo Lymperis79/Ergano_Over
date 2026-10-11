@@ -47,6 +47,17 @@ public class UserSession
     public bool IsOfflineSession { get; set; }
 
     public bool IsSuperAdmin => Role == AppUserRole.Admin && CompanyId == null;
+
+    /// <summary>The menus this user may see; null = all.</summary>
+    public HashSet<string>? AllowedMenus { get; set; }
+
+    /// <summary>Whether the menu/section with this key is available to the user.</summary>
+    public bool CanSee(string menuKey)
+    {
+        if (IsSuperAdmin) return true;                       // the super administrator can never be locked out
+        if (menuKey == MenuKeys.Administration) return false; // database tools: super administrator only
+        return AllowedMenus == null || AllowedMenus.Contains(menuKey);
+    }
 }
 
 public class LoginResult

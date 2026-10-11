@@ -13,6 +13,10 @@ public class AppUserDto
     public string? BranchName { get; set; }
     public bool IsActive { get; set; } = true;
     public DateTime? LastLoginAt { get; set; }
+
+    /// <summary>Comma separated menu keys the user may see; null = all menus.</summary>
+    public string? AllowedMenus { get; set; }
+    public bool HasMenuRestrictions => !string.IsNullOrWhiteSpace(AllowedMenus);
 }
 
 public class CreateUserRequest
@@ -22,6 +26,9 @@ public class CreateUserRequest
     public AppUserRole Role { get; set; } = AppUserRole.Operator;
     public int? CompanyId { get; set; }
     public int? BranchId { get; set; }
+
+    /// <summary>Menus the user may see (comma separated keys); null = all menus.</summary>
+    public string? AllowedMenus { get; set; }
 }
 
 public interface IUserManagementService
@@ -32,5 +39,7 @@ public interface IUserManagementService
     Task ResetPasswordAsync(int userId, string newPassword);
     Task SetActiveAsync(int userId, bool isActive);
     Task DeleteAsync(int userId);
+    /// <summary>Sets which menus the user may see (null = all menus).</summary>
+    Task UpdateMenusAsync(int userId, string? allowedMenus);
     Task UpdateRoleAndAssignmentAsync(int userId, AppUserRole role, int? companyId, int? branchId);
 }
