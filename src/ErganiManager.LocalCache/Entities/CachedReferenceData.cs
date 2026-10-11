@@ -12,6 +12,7 @@ public class CachedCompanySettings
     public int EarlyClockInBlockMinutes { get; set; } = 15;
     public int EarlyDepartureAlertMinutes { get; set; } = 10;
     public bool BlockClockInWithoutSchedule { get; set; } = true;
+    public bool BlockClockInOnRestOrAbsentDay { get; set; } = true;
 
     public DateTime LastSyncAt { get; set; } = DateTime.UtcNow;
 }
@@ -44,6 +45,10 @@ public class CachedSchedule
 
     public TimeOnly? StartTime { get; set; }
     public TimeOnly? EndTime { get; set; }
+
+    // Numeric value mirrors ErganiManager.Data.Entities.WorkType without coupling projects.
+    // 2 = Rest, 3 = Absent.
+    public int WorkType { get; set; } = 0;
 
     public DateTime LastSyncAt { get; set; } = DateTime.UtcNow;
 }

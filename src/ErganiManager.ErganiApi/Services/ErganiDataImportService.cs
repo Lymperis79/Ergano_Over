@@ -390,6 +390,9 @@ public class ErganiDataImportService : IErganiDataImportService
                     BlockClockInWithoutSchedule =
                         existingCompany?.BlockClockInWithoutSchedule ?? true,
 
+                    BlockClockInOnRestOrAbsentDay =
+                        existingCompany?.BlockClockInOnRestOrAbsentDay ?? true,
+
                     AlertEmailEnabled =
                         existingCompany?.AlertEmailEnabled ?? false,
 
