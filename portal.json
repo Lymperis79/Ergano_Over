@@ -1,0 +1,32 @@
+{
+  "Schedule": {
+    "PortalBaseUrl": "https://trialv2eservices.yeka.gr/",
+    "TargetPageUrl": "https://trialv2eservices.yeka.gr/(S(gbv2ujykhnskj4wl41evzx0c))/Mitroa/ErgazomenosWorkingSearch.aspx",
+    "FromDateFieldId": "igtxtctl00_ctl00_ContentHolder_ContentHolder_ErgazomenosWorkingSearchControl_DateFromEdit",
+    "ToDateFieldId": "igtxtctl00_ctl00_ContentHolder_ContentHolder_ErgazomenosWorkingSearchControl_DateToEdit",
+    "DateFormat": "dd/MM/yyyy",
+    "AutoSearch": true,
+    "AutoDownload": true,
+    "SearchButtonId": "ctl00_ctl00_ContentHolder_ContentHolder_ErgazomenosWorkingSearchControl_SearchControlSearchButton",
+    "DownloadFolder": ""
+  },
+  "WorkCards": {
+    "PortalBaseUrl": "https://trialv2eservices.yeka.gr/",
+    "TargetPageUrl": "https://trialv2eservices.yeka.gr/WTO/Workcard/DailyWorkTimesSearch.aspx",
+    "FromDateFieldId": "igtxtctl00_ctl00_ContentHolder_ContentHolder_DailyWorkTimesSearchControl_DateFromEdit",
+    "ToDateFieldId": "igtxtctl00_ctl00_ContentHolder_ContentHolder_DailyWorkTimesSearchControl_DateToEdit",
+    "DateFormat": "dd/MM/yyyy",
+    "AutoSearch": true,
+    "AutoDownload": false,
+    "SearchButtonId": "ctl00_ctl00_ContentHolder_ContentHolder_DailyWorkTimesSearchControl_SearchControlSearchButton",
+    "DownloadFolder": ""
+  },
+  "PortalBaseUrl": "https://trialv2eservices.yeka.gr/",
+  "TargetPageUrl": "https://trialv2eservices.yeka.gr/(S(gbv2ujykhnskj4wl41evzx0c))/Mitroa/ErgazomenosWorkingSearch.aspx",
+  "FromDateFieldId": "igtxtctl00_ctl00_ContentHolder_ContentHolder_ErgazomenosWorkingSearchControl_DateFromEdit",
+  "ToDateFieldId": "igtxtctl00_ctl00_ContentHolder_ContentHolder_ErgazomenosWorkingSearchControl_DateToEdit",
+  "DateFormat": "dd/MM/yyyy",
+  "AutoSearchAndDownload": true,
+  "SearchButtonId": "ctl00_ctl00_ContentHolder_ContentHolder_ErgazomenosWorkingSearchControl_SearchControlSearchButton",
+  "DownloadFolder": ""
+}

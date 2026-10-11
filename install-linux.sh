@@ -34,6 +34,9 @@ mkdir -p "$INSTALL_DIR"
 cp -r "$PUBLISH_DIR/." "$INSTALL_DIR/"
 chmod +x "$INSTALL_DIR/ErganiManager.UI"
 
+# Application icon (used by the desktop shortcut)
+cp erganimanager.png "$INSTALL_DIR/erganimanager.png"
+
 # Desktop shortcut
 cp erganimanager.desktop "$DESKTOP_FILE"
 chmod 644 "$DESKTOP_FILE"

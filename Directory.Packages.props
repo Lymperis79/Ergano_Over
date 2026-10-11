@@ -43,6 +43,7 @@
     <PackageVersion Include="CommunityToolkit.Mvvm"       Version="8.4.2" />
     <PackageVersion Include="ClosedXML"                   Version="0.105.1" />
     <PackageVersion Include="MailKit"                     Version="4.18.0" />
+    <PackageVersion Include="Selenium.WebDriver"          Version="4.27.0" />
     <PackageVersion Include="Serilog"                     Version="4.4.0" />
     <PackageVersion Include="Serilog.Extensions.Logging"  Version="10.0.0" />
     <PackageVersion Include="Serilog.Sinks.File"          Version="7.0.0" />
