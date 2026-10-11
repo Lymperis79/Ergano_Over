@@ -25,9 +25,14 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IErganiHealthCheckService, ErganiHealthCheckService>();
         services.AddSingleton<ErganiRetryService>();
         services.AddTransient<IWorkCardSubmitter, ErganiApiService>();
+        services.AddTransient<WorkCardLogRetryService>();
         services.AddTransient<IScheduleSubmitter, ScheduleSubmitterService>();
+        services.AddTransient<IErganiDocumentService, ErganiDocumentService>();
+        services.AddTransient<IOvertimeSubmitter, OvertimeSubmitterService>();
+        services.AddTransient<ILeaveSubmitter, LeaveSubmitterService>();
         services.AddTransient<IEmailAlertService, EmailAlertService>();
         services.AddTransient<IErganiDataImportService, ErganiDataImportService>();
+        services.AddSingleton<IErganiPortalService, ErganiPortalService>();
 
         return services;
     }

@@ -3,6 +3,26 @@ using System.Text.Json.Serialization;
 
 namespace ErganiManager.ErganiApi.Models;
 
+/// <summary>All valid Usertype values per the official Ergani API docs.</summary>
+public static class ErganiUsertypes
+{
+    public const string External = "01";
+    public const string Ergani   = "02";
+    public const string Efka     = "03";
+
+    public static readonly List<ErganiUsertypeOption> AllOptions = new()
+    {
+        new("01", "01 — Εξωτερικός (External)"),
+        new("02", "02 — ΕΡΓΑΝΗ credentials"),
+        new("03", "03 — ΕΦΚΑ (Construction)"),
+    };
+}
+
+public record ErganiUsertypeOption(string Code, string DisplayName)
+{
+    public override string ToString() => DisplayName;
+}
+
 public class ErganiAuthRequest
 {
     [JsonPropertyName("Username")]

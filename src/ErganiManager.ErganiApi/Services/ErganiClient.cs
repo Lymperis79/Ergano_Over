@@ -56,20 +56,26 @@ public class ErganiClient : IErganiClient
     public Task<ErganiCallResult<List<ErganiSubmissionResponse>>> SubmitDailyScheduleAsync(
         ErganiCredentials credentials, List<CompanyDailyScheduleSubmission> submissions,
         CancellationToken ct = default)
-        => PostAsync<List<CompanyDailyScheduleSubmission>, List<ErganiSubmissionResponse>>(
-            credentials, ErganiEndpoints.DailyScheduleSubmitPath, submissions, ct);
+        => PostAsync<WtoScheduleRequest, List<ErganiSubmissionResponse>>(
+            credentials, ErganiEndpoints.DailyScheduleSubmitPath, WtoScheduleRequestBuilder.BuildDaily(submissions), ct);
 
     public Task<ErganiCallResult<List<ErganiSubmissionResponse>>> SubmitWeeklyScheduleAsync(
         ErganiCredentials credentials, List<CompanyWeeklyScheduleSubmission> submissions,
         CancellationToken ct = default)
-        => PostAsync<List<CompanyWeeklyScheduleSubmission>, List<ErganiSubmissionResponse>>(
-            credentials, ErganiEndpoints.WeeklyScheduleSubmitPath, submissions, ct);
+        => PostAsync<WtoScheduleRequest, List<ErganiSubmissionResponse>>(
+            credentials, ErganiEndpoints.WeeklyScheduleSubmitPath, WtoScheduleRequestBuilder.BuildWeekly(submissions), ct);
 
     public Task<ErganiCallResult<List<ErganiSubmissionResponse>>> SubmitOvertimeAsync(
         ErganiCredentials credentials, List<CompanyOvertimeSubmission> submissions,
         CancellationToken ct = default)
-        => PostAsync<List<CompanyOvertimeSubmission>, List<ErganiSubmissionResponse>>(
-            credentials, ErganiEndpoints.OvertimeSubmitPath, submissions, ct);
+        => PostAsync<OvertimeRequestBody, List<ErganiSubmissionResponse>>(
+            credentials, ErganiEndpoints.OvertimeSubmitPath, OvertimeRequestBody.From(submissions), ct);
+
+    public Task<ErganiCallResult<List<ErganiSubmissionResponse>>> SubmitLeaveAsync(
+        ErganiCredentials credentials, List<CompanyLeaveSubmission> submissions,
+        CancellationToken ct = default)
+        => PostAsync<LeaveRequestBody, List<ErganiSubmissionResponse>>(
+            credentials, ErganiEndpoints.LeaveSubmitPath, LeaveRequestBody.From(submissions), ct);
 
     // ── Authentication ────────────────────────────────────────────────────
 
@@ -81,7 +87,7 @@ public class ErganiClient : IErganiClient
         {
             Username = credentials.Username,
             Password = credentials.Password,
-            Usertype = ErganiEndpoints.UsertypeErgani
+            Usertype = credentials.Usertype
         }, JsonOptions);
 
         using var content = new StringContent(body, Encoding.UTF8, "application/json");
@@ -148,6 +154,82 @@ public class ErganiClient : IErganiClient
         resp.EnsureSuccessStatusCode();
         var json = await resp.Content.ReadAsStringAsync(ct);
         return JsonSerializer.Deserialize<List<ErganiSubmissionType>>(json, JsonOptions) ?? new();
+    }
+
+    public async Task<ErganiDocumentResult> GetDocumentAsync(
+        ErganiCredentials credentials, string submissionCode, string protocol, DateOnly submittedDate, CancellationToken ct = default)
+    {
+        var result = new ErganiDocumentResult();
+        try
+        {
+            var token = await GetOrRefreshTokenAsync(credentials, ct);
+            var client = BuildAuthenticatedClient(credentials.BaseUrl, token);
+            var path = $"{submissionCode.Trim('/') }?protocol={Uri.EscapeDataString(protocol)}&submittedDate={submittedDate:yyyyMMdd}";
+            using var response = await client.GetAsync(path, ct);
+            var body = await response.Content.ReadAsStringAsync(ct);
+            result.RawResponse = body;
+            result.HttpStatusCode = (int)response.StatusCode;
+            if (!response.IsSuccessStatusCode)
+            {
+                result.ErrorMessage = $"Ergani returned HTTP {(int)response.StatusCode}.";
+                return result;
+            }
+            result.PdfBytes = DecodePdfBase64(body);
+            if (result.PdfBytes == null || result.PdfBytes.Length == 0)
+            {
+                result.ErrorMessage = "Ergani returned a response, but no PDF Base64 content could be found.";
+                return result;
+            }
+            result.Success = true;
+            return result;
+        }
+        catch (Exception ex)
+        {
+            result.ErrorMessage = ex.Message;
+            return result;
+        }
+    }
+
+    private static byte[]? DecodePdfBase64(string body)
+    {
+        if (string.IsNullOrWhiteSpace(body)) return null;
+        var text = body.Trim();
+        if (text.StartsWith("\"", StringComparison.Ordinal) && text.EndsWith("\"", StringComparison.Ordinal))
+        {
+            try { text = JsonSerializer.Deserialize<string>(text) ?? text; } catch { }
+        }
+        try { return Convert.FromBase64String(text); } catch { }
+        try
+        {
+            using var doc = JsonDocument.Parse(text);
+            return FindBase64(doc.RootElement);
+        }
+        catch { return null; }
+    }
+
+    private static byte[]? FindBase64(JsonElement element)
+    {
+        if (element.ValueKind == JsonValueKind.String)
+        {
+            try { return Convert.FromBase64String(element.GetString() ?? string.Empty); } catch { return null; }
+        }
+        if (element.ValueKind == JsonValueKind.Object)
+        {
+            foreach (var property in element.EnumerateObject())
+            {
+                var found = FindBase64(property.Value);
+                if (found != null) return found;
+            }
+        }
+        else if (element.ValueKind == JsonValueKind.Array)
+        {
+            foreach (var item in element.EnumerateArray())
+            {
+                var found = FindBase64(item);
+                if (found != null) return found;
+            }
+        }
+        return null;
     }
 
     // ── Token management ──────────────────────────────────────────────────

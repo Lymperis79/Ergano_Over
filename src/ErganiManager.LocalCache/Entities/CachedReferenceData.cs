@@ -25,12 +25,10 @@ public class CachedEmployee
 
     public int CompanyId { get; set; }
     public int BranchId { get; set; }
-
     public string BarcodeId { get; set; } = string.Empty;
+    public string TaxId { get; set; } = string.Empty;
     public string FullName { get; set; } = string.Empty;
-
     public bool IsActive { get; set; } = true;
-
     public DateTime LastSyncAt { get; set; } = DateTime.UtcNow;
 }
 

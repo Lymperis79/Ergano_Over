@@ -5,6 +5,8 @@ public class ErganiCredentials
     public string Username { get; set; } = string.Empty;
     public string Password { get; set; } = string.Empty;
     public string BaseUrl { get; set; } = "https://trialeservices.yeka.gr/WebServicesAPI/api";
+    /// <summary>"01"=External, "02"=ΕΡΓΑΝΗ, "03"=ΕΦΚΑ</summary>
+    public string Usertype { get; set; } = "01";
 }
 
 public class ErganiApiException : Exception

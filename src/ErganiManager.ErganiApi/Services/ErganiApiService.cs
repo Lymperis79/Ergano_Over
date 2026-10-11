@@ -39,12 +39,11 @@ public class ErganiApiService : IWorkCardSubmitter
     /// carries IDs), builds the Ergani payload, submits, and writes a new
     /// WorkCard + ApiSubmissionLog row reflecting the outcome.
     /// </summary>
-    public async Task<WorkCardSubmissionOutcome> SubmitAsync(WorkCardSubmissionRequest request)
+    public async Task<WorkCardSubmissionOutcome> SubmitAsync(WorkCardSubmissionRequest request, string? aitiologia = null)
     {
         var config = _connectionState.LoadConfig();
         if (config == null)
             return new WorkCardSubmissionOutcome { Success = false, ErrorMessage = "Database not configured." };
-
         var optionsBuilder = new DbContextOptionsBuilder<AppDbContext>();
         DbProviderFactory.Configure(optionsBuilder, config);
 
@@ -65,6 +64,15 @@ public class ErganiApiService : IWorkCardSubmitter
 
         var movementTypeCode = WorkCardMovementTypeCodes.FromString(request.MovementType);
 
+        // f_aitiologia: empty while the card is on time (≤ 10 min after the scan, i.e. the first
+        // attempt); a justification code once it is late. An explicit code from the caller wins.
+        if (string.IsNullOrWhiteSpace(aitiologia))
+        {
+            aitiologia = DateTime.Now - request.MovementDateTime > WorkCardLogRetryService.OnTimeWindow
+                ? WorkCardLogRetryService.DefaultLateJustification
+                : string.Empty;
+        }
+
         var submission = new CompanyWorkCardSubmission
         {
             EmployerTaxIdentificationNumber = company.TaxId,
@@ -82,7 +90,8 @@ public class ErganiApiService : IWorkCardSubmitter
                         MovementType                    = movementTypeCode,
                         SubmissionDate                  = DateOnly.FromDateTime(request.MovementDateTime.Date),
                         MovementDateTime                = new DateTimeOffset(request.MovementDateTime,
-                                                            TimeZoneInfo.Local.GetUtcOffset(request.MovementDateTime))
+                                                            TimeZoneInfo.Local.GetUtcOffset(request.MovementDateTime)),
+                        LateDeclarationJustification    = aitiologia ?? string.Empty
                     }
                 }
             }
@@ -97,6 +106,7 @@ public class ErganiApiService : IWorkCardSubmitter
         {
             Username = company.ErganiUsername,
             Password = _credentialProtector.Unprotect(company.ErganiPasswordEncrypted),
+            Usertype = company.ErganiUsertype,
             BaseUrl  = company.ErganiBaseUrl
         };
 
@@ -104,56 +114,98 @@ public class ErganiApiService : IWorkCardSubmitter
 
         var firstResponse = callResult.Data?.FirstOrDefault();
 
-        // Persist the WorkCard record regardless of outcome — failed/blocked
-        // submissions are still useful audit history.
-        var workCard = new WorkCard
-        {
-            EmployeeId = employee.Id,
-            BranchId = branch.Id,
-            MovementType = movementTypeCode == WorkCardMovementTypeCodes.Arrival
-                ? Data.Entities.MovementType.Arrival
-                : Data.Entities.MovementType.Departure,
-            MovementDateTime = request.MovementDateTime,
-            SubmissionDate = DateOnly.FromDateTime(DateTime.Today),
-            SubmittedToErgani = callResult.Success,
-            SubmissionId = firstResponse?.SubmissionId,
-            Protocol = firstResponse?.Protocol,
-            ResponseRawJson = callResult.ResponseRawJson,
-            CreatedAt = DateTime.UtcNow
-        };
-        db.WorkCards.Add(workCard);
+        // A 200 response carrying a description but no protocol is an Ergani business error.
+        var isBusinessError = callResult.IsBusinessError || firstResponse is { IsBusinessError: true };
+        var succeeded = callResult.Success && !isBusinessError;
+        var errorMessage = succeeded
+            ? null
+            : (callResult.ErrorMessage ?? firstResponse?.Description ?? "Ergani submission failed.");
 
-        db.ApiSubmissionLogs.Add(new ApiSubmissionLog
+        var movementEnum = movementTypeCode == WorkCardMovementTypeCodes.Arrival
+            ? Data.Entities.MovementType.Arrival
+            : Data.Entities.MovementType.Departure;
+
+        // Background retries call this method repeatedly for the same scan. Reuse the existing
+        // WorkCard and log row (matched by employee + movement + time) instead of adding new ones.
+        var from = request.MovementDateTime.AddSeconds(-1);
+        var to   = request.MovementDateTime.AddSeconds(1);
+
+        var workCard = await db.WorkCards.FirstOrDefaultAsync(w =>
+            w.EmployeeId == employee.Id &&
+            w.MovementType == movementEnum &&
+            w.MovementDateTime >= from &&
+            w.MovementDateTime <= to &&
+            !w.SubmittedToErgani);
+
+        if (workCard == null)
         {
-            CompanyId = company.Id,
-            EmployeeId = employee.Id,
-            SubmissionType = "WorkCard",
-            RequestPayloadJson = callResult.RequestPayloadJson,
-            ResponseRawJson = callResult.ResponseRawJson,
-            SubmissionId = firstResponse?.SubmissionId,
-            Protocol = firstResponse?.Protocol,
-            SubmissionDate = DateTime.UtcNow,
-            HttpStatusCode = callResult.HttpStatusCode,
-            Success = callResult.Success,
-            ErrorMessage = callResult.ErrorMessage,
-            DurationMs = callResult.DurationMs
-        });
+            workCard = new WorkCard
+            {
+                EmployeeId = employee.Id,
+                BranchId = branch.Id,
+                MovementType = movementEnum,
+                MovementDateTime = request.MovementDateTime,
+                SubmissionDate = DateOnly.FromDateTime(DateTime.Today),
+                CreatedAt = DateTime.UtcNow
+            };
+            db.WorkCards.Add(workCard);
+        }
+
+        workCard.SubmittedToErgani = succeeded;
+        workCard.SubmissionId = firstResponse?.SubmissionId;
+        workCard.Protocol = firstResponse?.Protocol;
+        workCard.ResponseRawJson = callResult.ResponseRawJson;
+        workCard.LateJustification = string.IsNullOrEmpty(aitiologia) ? null : aitiologia;
+
+        // Save first so a new WorkCard has an Id to link the log row to.
+        await db.SaveChangesAsync();
+
+        var log = await db.ApiSubmissionLogs.FirstOrDefaultAsync(l =>
+            l.WorkCardId == workCard.Id && l.SubmissionType == "WorkCard");
+
+        if (log == null)
+        {
+            log = new ApiSubmissionLog
+            {
+                CompanyId = company.Id,
+                EmployeeId = employee.Id,
+                SubmissionType = "WorkCard",
+                WorkCardId = workCard.Id,
+                SubmissionDate = DateTime.UtcNow   // first attempt — never changed afterwards
+            };
+            db.ApiSubmissionLogs.Add(log);
+        }
+        else
+        {
+            log.RetryCount++;
+            log.LastRetryAt = DateTime.UtcNow;
+        }
+
+        log.RequestPayloadJson = callResult.RequestPayloadJson;
+        log.ResponseRawJson = callResult.ResponseRawJson;
+        log.SubmissionId = firstResponse?.SubmissionId;
+        log.Protocol = firstResponse?.Protocol;
+        log.HttpStatusCode = callResult.HttpStatusCode;
+        log.Success = succeeded;
+        log.ErrorMessage = errorMessage;
+        log.DurationMs = callResult.DurationMs;
 
         await db.SaveChangesAsync();
 
-        if (!callResult.Success)
+        if (!succeeded)
         {
             _logger.LogWarning(
                 "Ergani work card submission failed for employee {EmployeeId}: {Error}",
-                employee.Id, callResult.ErrorMessage);
+                employee.Id, errorMessage);
         }
 
         return new WorkCardSubmissionOutcome
         {
-            Success = callResult.Success,
+            Success = succeeded,
             Protocol = firstResponse?.Protocol,
             SubmissionId = firstResponse?.SubmissionId,
-            ErrorMessage = callResult.ErrorMessage
+            ErrorMessage = errorMessage,
+            IsBusinessError = isBusinessError
         };
     }
 }

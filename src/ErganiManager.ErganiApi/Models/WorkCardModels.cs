@@ -24,6 +24,34 @@ public static class WorkCardMovementTypeCodes
 
 public enum WorkCardMovementType { ARRIVAL, DEPARTURE }
 
+public static class AitiologiaCodes
+{
+    public const string? None = null;
+    public const string NetworkOutage = "001";
+    public const string EmployerSystemUnavailable = "002";
+    public const string ErganiServiceUnavailable = "003";
+    public const string Other = "004";
+
+    public static readonly List<AitiologiaOption> AllOptions = new()
+    {
+        new(None, "— On time (no reason needed)"),
+        new(NetworkOutage, "001 — Power outage / telecommunications problem"),
+        new(EmployerSystemUnavailable, "002 — Employer systems problem"),
+        new(ErganiServiceUnavailable, "003 — Problem connecting to ERGANI"),
+        new(Other, "004 — Other reason"),
+    };
+
+    public static string AutoDetect(bool erganiOnline, bool internetOnline) =>
+        !internetOnline ? NetworkOutage :
+        !erganiOnline   ? ErganiServiceUnavailable :
+                          EmployerSystemUnavailable;
+}
+
+public record AitiologiaOption(string? Code, string DisplayName)
+{
+    public override string ToString() => DisplayName;
+}
+
 public enum LateDeclarationJustification
 {
     POWER_OUTAGE,
@@ -61,8 +89,7 @@ public class WorkCardEntry
     public DateTimeOffset MovementDateTime { get; set; }
 
     [JsonPropertyName("f_aitiologia")]
-    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-    public string? LateDeclarationJustification { get; set; }
+    public string LateDeclarationJustification { get; set; } = string.Empty;
 }
 
 /// <summary>
@@ -120,7 +147,7 @@ public class ErganiSubmissionResponse
     public string? Protocol { get; set; }
 
     [JsonPropertyName("submitDate")]
-    public DateTime? SubmissionDate { get; set; }
+    public string? SubmitDateRaw { get; set; }
 
     [JsonPropertyName("description")]
     public string? Description { get; set; }
