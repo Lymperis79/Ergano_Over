@@ -31,6 +31,9 @@ public partial class TerminalViewModel : ViewModelBase
     private readonly ErganiRetryService _retryService;
     private readonly IEmailAlertService _emailAlertService;
     private readonly ICacheSyncService _cacheSync;
+    /// <summary>How long the result window of a scan stays on screen.</summary>
+    private const int PopupSeconds = 2;
+
     private readonly System.Timers.Timer _clockTimer;
     private readonly System.Timers.Timer _popupAutoCloseTimer;
 
@@ -56,7 +59,48 @@ public partial class TerminalViewModel : ViewModelBase
     [ObservableProperty] private string _popupDetailLine3 = string.Empty;
     
     [ObservableProperty] private bool _isArrival = true;
+    [ObservableProperty] private bool _isExitConfirmVisible;
+
+    // Colour of the result window / list lines
+    public bool IsPopupOk => PopupKind == ScanPopupKind.Success;
+    public bool IsPopupWarn => PopupKind == ScanPopupKind.EarlyDepartureWarning;
+    public bool IsPopupBad => PopupKind is ScanPopupKind.TooEarlyBlocked or ScanPopupKind.NoScheduleBlocked
+                                or ScanPopupKind.UnknownBadge or ScanPopupKind.Error;
+
+    partial void OnPopupKindChanged(ScanPopupKind value)
+    {
+        OnPropertyChanged(nameof(IsPopupOk));
+        OnPropertyChanged(nameof(IsPopupWarn));
+        OnPropertyChanged(nameof(IsPopupBad));
+    }
+
+    /// <summary>The last scans (newest first), including refused ones.</summary>
+    public System.Collections.ObjectModel.ObservableCollection<RecentScanItem> RecentScans { get; } = new();
+    private const int RecentScanCount = 10;
+    public bool HasRecentScans => RecentScans.Count > 0;
+
+    // Movement of the scan being processed (for the list); empty when it could not be decided.
+    private string _currentMovementText = string.Empty;
+
+    /// <summary>Raised when the operator confirms closing the application.</summary>
+    public event EventHandler? ExitRequested;
+
+    [RelayCommand] private void AskExit() => IsExitConfirmVisible = true;
+    [RelayCommand] private void CancelExit() => IsExitConfirmVisible = false;
+    [RelayCommand] private void ConfirmExit() { IsExitConfirmVisible = false; ExitRequested?.Invoke(this, EventArgs.Empty); }
     [ObservableProperty] private bool _autoDetect = true;
+
+    /// <summary>Raised when the operator signs out (Ctrl+Shift+L); the application shows the login screen again.</summary>
+    public event EventHandler? LogoutRequested;
+
+    [RelayCommand] private void Logout() => LogoutRequested?.Invoke(this, EventArgs.Empty);
+
+    /// <summary>Stops the timers when the terminal window is replaced (sign out).</summary>
+    public void Shutdown()
+    {
+        _clockTimer.Stop();
+        _popupAutoCloseTimer.Stop();
+    }
 
     public TerminalViewModel(
         IConnectionStateService connectionState,
@@ -74,8 +118,10 @@ public partial class TerminalViewModel : ViewModelBase
         _clockTimer.Start();
         UpdateClock();
 
-        _popupAutoCloseTimer = new System.Timers.Timer(4000) { AutoReset = false };
+        _popupAutoCloseTimer = new System.Timers.Timer(PopupSeconds * 1000) { AutoReset = false };
         _popupAutoCloseTimer.Elapsed += (_, _) => CloseScanPopup();
+
+        RecentScans.CollectionChanged += (_, _) => OnPropertyChanged(nameof(HasRecentScans));
     }
 
     public void Initialize(UserSession session)
@@ -85,10 +131,54 @@ public partial class TerminalViewModel : ViewModelBase
         BranchName = session.BranchName ?? "All Branches";
         IsOfflineMode = session.IsOfflineSession;
 
+        _ = LoadRecentScansAsync(session.CompanyId);
+
         // Sync offline cache so scan lookups have fresh employee/schedule data
         if (session.CompanyId.HasValue)
             _ = Task.Run(() => _cacheSync.RefreshCacheFromMainDatabaseAsync(session.CompanyId.Value));
     }
+
+    /// <summary>Shows the last accepted scans saved on this computer, so the list is not empty after a restart.</summary>
+    private async Task LoadRecentScansAsync(int? companyId)
+    {
+        if (companyId == null) return;
+        try
+        {
+            var items = await Task.Run(async () =>
+            {
+                using var cache = LocalCacheDbContextFactory.Create();
+                var scans = await cache.PendingSubmissions
+                    .Where(p => p.CompanyId == companyId)
+                    .OrderByDescending(p => p.ScannedAt).Take(RecentScanCount).ToListAsync();
+                var ids = scans.Select(s => s.EmployeeId).Distinct().ToList();
+                var names = await cache.CachedEmployees.Where(e => ids.Contains(e.Id))
+                    .ToDictionaryAsync(e => e.Id, e => e.FullName);
+                return scans.Select(s => new RecentScanItem
+                {
+                    TimeText = TimeLabel(s.ScannedAt),
+                    EmployeeName = names.TryGetValue(s.EmployeeId, out var n) ? n : "—",
+                    MovementText = s.MovementType == "Arrival" ? Loc[L.Arrival] : Loc[L.Departure],
+                    StatusText = s.Synced ? Loc[L.ScanSent] : Loc[L.ScanWaiting],
+                    IsOk = s.Synced,
+                    IsWarn = !s.Synced
+                }).ToList();
+            });
+
+            // Scans made while this was loading are already at the top; keep them.
+            foreach (var item in items)
+            {
+                if (RecentScans.Count >= RecentScanCount) break;
+                RecentScans.Add(item);
+            }
+        }
+        catch (Exception ex)
+        {
+            Serilog.Log.Warning(ex, "Could not load the recent scans for the terminal.");
+        }
+    }
+
+    private static string TimeLabel(DateTime when) =>
+        when.Date == DateTime.Today ? when.ToString("HH:mm:ss") : when.ToString("dd/MM HH:mm");
 
     private void UpdateClock()
     {
@@ -143,6 +233,7 @@ public partial class TerminalViewModel : ViewModelBase
         }
 
         IsProcessing = true;
+        _currentMovementText = string.Empty;
         try
         {
             await HandleScanAsync(barcode, _session.CompanyId.Value);
@@ -250,23 +341,24 @@ public partial class TerminalViewModel : ViewModelBase
         }
 
         var settings = await cache.CachedCompanySettings.FindAsync(companyId);
-        var today = DateOnly.FromDateTime(DateTime.Today);
-        var schedule = await cache.CachedSchedules
-            .FirstOrDefaultAsync(s => s.EmployeeId == employee.Id && s.ScheduleDate == today);
-
         // Cached state, refreshed in the background — probing the database here could hold up
         // the next person in the queue for as long as a connection timeout.
         var isOnline = _connectionState.CurrentState == AppConnectionState.Normal;
 
-        var movementType = await DetermineMovementTypeAsync(cache, employee.Id);
-
         var now = DateTime.Now;
 
-        // Explicit Rest/Absent schedule entries block BOTH directions. This check
-        // must run before movement-specific logic so a second scan cannot clock out
-        // an employee after a blocked rest-day clock-in attempt.
-        // Controlled by the company setting; a company without cached settings keeps the safe default (block).
-        if (schedule != null && schedule.WorkType is 2 or 3 &&
+        // Arrival or departure, and the schedule that governs this scan. For an overnight shift the
+        // departure belongs to the schedule of the day the shift STARTED, not of today.
+        var shift = await ShiftResolver.ResolveAsync(
+            cache, employee.Id, now, settings?.EarlyClockInBlockMinutes ?? 0);
+        var movementType = shift.Movement;
+        var schedule = shift.Schedule;
+        _currentMovementText = movementType == "Arrival" ? Loc[L.Arrival] : Loc[L.Departure];
+
+        // Rest/Absent days block the clock-in (company setting; without cached settings the safe default is
+        // to block). A departure is never blocked: it closes an arrival that already exists, and blocking
+        // it would leave the employee clocked in forever.
+        if (movementType == "Arrival" && schedule != null && schedule.WorkType is 2 or 3 &&
             (settings == null || settings.BlockClockInOnRestOrAbsentDay))
         {
             var dayType = schedule.WorkType == 2 ? "rest day" : "absence day";
@@ -287,21 +379,20 @@ public partial class TerminalViewModel : ViewModelBase
                 return;
             }
 
-            if (schedule?.StartTime != null && settings != null)
+            // 0 = option off. Full date-times are compared, so shifts around midnight work.
+            if (shift.ShiftStart is { } shiftStart && settings is { EarlyClockInBlockMinutes: > 0 })
             {
-                var earliestAllowed = schedule.StartTime.Value.AddMinutes(-settings.EarlyClockInBlockMinutes);
-                var nowTimeOnly = TimeOnly.FromDateTime(now);
+                var earliestAllowed = shiftStart.AddMinutes(-settings.EarlyClockInBlockMinutes);
 
-                if (nowTimeOnly < earliestAllowed)
+                if (now < earliestAllowed)
                 {
-                    var minutesRemaining = (int)Math.Ceiling(
-                        (earliestAllowed.ToTimeSpan() - nowTimeOnly.ToTimeSpan()).TotalMinutes);
+                    var minutesRemaining = (int)Math.Ceiling((earliestAllowed - now).TotalMinutes);
 
                     await LogBlockedAttemptAsync(cache, employee, companyId, movementType,
-                        $"Clock-in blocked: too early; shift starts {schedule.StartTime:HH:mm}, earliest allowed {earliestAllowed:HH:mm}");
+                        $"Clock-in blocked: too early; shift starts {shiftStart:HH:mm}, earliest allowed {earliestAllowed:HH:mm}");
 
                     ShowPopup(ScanPopupKind.TooEarlyBlocked, Loc[L.TooEarly], employee.FullName,
-                        $"{Loc[L.ShiftLabel]}: {schedule.StartTime:HH:mm}    Earliest: {earliestAllowed:HH:mm}",
+                        $"{Loc[L.ShiftLabel]}: {shiftStart:HH:mm}    Earliest: {earliestAllowed:HH:mm}",
                         $"{now:HH:mm}",
                         string.Format(Loc[L.PleaseReturnIn], minutesRemaining));
                     return;
@@ -323,16 +414,13 @@ public partial class TerminalViewModel : ViewModelBase
             bool isEarly = false;
             int earlyMinutes = 0;
 
-            if (schedule?.EndTime != null && settings != null)
+            // 0 = option off. The end is the full date-time of the shift (the day after the start for an
+            // overnight shift), so a clock-out at 06:00 for a 22:00 → 06:00 shift is judged correctly.
+            if (shift.ShiftEnd is { } shiftEnd && settings is { EarlyDepartureAlertMinutes: > 0 }
+                && now < shiftEnd.AddMinutes(-settings.EarlyDepartureAlertMinutes))
             {
-                var alertThreshold = schedule.EndTime.Value.AddMinutes(-settings.EarlyDepartureAlertMinutes);
-                var nowTimeOnly = TimeOnly.FromDateTime(now);
-
-                if (nowTimeOnly < alertThreshold)
-                {
-                    isEarly = true;
-                    earlyMinutes = (int)Math.Round((schedule.EndTime.Value.ToTimeSpan() - nowTimeOnly.ToTimeSpan()).TotalMinutes);
-                }
+                isEarly = true;
+                earlyMinutes = (int)Math.Round((shiftEnd - now).TotalMinutes);
             }
 
             await QueueScanAsync(cache, employee, companyId, "Departure", now);
@@ -372,33 +460,6 @@ public partial class TerminalViewModel : ViewModelBase
     }
 
     /// <summary>
-    /// Determines whether the next scan for this employee should be treated
-    /// as an ARRIVAL or DEPARTURE. Checks the offline queue first (covers the
-    /// case of multiple scans happening while disconnected), and otherwise
-    /// defaults to ARRIVAL — the assumption being that the cache's notion of
-    /// "today's WorkCards" is kept current by CacheSyncService while online.
-    /// A fuller implementation would also check the main DB's WorkCards table
-    /// directly when online for full correctness across app restarts; that
-    /// hook is left as a follow-up since it requires a scoped main-DB query
-    /// service rather than the cache-only context used here.
-    /// </summary>
-    private static async Task<string> DetermineMovementTypeAsync(LocalCacheDbContext cache, int employeeId)
-    {
-        var todaysQueued = await cache.PendingSubmissions
-            .Where(p => p.EmployeeId == employeeId && p.ScannedAt.Date == DateTime.Today)
-            .OrderBy(p => p.ScannedAt)
-            .ToListAsync();
-
-        if (todaysQueued.Count > 0)
-        {
-            var last = todaysQueued[^1];
-            return last.MovementType == "Arrival" ? "Departure" : "Arrival";
-        }
-
-        return "Arrival";
-    }
-
-    /// <summary>
     /// Save-first: the scan is written to the local cache (a few milliseconds) and the background
     /// service sends it to Ergani, retrying for as long as the connection is down. The terminal is
     /// free for the next person immediately, whatever the state of the network or Ergani.
@@ -435,8 +496,26 @@ public partial class TerminalViewModel : ViewModelBase
         return Task.CompletedTask;
     }
 
+    private void AddRecentScan(ScanPopupKind kind, string title, string employeeName)
+    {
+        RecentScans.Insert(0, new RecentScanItem
+        {
+            TimeText = DateTime.Now.ToString("HH:mm:ss"),
+            EmployeeName = string.IsNullOrWhiteSpace(employeeName) ? "—" : employeeName,
+            MovementText = _currentMovementText,
+            StatusText = title,
+            IsOk = kind == ScanPopupKind.Success,
+            IsWarn = kind == ScanPopupKind.EarlyDepartureWarning,
+            IsBad = kind is ScanPopupKind.TooEarlyBlocked or ScanPopupKind.NoScheduleBlocked
+                    or ScanPopupKind.UnknownBadge or ScanPopupKind.Error
+        });
+        while (RecentScans.Count > RecentScanCount) RecentScans.RemoveAt(RecentScans.Count - 1);
+    }
+
     private void ShowPopup(ScanPopupKind kind, string title, string employeeName, string line1, string line2, string line3)
     {
+        AddRecentScan(kind, title, employeeName);
+
         PopupKind = kind;
         PopupTitle = title;
         PopupEmployeeName = employeeName;

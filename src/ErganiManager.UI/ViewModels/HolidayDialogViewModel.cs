@@ -40,7 +40,7 @@ public class HolidayRow
 
 /// <summary>The holidays form: pick a holiday type and dates, save, submit to Ergani, and review
 /// what was sent (response + PDF) — the same flow as overtime, opened from the Schedules page.</summary>
-public partial class HolidayDialogViewModel : ObservableObject
+public partial class HolidayDialogViewModel : ViewModelBase
 {
     /// <summary>Raised after holiday records have been changed so the schedule calendar can refresh.</summary>
     public event EventHandler? HolidaysChanged;
@@ -175,15 +175,15 @@ public partial class HolidayDialogViewModel : ObservableObject
     {
         if (_employee == null) return;
 
-        if (SelectedType == null)   { StatusMessage = "❌ Select the holiday type."; return; }
-        if (SelectedBranch == null) { StatusMessage = "❌ Select the branch."; return; }
-        if (FromDate == null || ToDate == null) { StatusMessage = "❌ Enter the from and to dates (dd/mm/yyyy)."; return; }
+        if (SelectedType == null)   { StatusMessage = Loc["Vm.❌ Select the holiday type."]; return; }
+        if (SelectedBranch == null) { StatusMessage = Loc["Vm.❌ Select the branch."]; return; }
+        if (FromDate == null || ToDate == null) { StatusMessage = Loc["Vm.❌ Enter the from and to dates (dd/mm/yyyy)."]; return; }
 
         int? year = null;
         if (!string.IsNullOrWhiteSpace(ReferenceYear))
         {
             if (!int.TryParse(ReferenceYear.Trim(), out var y) || y < 1900 || y > 2100)
-            { StatusMessage = "❌ The reference year must be a 4-digit year."; return; }
+            { StatusMessage = Loc["Vm.❌ The reference year must be a 4-digit year."]; return; }
             year = y;
         }
 
@@ -191,11 +191,11 @@ public partial class HolidayDialogViewModel : ObservableObject
         if (!string.IsNullOrWhiteSpace(EntitledDays))
         {
             if (!int.TryParse(EntitledDays.Trim(), out var d) || d < 0 || d > 999)
-            { StatusMessage = "❌ Entitled days must be a number from 0 to 999."; return; }
+            { StatusMessage = Loc["Vm.❌ Entitled days must be a number from 0 to 999."]; return; }
             entitled = d;
         }
 
-        if (Comments.Length > 200) { StatusMessage = "❌ Comments can be at most 200 characters."; return; }
+        if (Comments.Length > 200) { StatusMessage = Loc["Vm.❌ Comments can be at most 200 characters."]; return; }
 
         try
         {
@@ -243,7 +243,7 @@ public partial class HolidayDialogViewModel : ObservableObject
     private async Task SubmitUnsentAsync()
     {
         var ids = Rows.Where(r => r.IsUnsent).Select(r => r.Id).ToList();
-        if (ids.Count == 0) { StatusMessage = "There are no unsent holidays."; return; }
+        if (ids.Count == 0) { StatusMessage = Loc["Vm.There are no unsent holidays."]; return; }
         await SubmitIdsAsync(ids);
     }
 
@@ -273,7 +273,7 @@ public partial class HolidayDialogViewModel : ObservableObject
         try
         {
             if (!await _leaveService.DeleteUnsentAsync(row.Id))
-            { StatusMessage = "A holiday that was already sent to Ergani cannot be deleted here."; return; }
+            { StatusMessage = Loc["Vm.A holiday that was already sent to Ergani cannot be deleted here."]; return; }
 
             await ReloadAsync();
             StatusMessage = $"Deleted the holiday of {row.DateText}.";
@@ -287,7 +287,7 @@ public partial class HolidayDialogViewModel : ObservableObject
         // A failure with no HTTP response (e.g. no connection) has only the error text.
         var text = !string.IsNullOrWhiteSpace(row.ResponseRawJson) ? row.ResponseRawJson : row.LastError;
         if (string.IsNullOrWhiteSpace(text))
-        { StatusMessage = "This holiday has not been submitted yet — there is no response."; return; }
+        { StatusMessage = Loc["Vm.This holiday has not been submitted yet — there is no response."]; return; }
 
         ResponseTitle  = $"Ergani response — {row.DateText}";
         ResponseText   = text;
@@ -301,7 +301,7 @@ public partial class HolidayDialogViewModel : ObservableObject
     private async Task DownloadPdfAsync(HolidayRow row)
     {
         if (!row.HasProtocol)
-        { StatusMessage = "A protocol is required before downloading the PDF."; return; }
+        { StatusMessage = Loc["Vm.A protocol is required before downloading the PDF."]; return; }
         try
         {
             var bytes = await _documentService.DownloadPdfAsync(

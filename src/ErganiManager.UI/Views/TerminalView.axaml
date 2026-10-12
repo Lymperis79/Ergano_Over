@@ -9,10 +9,28 @@
         CanResize="False"
         WindowDecorations="None">
 
-    <Grid Background="#0F1115">
+    <!-- The terminal is a kiosk: signing out is a keyboard shortcut, not a button employees could press -->
+    <Window.KeyBindings>
+        <KeyBinding Gesture="Ctrl+Shift+L" Command="{Binding LogoutCommand}" />
+        <KeyBinding Gesture="Ctrl+Shift+Q" Command="{Binding AskExitCommand}" />
+        <KeyBinding Gesture="Escape" Command="{Binding CancelExitCommand}" />
+    </Window.KeyBindings>
+
+    <Window.Styles>
+        <Style Selector="TextBlock.popupTitle"><Setter Property="Foreground" Value="White" /></Style>
+        <Style Selector="TextBlock.popupTitle.ok"><Setter Property="Foreground" Value="#66BB6A" /></Style>
+        <Style Selector="TextBlock.popupTitle.warn"><Setter Property="Foreground" Value="#FFB74D" /></Style>
+        <Style Selector="TextBlock.popupTitle.bad"><Setter Property="Foreground" Value="#EF5350" /></Style>
+        <Style Selector="TextBlock.status"><Setter Property="Foreground" Value="#BBBBBB" /></Style>
+        <Style Selector="TextBlock.status.ok"><Setter Property="Foreground" Value="#66BB6A" /></Style>
+        <Style Selector="TextBlock.status.warn"><Setter Property="Foreground" Value="#FFB74D" /></Style>
+        <Style Selector="TextBlock.status.bad"><Setter Property="Foreground" Value="#EF5350" /></Style>
+    </Window.Styles>
+
+    <Grid Background="#0F1115" RowDefinitions="*,Auto">
 
         <!-- Main terminal content -->
-        <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center"
+        <StackPanel Grid.Row="0" VerticalAlignment="Center" HorizontalAlignment="Center"
                     Spacing="18" Width="600">
 
             <TextBlock Text="{Binding CompanyName}" FontSize="22" FontWeight="SemiBold"
@@ -47,16 +65,46 @@
 
         </StackPanel>
 
-        <!-- Result popup overlay -->
-        <Border IsVisible="{Binding IsPopupVisible}"
+        <!-- The last 10 clock-ins / clock-outs -->
+        <Border Grid.Row="1" Width="820" HorizontalAlignment="Center" Margin="0,0,0,28"
+                Background="#1A1D23" CornerRadius="10" Padding="16,10"
+                IsVisible="{Binding HasRecentScans}">
+            <StackPanel Spacing="4">
+                <TextBlock Text="{Binding Loc[RecentScans]}" FontSize="13" FontWeight="SemiBold"
+                           Foreground="#AAAAAA" Margin="0,0,0,4" />
+                <ItemsControl ItemsSource="{Binding RecentScans}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="vm:RecentScanItem">
+                            <Grid ColumnDefinitions="95,*,120,240" Margin="0,2">
+                                <TextBlock Grid.Column="0" Text="{Binding TimeText}" Foreground="#888888" FontSize="14" />
+                                <TextBlock Grid.Column="1" Text="{Binding EmployeeName}" Foreground="White"
+                                           FontSize="14" TextTrimming="CharacterEllipsis" />
+                                <TextBlock Grid.Column="2" Text="{Binding MovementText}" Foreground="#CCCCCC" FontSize="13" />
+                                <TextBlock Grid.Column="3" Text="{Binding StatusText}" Classes="status" FontSize="13"
+                                           Classes.ok="{Binding IsOk}" Classes.warn="{Binding IsWarn}"
+                                           Classes.bad="{Binding IsBad}" TextTrimming="CharacterEllipsis" />
+                            </Grid>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </StackPanel>
+        </Border>
+
+        <!-- Key hints (kiosk: no buttons that could be pressed by accident) -->
+        <TextBlock Grid.Row="1" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,12,6"
+                   Foreground="#444444" FontSize="11" Text="Ctrl+Shift+L  Log out   ·   Ctrl+Shift+Q  Close" />
+
+        <!-- Result popup overlay (closes by itself after 2 seconds) -->
+        <Border Grid.RowSpan="2" IsVisible="{Binding IsPopupVisible}"
                 Background="#CC000000">
             <Border Background="#1E2128" CornerRadius="12" Padding="36"
                     Width="560" VerticalAlignment="Center" HorizontalAlignment="Center"
                     BorderBrush="#3A3F4B" BorderThickness="1">
                 <StackPanel Spacing="10">
                     <TextBlock Text="{Binding PopupTitle}" FontSize="24" FontWeight="Bold"
-                               Foreground="White" HorizontalAlignment="Center"
-                               TextWrapping="Wrap" />
+                               Classes="popupTitle" Classes.ok="{Binding IsPopupOk}"
+                               Classes.warn="{Binding IsPopupWarn}" Classes.bad="{Binding IsPopupBad}"
+                               HorizontalAlignment="Center" TextWrapping="Wrap" />
                     <TextBlock Text="{Binding PopupEmployeeName}" FontSize="20"
                                Foreground="#DDDDDD" HorizontalAlignment="Center"
                                Margin="0,8,0,0"
@@ -77,6 +125,22 @@
                                TextWrapping="Wrap" Margin="0,8,0,0"
                                IsVisible="{Binding PopupDetailLine3,
                                    Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                </StackPanel>
+            </Border>
+        </Border>
+
+        <!-- Close the application? -->
+        <Border Grid.RowSpan="2" IsVisible="{Binding IsExitConfirmVisible}" Background="#CC000000">
+            <Border Background="#1E2128" CornerRadius="12" Padding="36" Width="460"
+                    VerticalAlignment="Center" HorizontalAlignment="Center"
+                    BorderBrush="#3A3F4B" BorderThickness="1">
+                <StackPanel Spacing="20">
+                    <TextBlock Text="{Binding Loc[CloseAppQuestion]}" FontSize="20" FontWeight="SemiBold"
+                               Foreground="White" TextWrapping="Wrap" HorizontalAlignment="Center" />
+                    <StackPanel Orientation="Horizontal" Spacing="12" HorizontalAlignment="Center">
+                        <Button Content="{Binding Loc[Close]}" Command="{Binding ConfirmExitCommand}" Classes="accent" MinWidth="120" />
+                        <Button Content="{Binding Loc[Cancel]}" Command="{Binding CancelExitCommand}" MinWidth="120" />
+                    </StackPanel>
                 </StackPanel>
             </Border>
         </Border>

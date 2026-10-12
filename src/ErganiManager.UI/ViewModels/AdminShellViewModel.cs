@@ -337,6 +337,11 @@ public partial class AdminShellViewModel : ViewModelBase
     [RelayCommand] private void ToggleMasterData() => IsMasterDataExpanded = !IsMasterDataExpanded;
     [RelayCommand] private void ToggleAdminGroup() => IsAdminGroupExpanded = !IsAdminGroupExpanded;
 
+    /// <summary>Raised when the user chooses Log out; the application shows the login screen again.</summary>
+    public event EventHandler? LogoutRequested;
+
+    [RelayCommand] private void Logout() => LogoutRequested?.Invoke(this, EventArgs.Empty);
+
     /// <summary>Shows only the menus the logged-in user is allowed to see.</summary>
     private void ApplyMenuAccess(UserSession session)
     {

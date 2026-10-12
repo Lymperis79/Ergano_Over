@@ -58,7 +58,7 @@ public partial class EmployeeImportViewModel : ViewModelBase
         ValidRows.Clear();
         InvalidRows.Clear();
         HasPreview = false;
-        StatusMessage = "Parsing file...";
+        StatusMessage = Loc["Vm.Parsing file..."];
         ImportDone = false;
 
         try
@@ -67,11 +67,11 @@ public partial class EmployeeImportViewModel : ViewModelBase
             foreach (var r in result.ValidRows) ValidRows.Add(r);
             foreach (var r in result.InvalidRows) InvalidRows.Add(r);
             HasPreview = true;
-            StatusMessage = $"{result.ValidRows.Count} valid row(s), {result.InvalidRows.Count} with errors.";
+            StatusMessage = string.Format(Loc["Vm.ImportPreviewSummary"], result.ValidRows.Count, result.InvalidRows.Count);
         }
         catch (Exception ex)
         {
-            StatusMessage = $"❌ Failed to parse file: {ex.Message}";
+            StatusMessage = string.Format(Loc["Vm.FailedParseFile"], ex.Message);
         }
     }
 
@@ -80,13 +80,13 @@ public partial class EmployeeImportViewModel : ViewModelBase
     {
         if (!ValidRows.Any())
         {
-            StatusMessage = "No valid rows to import.";
+            StatusMessage = Loc["Vm.No valid rows to import."];
             return;
         }
 
         IsImporting = true;
         ImportedCount = 0;
-        StatusMessage = "Importing...";
+        StatusMessage = Loc["Vm.Importing..."];
 
         try
         {
@@ -144,8 +144,8 @@ public partial class EmployeeImportViewModel : ViewModelBase
             ImportDone = true;
 
             StatusMessage = errors.Count == 0
-                ? $"✅ {succeeded} employee(s) imported successfully."
-                : $"✅ {succeeded} imported. ⚠️ {errors.Count} skipped:\n" + string.Join("\n", errors);
+                ? string.Format(Loc["Vm.EmployeeImportSuccess"], succeeded)
+                : string.Format(Loc["Vm.EmployeeImportWithSkipped"], succeeded, errors.Count) + string.Join("\n", errors);
 
             if (succeeded > 0)
                 ImportCompleted?.Invoke(this, EventArgs.Empty);

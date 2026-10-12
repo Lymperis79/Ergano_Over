@@ -87,7 +87,7 @@ public partial class OvertimeViewModel : ViewModelBase, IAdminSectionViewModel
     {
         if (_session?.CompanyId is not int companyId) return;
         var ids = _selectedIds.ToList();
-        if (ids.Count == 0) { StatusMessage = "Select at least one unsent overtime record."; return; }
+        if (ids.Count == 0) { StatusMessage = Loc["Vm.Select at least one unsent overtime record."]; return; }
         try
         {
             var result = await _overtimeSubmitter.SubmitAsync(companyId, ids);
@@ -101,7 +101,7 @@ public partial class OvertimeViewModel : ViewModelBase, IAdminSectionViewModel
     [RelayCommand]
     private void ShowResponseFor(OvertimeDto record)
     {
-        if (string.IsNullOrWhiteSpace(record.ResponseRawJson)) { StatusMessage = "No stored Ergani response is available for this record."; return; }
+        if (string.IsNullOrWhiteSpace(record.ResponseRawJson)) { StatusMessage = Loc["Vm.No stored Ergani response is available for this record."]; return; }
         ShowResponse($"Ergani Response — {record.EmployeeFullName}", record.ResponseRawJson);
     }
 
@@ -113,7 +113,7 @@ public partial class OvertimeViewModel : ViewModelBase, IAdminSectionViewModel
     [RelayCommand]
     private async Task DownloadPdfAsync(OvertimeDto record)
     {
-        if (_session?.CompanyId is not int companyId || string.IsNullOrWhiteSpace(record.Protocol)) { StatusMessage = "A protocol is required before downloading the PDF."; return; }
+        if (_session?.CompanyId is not int companyId || string.IsNullOrWhiteSpace(record.Protocol)) { StatusMessage = Loc["Vm.A protocol is required before downloading the PDF."]; return; }
         try
         {
             var date = record.SubmittedDate ?? record.OvertimeDate;
@@ -134,8 +134,8 @@ public partial class OvertimeViewModel : ViewModelBase, IAdminSectionViewModel
     private async Task SaveAsync()
     {
         if (_session?.CompanyId is not int companyId) return;
-        if (FormEmployee == null || FormBranch == null) { StatusMessage="Employee and branch are required."; return; }
-        if (!FormStartTime.HasValue || !FormEndTime.HasValue) { StatusMessage="Start and end time are required."; return; }
+        if (FormEmployee == null || FormBranch == null) { StatusMessage=Loc["Vm.Employee and branch are required."]; return; }
+        if (!FormStartTime.HasValue || !FormEndTime.HasValue) { StatusMessage=Loc["Vm.Start and end time are required."]; return; }
         try
         {
             await _overtimeService.CreateAsync(new OvertimeDto { EmployeeId=FormEmployee.Id, BranchId=FormBranch.Id, OvertimeDate=DateOnly.FromDateTime((FormDate ?? DateTimeOffset.Now).LocalDateTime), StartTime=TimeOnly.FromTimeSpan(FormStartTime.Value), EndTime=TimeOnly.FromTimeSpan(FormEndTime.Value), Justification=FormJustification, WeeklyWorkdaysNumber=FormWeeklyWorkdays, AseeApproval=string.IsNullOrWhiteSpace(FormAseeApproval)?null:FormAseeApproval }, companyId);

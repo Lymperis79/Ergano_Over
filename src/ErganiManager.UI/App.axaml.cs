@@ -212,15 +212,36 @@ public partial class App : Application
         {
             var vm = Program.Services.GetRequiredService<TerminalViewModel>();
             vm.Initialize(session);
+            vm.LogoutRequested += (_, _) => SignOut(desktop, session);
+            vm.ExitRequested += (_, _) => desktop.MainWindow?.Close();
             next = new TerminalView { DataContext = vm };
         }
         else
         {
             var vm = Program.Services.GetRequiredService<AdminShellViewModel>();
             vm.Initialize(session);
+            vm.LogoutRequested += (_, _) => SignOut(desktop, session);
             next = new AdminShellView { DataContext = vm };
         }
 
         TransitionTo(desktop, next);
+    }
+
+    /// <summary>
+    /// Signs the user out: ends the session, closes the other windows (e.g. the always-on-top scan window,
+    /// which belongs to this session) and shows the login screen again.
+    /// </summary>
+    private void SignOut(IClassicDesktopStyleApplicationLifetime desktop, UserSession session)
+    {
+        if (desktop.MainWindow?.DataContext is TerminalViewModel terminal)
+            terminal.Shutdown();
+
+        foreach (var window in desktop.Windows.ToList())
+            if (window != desktop.MainWindow) window.Close();
+
+        Program.Services.GetRequiredService<IAuthService>().Logout();
+        Log.Information("User {Username} signed out.", session.Username);
+
+        ShowLogin(desktop, isDegraded: session.IsOfflineSession);
     }
 }

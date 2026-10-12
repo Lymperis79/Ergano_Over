@@ -718,24 +718,9 @@ public partial class WorkCardScanViewModel :
 
             if (AutoDetect)
             {
-                var lastPending =
-                    cache.PendingSubmissions
-                        .Where(
-                            p =>
-                                p.EmployeeId ==
-                                    employee.Id)
-                        .OrderByDescending(
-                            p => p.ScannedAt)
-                        .FirstOrDefault();
-
-                movement =
-                    lastPending?.MovementType ==
-                        "Arrival"
-                        ? "Departure"
-                        : "Arrival";
-
-                scanTime =
-                    DateTime.Now;
+                // Arrival or departure is decided below by the shift resolver.
+                movement = string.Empty;
+                scanTime = DateTime.Now;
             }
             else
             {
@@ -763,12 +748,18 @@ public partial class WorkCardScanViewModel :
             // Enforce the same schedule rules as the dedicated barcode terminal.
             // Use the date selected for this scan (not necessarily today's date when
             // the operator is entering a historical/manual movement).
-            var scanDate = DateOnly.FromDateTime(scanTime);
-            var schedule = await cache.CachedSchedules
-                .FirstOrDefaultAsync(s => s.EmployeeId == employee.Id && s.ScheduleDate == scanDate);
             var companySettings = await cache.CachedCompanySettings.FindAsync(companyId.Value);
 
-            if (schedule != null && schedule.WorkType is 2 or 3 &&
+            // Movement (when auto-detected) and the governing schedule. For an overnight shift a departure
+            // belongs to the schedule of the day the shift started.
+            var shift = await ShiftResolver.ResolveAsync(
+                cache, employee.Id, scanTime, companySettings?.EarlyClockInBlockMinutes ?? 0,
+                AutoDetect ? null : movement);
+            if (AutoDetect) movement = shift.Movement;
+            var schedule = shift.Schedule;
+
+            // A departure is never blocked: it closes an arrival that already exists.
+            if (movement == "Arrival" && schedule != null && schedule.WorkType is 2 or 3 &&
                 (companySettings == null || companySettings.BlockClockInOnRestOrAbsentDay))
             {
                 var dayType = schedule.WorkType == 2 ? "rest day" : "absence day";
@@ -789,15 +780,17 @@ public partial class WorkCardScanViewModel :
                 return;
             }
 
-            if (movement == "Arrival" && schedule?.StartTime != null && companySettings != null)
+            // 0 = option off. Full date-times are compared, so shifts around midnight work.
+            if (movement == "Arrival" && shift.ShiftStart is { } shiftStart
+                && companySettings is { EarlyClockInBlockMinutes: > 0 })
             {
-                var earliestAllowed = schedule.StartTime.Value.AddMinutes(-companySettings.EarlyClockInBlockMinutes);
-                if (TimeOnly.FromDateTime(scanTime) < earliestAllowed)
+                var earliestAllowed = shiftStart.AddMinutes(-companySettings.EarlyClockInBlockMinutes);
+                if (scanTime < earliestAllowed)
                 {
                     LogBlockedScan("WorkCardScanView", employee, companyId.Value, movement,
-                        $"Clock-in blocked: too early; shift starts {schedule.StartTime:HH:mm}, earliest allowed {earliestAllowed:HH:mm}", scanTime);
+                        $"Clock-in blocked: too early; shift starts {shiftStart:HH:mm}, earliest allowed {earliestAllowed:HH:mm}", scanTime);
                     ShowResponse(false, "🚫 Too early to clock in",
-                        $"Shift starts at {schedule.StartTime:HH:mm}. Earliest allowed clock-in is {earliestAllowed:HH:mm}.");
+                        $"Shift starts at {shiftStart:HH:mm}. Earliest allowed clock-in is {earliestAllowed:HH:mm}.");
                     return;
                 }
             }

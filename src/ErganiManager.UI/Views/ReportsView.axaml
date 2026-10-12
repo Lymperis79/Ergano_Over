@@ -5,7 +5,35 @@
              x:Class="ErganiManager.UI.Views.ReportsView"
              x:DataType="vm:ReportsViewModel">
 
-    <ScrollViewer>
+    <UserControl.Styles>
+        <Style Selector="Border.rgroup"><Setter Property="Background" Value="#252B36" /></Style>
+        <Style Selector="Border.rtotal"><Setter Property="Background" Value="#1F2F3F" /></Style>
+        <Style Selector="TextBlock.strong"><Setter Property="FontWeight" Value="SemiBold" /></Style>
+        <Style Selector="TextBlock.warn"><Setter Property="Foreground" Value="#FFB74D" /></Style>
+    </UserControl.Styles>
+
+    <UserControl.Resources>
+        <!-- One table row: a horizontal line of fixed-width cells -->
+        <DataTemplate x:Key="ReportRowTemplate" x:DataType="core:ReportRow">
+            <Border Padding="4,3" CornerRadius="4"
+                    Classes.rgroup="{Binding IsGroup}" Classes.rtotal="{Binding IsTotal}">
+                <ItemsControl ItemsSource="{Binding Cells}">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate><StackPanel Orientation="Horizontal" Spacing="8" /></ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="core:ReportCell">
+                            <TextBlock Text="{Binding Text}" Width="{Binding Width}" TextTrimming="CharacterEllipsis"
+                                       Classes.strong="{Binding IsStrong}" Classes.warn="{Binding IsWarn}"
+                                       ToolTip.Tip="{Binding Text}" />
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </Border>
+        </DataTemplate>
+    </UserControl.Resources>
+
+    <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
         <StackPanel Spacing="14">
 
             <Border IsVisible="{Binding !HasActiveCompany}" Background="#332D9CDB" CornerRadius="6" Padding="14">
@@ -18,26 +46,43 @@
 
                 <!-- Report selector -->
                 <StackPanel Orientation="Horizontal" Spacing="16">
-                    <RadioButton GroupName="ReportKind" Content="⏱ Overtime"
+                    <RadioButton GroupName="ReportKind" Content="{Binding Loc[Overtime]}"
                                  IsChecked="{Binding IsOvertimeReport, Mode=TwoWay}" />
-                    <RadioButton GroupName="ReportKind" Content="🕒 Total working time"
+                    <RadioButton GroupName="ReportKind" Content="{Binding Loc[TotalWorkingTime]}"
                                  IsChecked="{Binding IsWorkTimeReport, Mode=TwoWay}" />
-                    <RadioButton GroupName="ReportKind" Content="📋 Declared vs actual"
+                    <RadioButton GroupName="ReportKind" Content="{Binding Loc[DeclaredVsActual]}"
                                  IsChecked="{Binding IsCompareReport, Mode=TwoWay}" />
                 </StackPanel>
+
+                <!-- Analysis reports (shown as tables) -->
+                <TextBlock Text="{Binding Loc[Analysis]}" FontSize="12" Foreground="Gray" Margin="0,2,0,-8" />
+                <WrapPanel>
+                    <RadioButton GroupName="ReportKind" Content="{Binding Loc[RoundingImpact]}" Margin="0,0,16,4"
+                                 IsChecked="{Binding IsRoundingReport, Mode=TwoWay}" />
+                    <RadioButton GroupName="ReportKind" Content="{Binding Loc[SubmissionStatus]}" Margin="0,0,16,4"
+                                 IsChecked="{Binding IsSubmissionReport, Mode=TwoWay}" />
+                    <RadioButton GroupName="ReportKind" Content="{Binding Loc[RetryFailureLog]}" Margin="0,0,16,4"
+                                 IsChecked="{Binding IsFailureLogReport, Mode=TwoWay}" />
+                    <RadioButton GroupName="ReportKind" Content="{Binding Loc[ScheduleConsistency]}" Margin="0,0,16,4"
+                                 IsChecked="{Binding IsConsistencyReport, Mode=TwoWay}" />
+                    <RadioButton GroupName="ReportKind" Content="{Binding Loc[Roster]}" Margin="0,0,16,4"
+                                 IsChecked="{Binding IsRosterReport, Mode=TwoWay}" />
+                    <RadioButton GroupName="ReportKind" Content="{Binding Loc[OvertimeTrend]}" Margin="0,0,16,4"
+                                 IsChecked="{Binding IsTrendReport, Mode=TwoWay}" />
+                </WrapPanel>
 
                 <!-- Filters -->
                 <WrapPanel>
                     <StackPanel Spacing="4" Margin="0,0,12,8">
-                        <TextBlock Text="From" FontSize="12" Foreground="Gray" />
+                        <TextBlock Text="{Binding Loc[From]}" FontSize="12" Foreground="Gray" />
                         <DatePicker SelectedDate="{Binding FromDate, Mode=TwoWay}" MinWidth="150" />
                     </StackPanel>
                     <StackPanel Spacing="4" Margin="0,0,12,8">
-                        <TextBlock Text="To" FontSize="12" Foreground="Gray" />
+                        <TextBlock Text="{Binding Loc[To]}" FontSize="12" Foreground="Gray" />
                         <DatePicker SelectedDate="{Binding ToDate, Mode=TwoWay}" MinWidth="150" />
                     </StackPanel>
                     <StackPanel Spacing="4" Margin="0,0,12,8">
-                        <TextBlock Text="Employee" FontSize="12" Foreground="Gray" />
+                        <TextBlock Text="{Binding Loc[Employee]}" FontSize="12" Foreground="Gray" />
                         <ComboBox ItemsSource="{Binding AvailableEmployees}"
                                   SelectedItem="{Binding SelectedEmployee}" MinWidth="220">
                             <ComboBox.ItemTemplate>
@@ -47,7 +92,7 @@
                     </StackPanel>
                     <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Bottom" Margin="0,0,0,8">
                         <Button Content="Generate" Command="{Binding GenerateCommand}" Classes="accent" />
-                        <Button Content="💾 Export CSV…" Click="OnExportClick" IsEnabled="{Binding HasData}" />
+                        <Button Content="💾 Export CSV…" Click="OnExportClick" IsEnabled="{Binding CanExport}" />
                     </StackPanel>
                 </WrapPanel>
 
@@ -59,7 +104,7 @@
                         <TextBlock Text="{Binding ReportTitle}" FontWeight="SemiBold" FontSize="15" />
                         <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="18" IsVisible="{Binding IsCompareReport}">
                             <TextBlock Grid.Column="1" Text="Actual" Foreground="Gray" FontSize="11" />
-                            <TextBlock Grid.Column="2" Text="{Binding Loc[ReportNightHours]}" Foreground="Gray" FontSize="11" />
+                            <TextBlock Grid.Column="2" Text="{Binding $parent[UserControl].DataContext.Loc[ReportNightHours]}" Foreground="Gray" FontSize="11" />
                         </Grid>
                         <ItemsControl ItemsSource="{Binding EmployeeTotals}">
                             <ItemsControl.ItemTemplate>
@@ -79,7 +124,7 @@
                             <TextBlock Grid.Column="1" Text="{Binding GrandTotalText}" FontWeight="Bold" FontSize="16" />
                         </Grid>
                         <Grid ColumnDefinitions="*,Auto" IsVisible="{Binding IsCompareReport}">
-                            <TextBlock Text="{Binding Loc[ReportNightHours]}" FontWeight="Bold" />
+                            <TextBlock Text="{Binding $parent[UserControl].DataContext.Loc[ReportNightHours]}" FontWeight="Bold" />
                             <TextBlock Grid.Column="1" Text="{Binding NightTotalText}" FontWeight="Bold" FontSize="16" />
                         </Grid>
                         <Grid ColumnDefinitions="*,Auto" IsVisible="{Binding !IsCompareReport}">
@@ -103,6 +148,7 @@
                                         <TextBlock Grid.Column="1" Text="{Binding TotalText, StringFormat='Month total: {0}'}"
                                                    FontWeight="Bold" Foreground="#64B5F6" />
                                     </Grid>
+                                    <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto" MaxHeight="360">
                                     <ItemsControl ItemsSource="{Binding Records}">
                                         <ItemsControl.ItemTemplate>
                                             <DataTemplate x:DataType="core:OvertimeDto">
@@ -121,6 +167,7 @@
                                             </DataTemplate>
                                         </ItemsControl.ItemTemplate>
                                     </ItemsControl>
+                                    </ScrollViewer>
                                 </StackPanel>
                             </Border>
                         </DataTemplate>
@@ -137,7 +184,7 @@
                             <ItemsPanelTemplate><StackPanel Spacing="10" /></ItemsPanelTemplate>
                         </ItemsControl.ItemsPanel>
                         <ItemsControl.ItemTemplate>
-                            <DataTemplate x:DataType="core:TimeSummaryMonth">
+                            <DataTemplate x:DataType="core:TimeSummaryMonth" x:CompileBindings="False">
                                 <Border Background="#1A1D23" CornerRadius="8" Padding="14,10" MinWidth="1180">
                                     <StackPanel Spacing="6">
                                         <Grid ColumnDefinitions="*,Auto">
@@ -145,16 +192,16 @@
                                             <TextBlock Grid.Column="1" Text="{Binding TotalsText}" FontWeight="Bold" Foreground="#64B5F6" />
                                         </Grid>
                                         <Grid ColumnDefinitions="120,130,70,200,80,100,90,120,80,100" ColumnSpacing="8">
-                                            <TextBlock Text="Date" Foreground="Gray" FontSize="11" />
-                                            <TextBlock Grid.Column="1" Text="Declared" Foreground="Gray" FontSize="11" />
-                                            <TextBlock Grid.Column="2" Text="Hours" Foreground="Gray" FontSize="11" />
-                                            <TextBlock Grid.Column="3" Text="Actual (each in → out)" Foreground="Gray" FontSize="11" />
-                                            <TextBlock Grid.Column="4" Text="Actual hrs" Foreground="Gray" FontSize="11" />
-                                            <TextBlock Grid.Column="5" Text="{Binding $parent[ItemsControl].((vm:ReportsViewModel)DataContext).Loc[ReportNightHours]}" Foreground="Gray" FontSize="11" />
-                                            <TextBlock Grid.Column="6" Text="Rounded" Foreground="Gray" FontSize="11" />
+                                            <TextBlock Text="{Binding $parent[UserControl].DataContext.Loc[Date]}" Foreground="Gray" FontSize="11" />
+                                            <TextBlock Grid.Column="1" Text="{Binding $parent[UserControl].DataContext.Loc[Declared]}" Foreground="Gray" FontSize="11" />
+                                            <TextBlock Grid.Column="2" Text="{Binding $parent[UserControl].DataContext.Loc[Hours]}" Foreground="Gray" FontSize="11" />
+                                            <TextBlock Grid.Column="3" Text="{Binding $parent[UserControl].DataContext.Loc[Actual]}" Foreground="Gray" FontSize="11" />
+                                            <TextBlock Grid.Column="4" Text="{Binding $parent[UserControl].DataContext.Loc[ActualHours]}" Foreground="Gray" FontSize="11" />
+                                            <TextBlock Grid.Column="5" Text="{Binding $parent[UserControl].DataContext.Loc[ReportNightHours]}" Foreground="Gray" FontSize="11" />
+                                            <TextBlock Grid.Column="6" Text="{Binding $parent[UserControl].DataContext.Loc[Rounded]}" Foreground="Gray" FontSize="11" />
                                             <TextBlock Grid.Column="7" Text="Rounded in → out" Foreground="Gray" FontSize="11" />
-                                            <TextBlock Grid.Column="8" Text="Diff" Foreground="Gray" FontSize="11" />
-                                            <TextBlock Grid.Column="9" Text="Overtime" Foreground="Gray" FontSize="11" />
+                                            <TextBlock Grid.Column="8" Text="{Binding $parent[UserControl].DataContext.Loc[Difference]}" Foreground="Gray" FontSize="11" />
+                                            <TextBlock Grid.Column="9" Text="{Binding $parent[UserControl].DataContext.Loc[OvertimeTotal]}" Foreground="Gray" FontSize="11" />
                                         </Grid>
                                         <ItemsControl ItemsSource="{Binding Days}">
                                             <ItemsControl.ItemTemplate>
@@ -191,7 +238,7 @@
                 <!-- Working time report: one row per employee + month -->
                 <StackPanel IsVisible="{Binding IsWorkTimeReport}" Spacing="4">
                     <Grid ColumnDefinitions="*,90,70,130,150,120" Margin="14,0">
-                        <TextBlock Text="Employee" Foreground="Gray" FontSize="12" />
+                        <TextBlock Text="{Binding Loc[Employee]}" Foreground="Gray" FontSize="12" />
                         <TextBlock Grid.Column="1" Text="Month" Foreground="Gray" FontSize="12" />
                         <TextBlock Grid.Column="2" Text="Days" Foreground="Gray" FontSize="12" />
                         <TextBlock Grid.Column="3" Text="Total (h:mm)" Foreground="Gray" FontSize="12" />
@@ -218,6 +265,33 @@
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
                 </StackPanel>
+
+                <!-- Analysis reports: one block per table section -->
+                <ItemsControl ItemsSource="{Binding TableSections}" IsVisible="{Binding HasTableData}">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate><StackPanel Spacing="14" /></ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="core:TableSection">
+                            <Border Background="#1A1D23" CornerRadius="8" Padding="14,10">
+                                <StackPanel Spacing="6">
+                                    <TextBlock Text="{Binding Title}" IsVisible="{Binding HasTitle}"
+                                               FontWeight="SemiBold" FontSize="15" />
+                                    <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
+                                        <StackPanel Spacing="2">
+                                            <ContentControl Content="{Binding HeaderRow}"
+                                                            ContentTemplate="{StaticResource ReportRowTemplate}" />
+                                            <ItemsControl ItemsSource="{Binding DisplayRows}"
+                                                          ItemTemplate="{StaticResource ReportRowTemplate}" />
+                                        </StackPanel>
+                                    </ScrollViewer>
+                                    <TextBlock Text="{Binding DisplayNote}" IsVisible="{Binding HasNote}"
+                                               Foreground="Gray" FontSize="12" TextWrapping="Wrap" />
+                                </StackPanel>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
             </StackPanel>
         </StackPanel>
     </ScrollViewer>

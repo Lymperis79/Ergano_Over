@@ -11,7 +11,12 @@ using ErganiManager.Core.Models;
 
 namespace ErganiManager.UI.ViewModels;
 
-public enum ReportKind { Overtime, WorkTime, Compare }
+public enum ReportKind
+{
+    Overtime, WorkTime, Compare,
+    // analysis reports shown as generic tables
+    RoundingImpact, SubmissionStatus, FailureLog, Consistency, Roster, OvertimeTrend
+}
 
 /// <summary>Reports: overtime, total working time, and declared vs actual time with overtime.</summary>
 public partial class ReportsViewModel : ViewModelBase, IAdminSectionViewModel
@@ -23,12 +28,14 @@ public partial class ReportsViewModel : ViewModelBase, IAdminSectionViewModel
     private OvertimeReport? _overtime;
     private WorkTimeReport? _workTime;
     private TimeSummaryReport? _summary;
+    private TableReport? _table;
 
     public ObservableCollection<EmployeeDto> AvailableEmployees { get; } = new();
     public ObservableCollection<OvertimeReportMonth> OvertimeMonths { get; } = new();
     public ObservableCollection<WorkTimeReportRow> WorkTimeRows { get; } = new();
     public ObservableCollection<TimeSummaryMonth> SummaryMonths { get; } = new();
     public ObservableCollection<ReportEmployeeTotal> EmployeeTotals { get; } = new();
+    public ObservableCollection<TableSection> TableSections { get; } = new();
 
     [ObservableProperty] private bool _hasActiveCompany;
     [ObservableProperty] private string _noCompanyMessage = string.Empty;
@@ -40,6 +47,15 @@ public partial class ReportsViewModel : ViewModelBase, IAdminSectionViewModel
     public bool IsOvertimeReport { get => Kind == ReportKind.Overtime; set { if (value) Kind = ReportKind.Overtime; } }
     public bool IsWorkTimeReport { get => Kind == ReportKind.WorkTime; set { if (value) Kind = ReportKind.WorkTime; } }
     public bool IsCompareReport  { get => Kind == ReportKind.Compare;  set { if (value) Kind = ReportKind.Compare; } }
+    public bool IsRoundingReport     { get => Kind == ReportKind.RoundingImpact;   set { if (value) Kind = ReportKind.RoundingImpact; } }
+    public bool IsSubmissionReport   { get => Kind == ReportKind.SubmissionStatus; set { if (value) Kind = ReportKind.SubmissionStatus; } }
+    public bool IsFailureLogReport   { get => Kind == ReportKind.FailureLog;       set { if (value) Kind = ReportKind.FailureLog; } }
+    public bool IsConsistencyReport  { get => Kind == ReportKind.Consistency;      set { if (value) Kind = ReportKind.Consistency; } }
+    public bool IsRosterReport       { get => Kind == ReportKind.Roster;           set { if (value) Kind = ReportKind.Roster; } }
+    public bool IsTrendReport        { get => Kind == ReportKind.OvertimeTrend;    set { if (value) Kind = ReportKind.OvertimeTrend; } }
+
+    /// <summary>True for the analysis reports that are shown as generic tables.</summary>
+    public bool IsTableReport => Kind >= ReportKind.RoundingImpact;
 
     [ObservableProperty] private DateTimeOffset? _fromDate =
         new DateTimeOffset(new DateTime(DateTime.Today.Year, 1, 1));
@@ -49,6 +65,13 @@ public partial class ReportsViewModel : ViewModelBase, IAdminSectionViewModel
     [ObservableProperty] private string _grandTotalText = "0:00";
     [ObservableProperty] private string _nightTotalText = "0:00";
     [ObservableProperty] private bool _hasData;
+    [ObservableProperty] private bool _hasTableData;
+
+    /// <summary>The export button works for the classic reports and for the table reports.</summary>
+    public bool CanExport => HasData || HasTableData;
+
+    partial void OnHasDataChanged(bool value) => OnPropertyChanged(nameof(CanExport));
+    partial void OnHasTableDataChanged(bool value) => OnPropertyChanged(nameof(CanExport));
 
     public string TotalsLabel => Kind == ReportKind.Compare
         ? "Total actual working time (from scans, h:mm)"
@@ -58,7 +81,13 @@ public partial class ReportsViewModel : ViewModelBase, IAdminSectionViewModel
     {
         ReportKind.Overtime => "Overtime per employee / month",
         ReportKind.WorkTime => "Total working time per employee / month",
-        _                   => "Declared vs actual time, with overtime"
+        ReportKind.Compare  => "Declared vs actual time, with overtime",
+        ReportKind.RoundingImpact   => "Rounding impact",
+        ReportKind.SubmissionStatus => "Submission status",
+        ReportKind.FailureLog       => "Retry and failure log",
+        ReportKind.Consistency      => "Rest-day / schedule consistency",
+        ReportKind.Roster           => "Roster (same From and To date = daily roster; otherwise one column per day, up to 31 days)",
+        _                           => "Overtime trend"
     };
 
     public ReportsViewModel(IReportService reports, IEmployeeService employees)
@@ -72,6 +101,13 @@ public partial class ReportsViewModel : ViewModelBase, IAdminSectionViewModel
         OnPropertyChanged(nameof(IsOvertimeReport));
         OnPropertyChanged(nameof(IsWorkTimeReport));
         OnPropertyChanged(nameof(IsCompareReport));
+        OnPropertyChanged(nameof(IsRoundingReport));
+        OnPropertyChanged(nameof(IsSubmissionReport));
+        OnPropertyChanged(nameof(IsFailureLogReport));
+        OnPropertyChanged(nameof(IsConsistencyReport));
+        OnPropertyChanged(nameof(IsRosterReport));
+        OnPropertyChanged(nameof(IsTrendReport));
+        OnPropertyChanged(nameof(IsTableReport));
         OnPropertyChanged(nameof(ReportTitle));
         OnPropertyChanged(nameof(TotalsLabel));
         _ = GenerateAsync();
@@ -105,13 +141,38 @@ public partial class ReportsViewModel : ViewModelBase, IAdminSectionViewModel
 
         var from = DateOnly.FromDateTime((FromDate ?? DateTimeOffset.Now).LocalDateTime);
         var to   = DateOnly.FromDateTime((ToDate ?? DateTimeOffset.Now).LocalDateTime);
-        if (to < from) { StatusMessage = "The 'To' date is before the 'From' date."; return; }
+        if (to < from) { StatusMessage = Loc["Vm.The 'To' date is before the 'From' date."]; return; }
 
         int? employeeId = SelectedEmployee is { Id: > 0 } e ? e.Id : null;
 
         try
         {
             EmployeeTotals.Clear();
+            TableSections.Clear();
+            HasTableData = false;
+
+            if (IsTableReport)
+            {
+                _table = await _reports.GetTableReportAsync(
+                    Kind switch
+                    {
+                        ReportKind.RoundingImpact   => TableReportKind.RoundingImpact,
+                        ReportKind.SubmissionStatus => TableReportKind.SubmissionStatus,
+                        ReportKind.FailureLog       => TableReportKind.FailureLog,
+                        ReportKind.Consistency      => TableReportKind.Consistency,
+                        ReportKind.Roster           => TableReportKind.Roster,
+                        _                           => TableReportKind.OvertimeTrend
+                    }, companyId, from, to, employeeId);
+                foreach (var s in _table.Sections.Where(s => s.HasRows)) TableSections.Add(s);
+                HasData = false;
+                GrandTotalText = "0:00";
+                NightTotalText = "0:00";
+                HasTableData = _table.HasRows;
+                StatusMessage = _table.Summary;
+                return;
+            }
+
+            _table = null;
             if (Kind == ReportKind.Compare)
             {
                 _summary = await _reports.GetTimeSummaryReportAsync(companyId, from, to, employeeId);
@@ -155,7 +216,7 @@ public partial class ReportsViewModel : ViewModelBase, IAdminSectionViewModel
     }
 
     public string SuggestedFileName =>
-        $"{Kind switch { ReportKind.Overtime => "overtime-report", ReportKind.WorkTime => "working-time-report", _ => "declared-vs-actual-report" }}-{DateTime.Now:yyyyMMdd}.csv";
+        $"{Kind switch { ReportKind.Overtime => "overtime-report", ReportKind.WorkTime => "working-time-report", ReportKind.Compare => "declared-vs-actual-report", ReportKind.RoundingImpact => "rounding-impact", ReportKind.SubmissionStatus => "submission-status", ReportKind.FailureLog => "retry-failure-log", ReportKind.Consistency => "schedule-consistency", ReportKind.Roster => "roster", _ => "overtime-trend" }}-{DateTime.Now:yyyyMMdd}.csv";
 
     /// <summary>
     /// Difference for the CSV. A leading '-' or '+' makes Excel treat the cell as a formula (#VALUE!),
@@ -168,6 +229,8 @@ public partial class ReportsViewModel : ViewModelBase, IAdminSectionViewModel
     /// <summary>The current report as CSV (semicolon separated so Greek Excel opens it directly).</summary>
     public string BuildCsv()
     {
+        if (IsTableReport) return _table?.ToCsv() ?? string.Empty;
+
         var sb = new StringBuilder();
         static string Q(string? v) => "\"" + (v ?? string.Empty).Replace("\"", "\"\"") + "\"";
         var inv = CultureInfo.InvariantCulture;

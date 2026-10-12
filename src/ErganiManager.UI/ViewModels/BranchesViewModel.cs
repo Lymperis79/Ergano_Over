@@ -105,7 +105,7 @@ public partial class BranchesViewModel : ViewModelBase, IAdminSectionViewModel
 
         if (string.IsNullOrWhiteSpace(FormAddress) || string.IsNullOrWhiteSpace(FormSepeServiceCode))
         {
-            StatusMessage = "Address and SEPE service code are required.";
+            StatusMessage = Loc["Vm.Address and SEPE service code are required."];
             return;
         }
 

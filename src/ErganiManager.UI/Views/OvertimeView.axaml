@@ -21,21 +21,22 @@
                         <DatePicker SelectedDate="{Binding FilterTo, Mode=TwoWay}" HorizontalAlignment="Stretch" MinWidth="150" />
                         <Button Content="{Binding Loc[Load]}" Command="{Binding LoadRecordsCommand}" />
                     </StackPanel>
-                    <Button Grid.Column="2" Content="Submit Selected" Command="{Binding SubmitSelectedCommand}" IsEnabled="{Binding HasSelection}" Margin="8,0,0,0" />
+                    <Button Grid.Column="2" Content="{Binding Loc[SubmitSelected]}" Command="{Binding SubmitSelectedCommand}" IsEnabled="{Binding HasSelection}" Margin="8,0,0,0" />
                     <Button Grid.Column="3" Content="{Binding Loc[New]}" Command="{Binding StartCreateCommand}" Classes="accent" Margin="8,0,0,0" />
                 </Grid>
 
                 <TextBlock Text="{Binding StatusMessage}" Foreground="Gray" FontSize="12" />
 
                 <!-- Overtime records list -->
+                <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto" MaxHeight="650">
                 <ItemsControl ItemsSource="{Binding Records}">
                     <ItemsControl.ItemsPanel>
                         <ItemsPanelTemplate><StackPanel Spacing="6" /></ItemsPanelTemplate>
                     </ItemsControl.ItemsPanel>
                     <ItemsControl.ItemTemplate>
-                        <DataTemplate>
+                        <DataTemplate x:CompileBindings="False">
                             <Border Background="#1A1D23" CornerRadius="8" Padding="14,10">
-                                <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto,Auto,Auto,Auto,Auto">
+                                <Grid MinWidth="1100" ColumnDefinitions="Auto,*,Auto,Auto,Auto,Auto,Auto,Auto,Auto">
                                     <CheckBox Grid.Column="0" Tag="{Binding}" Click="OnSelectionClick" VerticalAlignment="Center" Margin="0,0,10,0" />
                                     <StackPanel Grid.Column="1">
                                         <TextBlock Text="{Binding EmployeeFullName}" FontWeight="SemiBold" FontSize="14" />
@@ -63,19 +64,20 @@
                                                    IsVisible="{Binding Protocol, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
                                     </StackPanel>
 
-                                    <Button Grid.Column="5" Content="Response" Tag="{Binding}" Click="OnResponseClick" IsEnabled="{Binding SubmittedToErgani}" Margin="0,0,6,0" />
-                                    <Button Grid.Column="6" Content="PDF" Tag="{Binding}" Click="OnPdfClick" IsEnabled="{Binding SubmittedToErgani}" Margin="0,0,6,0" />
-                                    <Button Grid.Column="7" Content="Cancel" Tag="{Binding}"
+                                    <Button Grid.Column="5" Content="{Binding $parent[UserControl].DataContext.Loc[ResponseLabel]}" Tag="{Binding}" Click="OnResponseClick" IsEnabled="{Binding SubmittedToErgani}" Margin="0,0,6,0" />
+                                    <Button Grid.Column="6" Content="{Binding $parent[UserControl].DataContext.Loc[PdfLabel]}" Tag="{Binding}" Click="OnPdfClick" IsEnabled="{Binding SubmittedToErgani}" Margin="0,0,6,0" />
+                                    <Button Grid.Column="7" Content="{Binding $parent[UserControl].DataContext.Loc[CancelOvertimeLabel]}" Tag="{Binding}"
                                             Click="OnCancelClick"
                                             IsEnabled="{Binding !IsCancelled}"
                                             Margin="0,0,6,0" />
-                                    <Button Grid.Column="8" Content="Delete" Tag="{Binding}"
+                                    <Button Grid.Column="8" Content="{Binding $parent[UserControl].DataContext.Loc[Delete]}" Tag="{Binding}"
                                             Click="OnDeleteClick" />
                                 </Grid>
                             </Border>
                         </DataTemplate>
                     </ItemsControl.ItemTemplate>
                 </ItemsControl>
+                </ScrollViewer>
 
             </StackPanel>
         </StackPanel>
@@ -97,9 +99,9 @@
                     Width="500" VerticalAlignment="Center" HorizontalAlignment="Center"
                     BorderBrush="#3A3F4B" BorderThickness="1">
                 <StackPanel Spacing="12">
-                    <TextBlock Text="New Overtime Entry" FontSize="17" FontWeight="Bold" />
+                    <TextBlock Text="{Binding Loc[NewOvertimeEntry]}" FontSize="17" FontWeight="Bold" />
 
-                    <TextBlock Text="Employee" FontWeight="SemiBold" />
+                    <TextBlock Text="{Binding Loc[Employee]}" FontWeight="SemiBold" />
                     <ComboBox ItemsSource="{Binding AvailableEmployees}" SelectedItem="{Binding FormEmployee}"
                               HorizontalAlignment="Stretch">
                         <ComboBox.ItemTemplate>

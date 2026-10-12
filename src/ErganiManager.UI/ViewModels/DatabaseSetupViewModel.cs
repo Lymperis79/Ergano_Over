@@ -135,7 +135,7 @@ public partial class DatabaseSetupViewModel : ViewModelBase
     private async Task TestConnectionAsync()
     {
         IsTesting = true;
-        StatusMessage = "Testing connection...";
+        StatusMessage = Loc["Vm.Testing connection..."];
         ConnectionVerified = false;
 
         try
@@ -145,7 +145,7 @@ public partial class DatabaseSetupViewModel : ViewModelBase
 
             if (success)
             {
-                StatusMessage = "✅ Connection successful.";
+                StatusMessage = Loc["Vm.✅ Connection successful."];
                 ConnectionVerified = true;
             }
             else
@@ -155,7 +155,7 @@ public partial class DatabaseSetupViewModel : ViewModelBase
                 var (serverOk, serverError) = await DbProviderFactory.TestServerAsync(config);
                 if (serverOk)
                 {
-                    StatusMessage = "✅ Server reachable. The database does not exist yet and will be created when you continue.";
+                    StatusMessage = Loc["Vm.✅ Server reachable. The database does not exist yet and will be created when you continue."];
                     ConnectionVerified = true;
                 }
                 else
@@ -180,7 +180,7 @@ public partial class DatabaseSetupViewModel : ViewModelBase
     public void ResumeAtAdminStep()
     {
         IsDatabaseStepComplete = true;
-        AdminStatusMessage = "The database is ready. Create the first administrator to finish setup.";
+        AdminStatusMessage = Loc["Vm.The database is ready. Create the first administrator to finish setup."];
     }
 
     [RelayCommand]
@@ -192,7 +192,7 @@ public partial class DatabaseSetupViewModel : ViewModelBase
             var config = BuildConfig();
 
             // STEP 1 — create the database (server-side database / SQLite file). No-op if it exists.
-            StatusMessage = "Step 1/3: creating the database…";
+            StatusMessage = Loc["Vm.Step 1/3: creating the database…"];
             try
             {
                 await DbProviderFactory.EnsureDatabaseExistsAsync(config);
@@ -217,7 +217,7 @@ public partial class DatabaseSetupViewModel : ViewModelBase
 
             // STEP 2 — create the tables and verify them BEFORE saving connection.json, so a
             // failure never leaves a config behind that skips this wizard on the next launch.
-            StatusMessage = "Step 2/3: creating the tables…";
+            StatusMessage = Loc["Vm.Step 2/3: creating the tables…"];
             await DatabaseMigrator.ApplyAsync(config);
 
             var optionsBuilder = new DbContextOptionsBuilder<AppDbContext>();
@@ -230,7 +230,7 @@ public partial class DatabaseSetupViewModel : ViewModelBase
 
             // STEP 3 — the schema is confirmed, persist the connection configuration.
             _connectionState.SaveConfig(config);
-            StatusMessage = "✅ Database created. Step 3/3: administrator account.";
+            StatusMessage = Loc["Vm.✅ Database created. Step 3/3: administrator account."];
 
             // If users already exist (e.g. re-pointing to an existing DB), make sure the offline
             // copy exists and go straight to login; otherwise ask for the first administrator.
@@ -264,19 +264,19 @@ public partial class DatabaseSetupViewModel : ViewModelBase
 
         if (string.IsNullOrWhiteSpace(AdminUsername))
         {
-            AdminStatusMessage = "Please enter a username.";
+            AdminStatusMessage = Loc["Vm.Please enter a username."];
             return;
         }
 
         if (AdminPassword.Length < 8)
         {
-            AdminStatusMessage = "Password must be at least 8 characters.";
+            AdminStatusMessage = Loc["Vm.Password must be at least 8 characters."];
             return;
         }
 
         if (AdminPassword != AdminPasswordConfirm)
         {
-            AdminStatusMessage = "Passwords do not match.";
+            AdminStatusMessage = Loc["Vm.Passwords do not match."];
             return;
         }
 
@@ -297,7 +297,7 @@ public partial class DatabaseSetupViewModel : ViewModelBase
                 try
                 {
                     await _adminBootstrap.SeedOfflineCacheAsync();
-                    AdminStatusMessage = "✅ Administrator created and offline database initialized.";
+                    AdminStatusMessage = Loc["Vm.✅ Administrator created and offline database initialized."];
                 }
                 catch (Exception ex)
                 {

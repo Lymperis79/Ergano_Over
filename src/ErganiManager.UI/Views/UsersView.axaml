@@ -70,6 +70,9 @@
                                   SelectedItem="{Binding FormRole}"
                                   HorizontalAlignment="Stretch" />
 
+                        <TextBlock Text="{Binding Loc[UsersLimitedHint]}" Foreground="#9E9E9E" FontSize="12"
+                                   TextWrapping="Wrap" IsVisible="{Binding IsFormRoleLimited}" />
+
                         <StackPanel IsVisible="{Binding IsFormRoleOperator}" Spacing="10">
                             <TextBlock Text="{Binding Loc[LockToBranch]}" FontWeight="SemiBold" />
                             <ComboBox ItemsSource="{Binding AvailableBranches}"
@@ -84,7 +87,7 @@
                         </StackPanel>
 
                         <!-- Which menus this user sees (administrators) -->
-                        <StackPanel IsVisible="{Binding IsFormRoleAdmin}" Spacing="6" Margin="0,6,0,0">
+                        <StackPanel IsVisible="{Binding ShowMenuPicker}" Spacing="6" Margin="0,6,0,0">
                             <TextBlock Text="{Binding Loc[UsersMenus]}" FontWeight="SemiBold" />
                             <TextBlock Text="{Binding Loc[UsersMenusHint]}" Foreground="#9E9E9E"
                                        FontSize="12" TextWrapping="Wrap" />

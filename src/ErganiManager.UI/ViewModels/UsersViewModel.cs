@@ -31,11 +31,22 @@ public partial class UsersViewModel : ViewModelBase, IAdminSectionViewModel
 
     public bool IsFormRoleOperator => FormRole == AppUserRole.Operator;
     public bool IsFormRoleAdmin => FormRole == AppUserRole.Admin;
+    public bool IsFormRoleLimited => FormRole == AppUserRole.Limited;
+
+    /// <summary>The menu checklist applies to administrators and limited users (operators use the terminal).</summary>
+    public bool ShowMenuPicker => FormRole is AppUserRole.Admin or AppUserRole.Limited;
 
     partial void OnFormRoleChanged(AppUserRole value)
     {
         OnPropertyChanged(nameof(IsFormRoleOperator));
         OnPropertyChanged(nameof(IsFormRoleAdmin));
+        OnPropertyChanged(nameof(IsFormRoleLimited));
+        OnPropertyChanged(nameof(ShowMenuPicker));
+
+        // A limited user starts with nothing ticked so the menus are chosen deliberately;
+        // administrators start with everything ticked. (Users and Companies are never offered to limited users.)
+        if (IsCreating)
+            BuildMenuChoices(value == AppUserRole.Limited ? new System.Collections.Generic.HashSet<string>() : null, value);
     }
 
     // ── Which menus the user may see (create form and "Menus" editor share the list) ──
@@ -60,11 +71,14 @@ public partial class UsersViewModel : ViewModelBase, IAdminSectionViewModel
     };
 
     /// <summary>Fills the checkbox list; <paramref name="allowed"/> null = every menu ticked.</summary>
-    private void BuildMenuChoices(System.Collections.Generic.HashSet<string>? allowed)
+    private void BuildMenuChoices(System.Collections.Generic.HashSet<string>? allowed, AppUserRole role = AppUserRole.Admin)
     {
         MenuChoices.Clear();
         foreach (var key in MenuKeys.Configurable)
+        {
+            if (role == AppUserRole.Limited && key is MenuKeys.Companies or MenuKeys.Users) continue;
             MenuChoices.Add(new MenuChoiceViewModel(key, Loc[MenuLabelKey(key)], allowed == null || allowed.Contains(key)));
+        }
     }
 
     private string? SelectedMenusOrNull()
@@ -86,7 +100,7 @@ public partial class UsersViewModel : ViewModelBase, IAdminSectionViewModel
     private void StartEditMenus(AppUserDto user)
     {
         StatusMessage = string.Empty;
-        if (user.Role != AppUserRole.Admin)
+        if (user.Role == AppUserRole.Operator)
         {
             StatusMessage = Loc["UsersMenusAdminOnly"];
             return;
@@ -94,7 +108,7 @@ public partial class UsersViewModel : ViewModelBase, IAdminSectionViewModel
 
         EditingMenusUser = user;
         MenusPanelTitle = string.Format(Loc["UsersMenusFor"], user.Username);
-        BuildMenuChoices(MenuKeys.Parse(user.AllowedMenus));
+        BuildMenuChoices(MenuKeys.Parse(user.AllowedMenus), user.Role);
     }
 
     [RelayCommand]
@@ -191,11 +205,11 @@ public partial class UsersViewModel : ViewModelBase, IAdminSectionViewModel
 
         if (string.IsNullOrWhiteSpace(FormUsername) || FormPassword.Length < 8)
         {
-            StatusMessage = "Username is required and password must be at least 8 characters.";
+            StatusMessage = Loc["Vm.Username is required and password must be at least 8 characters."];
             return;
         }
 
-        if (FormRole == AppUserRole.Admin && !MenuChoices.Any(m => m.IsSelected))
+        if (ShowMenuPicker && !MenuChoices.Any(m => m.IsSelected))
         {
             StatusMessage = Loc["UsersMenusNeedOne"];
             return;
@@ -210,8 +224,8 @@ public partial class UsersViewModel : ViewModelBase, IAdminSectionViewModel
                 Role = FormRole,
                 CompanyId = companyId,
                 BranchId = FormRole == AppUserRole.Operator ? FormBranch?.Id : null,
-                // Menu restrictions apply to administrators (operators use the scanning terminal).
-                AllowedMenus = FormRole == AppUserRole.Admin ? SelectedMenusOrNull() : null
+                // Menu restrictions apply to administrators and limited users (operators use the scanning terminal).
+                AllowedMenus = ShowMenuPicker ? SelectedMenusOrNull() : null
             });
 
             IsCreating = false;
@@ -249,7 +263,7 @@ public partial class UsersViewModel : ViewModelBase, IAdminSectionViewModel
 
         if (ResetPasswordValue.Length < 8)
         {
-            StatusMessage = "Password must be at least 8 characters.";
+            StatusMessage = Loc["Vm.Password must be at least 8 characters."];
             return;
         }
 
@@ -257,7 +271,7 @@ public partial class UsersViewModel : ViewModelBase, IAdminSectionViewModel
         {
             await _userService.ResetPasswordAsync(ResettingUser.Id, ResetPasswordValue);
             ResettingUser = null;
-            StatusMessage = "✅ Password reset.";
+            StatusMessage = Loc["Vm.✅ Password reset."];
         }
         catch (Exception ex)
         {

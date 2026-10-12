@@ -340,7 +340,7 @@ public partial class SubmissionLogViewModel
             return;
 
         IsRetrying = true;
-        StatusMessage = "Triggering manual retry...";
+        StatusMessage = Loc["Vm.Triggering manual retry..."];
 
         try
         {

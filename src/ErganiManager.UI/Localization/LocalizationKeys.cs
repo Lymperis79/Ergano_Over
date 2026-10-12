@@ -119,6 +119,10 @@ public static class L
     public const string OfflineMode         = nameof(OfflineMode);
     public const string Arrival             = nameof(Arrival);
     public const string Departure           = nameof(Departure);
+    public const string RecentScans         = nameof(RecentScans);
+    public const string ScanSent            = nameof(ScanSent);
+    public const string ScanWaiting         = nameof(ScanWaiting);
+    public const string CloseAppQuestion    = nameof(CloseAppQuestion);
     public const string ShiftLabel          = nameof(ShiftLabel);
     public const string PleaseReturnIn      = nameof(PleaseReturnIn);
 
@@ -198,6 +202,45 @@ public static class L
     public const string AitiologiaPower     = nameof(AitiologiaPower);
     public const string AitiologiaEmployer  = nameof(AitiologiaEmployer);
     public const string AitiologiaErgani    = nameof(AitiologiaErgani);
+
+    // Common view labels (localized instead of embedded English literals)
+    public const string From = nameof(From);
+    public const string To = nameof(To);
+    public const string Employee = nameof(Employee);
+    public const string Filters = nameof(Filters);
+    public const string SelectRetryable = nameof(SelectRetryable);
+    public const string RetrySelectedWorkCards = nameof(RetrySelectedWorkCards);
+    public const string ExportToExcel = nameof(ExportToExcel);
+    public const string SubmitSelected = nameof(SubmitSelected);
+    public const string Pdf = nameof(Pdf);
+    public const string NewOvertimeEntry = nameof(NewOvertimeEntry);
+    public const string Analysis = nameof(Analysis);
+    public const string TotalWorkingTime = nameof(TotalWorkingTime);
+    public const string DeclaredVsActual = nameof(DeclaredVsActual);
+    public const string RoundingImpact = nameof(RoundingImpact);
+    public const string SubmissionStatus = nameof(SubmissionStatus);
+    public const string RetryFailureLog = nameof(RetryFailureLog);
+    public const string ScheduleConsistency = nameof(ScheduleConsistency);
+    public const string Roster = nameof(Roster);
+    public const string OvertimeTrend = nameof(OvertimeTrend);
+    public const string Date = nameof(Date);
+    public const string Declared = nameof(Declared);
+    public const string Hours = nameof(Hours);
+    public const string Actual = nameof(Actual);
+    public const string ActualHours = nameof(ActualHours);
+    public const string Rounded = nameof(Rounded);
+    public const string Difference = nameof(Difference);
+    public const string OvertimeTotal = nameof(OvertimeTotal);
+    public const string MonthTotal = nameof(MonthTotal);
+    public const string BranchLabel = nameof(BranchLabel);
+    public const string SelectRetryTooltip = nameof(SelectRetryTooltip);
+    public const string EarlyMinutes = nameof(EarlyMinutes);
+    public const string ResponseLabel = nameof(ResponseLabel);
+    public const string PdfLabel = nameof(PdfLabel);
+    public const string CancelOvertimeLabel = nameof(CancelOvertimeLabel);
+    public const string ExportReport = nameof(ExportReport);
+    public const string SelectEmployeeImportFile = nameof(SelectEmployeeImportFile);
+    public const string BackupDatabase = nameof(BackupDatabase);
 
     // Reports
     public const string NavReports          = nameof(NavReports);
@@ -305,5 +348,6 @@ public static class L
     public const string UsersMenusSaved        = nameof(UsersMenusSaved);
     public const string UsersMenusNeedOne      = nameof(UsersMenusNeedOne);
     public const string UsersMenusAdminOnly    = nameof(UsersMenusAdminOnly);
+    public const string UsersLimitedHint    = nameof(UsersLimitedHint);
     public const string UsersLimitedTip        = nameof(UsersLimitedTip);
 }

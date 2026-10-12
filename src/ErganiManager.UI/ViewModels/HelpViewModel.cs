@@ -53,7 +53,7 @@ public partial class HelpViewModel : ViewModelBase, IAdminSectionViewModel
             File.WriteAllText(FilePath, EditText);
             HelpText = EditText;
             IsEditing = false;
-            StatusMessage = "✅ Help saved.";
+            StatusMessage = Loc["Vm.✅ Help saved."];
         }
         catch (Exception ex) { StatusMessage = $"❌ {ex.Message}"; }
     }

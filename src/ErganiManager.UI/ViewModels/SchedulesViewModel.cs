@@ -718,7 +718,7 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
 
             var saved = await _scheduleService.GetByDateAsync(SelectedEmployee.Id, date);
             if (saved is not { Id: > 0 })
-            { StatusMessage = "❌ Could not reload the saved day."; return; }
+            { StatusMessage = Loc["Vm.❌ Could not reload the saved day."]; return; }
 
             await SubmitDaysAsync(companyId, new List<ScheduleDayDto> { saved }, 1);
         }
@@ -748,7 +748,7 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
 
         if (withSchedule.Count == 0)
         {
-            StatusMessage = "There is no schedule to delete on the selected day(s).";
+            StatusMessage = Loc["Vm.There is no schedule to delete on the selected day(s)."];
             return;
         }
 
@@ -913,7 +913,7 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
         var targetIds = CloneTargets.Where(t => t.IsSelected).Select(t => t.Employee.Id).ToList();
         if (targetIds.Count == 0)
         {
-            StatusMessage = "Select at least one employee to copy to.";
+            StatusMessage = Loc["Vm.Select at least one employee to copy to."];
             return;
         }
 
@@ -933,7 +933,7 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
     [RelayCommand]
     private async Task ExportMonthAsync()
     {
-        if (SelectedEmployee == null) { StatusMessage = "Select an employee first."; return; }
+        if (SelectedEmployee == null) { StatusMessage = Loc["Vm.Select an employee first."]; return; }
         try
         {
             var schedules = await _scheduleService
@@ -975,7 +975,7 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
 
         if (string.IsNullOrWhiteSpace(file) || !File.Exists(file))
         {
-            StatusMessage = "❌ The downloaded file could not be found.";
+            StatusMessage = Loc["Vm.❌ The downloaded file could not be found."];
             return;
         }
 
@@ -994,14 +994,14 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
     {
         try
         {
-            StatusMessage = "Reading Ergani Excel export…";
+            StatusMessage = Loc["Vm.Reading Ergani Excel export…"];
 
             var result = await Task.Run(() =>
                 ExcelImportExportService.ParseErganiScheduleExport(filePath));
 
             if (result.Rows.Count == 0)
             {
-                StatusMessage = "❌ No valid schedule rows were found in the Excel file.";
+                StatusMessage = Loc["Vm.❌ No valid schedule rows were found in the Excel file."];
                 return;
             }
 
@@ -1055,7 +1055,7 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
 
             if (_pendingErganiRows.Count == 0)
             {
-                StatusMessage = "❌ No rows could be matched to employees in the database.";
+                StatusMessage = Loc["Vm.❌ No rows could be matched to employees in the database."];
                 return;
             }
 
@@ -1071,7 +1071,7 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
             }
 
             IsImportDialogOpen = true;
-            StatusMessage = "Review the import summary and confirm before writing to the database.";
+            StatusMessage = Loc["Vm.Review the import summary and confirm before writing to the database."];
         }
         catch (Exception ex)
         {
@@ -1082,7 +1082,7 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
     [RelayCommand]
     private async Task OpenImportHistoryAsync()
     {
-        if (_session?.CompanyId is not int companyId) { StatusMessage = "Select a company first."; return; }
+        if (_session?.CompanyId is not int companyId) { StatusMessage = Loc["Vm.Select a company first."]; return; }
         try
         {
             var list = await _importLogService.GetRecentAsync(companyId);
@@ -1103,7 +1103,7 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
         _conflictKeys.Clear();
         _pendingImportFilePath = string.Empty;
         IsImportDialogOpen = false;
-        StatusMessage = "Ergani schedule import cancelled.";
+        StatusMessage = Loc["Vm.Ergani schedule import cancelled."];
     }
 
     /// <summary>Import confirmed: first look for days that already have different data in the database.</summary>
@@ -1120,7 +1120,7 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
 
         try
         {
-            StatusMessage = "Checking for existing data on the imported dates…";
+            StatusMessage = Loc["Vm.Checking for existing data on the imported dates…"];
             var (keys, samples) = await FindConflictsAsync();
             _conflictKeys = keys;
 
@@ -1138,7 +1138,7 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
                 "\n\nDo you want to REPLACE the old data with the data from the file?\n" +
                 "Yes = replace the old data of those days.\n" +
                 "No = keep the old data and skip those lines (the other lines are still imported).";
-            StatusMessage = "Existing data found — choose whether to replace it.";
+            StatusMessage = Loc["Vm.Existing data found — choose whether to replace it."];
             IsConflictDialogOpen = true;
         }
         catch (Exception ex)
@@ -1248,7 +1248,7 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
 
         try
         {
-            StatusMessage = "Importing Ergani declared schedule…";
+            StatusMessage = Loc["Vm.Importing Ergani declared schedule…"];
 
             var employeesByAfm = AvailableEmployees
                 .Where(e => !string.IsNullOrWhiteSpace(e.TaxId))
@@ -1464,7 +1464,7 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
     private async Task SubmitScheduleToErganiAsync()
     {
         if (SelectedEmployee == null || _session?.CompanyId is not int companyId)
-        { StatusMessage = "Select an employee first."; return; }
+        { StatusMessage = Loc["Vm.Select an employee first."]; return; }
         try
         {
             var picked = _selectedDates.ToHashSet();
@@ -1504,7 +1504,7 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
         var skipped = notes.Count > 0 ? $" Skipped: {string.Join(", ", notes)}." : string.Empty;
 
         if (toSubmit.Count == 0)
-        { StatusMessage = "Nothing to submit." + skipped; return; }
+        { StatusMessage = Loc["Vm.Nothing to submit."] + skipped; return; }
 
         StatusMessage = $"Submitting {toSubmit.Count} day(s) to Ergani…";
 
@@ -1546,7 +1546,7 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
     private async Task OpenHolidaysAsync()
     {
         if (SelectedEmployee == null || _session?.CompanyId is not int companyId)
-        { StatusMessage = "Select an employee first."; return; }
+        { StatusMessage = Loc["Vm.Select an employee first."]; return; }
         try
         {
             DateOnly? from = null, to = null;
@@ -1566,7 +1566,7 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
     private async Task OpenLogAsync()
     {
         if (SelectedEmployee == null || _session?.CompanyId is not int companyId)
-        { StatusMessage = "Select an employee first."; return; }
+        { StatusMessage = Loc["Vm.Select an employee first."]; return; }
         try
         {
             var entries = await _scheduleService.GetSubmissionLogAsync(companyId, SelectedEmployee.Id);
@@ -1639,13 +1639,13 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
     private async Task SubmitOvertimesAsync()
     {
         if (SelectedEmployee == null || _session?.CompanyId is not int companyId)
-        { StatusMessage = "Select an employee first."; return; }
+        { StatusMessage = Loc["Vm.Select an employee first."]; return; }
         try
         {
             var picked = _selectedDates.ToHashSet();
             var days   = await LoadScopeDaysAsync(SelectedEmployee.Id, picked);
 
-            StatusMessage = "Detecting overtime and submitting…";
+            StatusMessage = Loc["Vm.Detecting overtime and submitting…"];
             var result = await _scheduleSubmitter.SubmitOvertimeFromScheduleAsync(companyId, days);
 
             if (result.Days.Count == 0)
@@ -1674,8 +1674,8 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
     [RelayCommand]
     private async Task OpenErganiPortalAsync()
     {
-        if (_session?.CompanyId is not int companyId) { StatusMessage = "Select a company first."; return; }
-        StatusMessage = "Opening the Ergani portal…";
+        if (_session?.CompanyId is not int companyId) { StatusMessage = Loc["Vm.Select a company first."]; return; }
+        StatusMessage = Loc["Vm.Opening the Ergani portal…"];
         // The month shown in the calendar: its first and last day fill the page's date boxes
         var first = new DateOnly(Year, Month, 1);
         var last  = new DateOnly(Year, Month, DateTime.DaysInMonth(Year, Month));
@@ -1691,7 +1691,7 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
     private async Task SubmitHolidaysAsync()
     {
         if (SelectedEmployee == null || _session?.CompanyId is not int companyId)
-        { StatusMessage = "Select an employee first."; return; }
+        { StatusMessage = Loc["Vm.Select an employee first."]; return; }
         try
         {
             var picked = _selectedDates.ToHashSet();

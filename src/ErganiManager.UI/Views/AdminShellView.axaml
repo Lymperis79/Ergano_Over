@@ -78,6 +78,14 @@
                         </ComboBox>
                     </StackPanel>
 
+                    <!-- Sign out and return to the login screen -->
+                    <Button Command="{Binding LogoutCommand}" VerticalAlignment="Center">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <TextBlock Text="🚪" />
+                            <TextBlock Text="{Binding Loc[Logout]}" />
+                        </StackPanel>
+                    </Button>
+
                 </StackPanel>
             </Grid>
         </Border>

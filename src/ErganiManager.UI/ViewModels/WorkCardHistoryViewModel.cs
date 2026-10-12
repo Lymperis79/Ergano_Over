@@ -117,11 +117,11 @@ public partial class WorkCardHistoryViewModel : ViewModelBase, IAdminSectionView
     {
         if (_session?.CompanyId is not int companyId)
         {
-            StatusMessage = "Select a company first.";
+            StatusMessage = Loc["Vm.Select a company first."];
             return;
         }
 
-        StatusMessage = "Opening the Ergani Work Cards portal…";
+        StatusMessage = Loc["Vm.Opening the Ergani Work Cards portal…"];
         try
         {
             StatusMessage = await _portalService.OpenWorkCardsAsync(companyId, DateOnly.FromDateTime(DateTime.Today));
@@ -217,7 +217,7 @@ public partial class WorkCardHistoryViewModel : ViewModelBase, IAdminSectionView
     [RelayCommand]
     private void ShowResponseFor(WorkCardHistoryDto record)
     {
-        if (string.IsNullOrWhiteSpace(record.ResponseRawJson)) { StatusMessage = "No stored Ergani response is available for this record."; return; }
+        if (string.IsNullOrWhiteSpace(record.ResponseRawJson)) { StatusMessage = Loc["Vm.No stored Ergani response is available for this record."]; return; }
         ResponseTitle = $"Ergani Response — {record.EmployeeFullName}"; ResponseText = record.ResponseRawJson; IsResponseOpen = true;
     }
 
@@ -226,7 +226,7 @@ public partial class WorkCardHistoryViewModel : ViewModelBase, IAdminSectionView
     [RelayCommand]
     private async Task DownloadPdfAsync(WorkCardHistoryDto record)
     {
-        if (_session?.CompanyId is not int companyId || string.IsNullOrWhiteSpace(record.Protocol)) { StatusMessage = "A protocol is required before downloading the PDF."; return; }
+        if (_session?.CompanyId is not int companyId || string.IsNullOrWhiteSpace(record.Protocol)) { StatusMessage = Loc["Vm.A protocol is required before downloading the PDF."]; return; }
         try
         {
             var bytes = await _documentService.DownloadPdfAsync(companyId, "Documents/WRKCardSE", record.Protocol, record.SubmissionDate);
@@ -264,7 +264,7 @@ public partial class WorkCardHistoryViewModel : ViewModelBase, IAdminSectionView
         var selected = Records.Where(r => r.IsSelected && r.CanRetry).ToList();
         if (selected.Count == 0)
         {
-            StatusMessage = "Select one or more failed/waiting work cards first.";
+            StatusMessage = Loc["Vm.Select one or more failed/waiting work cards first."];
             return;
         }
 
@@ -334,7 +334,7 @@ public partial class WorkCardHistoryViewModel : ViewModelBase, IAdminSectionView
             {
                 _retryService.Start();
                 _retryService.TriggerNow();
-                StatusMessage = "Retry sending requested for failed queued work cards...";
+                StatusMessage = Loc["Vm.Retry sending requested for failed queued work cards..."];
             }
 
             await LoadAsync();
