@@ -75,14 +75,14 @@ public class CacheSyncService : ICacheSyncService
         }
         result.EmployeesSynced = employees.Count;
 
-        // ── Schedules: today and the next 14 days, so offline checks keep working ──
+        // ── Schedules: yesterday (overnight shifts), today and the next 14 days, so offline checks keep working ──
         var today = DateOnly.FromDateTime(DateTime.Today);
         var horizon = today.AddDays(14);
 
         var employeeIds = employees.Select(e => e.Id).ToList();
         var schedules = await db.Schedules
             .Where(s => employeeIds.Contains(s.EmployeeId)
-                        && s.ScheduleDate >= today
+                        && s.ScheduleDate >= today.AddDays(-1)
                         && s.ScheduleDate <= horizon)
             .ToListAsync();
 

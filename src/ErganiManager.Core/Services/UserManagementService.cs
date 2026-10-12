@@ -58,6 +58,16 @@ public class UserManagementService : IUserManagementService
         if (request.Role == AppUserRole.Operator && request.CompanyId == null)
             throw new InvalidOperationException("Operator accounts must be assigned to a company.");
 
+        // A limited user belongs to one company and must be given at least one menu.
+        var allowedMenus = request.AllowedMenus;
+        if (request.Role == AppUserRole.Limited)
+        {
+            if (request.CompanyId == null)
+                throw new InvalidOperationException("Limited accounts must be assigned to a company.");
+            allowedMenus = SanitizeLimitedMenus(request.AllowedMenus)
+                ?? throw new InvalidOperationException("Select at least one menu for a limited user.");
+        }
+
         await using var db = OpenDb();
 
         var usernameTaken = await db.Users.AnyAsync(u => u.Username == request.Username.Trim());
@@ -68,10 +78,10 @@ public class UserManagementService : IUserManagementService
         {
             Username = request.Username.Trim(),
             PasswordHash = _passwordHasher.Hash(request.Password),
-            Role = request.Role == AppUserRole.Admin ? UserRole.Admin : UserRole.Operator,
+            Role = request.Role.ToEntityRole(),
             CompanyId = request.CompanyId,
             BranchId = request.BranchId,
-            AllowedMenus = request.AllowedMenus,
+            AllowedMenus = allowedMenus,
             IsActive = true,
             CreatedAt = DateTime.UtcNow
         };
@@ -100,6 +110,10 @@ public class UserManagementService : IUserManagementService
         var user = await db.Users.FindAsync(userId)
             ?? throw new InvalidOperationException($"User {userId} not found.");
 
+        if (user.Role == UserRole.Limited)
+            allowedMenus = SanitizeLimitedMenus(allowedMenus)
+                ?? throw new InvalidOperationException("Select at least one menu for a limited user.");
+
         user.AllowedMenus = allowedMenus;
         await db.SaveChangesAsync();
     }
@@ -123,17 +137,32 @@ public class UserManagementService : IUserManagementService
         var user = await db.Users.FindAsync(userId)
             ?? throw new InvalidOperationException($"User {userId} not found.");
 
-        user.Role = role == AppUserRole.Admin ? UserRole.Admin : UserRole.Operator;
+        if (role == AppUserRole.Limited && companyId == null)
+            throw new InvalidOperationException("Limited accounts must be assigned to a company.");
+
+        user.Role = role.ToEntityRole();
         user.CompanyId = companyId;
         user.BranchId = branchId;
+
+        // A limited user with no menu list would see nothing: start with Help until menus are chosen.
+        if (role == AppUserRole.Limited)
+            user.AllowedMenus = SanitizeLimitedMenus(user.AllowedMenus) ?? MenuKeys.Help;
         await db.SaveChangesAsync();
+    }
+
+    /// <summary>Keeps only menus a limited user may have (never Companies or Users). Null when none remain.</summary>
+    private static string? SanitizeLimitedMenus(string? stored)
+    {
+        var keys = MenuKeys.Parse(stored)?
+            .Where(k => k != MenuKeys.Companies && k != MenuKeys.Users).ToList();
+        return keys == null || keys.Count == 0 ? null : MenuKeys.Serialize(keys);
     }
 
     private static AppUserDto ToDto(AppUser u) => new()
     {
         Id = u.Id,
         Username = u.Username,
-        Role = u.Role == UserRole.Admin ? AppUserRole.Admin : AppUserRole.Operator,
+        Role = u.Role.ToAppRole(),
         CompanyId = u.CompanyId,
         CompanyName = u.Company?.Name,
         BranchId = u.BranchId,

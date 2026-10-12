@@ -21,7 +21,8 @@ public enum AppConnectionState
 public enum AppUserRole
 {
     Admin,
-    Operator
+    Operator,
+    Limited
 }
 
 /// <summary>
@@ -56,6 +57,14 @@ public class UserSession
     {
         if (IsSuperAdmin) return true;                       // the super administrator can never be locked out
         if (menuKey == MenuKeys.Administration) return false; // database tools: super administrator only
+
+        if (Role == AppUserRole.Limited)
+        {
+            // Never company or user management; and no list means no access (not "everything").
+            if (menuKey is MenuKeys.Companies or MenuKeys.Users) return false;
+            return AllowedMenus != null && AllowedMenus.Contains(menuKey);
+        }
+
         return AllowedMenus == null || AllowedMenus.Contains(menuKey);
     }
 }

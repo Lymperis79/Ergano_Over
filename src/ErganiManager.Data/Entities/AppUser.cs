@@ -5,7 +5,25 @@ namespace ErganiManager.Data.Entities;
 public enum UserRole
 {
     Admin = 0,
-    Operator = 1
+    Operator = 1,
+
+    /// <summary>Signs in to the management screens but only sees the menus ticked for the user.
+    /// Never sees Companies, Users or Administration.</summary>
+    Limited = 2
+}
+
+/// <summary>Reads the stored role text. Anything unknown becomes the least privileged role (Operator).
+/// "Restricted" is the name an earlier build used for Limited (also when a narrow column cut it short).</summary>
+public static class UserRoleText
+{
+    public static UserRole Parse(string? text)
+    {
+        if (string.Equals(text, "Admin", StringComparison.OrdinalIgnoreCase)) return UserRole.Admin;
+        if (text != null && (text.StartsWith("Limited", StringComparison.OrdinalIgnoreCase)
+                             || text.StartsWith("Restrict", StringComparison.OrdinalIgnoreCase)))
+            return UserRole.Limited;
+        return UserRole.Operator;
+    }
 }
 
 public class AppUser

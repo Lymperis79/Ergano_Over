@@ -219,4 +219,7 @@ public interface IReportService
 
     /// <summary>Per day: declared schedule, actual time from the scans and overtime side by side.</summary>
     Task<TimeSummaryReport> GetTimeSummaryReportAsync(int companyId, DateOnly from, DateOnly to, int? employeeId);
+
+    /// <summary>Analysis reports shown as generic tables (rounding impact, submission status, roster, ...).</summary>
+    Task<TableReport> GetTableReportAsync(TableReportKind kind, int companyId, DateOnly from, DateOnly to, int? employeeId);
 }

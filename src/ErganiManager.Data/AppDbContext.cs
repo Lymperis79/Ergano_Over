@@ -69,7 +69,11 @@ public class AppDbContext : DbContext
                 .HasForeignKey(u => u.BranchId)
                 .OnDelete(DeleteBehavior.NoAction);
 
-            e.Property(u => u.Role).HasConversion<string>();
+            // Stored as text. "Limited" (7 letters) still fits columns created when the longest role was
+            // "Operator" (8 letters); older/narrow values are read tolerantly.
+            e.Property(u => u.Role)
+                .HasConversion(v => v.ToString(), s => UserRoleText.Parse(s))
+                .HasMaxLength(20);
         });
 
         // ── Employee ──────────────────────────────────────────

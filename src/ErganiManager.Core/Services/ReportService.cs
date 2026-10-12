@@ -5,7 +5,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace ErganiManager.Core.Services;
 
-public class ReportService : IReportService
+public partial class ReportService : IReportService
 {
     private readonly IConnectionStateService _connectionState;
     private readonly IOvertimeService _overtime;

@@ -39,6 +39,7 @@ public class AuthService : IAuthService
         var state = await _connectionState.EvaluateAsync();
 
         // 2. Yes -> log in against the main database with this account.
+        string? onlineError = null;
         if (state == AppConnectionState.Normal)
         {
             try
@@ -52,6 +53,7 @@ public class AuthService : IAuthService
             {
                 // The database disappeared between the check and the query: treat as unavailable.
                 _logger.LogError(ex, "Online login failed unexpectedly; trying the offline user database.");
+                onlineError = ex.GetBaseException().Message;
             }
         }
 
@@ -62,9 +64,8 @@ public class AuthService : IAuthService
                 "Login blocked for {Username}: main database state {State} ({Reason}) and no offline users exist.",
                 username, state, _connectionState.LastFailureReason);
 
-            var reason = string.IsNullOrWhiteSpace(_connectionState.LastFailureReason)
-                ? string.Empty
-                : $" ({_connectionState.LastFailureReason})";
+            var failure = string.IsNullOrWhiteSpace(_connectionState.LastFailureReason) ? onlineError : _connectionState.LastFailureReason;
+            var reason = string.IsNullOrWhiteSpace(failure) ? string.Empty : $" ({failure})";
 
             return LoginResult.Fail(state == AppConnectionState.SchemaIncomplete
                 ? $"The database schema is incomplete{reason}. Restart the application to run database setup."
@@ -73,7 +74,13 @@ public class AuthService : IAuthService
 
         _logger.LogWarning("Main database not available ({State}). Falling back to offline login for user {Username}.",
             state, username);
-        return await TryOfflineLoginAsync(username, password);
+        var offline = await TryOfflineLoginAsync(username, password);
+
+        // Do not hide a real database error behind "invalid username or password".
+        if (!offline.Success && onlineError != null)
+            return LoginResult.Fail($"{offline.ErrorMessage} Database error: {onlineError}");
+
+        return offline;
     }
 
     private async Task<LoginResult> TryOnlineLoginAsync(string username, string password)
@@ -105,7 +112,7 @@ public class AuthService : IAuthService
         {
             UserId = user.Id,
             Username = user.Username,
-            Role = user.Role == UserRole.Admin ? AppUserRole.Admin : AppUserRole.Operator,
+            Role = user.Role.ToAppRole(),
             CompanyId = user.CompanyId,
             CompanyName = user.Company?.Name,
             BranchId = user.BranchId,
@@ -147,7 +154,7 @@ public class AuthService : IAuthService
         {
             UserId = cachedUser.SourceUserId,
             Username = cachedUser.Username,
-            Role = cachedUser.Role == "Admin" ? AppUserRole.Admin : AppUserRole.Operator,
+            Role = RoleMapping.FromCachedText(cachedUser.Role),
             CompanyId = cachedUser.CompanyId,
             CompanyName = cachedUser.CompanyName,
             BranchId = cachedUser.BranchId,
