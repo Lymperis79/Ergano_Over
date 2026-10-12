@@ -122,6 +122,14 @@ public sealed class ErganiPortalService : IErganiPortalService
         options.AddUserProfilePreference("download.prompt_for_download", false);
         options.AddUserProfilePreference("download.directory_upgrade", true);
         options.AddUserProfilePreference("profile.default_content_setting_values.automatic_downloads", 1);
+
+        // The program types the password itself: do not offer to save it, or to check it for leaks.
+        options.AddUserProfilePreference("credentials_enable_service", false);
+        options.AddUserProfilePreference("profile.password_manager_enabled", false);
+        options.AddUserProfilePreference("profile.password_manager_leak_detection", false);
+        options.AddUserProfilePreference("autofill.profile_enabled", false);
+        options.AddArgument("--disable-save-password-bubble");
+        options.AddArgument("--disable-features=PasswordLeakDetection,PasswordManagerOnboarding");
     }
 
     private static IWebDriver CreateDriver(string downloadDir)
