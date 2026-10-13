@@ -33,14 +33,14 @@ public class AdminBootstrapService : IAdminBootstrapService
     public async Task<BootstrapResult> CreateFirstAdminAsync(CreateFirstAdminRequest request)
     {
         if (string.IsNullOrWhiteSpace(request.Username) || string.IsNullOrWhiteSpace(request.Password))
-            return new BootstrapResult { Success = false, ErrorMessage = "Username and password are required." };
+            return new BootstrapResult { Success = false, ErrorMessage = ErganiManager.Data.UiText.T("Username and password are required.") };
 
         if (request.Password.Length < 8)
-            return new BootstrapResult { Success = false, ErrorMessage = "Password must be at least 8 characters." };
+            return new BootstrapResult { Success = false, ErrorMessage = ErganiManager.Data.UiText.T("Password must be at least 8 characters.") };
 
         var config = _connectionState.LoadConfig();
         if (config == null)
-            return new BootstrapResult { Success = false, ErrorMessage = "Database is not configured." };
+            return new BootstrapResult { Success = false, ErrorMessage = ErganiManager.Data.UiText.T("Database is not configured.") };
 
         var optionsBuilder = new DbContextOptionsBuilder<AppDbContext>();
         DbProviderFactory.Configure(optionsBuilder, config);
@@ -49,7 +49,7 @@ public class AdminBootstrapService : IAdminBootstrapService
 
         // Guard against this ever being usable as a backdoor after go-live.
         if (await db.Users.AnyAsync())
-            return new BootstrapResult { Success = false, ErrorMessage = "Setup has already been completed — users already exist." };
+            return new BootstrapResult { Success = false, ErrorMessage = ErganiManager.Data.UiText.T("Setup has already been completed — users already exist.") };
 
         var admin = new AppUser
         {
@@ -70,7 +70,7 @@ public class AdminBootstrapService : IAdminBootstrapService
     public async Task SeedOfflineCacheAsync()
     {
         var config = _connectionState.LoadConfig()
-            ?? throw new InvalidOperationException("Database is not configured.");
+            ?? throw new InvalidOperationException(ErganiManager.Data.UiText.T("Database is not configured."));
 
         var optionsBuilder = new DbContextOptionsBuilder<AppDbContext>();
         DbProviderFactory.Configure(optionsBuilder, config);

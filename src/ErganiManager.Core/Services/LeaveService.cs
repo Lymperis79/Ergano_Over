@@ -52,19 +52,19 @@ public class LeaveService : ILeaveService
         LeaveDto template, DateOnly from, DateOnly to, bool skipWeekends)
     {
         if (to < from)
-            throw new InvalidOperationException("The end date must not be before the start date.");
+            throw new InvalidOperationException(ErganiManager.Data.UiText.T("The end date must not be before the start date."));
         if ((to.DayNumber - from.DayNumber) > 366)
-            throw new InvalidOperationException("A holiday can cover at most one year at a time.");
+            throw new InvalidOperationException(ErganiManager.Data.UiText.T("A holiday can cover at most one year at a time."));
 
         var type = LeaveTypes.Find(template.LeaveTypeCode)
-            ?? throw new InvalidOperationException("Select a holiday type.");
+            ?? throw new InvalidOperationException(ErganiManager.Data.UiText.T("Select a holiday type."));
 
         if (type.IsHourly)
         {
             if (!template.StartTime.HasValue || !template.EndTime.HasValue)
-                throw new InvalidOperationException("This holiday type is hourly — enter the start and end time.");
+                throw new InvalidOperationException(ErganiManager.Data.UiText.T("This holiday type is hourly — enter the start and end time."));
             if (template.EndTime <= template.StartTime)
-                throw new InvalidOperationException("The end time must be after the start time.");
+                throw new InvalidOperationException(ErganiManager.Data.UiText.T("The end time must be after the start time."));
         }
 
         await using var db = OpenDb();

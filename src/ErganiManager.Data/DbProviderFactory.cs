@@ -13,19 +13,19 @@ public static class DbProviderFactory
         {
             case DatabaseProvider.Sqlite:
                 var path = config.SqlitePath
-                    ?? throw new InvalidOperationException("SqlitePath must be set for the Sqlite provider.");
+                    ?? throw new InvalidOperationException(ErganiManager.Data.UiText.T("SqlitePath must be set for the Sqlite provider."));
                 builder.UseSqlite($"Data Source={path}");
                 break;
 
             case DatabaseProvider.SqlServer:
                 if (string.IsNullOrWhiteSpace(config.ConnectionString))
-                    throw new InvalidOperationException("ConnectionString must be set for the SqlServer provider.");
+                    throw new InvalidOperationException(ErganiManager.Data.UiText.T("ConnectionString must be set for the SqlServer provider."));
                 builder.UseSqlServer(config.ConnectionString);
                 break;
 
             case DatabaseProvider.MariaDb:
                 if (string.IsNullOrWhiteSpace(config.ConnectionString))
-                    throw new InvalidOperationException("ConnectionString must be set for the MariaDb provider.");
+                    throw new InvalidOperationException(ErganiManager.Data.UiText.T("ConnectionString must be set for the MariaDb provider."));
                 builder.UseMySql(
                     config.ConnectionString,
                     ServerVersion.AutoDetect(config.ConnectionString));
@@ -48,7 +48,7 @@ public static class DbProviderFactory
             case DatabaseProvider.Sqlite:
             {
                 var sqlitePath = config.SqlitePath
-                    ?? throw new InvalidOperationException("SqlitePath must be set for the Sqlite provider.");
+                    ?? throw new InvalidOperationException(ErganiManager.Data.UiText.T("SqlitePath must be set for the Sqlite provider."));
                 var dir = Path.GetDirectoryName(sqlitePath);
                 if (!string.IsNullOrEmpty(dir))
                     Directory.CreateDirectory(dir);
@@ -61,11 +61,11 @@ public static class DbProviderFactory
             case DatabaseProvider.SqlServer:
             {
                 var cs = config.ConnectionString
-                    ?? throw new InvalidOperationException("ConnectionString must be set for the SqlServer provider.");
+                    ?? throw new InvalidOperationException(ErganiManager.Data.UiText.T("ConnectionString must be set for the SqlServer provider."));
                 var builder = new SqlConnectionStringBuilder(cs);
                 var database = builder.InitialCatalog;
                 if (string.IsNullOrWhiteSpace(database))
-                    throw new InvalidOperationException("SQL Server database name is required.");
+                    throw new InvalidOperationException(ErganiManager.Data.UiText.T("SQL Server database name is required."));
                 ValidateDatabaseName(database);
 
                 var serverBuilder = new SqlConnectionStringBuilder(cs)
@@ -83,11 +83,11 @@ public static class DbProviderFactory
             case DatabaseProvider.MariaDb:
             {
                 var cs = config.ConnectionString
-                    ?? throw new InvalidOperationException("ConnectionString must be set for the MariaDB provider.");
+                    ?? throw new InvalidOperationException(ErganiManager.Data.UiText.T("ConnectionString must be set for the MariaDB provider."));
                 var builder = new MySqlConnectionStringBuilder(cs);
                 var database = builder.Database;
                 if (string.IsNullOrWhiteSpace(database))
-                    throw new InvalidOperationException("MariaDB database name is required.");
+                    throw new InvalidOperationException(ErganiManager.Data.UiText.T("MariaDB database name is required."));
                 ValidateDatabaseName(database);
 
                 var serverBuilder = new MySqlConnectionStringBuilder(cs)
@@ -110,7 +110,7 @@ public static class DbProviderFactory
     private static void ValidateDatabaseName(string name)
     {
         if (!Regex.IsMatch(name, @"^[A-Za-z0-9_.$-]+$"))
-            throw new InvalidOperationException("The database name contains unsupported characters.");
+            throw new InvalidOperationException(ErganiManager.Data.UiText.T("The database name contains unsupported characters."));
     }
 
     /// <summary>
@@ -152,7 +152,7 @@ public static class DbProviderFactory
                 case DatabaseProvider.Sqlite:
                 {
                     var path = config.SqlitePath
-                        ?? throw new InvalidOperationException("SqlitePath must be set for the Sqlite provider.");
+                        ?? throw new InvalidOperationException(ErganiManager.Data.UiText.T("SqlitePath must be set for the Sqlite provider."));
                     var dir = Path.GetDirectoryName(path);
                     if (!string.IsNullOrEmpty(dir)) Directory.CreateDirectory(dir);
                     return (true, null);

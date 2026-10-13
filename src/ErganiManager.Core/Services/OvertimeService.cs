@@ -37,7 +37,7 @@ public class OvertimeService : IOvertimeService
     public async Task<int> CreateAsync(OvertimeDto dto, int companyId)
     {
         if (dto.EndTime <= dto.StartTime)
-            throw new InvalidOperationException("End time must be after start time.");
+            throw new InvalidOperationException(ErganiManager.Data.UiText.T("End time must be after start time."));
 
         await using var db = OpenDb();
 
@@ -65,7 +65,7 @@ public class OvertimeService : IOvertimeService
     {
         await using var db = OpenDb();
         var entity = await db.Overtimes.FindAsync(id)
-            ?? throw new InvalidOperationException($"Overtime record {id} not found.");
+            ?? throw new InvalidOperationException(ErganiManager.Data.UiText.F("Overtime record {0} not found.", id));
         entity.IsCancelled       = true;
         entity.SubmittedToErgani = false;
         entity.SubmissionId      = null;

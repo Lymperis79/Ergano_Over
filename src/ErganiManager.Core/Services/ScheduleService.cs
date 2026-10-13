@@ -76,10 +76,10 @@ public class ScheduleService : IScheduleService
         if (dto.WorkType is AppWorkType.Office or AppWorkType.Home)
         {
             if (dto.StartTime == null || dto.EndTime == null)
-                throw new InvalidOperationException("Start and end time are required for Office/Home work days.");
+                throw new InvalidOperationException(ErganiManager.Data.UiText.T("Start and end time are required for Office/Home work days."));
 
             if (dto.EndTime <= dto.StartTime)
-                throw new InvalidOperationException("End time must be after start time.");
+                throw new InvalidOperationException(ErganiManager.Data.UiText.T("End time must be after start time."));
         }
 
         await using var db = OpenDb();
@@ -198,10 +198,10 @@ public class ScheduleService : IScheduleService
         AppWorkType workType, TimeOnly? startTime, TimeOnly? endTime, IReadOnlySet<DayOfWeek>? onlyDaysOfWeek = null)
     {
         if (toDate < fromDate)
-            throw new InvalidOperationException("End date must be on or after start date.");
+            throw new InvalidOperationException(ErganiManager.Data.UiText.T("End date must be on or after start date."));
 
         if (workType is AppWorkType.Office or AppWorkType.Home && (startTime == null || endTime == null))
-            throw new InvalidOperationException("Start and end time are required for Office/Home work days.");
+            throw new InvalidOperationException(ErganiManager.Data.UiText.T("Start and end time are required for Office/Home work days."));
 
         await using var db = OpenDb();
 

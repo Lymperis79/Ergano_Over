@@ -40,7 +40,7 @@ public class ConnectionStateService : IConnectionStateService
     {
         if (_cachedOptions != null) return _cachedOptions;
         var config = LoadConfig()
-            ?? throw new InvalidOperationException("Database is not configured.");
+            ?? throw new InvalidOperationException(ErganiManager.Data.UiText.T("Database is not configured."));
         var builder = new DbContextOptionsBuilder<AppDbContext>();
         DbProviderFactory.Configure(builder, config);
         _cachedOptions = builder.Options;
@@ -127,7 +127,7 @@ public class ConnectionStateService : IConnectionStateService
         var config = LoadConfig();
         if (config == null)
         {
-            LastFailureReason = "connection.json could not be read.";
+            LastFailureReason = ErganiManager.Data.UiText.T("connection.json could not be read.");
             _logger.LogWarning("connection.json exists but could not be read; treating as first run.");
             return AppConnectionState.FirstRun;
         }
@@ -218,16 +218,15 @@ public class ConnectionStateService : IConnectionStateService
             else
             {
                 _lastFailedUpgradeUtc = DateTime.UtcNow;
-                UpgradeWarning = "The database could not be fully updated: " +
-                                 string.Join("; ", failures.Take(3)) +
-                                 (failures.Count > 3 ? $" (+{failures.Count - 3} more, see the log)" : string.Empty);
+                UpgradeWarning = ErganiManager.Data.UiText.F("The database could not be fully updated: {0}", string.Join("; ", failures.Take(3))) +
+                                 (failures.Count > 3 ? ErganiManager.Data.UiText.F(" (+{0} more, see the log)", failures.Count - 3) : string.Empty);
             }
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Schema upgrade failed; continuing with the existing schema.");
             _lastFailedUpgradeUtc = DateTime.UtcNow;
-            UpgradeWarning = "The database could not be updated: " + ex.Message;
+            UpgradeWarning = ErganiManager.Data.UiText.F("The database could not be updated: {0}", ex.Message);
         }
     }
 }

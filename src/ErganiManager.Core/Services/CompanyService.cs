@@ -60,6 +60,7 @@ public class CompanyService : ICompanyService
                 ? null
                 : _credentialProtector.Protect(dto.SmtpPasswordPlainText),
             SmtpUseTls = dto.SmtpUseTls,
+            Logo = dto.Logo,
             CreatedAt = DateTime.UtcNow
         };
 
@@ -73,7 +74,7 @@ public class CompanyService : ICompanyService
         await using var db = OpenDb();
 
         var entity = await db.Companies.FindAsync(dto.Id)
-            ?? throw new InvalidOperationException($"Company {dto.Id} not found.");
+            ?? throw new InvalidOperationException(ErganiManager.Data.UiText.F("Company {0} not found.", dto.Id));
 
         entity.Name = dto.Name.Trim();
         entity.TaxId = dto.TaxId.Trim();
@@ -92,6 +93,7 @@ public class CompanyService : ICompanyService
         entity.SmtpPort = dto.SmtpPort;
         entity.SmtpUser = dto.SmtpUser;
         entity.SmtpUseTls = dto.SmtpUseTls;
+        if (dto.UpdateLogo) entity.Logo = dto.Logo;
 
         // Only re-encrypt and overwrite the password if the caller actually
         // supplied a new one — the DTO's plaintext field is left blank on
@@ -110,7 +112,7 @@ public class CompanyService : ICompanyService
     {
         await using var db = OpenDb();
         var entity = await db.Companies.FindAsync(id)
-            ?? throw new InvalidOperationException($"Company {id} not found.");
+            ?? throw new InvalidOperationException(ErganiManager.Data.UiText.F("Company {0} not found.", id));
         entity.IsActive = isActive;
         await db.SaveChangesAsync();
     }
@@ -147,6 +149,7 @@ public class CompanyService : ICompanyService
         SmtpPort = c.SmtpPort,
         SmtpUser = c.SmtpUser,
         SmtpPasswordPlainText = null,
-        SmtpUseTls = c.SmtpUseTls
+        SmtpUseTls = c.SmtpUseTls,
+        Logo = c.Logo
     };
 }

@@ -4,7 +4,10 @@ namespace ErganiManager.Core.Models;
 public sealed record LeaveTypeInfo(string Code, string Description, bool IsHourly)
 {
     /// <summary>Text shown in the type list.</summary>
-    public string Label => $"{Code} — {Description}";
+    public string Label => $"{Code} — {LocalizedDescription}";
+
+    /// <summary>The official Greek name, or its English translation when the app language is English.</summary>
+    public string LocalizedDescription => ErganiManager.Data.UiText.T(Description);
 }
 
 /// <summary>The leave types accepted by Ergani, as listed in the Ergani II interoperability

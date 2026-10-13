@@ -31,7 +31,7 @@ public class AuthService : IAuthService
     public async Task<LoginResult> LoginAsync(string username, string password)
     {
         if (string.IsNullOrWhiteSpace(username) || string.IsNullOrWhiteSpace(password))
-            return LoginResult.Fail("Username and password are required.");
+            return LoginResult.Fail(ErganiManager.Data.UiText.T("Username and password are required."));
 
         username = username.Trim();
 
@@ -68,8 +68,8 @@ public class AuthService : IAuthService
             var reason = string.IsNullOrWhiteSpace(failure) ? string.Empty : $" ({failure})";
 
             return LoginResult.Fail(state == AppConnectionState.SchemaIncomplete
-                ? $"The database schema is incomplete{reason}. Restart the application to run database setup."
-                : $"The database is not available and there is no offline user database yet{reason}. Restart the application to run database setup.");
+                ? ErganiManager.Data.UiText.F("The database schema is incomplete{0}. Restart the application to run database setup.", reason)
+                : ErganiManager.Data.UiText.F("The database is not available and there is no offline user database yet{0}. Restart the application to run database setup.", reason));
         }
 
         _logger.LogWarning("Main database not available ({State}). Falling back to offline login for user {Username}.",
@@ -78,7 +78,7 @@ public class AuthService : IAuthService
 
         // Do not hide a real database error behind "invalid username or password".
         if (!offline.Success && onlineError != null)
-            return LoginResult.Fail($"{offline.ErrorMessage} Database error: {onlineError}");
+            return LoginResult.Fail(ErganiManager.Data.UiText.F("{0} Database error: {1}", offline.ErrorMessage, onlineError));
 
         return offline;
     }
@@ -87,7 +87,7 @@ public class AuthService : IAuthService
     {
         var config = _connectionState.LoadConfig();
         if (config == null)
-            return LoginResult.Fail("Database is not configured.");
+            return LoginResult.Fail(ErganiManager.Data.UiText.T("Database is not configured."));
 
         var optionsBuilder = new DbContextOptionsBuilder<AppDbContext>();
         DbProviderFactory.Configure(optionsBuilder, config);
@@ -102,7 +102,7 @@ public class AuthService : IAuthService
         if (user == null || !_passwordHasher.Verify(password, user.PasswordHash))
         {
             _logger.LogWarning("Login failed for user {Username}: invalid credentials.", username);
-            return LoginResult.Fail("Invalid username or password.");
+            return LoginResult.Fail(ErganiManager.Data.UiText.T("Invalid username or password."));
         }
 
         user.LastLoginAt = DateTime.UtcNow;
@@ -134,7 +134,7 @@ public class AuthService : IAuthService
     {
         var cachePath = ErganiManager.LocalCache.AppPaths.GetLocalCacheDbPath();
         if (!File.Exists(cachePath))
-            return LoginResult.Fail("Database setup is required. No local offline user database exists.");
+            return LoginResult.Fail(ErganiManager.Data.UiText.T("Database setup is required. No local offline user database exists."));
 
         var options = new DbContextOptionsBuilder<LocalCacheDbContext>()
             .UseSqlite($"Data Source={cachePath}")
@@ -147,7 +147,7 @@ public class AuthService : IAuthService
         if (cachedUser == null || !_passwordHasher.Verify(password, cachedUser.PasswordHash))
         {
             _logger.LogWarning("Offline login failed for user {Username}: invalid credentials or not cached.", username);
-            return LoginResult.Fail("Invalid username or password. (Offline mode — only previously synced users can log in.)");
+            return LoginResult.Fail(ErganiManager.Data.UiText.T("Invalid username or password. (Offline mode — only previously synced users can log in.)"));
         }
 
         var session = new UserSession

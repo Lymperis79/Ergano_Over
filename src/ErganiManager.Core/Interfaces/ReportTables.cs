@@ -63,7 +63,7 @@ public sealed class TableSection
 
     public string DisplayNote =>
         Rows.Count > MaxDisplayRows
-            ? $"Showing the first {MaxDisplayRows} of {Rows.Count} rows — export to CSV to get all of them."
+            ? ErganiManager.Data.UiText.F("Showing the first {0} of {1} rows — export to CSV to get all of them.", MaxDisplayRows, Rows.Count)
             : Note;
 
     public bool HasNote => DisplayNote.Length > 0;

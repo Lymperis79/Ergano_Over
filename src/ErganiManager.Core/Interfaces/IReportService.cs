@@ -162,7 +162,7 @@ public sealed class DayTimeRow
 
     public string DeclaredText => DeclaredFrom is { } f && DeclaredTo is { } t
         ? $"{f:HH\\:mm} → {t:HH\\:mm}"
-        : (DeclaredKind.Length > 0 ? DeclaredKind : "—");
+        : (DeclaredKind.Length > 0 ? ErganiManager.Data.UiText.T(DeclaredKind) : "—");
     public string DeclaredHoursText => DeclaredHours is { } h ? ReportFormat.Hours(h) : string.Empty;
 
     public string ActualText => Pairs.Count == 0 ? "—" : string.Join(" | ", Pairs.Select(p => p.Text));
@@ -196,7 +196,7 @@ public sealed class TimeSummaryMonth
 
     public string Header => $"{EmployeeName} — {MonthLabel}";
     public string TotalsText =>
-        $"Declared {ReportFormat.Hours(DeclaredHours)}  ·  Actual {ReportFormat.Hours(ActualHours)}  ·  Rounded {ReportFormat.Hours(RoundedHours)}  ·  Night {ReportFormat.Hours(NightHours)}  ·  Overtime {ReportFormat.Hours(OvertimeHours)}";
+        ErganiManager.Data.UiText.F("Declared {0}  ·  Actual {1}  ·  Rounded {2}  ·  Night {3}  ·  Overtime {4}", ReportFormat.Hours(DeclaredHours), ReportFormat.Hours(ActualHours), ReportFormat.Hours(RoundedHours), ReportFormat.Hours(NightHours), ReportFormat.Hours(OvertimeHours));
 }
 
 public sealed class TimeSummaryReport

@@ -22,11 +22,11 @@ public class ImportLogDto
         ? FromDate.ToString("dd/MM/yyyy")
         : $"{FromDate:dd/MM/yyyy} – {ToDate:dd/MM/yyyy}";
 
-    public string DetailsText => $"{Origin} · {FileName} · by {ImportedBy}";
+    public string DetailsText => ErganiManager.Data.UiText.F("{0} · {1} · by {2}", Origin, FileName, ImportedBy);
 
     public string CountsText =>
-        $"{EmployeeCount} employee(s) · {ScheduleDays} schedule day(s) · {OvertimeRecords} overtime · {HolidayDays} holiday(s)" +
-        (SkippedRows > 0 ? $" · {SkippedRows} row(s) skipped" : string.Empty);
+        ErganiManager.Data.UiText.F("{0} employee(s) · {1} schedule day(s) · {2} overtime · {3} holiday(s)", EmployeeCount, ScheduleDays, OvertimeRecords, HolidayDays) +
+        (SkippedRows > 0 ? ErganiManager.Data.UiText.F(" · {0} row(s) skipped", SkippedRows) : string.Empty);
 }
 
 /// <summary>Keeps a history of the imports of Ergani data.</summary>

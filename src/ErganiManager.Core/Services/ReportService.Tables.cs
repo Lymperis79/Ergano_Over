@@ -5,6 +5,7 @@ using ErganiManager.Data.Entities;
 using ErganiManager.LocalCache;
 using Microsoft.EntityFrameworkCore;
 
+using UiText = ErganiManager.Data.UiText;
 namespace ErganiManager.Core.Services;
 
 /// <summary>The analysis reports shown as generic tables (see <see cref="TableReport"/>).</summary>
@@ -28,7 +29,7 @@ public partial class ReportService
     // ── small helpers ───────────────────────────────────────────────────────
 
     private static string SignedMinutes(int minutes) =>
-        minutes == 0 ? "0" : (minutes < 0 ? Minus : "+") + Math.Abs(minutes) + " min";
+        minutes == 0 ? "0" : (minutes < 0 ? Minus : "+") + Math.Abs(minutes) + " " + UiText.T("min");
 
     private static string SignedHours(double hours) =>
         Math.Abs(hours) < 1.0 / 120 ? "0:00" : (hours < 0 ? Minus : "+") + ReportFormat.Hours(Math.Abs(hours));
@@ -56,14 +57,14 @@ public partial class ReportService
     private async Task<TableReport> BuildRoundingImpactAsync(int companyId, DateOnly from, DateOnly to, int? employeeId)
     {
         var summary = await GetTimeSummaryReportAsync(companyId, from, to, employeeId);
-        var report = new TableReport { Title = "Rounding impact" };
+        var report = new TableReport { Title = UiText.T("Rounding impact") };
 
-        var perEmployee = report.AddSection("Per employee",
-            ("Employee", 230), ("Days with scans", 120), ("Actual", 90), ("Rounded", 90), ("Change", 90),
-            ("Days up", 80), ("Days down", 90), ("Avg change / day", 130));
-        var detail = report.AddSection("Days where the rounding changed the time",
-            ("Date", 130), ("Actual in → out", 300), ("Actual", 80), ("Rounded", 80),
-            ("Rounded in → out", 300), ("Change", 90));
+        var perEmployee = report.AddSection(UiText.T("Per employee"),
+            (UiText.T("Employee"), 230), (UiText.T("Days with scans"), 120), (UiText.T("Actual"), 90), (UiText.T("Rounded"), 90), (UiText.T("Change"), 90),
+            (UiText.T("Days up"), 80), (UiText.T("Days down"), 90), (UiText.T("Avg change / day"), 130));
+        var detail = report.AddSection(UiText.T("Days where the rounding changed the time"),
+            (UiText.T("Date"), 130), (UiText.T("Actual in → out"), 300), (UiText.T("Actual"), 80), (UiText.T("Rounded"), 80),
+            (UiText.T("Rounded in → out"), 300), (UiText.T("Change"), 90));
 
         double allActual = 0, allRounded = 0;
         int allDays = 0, allUp = 0, allDown = 0, addedMin = 0, removedMin = 0, changedDays = 0;
@@ -101,7 +102,7 @@ public partial class ReportService
                 foreach (var (d, min) in changed)
                     detail.Add(d.DateText, string.Join(" | ", d.Pairs.Select(p => p.Text)), d.ActualHoursText,
                         d.RoundedHoursText, d.RoundedInOutCsvText, SignedMinutes(min));
-                detail.Add(RowStyle.Total, "Month total", $"{changed.Count} of {monthDays} day(s) changed",
+                detail.Add(RowStyle.Total, UiText.T("Month total"), UiText.F("{0} of {1} day(s) changed", changed.Count, monthDays),
                     ReportFormat.Hours(month.ActualHours), ReportFormat.Hours(month.RoundedHours), "",
                     SignedHours(month.RoundedHours - month.ActualHours));
             }
@@ -112,21 +113,20 @@ public partial class ReportService
             var avg = (rounded - actual) * 60 / days;
             perEmployee.Add(emp.Key.EmployeeName, days.ToString(Inv), ReportFormat.Hours(actual), ReportFormat.Hours(rounded),
                 SignedHours(rounded - actual), up.ToString(Inv), down.ToString(Inv),
-                (avg < 0 ? Minus : avg > 0 ? "+" : "") + Math.Abs(avg).ToString("0.0", Inv) + " min");
+                (avg < 0 ? Minus : avg > 0 ? "+" : "") + Math.Abs(avg).ToString("0.0", Inv) + " " + UiText.T("min"));
         }
 
         if (allDays > 0)
         {
             var avgAll = (allRounded - allActual) * 60 / allDays;
-            perEmployee.Add(RowStyle.Total, "All employees", allDays.ToString(Inv), ReportFormat.Hours(allActual),
+            perEmployee.Add(RowStyle.Total, UiText.T("All employees"), allDays.ToString(Inv), ReportFormat.Hours(allActual),
                 ReportFormat.Hours(allRounded), SignedHours(allRounded - allActual), allUp.ToString(Inv), allDown.ToString(Inv),
-                (avgAll < 0 ? Minus : avgAll > 0 ? "+" : "") + Math.Abs(avgAll).ToString("0.0", Inv) + " min");
+                (avgAll < 0 ? Minus : avgAll > 0 ? "+" : "") + Math.Abs(avgAll).ToString("0.0", Inv) + " " + UiText.T("min"));
         }
 
         report.Summary = allDays == 0
-            ? "No clock-in/out pairs in this period."
-            : $"Rounding changed {changedDays} of {allDays} day(s): {addedMin} min added, {removedMin} min removed, " +
-              $"net {SignedHours(allRounded - allActual)}. Uses the rounding bands from Administration.";
+            ? UiText.T("No clock-in/out pairs in this period.")
+            : UiText.F("Rounding changed {0} of {1} day(s): {2} min added, {3} min removed, net {4}. Uses the rounding bands from Administration.", changedDays, allDays, addedMin, removedMin, SignedHours(allRounded - allActual));
         return report;
     }
 
@@ -188,7 +188,7 @@ public partial class ReportService
         {
             errorByCard.TryGetValue(c.Id, out var err);
             pending.Add(("Work card", Name(c.F, c.L), c.MovementDateTime,
-                $"{(c.MovementType == MovementType.Arrival ? "Arrival" : "Departure")} {c.MovementDateTime:HH:mm}",
+                $"{(c.MovementType == MovementType.Arrival ? UiText.T("Arrival") : UiText.T("Departure"))} {c.MovementDateTime:HH:mm}",
                 err.HttpStatusCode?.ToString(Inv) ?? "", Trim(err.ErrorMessage)));
         }
         foreach (var s in schedules.Where(s => !s.SubmittedToErgani))
@@ -196,9 +196,9 @@ public partial class ReportService
             errorBySchedule.TryGetValue((s.EmployeeId, s.ScheduleDate), out var err);
             var detail = s.WorkType switch
             {
-                WorkType.Rest => "Rest",
-                WorkType.Absent => "Absent",
-                _ => $"{s.WorkType} {(s.StartTime is { } a ? Clock(a) : "?")}–{(s.EndTime is { } b ? Clock(b) : "?")}"
+                WorkType.Rest => UiText.T("Rest"),
+                WorkType.Absent => UiText.T("Absent"),
+                _ => $"{(s.WorkType == WorkType.Home ? UiText.T("Home") : UiText.T("Office"))} {(s.StartTime is { } a ? Clock(a) : "?")}–{(s.EndTime is { } b ? Clock(b) : "?")}"
             };
             pending.Add(("Schedule", Name(s.F, s.L), LocalStart(s.ScheduleDate), detail,
                 err.HttpStatusCode?.ToString(Inv) ?? "", Trim(err.ErrorMessage)));
@@ -211,36 +211,36 @@ public partial class ReportService
             pending.Add(("Leave", Name(l.F, l.L), LocalStart(l.LeaveDate), l.LeaveTypeCode,
                 l.HttpStatusCode?.ToString(Inv) ?? "", Trim(l.LastError)));
 
-        var report = new TableReport { Title = "Submission status" };
+        var report = new TableReport { Title = UiText.T("Submission status") };
 
-        var overview = report.AddSection("Overview",
-            ("Type", 160), ("Total", 90), ("Sent", 90), ("Not sent", 90), ("% sent", 90));
+        var overview = report.AddSection(UiText.T("Overview"),
+            (UiText.T("Type"), 160), (UiText.T("Total"), 90), (UiText.T("Sent"), 90), (UiText.T("Not sent"), 90), (UiText.T("% sent"), 90));
         void Line(string type, int total, int sent)
         {
             var notSent = total - sent;
             overview.Add(notSent > 0 ? RowStyle.Warning : RowStyle.Normal, type, total.ToString(Inv), sent.ToString(Inv),
                 notSent.ToString(Inv), total == 0 ? "—" : (sent * 100.0 / total).ToString("0", Inv) + "%");
         }
-        Line("Work cards", cards.Count, cards.Count(c => c.SubmittedToErgani));
-        Line("Schedules", schedules.Count, schedules.Count(s => s.SubmittedToErgani));
-        Line("Overtime", overtimes.Count, overtimes.Count(o => o.SubmittedToErgani));
-        Line("Leave", leaves.Count, leaves.Count(l => l.SubmittedToErgani));
+        Line(UiText.T("Work cards"), cards.Count, cards.Count(c => c.SubmittedToErgani));
+        Line(UiText.T("Schedules"), schedules.Count, schedules.Count(s => s.SubmittedToErgani));
+        Line(UiText.T("Overtime"), overtimes.Count, overtimes.Count(o => o.SubmittedToErgani));
+        Line(UiText.T("Leave"), leaves.Count, leaves.Count(l => l.SubmittedToErgani));
         var allTotal = cards.Count + schedules.Count + overtimes.Count + leaves.Count;
         var allSent = cards.Count(c => c.SubmittedToErgani) + schedules.Count(s => s.SubmittedToErgani)
                       + overtimes.Count(o => o.SubmittedToErgani) + leaves.Count(l => l.SubmittedToErgani);
-        overview.Add(RowStyle.Total, "All", allTotal.ToString(Inv), allSent.ToString(Inv), (allTotal - allSent).ToString(Inv),
+        overview.Add(RowStyle.Total, UiText.T("All"), allTotal.ToString(Inv), allSent.ToString(Inv), (allTotal - allSent).ToString(Inv),
             allTotal == 0 ? "—" : (allSent * 100.0 / allTotal).ToString("0", Inv) + "%");
 
-        var notSentSection = report.AddSection("Not yet sent to Ergani",
-            ("Type", 110), ("Employee", 210), ("Date", 140), ("Detail", 220), ("HTTP", 60), ("Last error", 520));
+        var notSentSection = report.AddSection(UiText.T("Not yet sent to Ergani"),
+            (UiText.T("Type"), 110), (UiText.T("Employee"), 210), (UiText.T("Date"), 140), (UiText.T("Detail"), 220), (UiText.T("HTTP"), 60), (UiText.T("Last error"), 520));
         foreach (var p in pending.OrderBy(p => p.Type).ThenBy(p => p.Emp, StringComparer.CurrentCultureIgnoreCase).ThenBy(p => p.When))
-            notSentSection.Add(RowStyle.Warning, p.Type, p.Emp, p.When.ToString(p.When.TimeOfDay == TimeSpan.Zero ? "ddd dd/MM/yyyy" : "dd/MM/yyyy HH:mm", Inv),
+            notSentSection.Add(RowStyle.Warning, UiText.T(p.Type), p.Emp, p.When.ToString(p.When.TimeOfDay == TimeSpan.Zero ? "ddd dd/MM/yyyy" : "dd/MM/yyyy HH:mm", System.Globalization.CultureInfo.CurrentCulture),
                 p.Detail, p.Http, p.Error);
 
         report.Summary = allTotal == 0
-            ? "Nothing in this period."
-            : $"{allTotal - allSent} of {allTotal} item(s) are not yet sent to Ergani. " +
-              "Schedules planned for future days also show here until they are submitted.";
+            ? UiText.T("Nothing in this period.")
+            : UiText.F("{0} of {1} item(s) are not yet sent to Ergani. ", allTotal - allSent, allTotal) +
+              UiText.T("Schedules planned for future days also show here until they are submitted.");
         return report;
     }
 
@@ -265,37 +265,37 @@ public partial class ReportService
                                l.ErrorMessage, l.DurationMs, l.RetryCount, l.LastRetryAt, l.Protocol })
             .ToListAsync();
 
-        var report = new TableReport { Title = "Retry and failure log" };
+        var report = new TableReport { Title = UiText.T("Retry and failure log") };
 
-        var byType = report.AddSection("Summary per submission type",
-            ("Type", 160), ("Attempts", 90), ("Failed (final)", 120), ("OK after retry", 120),
-            ("Total retries", 110), ("Avg duration", 110));
+        var byType = report.AddSection(UiText.T("Summary per submission type"),
+            (UiText.T("Type"), 160), (UiText.T("Attempts"), 90), (UiText.T("Failed (final)"), 120), (UiText.T("OK after retry"), 120),
+            (UiText.T("Total retries"), 110), (UiText.T("Avg duration"), 110));
         foreach (var g in logs.GroupBy(l => l.SubmissionType).OrderBy(g => g.Key))
         {
             var failed = g.Count(l => !l.Success);
             byType.Add(failed > 0 ? RowStyle.Warning : RowStyle.Normal, g.Key, g.Count().ToString(Inv), failed.ToString(Inv),
                 g.Count(l => l.Success && l.RetryCount > 0).ToString(Inv), g.Sum(l => l.RetryCount).ToString(Inv),
-                $"{g.Average(l => (double)l.DurationMs):0} ms");
+                $"{g.Average(l => (double)l.DurationMs):0} " + UiText.T("ms"));
         }
         if (logs.Count > 0)
-            byType.Add(RowStyle.Total, "All", logs.Count.ToString(Inv), logs.Count(l => !l.Success).ToString(Inv),
+            byType.Add(RowStyle.Total, UiText.T("All"), logs.Count.ToString(Inv), logs.Count(l => !l.Success).ToString(Inv),
                 logs.Count(l => l.Success && l.RetryCount > 0).ToString(Inv), logs.Sum(l => l.RetryCount).ToString(Inv),
-                $"{logs.Average(l => (double)l.DurationMs):0} ms");
+                $"{logs.Average(l => (double)l.DurationMs):0} " + UiText.T("ms"));
 
-        var details = report.AddSection("Failed or retried submissions",
-            ("Time", 140), ("Type", 130), ("Employee", 200), ("Result", 120), ("HTTP", 60),
-            ("Retries", 70), ("Last retry", 140), ("Duration", 90), ("Error / protocol", 480));
+        var details = report.AddSection(UiText.T("Failed or retried submissions"),
+            (UiText.T("Time"), 140), (UiText.T("Type"), 130), (UiText.T("Employee"), 200), (UiText.T("Result"), 120), (UiText.T("HTTP"), 60),
+            (UiText.T("Retries"), 70), (UiText.T("Last retry"), 140), (UiText.T("Duration"), 90), (UiText.T("Error / protocol"), 480));
         foreach (var l in logs.Where(l => !l.Success || l.RetryCount > 0).OrderByDescending(l => l.SubmissionDate))
             details.Add(l.Success ? RowStyle.Normal : RowStyle.Warning,
                 l.SubmissionDate.ToLocalTime().ToString("dd/MM/yyyy HH:mm", Inv), l.SubmissionType, Emp(l.EmployeeId),
-                l.Success ? "OK after retry" : "FAILED", l.HttpStatusCode?.ToString(Inv) ?? "", l.RetryCount.ToString(Inv),
-                l.LastRetryAt?.ToLocalTime().ToString("dd/MM/yyyy HH:mm", Inv) ?? "", $"{l.DurationMs} ms",
+                l.Success ? UiText.T("OK after retry") : UiText.T("FAILED"), l.HttpStatusCode?.ToString(Inv) ?? "", l.RetryCount.ToString(Inv),
+                l.LastRetryAt?.ToLocalTime().ToString("dd/MM/yyyy HH:mm", Inv) ?? "", $"{l.DurationMs} " + UiText.T("ms"),
                 l.Success ? Trim(l.Protocol) : Trim(l.ErrorMessage));
 
         // The offline queue of THIS computer (a terminal keeps its own local cache).
-        var queue = report.AddSection("Terminal queue on this computer",
-            ("Scanned", 140), ("Employee", 200), ("Movement", 100), ("Reason", 150), ("Retries", 70),
-            ("Last retry", 140), ("State", 160), ("Error", 420));
+        var queue = report.AddSection(UiText.T("Terminal queue on this computer"),
+            (UiText.T("Scanned"), 140), (UiText.T("Employee"), 200), (UiText.T("Movement"), 100), (UiText.T("Reason"), 150), (UiText.T("Retries"), 70),
+            (UiText.T("Last retry"), 140), (UiText.T("State"), 160), (UiText.T("Error"), 420));
         var waiting = 0;
         try
         {
@@ -306,23 +306,22 @@ public partial class ReportService
                 .OrderByDescending(f => f.CreatedAt).ToListAsync();
             foreach (var f in failed)
                 queue.Add(f.Resolved ? RowStyle.Normal : RowStyle.Warning,
-                    f.OriginalScannedAt.ToString("dd/MM/yyyy HH:mm", Inv), Emp(f.EmployeeId), f.MovementType, f.FailureReason,
+                    f.OriginalScannedAt.ToString("dd/MM/yyyy HH:mm", Inv), Emp(f.EmployeeId), UiText.T(f.MovementType), f.FailureReason,
                     f.RetryCount.ToString(Inv), f.LastRetryAt?.ToLocalTime().ToString("dd/MM/yyyy HH:mm", Inv) ?? "",
-                    f.Resolved ? $"Resolved {f.ResolvedProtocol}".Trim() : "Open",
+                    f.Resolved ? UiText.F("Resolved {0}", f.ResolvedProtocol).Trim() : UiText.T("Open"),
                     Trim(f.LastRetryError ?? f.ErrorDescription));
             waiting = await cache.PendingSubmissions.CountAsync(p => !p.Synced && p.CompanyId == companyId);
         }
         catch (Exception ex)
         {
-            queue.Note = $"The local terminal queue could not be read: {ex.Message}";
+            queue.Note = UiText.F("The local terminal queue could not be read: {0}", ex.Message);
         }
-        if (waiting > 0) queue.Note = $"{waiting} scan(s) are still waiting to be sent from this computer.";
+        if (waiting > 0) queue.Note = UiText.F("{0} scan(s) are still waiting to be sent from this computer.", waiting);
 
         var stillFailing = logs.Count(l => !l.Success);
         report.Summary = logs.Count == 0
-            ? "No submissions were logged in this period."
-            : $"{logs.Count} submission(s) logged: {stillFailing} still failing, " +
-              $"{logs.Count(l => l.Success && l.RetryCount > 0)} succeeded after a retry.";
+            ? UiText.T("No submissions were logged in this period.")
+            : UiText.F("{0} submission(s) logged: {1} still failing, {2} succeeded after a retry.", logs.Count, stillFailing, logs.Count(l => l.Success && l.RetryCount > 0));
         return report;
     }
 
@@ -341,7 +340,7 @@ public partial class ReportService
             .Select(l => (l.EmployeeId, l.LeaveDate)).ToHashSet();
 
         var today = DateOnly.FromDateTime(DateTime.Today);
-        var findings = new List<(string Emp, DateOnly Date, string Declared, string Actual, string Finding)>();
+        var findings = new List<(string Emp, DateOnly Date, string Declared, string Actual, string Finding, string Group)>();
 
         foreach (var month in summary.Months)
         foreach (var d in month.Days)
@@ -349,18 +348,18 @@ public partial class ReportService
             var hasScans = d.Pairs.Count > 0;
             var hasLeave = leaveDays.Contains((month.EmployeeId, d.Date));
             var actual = hasScans ? string.Join(" | ", d.Pairs.Select(p => p.Text)) : "—";
-            void Add(string finding) => findings.Add((month.EmployeeName, d.Date, d.DeclaredText, actual, finding));
+            void Add(string finding, string? group = null) => findings.Add((month.EmployeeName, d.Date, d.DeclaredText, actual, finding, group ?? finding));
 
-            if (hasLeave && hasScans) Add("Scans on a leave day");
-            else if (d.DeclaredKind == "Rest" && hasScans) Add("Scans on a rest day");
-            else if (d.DeclaredKind == "Absent" && hasScans) Add("Scans on an absence day");
-            else if (d.DeclaredKind.Length == 0 && hasScans) Add("Scans without a schedule");
+            if (hasLeave && hasScans) Add(UiText.T("Scans on a leave day"));
+            else if (d.DeclaredKind == "Rest" && hasScans) Add(UiText.T("Scans on a rest day"));
+            else if (d.DeclaredKind == "Absent" && hasScans) Add(UiText.T("Scans on an absence day"));
+            else if (d.DeclaredKind.Length == 0 && hasScans) Add(UiText.T("Scans without a schedule"));
 
             var isWorkDay = d.DeclaredKind is "Office" or "Home";
-            if (isWorkDay && !hasScans && d.Date < today && !hasLeave) Add("No scans on a working day");
+            if (isWorkDay && !hasScans && d.Date < today && !hasLeave) Add(UiText.T("No scans on a working day"));
 
             if (hasScans && d.Date < today && d.Pairs.Any(p => p.In == null || p.Out == null))
-                Add("Missing clock-in or clock-out");
+                Add(UiText.T("Missing clock-in or clock-out"));
 
             // Scans well outside the declared hours (only when every pair is complete).
             if (isWorkDay && d.DeclaredFrom is { } declaredFrom && d.DeclaredTo is { } declaredTo
@@ -372,37 +371,32 @@ public partial class ReportService
                 if (declaredEnd <= declaredStart) declaredEnd = declaredEnd.AddDays(1);
 
                 var startDiff = (arrival - declaredStart).TotalMinutes;
-                if (startDiff > ToleranceMinutes) Add($"Arrived {Math.Round(startDiff):0} min after the start");
-                else if (startDiff < -ToleranceMinutes) Add($"Arrived {Math.Round(-startDiff):0} min before the start");
+                if (startDiff > ToleranceMinutes) Add(UiText.F("Arrived {0} min after the start", Math.Round(startDiff).ToString("0")), UiText.F("Arrived more than {0} min late", ToleranceMinutes));
+                else if (startDiff < -ToleranceMinutes) Add(UiText.F("Arrived {0} min before the start", Math.Round(-startDiff).ToString("0")), UiText.F("Arrived more than {0} min early", ToleranceMinutes));
 
                 var endDiff = (departure - declaredEnd).TotalMinutes;
-                if (endDiff < -ToleranceMinutes) Add($"Left {Math.Round(-endDiff):0} min before the end");
-                else if (endDiff > ToleranceMinutes) Add($"Left {Math.Round(endDiff):0} min after the end");
+                if (endDiff < -ToleranceMinutes) Add(UiText.F("Left {0} min before the end", Math.Round(-endDiff).ToString("0")), UiText.F("Left more than {0} min early", ToleranceMinutes));
+                else if (endDiff > ToleranceMinutes) Add(UiText.F("Left {0} min after the end", Math.Round(endDiff).ToString("0")), UiText.F("Left more than {0} min after the end", ToleranceMinutes));
             }
         }
 
-        var report = new TableReport { Title = "Rest-day / schedule consistency" };
+        var report = new TableReport { Title = UiText.T("Rest-day / schedule consistency") };
 
-        var overview = report.AddSection("Findings overview", ("Finding", 330), ("Count", 90), ("Employees", 110));
-        // "Arrived 45 min after the start" is grouped under one heading for the overview.
-        static string Group(string f) =>
-            f.StartsWith("Arrived", StringComparison.Ordinal) && f.Contains("after") ? $"Arrived more than {30} min late"
-            : f.StartsWith("Arrived", StringComparison.Ordinal) ? $"Arrived more than {30} min early"
-            : f.StartsWith("Left", StringComparison.Ordinal) && f.Contains("before") ? $"Left more than {30} min early"
-            : f.StartsWith("Left", StringComparison.Ordinal) ? $"Left more than {30} min after the end"
-            : f;
-        foreach (var g in findings.GroupBy(f => Group(f.Finding)).OrderByDescending(g => g.Count()))
+        var overview = report.AddSection(UiText.T("Findings overview"), (UiText.T("Finding"), 330), (UiText.T("Count"), 90), (UiText.T("Employees"), 110));
+        // "Arrived 45 min after the start" is grouped under one heading for the overview
+        // (the heading is stored with each finding as its Group).
+        foreach (var g in findings.GroupBy(f => f.Group).OrderByDescending(g => g.Count()))
             overview.Add(RowStyle.Warning, g.Key, g.Count().ToString(Inv), g.Select(x => x.Emp).Distinct().Count().ToString(Inv));
 
-        var detail = report.AddSection("Details",
-            ("Employee", 210), ("Date", 140), ("Declared", 150), ("Actual scans", 300), ("Finding", 330));
+        var detail = report.AddSection(UiText.T("Details"),
+            (UiText.T("Employee"), 210), (UiText.T("Date"), 140), (UiText.T("Declared"), 150), (UiText.T("Actual scans"), 300), (UiText.T("Finding"), 330));
         foreach (var f in findings.OrderBy(f => f.Emp, StringComparer.CurrentCultureIgnoreCase).ThenBy(f => f.Date))
-            detail.Add(f.Emp, f.Date.ToString("ddd dd/MM/yyyy", Inv), f.Declared, f.Actual, f.Finding);
+            detail.Add(f.Emp, f.Date.ToString("ddd dd/MM/yyyy", System.Globalization.CultureInfo.CurrentCulture), f.Declared, f.Actual, f.Finding);
 
         report.Summary = findings.Count == 0
-            ? "No inconsistencies found between the schedules, the leave and the clock-in/out scans."
-            : $"{findings.Count} finding(s) for {findings.Select(f => f.Emp).Distinct().Count()} employee(s). " +
-              $"Hours deviations are reported when a scan is more than {ToleranceMinutes} min away from the declared time.";
+            ? UiText.T("No inconsistencies found between the schedules, the leave and the clock-in/out scans.")
+            : UiText.F("{0} finding(s) for {1} employee(s). ", findings.Count, findings.Select(f => f.Emp).Distinct().Count()) +
+              UiText.F("Hours deviations are reported when a scan is more than {0} min away from the declared time.", ToleranceMinutes);
         return report;
     }
 
@@ -441,15 +435,15 @@ public partial class ReportService
             .Where(e => e.IsActive || withActivity.Contains(e.Id))
             .Select(e => (e.Id, Name: $"{e.FirstName} {e.LastName}".Trim(), e.BranchId))
             .OrderBy(e => e.Name, StringComparer.CurrentCultureIgnoreCase).ToList();
-        string Branch(int id) => branchNames.TryGetValue(id, out var n) ? n : "No branch";
+        string Branch(int id) => branchNames.TryGetValue(id, out var n) ? n : UiText.T("No branch");
 
-        var report = new TableReport { Title = "Roster" };
+        var report = new TableReport { Title = UiText.T("Roster") };
 
         if (dayCount == 1)
         {
             // ── Daily roster: who works when, per branch ──
-            var section = report.AddSection($"Roster for {from:dddd dd/MM/yyyy}",
-                ("Employee", 230), ("Type", 130), ("From", 80), ("To", 80), ("Hours", 80));
+            var section = report.AddSection(UiText.F("Roster for {0}", from.ToString("dddd dd/MM/yyyy", CultureInfo.CurrentCulture)),
+                (UiText.T("Employee"), 230), (UiText.T("Type"), 130), (UiText.T("From"), 80), (UiText.T("To"), 80), (UiText.T("Hours"), 80));
             int working = 0, rest = 0, absent = 0, onLeave = 0, none = 0;
 
             var rows = employees.Select(e =>
@@ -467,30 +461,30 @@ public partial class ReportService
                 foreach (var r in branch.OrderBy(r => r.isWork ? 0 : 1).ThenBy(r => r.s?.StartTime ?? TimeOnly.MaxValue)
                              .ThenBy(r => r.e.Name, StringComparer.CurrentCultureIgnoreCase))
                 {
-                    if (r.isLeave) { onLeave++; section.Add(r.e.Name, $"Leave {r.leaveCode}"); }
-                    else if (r.s == null) { none++; section.Add(RowStyle.Warning, r.e.Name, "No schedule"); }
-                    else if (r.s.WorkType == WorkType.Rest) { rest++; section.Add(r.e.Name, "Rest"); }
-                    else if (r.s.WorkType == WorkType.Absent) { absent++; section.Add(r.e.Name, "Absent"); }
+                    if (r.isLeave) { onLeave++; section.Add(r.e.Name, UiText.F("Leave {0}", r.leaveCode)); }
+                    else if (r.s == null) { none++; section.Add(RowStyle.Warning, r.e.Name, UiText.T("No schedule")); }
+                    else if (r.s.WorkType == WorkType.Rest) { rest++; section.Add(r.e.Name, UiText.T("Rest")); }
+                    else if (r.s.WorkType == WorkType.Absent) { absent++; section.Add(r.e.Name, UiText.T("Absent")); }
                     else
                     {
                         working++;
                         var hours = r.s.StartTime is { } a && r.s.EndTime is { } b ? ReportFormat.Hours(SpanHours(a, b)) : "";
-                        section.Add(r.e.Name, r.s.WorkType.ToString(), r.s.StartTime is { } st ? Clock(st) : "",
+                        section.Add(r.e.Name, (r.s.WorkType == WorkType.Home ? UiText.T("Home") : UiText.T("Office")), r.s.StartTime is { } st ? Clock(st) : "",
                             r.s.EndTime is { } et ? Clock(et) : "", hours);
                     }
                 }
             }
-            report.Summary = $"{working} working · {rest} rest · {absent} absent · {onLeave} on leave · {none} without a schedule.";
+            report.Summary = UiText.F("{0} working · {1} rest · {2} absent · {3} on leave · {4} without a schedule.", working, rest, absent, onLeave, none);
             return report;
         }
 
         // ── Weekly / period roster: one row per employee, one column per day ──
-        var columns = new List<(string Header, double Width)> { ("Employee", 220) };
+        var columns = new List<(string Header, double Width)> { (UiText.T("Employee"), 220) };
         var dates = Enumerable.Range(0, dayCount).Select(i => from.AddDays(i)).ToList();
-        columns.AddRange(dates.Select(d => (d.ToString("ddd dd/MM", Inv), 108d)));
-        columns.Add(("Hours", 80));
-        columns.Add(("Days", 60));
-        var grid = report.AddSection($"Roster {from:dd/MM/yyyy} – {to:dd/MM/yyyy}", columns.ToArray());
+        columns.AddRange(dates.Select(d => (d.ToString("ddd dd/MM", CultureInfo.CurrentCulture), 108d)));
+        columns.Add((UiText.T("Hours"), 80));
+        columns.Add((UiText.T("Days"), 60));
+        var grid = report.AddSection(UiText.F("Roster {0} – {1}", from.ToString("dd/MM/yyyy", CultureInfo.InvariantCulture), to.ToString("dd/MM/yyyy", CultureInfo.InvariantCulture)), columns.ToArray());
 
         var dayHeads = new int[dayCount];
         var dayHours = new double[dayCount];
@@ -507,12 +501,12 @@ public partial class ReportService
                 for (var i = 0; i < dayCount; i++)
                 {
                     var date = dates[i];
-                    if (leaves.TryGetValue((e.Id, date), out var code)) { cells.Add($"Leave {code}"); continue; }
+                    if (leaves.TryGetValue((e.Id, date), out var code)) { cells.Add(UiText.F("Leave {0}", code)); continue; }
                     if (!scheduleBy.TryGetValue((e.Id, date), out var s)) { cells.Add(""); continue; }
                     switch (s.WorkType)
                     {
-                        case WorkType.Rest: cells.Add("Rest"); break;
-                        case WorkType.Absent: cells.Add("Absent"); break;
+                        case WorkType.Rest: cells.Add(UiText.T("Rest")); break;
+                        case WorkType.Absent: cells.Add(UiText.T("Absent")); break;
                         default:
                             var tag = s.WorkType == WorkType.Home ? " H" : "";
                             if (s.StartTime is { } a && s.EndTime is { } b)
@@ -521,7 +515,7 @@ public partial class ReportService
                                 hours += h; dayHours[i] += h;
                                 cells.Add($"{Clock(a)}–{Clock(b)}{tag}");
                             }
-                            else cells.Add($"Work{tag}");
+                            else cells.Add(UiText.T("Work") + tag);
                             days++; dayHeads[i]++;
                             break;
                     }
@@ -535,16 +529,16 @@ public partial class ReportService
 
         if (employees.Count > 0)
         {
-            var total = new List<string> { "People working" };
+            var total = new List<string> { UiText.T("People working") };
             total.AddRange(dayHeads.Select(h => h > 0 ? h.ToString(Inv) : ""));
             total.Add(ReportFormat.Hours(allHours));
             total.Add(allDays.ToString(Inv));
             grid.Add(RowStyle.Total, total.ToArray());
         }
-        grid.Note = "H = working from home. Hours are the scheduled hours; leave days are shown as Leave.";
+        grid.Note = UiText.T("H = working from home. Hours are the scheduled hours; leave days are shown as Leave.");
 
-        report.Summary = $"{employees.Count} employee(s), {dayCount} day(s)." +
-                         (limited ? $" The roster is limited to {MaxDays} days; choose a shorter period to see other days." : "");
+        report.Summary = UiText.F("{0} employee(s), {1} day(s).", employees.Count, dayCount) +
+                         (limited ? UiText.F(" The roster is limited to {0} days; choose a shorter period to see other days.", MaxDays) : "");
         return report;
     }
 
@@ -563,10 +557,10 @@ public partial class ReportService
             .Where(o => !o.IsCancelled && (employeeId == null || o.EmployeeId == employeeId))
             .ToList();
 
-        var report = new TableReport { Title = "Overtime trend" };
+        var report = new TableReport { Title = UiText.T("Overtime trend") };
         if (records.Count == 0)
         {
-            report.Summary = "No overtime in this period.";
+            report.Summary = UiText.T("No overtime in this period.");
             return report;
         }
 
@@ -578,13 +572,13 @@ public partial class ReportService
             return string.Concat(values.Select(v => max <= 0 ? Bars[0] : Bars[(int)Math.Round(v / max * (Bars.Length - 1))]));
         }
 
-        var columns = new List<(string Header, double Width)> { ("Employee", 220) };
+        var columns = new List<(string Header, double Width)> { (UiText.T("Employee"), 220) };
         columns.AddRange(months.Select(m => (Label(m), 72d)));
-        columns.Add(("Total", 90));
-        columns.Add(("Avg / month", 100));
-        columns.Add(("Peak month", 130));
-        columns.Add(("Trend", Math.Max(130, months.Count * 14 + 20)));
-        var grid = report.AddSection("Overtime hours per month", columns.ToArray());
+        columns.Add((UiText.T("Total"), 90));
+        columns.Add((UiText.T("Avg / month"), 100));
+        columns.Add((UiText.T("Peak month"), 130));
+        columns.Add((UiText.T("Trend"), Math.Max(130, months.Count * 14 + 20)));
+        var grid = report.AddSection(UiText.T("Overtime hours per month"), columns.ToArray());
 
         double Value(IEnumerable<OvertimeDto> list, DateOnly m) =>
             list.Where(o => o.OvertimeDate.Year == m.Year && o.OvertimeDate.Month == m.Month).Sum(o => o.HoursWorked);
@@ -609,18 +603,18 @@ public partial class ReportService
 
         foreach (var e in byEmployee) grid.Add(Cells(e.Name, e.Values));
         var totals = months.Select((_, i) => byEmployee.Sum(e => e.Values[i])).ToArray();
-        grid.Add(RowStyle.Total, Cells("All employees", totals));
-        grid.Note = "The trend bars are scaled per row (each row's own highest month is full height)." +
-                    (trimmed ? $" Only the last {MaxMonths} months are shown." : "");
+        grid.Add(RowStyle.Total, Cells(UiText.T("All employees"), totals));
+        grid.Note = UiText.T("The trend bars are scaled per row (each row's own highest month is full height).") +
+                    (trimmed ? UiText.F(" Only the last {0} months are shown.", MaxMonths) : "");
 
-        var share = report.AddSection("Share of the total overtime", ("Employee", 220), ("Hours", 90), ("Share", 90));
+        var share = report.AddSection(UiText.T("Share of the total overtime"), (UiText.T("Employee"), 220), (UiText.T("Hours"), 90), (UiText.T("Share"), 90));
         var grand = totals.Sum();
         foreach (var e in byEmployee)
             share.Add(e.Name, ReportFormat.Hours(e.Values.Sum()), (e.Values.Sum() * 100 / grand).ToString("0.0", Inv) + "%");
 
         var topMonth = Array.IndexOf(totals, totals.Max());
-        report.Summary = $"{ReportFormat.Hours(grand)} of overtime for {byEmployee.Count} employee(s) in {months.Count} month(s). " +
-                         $"Highest month: {Label(months[topMonth])} ({ReportFormat.Hours(totals[topMonth])}).";
+        report.Summary = UiText.F("{0} of overtime for {1} employee(s) in {2} month(s). ", ReportFormat.Hours(grand), byEmployee.Count, months.Count) +
+                         UiText.F("Highest month: {0} ({1}).", Label(months[topMonth]), ReportFormat.Hours(totals[topMonth]));
         return report;
     }
 }

@@ -13,7 +13,7 @@ public class DatabaseMaintenanceService : IDatabaseMaintenanceService
     public DatabaseMaintenanceService(IConnectionStateService connection) => _connection = connection;
 
     private DbConfig Config => _connection.LoadConfig()
-        ?? throw new InvalidOperationException("Database is not configured.");
+        ?? throw new InvalidOperationException(ErganiManager.Data.UiText.T("Database is not configured."));
 
     public string DescribeDatabase()
     {

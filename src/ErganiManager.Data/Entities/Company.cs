@@ -55,6 +55,10 @@ public class Company
     public string? SmtpPasswordEncrypted { get; set; }
     public bool SmtpUseTls { get; set; } = true;
 
+    /// <summary>Optional company picture (PNG/JPEG bytes, already scaled down by the UI).
+    /// Shown in the login window and the terminal window.</summary>
+    public byte[]? Logo { get; set; }
+
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
     // Navigation

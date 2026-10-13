@@ -53,7 +53,7 @@ public class EmployeeService : IEmployeeService
         var barcodeTaken = await db.Employees
             .AnyAsync(e => e.CompanyId == dto.CompanyId && e.BarcodeId == dto.BarcodeId);
         if (barcodeTaken)
-            throw new InvalidOperationException($"Barcode '{dto.BarcodeId}' is already assigned to another employee in this company.");
+            throw new InvalidOperationException(ErganiManager.Data.UiText.F("Barcode '{0}' is already assigned to another employee in this company.", dto.BarcodeId));
 
         var entity = new Employee
         {
@@ -82,14 +82,14 @@ public class EmployeeService : IEmployeeService
         await using var db = OpenDb();
 
         var entity = await db.Employees.FindAsync(dto.Id)
-            ?? throw new InvalidOperationException($"Employee {dto.Id} not found.");
+            ?? throw new InvalidOperationException(ErganiManager.Data.UiText.F("Employee {0} not found.", dto.Id));
 
         if (entity.BarcodeId != dto.BarcodeId)
         {
             var barcodeTaken = await db.Employees
                 .AnyAsync(e => e.CompanyId == dto.CompanyId && e.BarcodeId == dto.BarcodeId && e.Id != dto.Id);
             if (barcodeTaken)
-                throw new InvalidOperationException($"Barcode '{dto.BarcodeId}' is already assigned to another employee in this company.");
+                throw new InvalidOperationException(ErganiManager.Data.UiText.F("Barcode '{0}' is already assigned to another employee in this company.", dto.BarcodeId));
         }
 
         entity.BranchId = dto.BranchId;
@@ -109,7 +109,7 @@ public class EmployeeService : IEmployeeService
     {
         await using var db = OpenDb();
         var entity = await db.Employees.FindAsync(id)
-            ?? throw new InvalidOperationException($"Employee {id} not found.");
+            ?? throw new InvalidOperationException(ErganiManager.Data.UiText.F("Employee {0} not found.", id));
         entity.IsActive = isActive;
         await db.SaveChangesAsync();
     }
@@ -117,19 +117,19 @@ public class EmployeeService : IEmployeeService
     private static void ValidateBasics(EmployeeDto dto)
     {
         if (string.IsNullOrWhiteSpace(dto.FirstName) || string.IsNullOrWhiteSpace(dto.LastName))
-            throw new InvalidOperationException("First name and last name are required.");
+            throw new InvalidOperationException(ErganiManager.Data.UiText.T("First name and last name are required."));
 
         if (string.IsNullOrWhiteSpace(dto.TaxId) || dto.TaxId.Trim().Length != 9)
-            throw new InvalidOperationException("Tax ID (AFM) must be exactly 9 digits.");
+            throw new InvalidOperationException(ErganiManager.Data.UiText.T("Tax ID (AFM) must be exactly 9 digits."));
 
         if (string.IsNullOrWhiteSpace(dto.SocialSecurityNumber) || dto.SocialSecurityNumber.Trim().Length != 11)
-            throw new InvalidOperationException("Social Security Number (AMKA) must be exactly 11 digits.");
+            throw new InvalidOperationException(ErganiManager.Data.UiText.T("Social Security Number (AMKA) must be exactly 11 digits."));
 
         if (string.IsNullOrWhiteSpace(dto.BarcodeId))
-            throw new InvalidOperationException("Barcode ID is required.");
+            throw new InvalidOperationException(ErganiManager.Data.UiText.T("Barcode ID is required."));
 
         if (dto.WeeklyWorkdays is not (5 or 6))
-            throw new InvalidOperationException("Weekly workdays must be 5 or 6.");
+            throw new InvalidOperationException(ErganiManager.Data.UiText.T("Weekly workdays must be 5 or 6."));
     }
 
     private static EmployeeDto ToDto(Employee e) => new()

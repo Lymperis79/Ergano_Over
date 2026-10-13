@@ -85,7 +85,7 @@ public class TodayStatusService : ITodayStatusService
 
         var wholeDayLeave = leaves.FirstOrDefault(l => l.StartTime == null);
         var leaveName = wholeDayLeave == null ? null
-            : LeaveTypes.All.FirstOrDefault(t => t.Code == wholeDayLeave.LeaveTypeCode)?.Description ?? wholeDayLeave.LeaveTypeCode;
+            : LeaveTypes.All.FirstOrDefault(t => t.Code == wholeDayLeave.LeaveTypeCode)?.LocalizedDescription ?? wholeDayLeave.LeaveTypeCode;
 
         var isWorkDay = wholeDayLeave == null && sched != null
             && (sched.WorkType == Entities.WorkType.Office || sched.WorkType == Entities.WorkType.Home)

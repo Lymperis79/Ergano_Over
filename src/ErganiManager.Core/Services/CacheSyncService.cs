@@ -26,7 +26,7 @@ public class CacheSyncService : ICacheSyncService
     public async Task<SyncResult> RefreshCacheFromMainDatabaseAsync(int companyId)
     {
         if (!_connectionState.ConfigExists())
-            return new SyncResult { Success = false, ErrorMessage = "Database not configured." };
+            return new SyncResult { Success = false, ErrorMessage = ErganiManager.Data.UiText.T("Database not configured.") };
 
         await using var db = new AppDbContext(_connectionState.GetDbOptions());
         using var cache = LocalCacheDbContextFactory.Create();

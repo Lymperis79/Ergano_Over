@@ -41,7 +41,7 @@ public class BranchService : IBranchService
         var duplicateNumber = await db.Branches
             .AnyAsync(b => b.CompanyId == dto.CompanyId && b.BranchNumber == dto.BranchNumber);
         if (duplicateNumber)
-            throw new InvalidOperationException($"Branch number {dto.BranchNumber} already exists for this company.");
+            throw new InvalidOperationException(ErganiManager.Data.UiText.F("Branch number {0} already exists for this company.", dto.BranchNumber));
 
         var entity = new BusinessBranch
         {
@@ -66,14 +66,14 @@ public class BranchService : IBranchService
         await using var db = OpenDb();
 
         var entity = await db.Branches.FindAsync(dto.Id)
-            ?? throw new InvalidOperationException($"Branch {dto.Id} not found.");
+            ?? throw new InvalidOperationException(ErganiManager.Data.UiText.F("Branch {0} not found.", dto.Id));
 
         if (entity.BranchNumber != dto.BranchNumber)
         {
             var duplicateNumber = await db.Branches
                 .AnyAsync(b => b.CompanyId == dto.CompanyId && b.BranchNumber == dto.BranchNumber && b.Id != dto.Id);
             if (duplicateNumber)
-                throw new InvalidOperationException($"Branch number {dto.BranchNumber} already exists for this company.");
+                throw new InvalidOperationException(ErganiManager.Data.UiText.F("Branch number {0} already exists for this company.", dto.BranchNumber));
         }
 
         entity.BranchNumber = dto.BranchNumber;
@@ -92,7 +92,7 @@ public class BranchService : IBranchService
     {
         await using var db = OpenDb();
         var entity = await db.Branches.FindAsync(id)
-            ?? throw new InvalidOperationException($"Branch {id} not found.");
+            ?? throw new InvalidOperationException(ErganiManager.Data.UiText.F("Branch {0} not found.", id));
         entity.IsActive = isActive;
         await db.SaveChangesAsync();
     }

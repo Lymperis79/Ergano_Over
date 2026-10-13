@@ -36,15 +36,15 @@ public class OvertimeDto
 
     public string JustificationLabel => Justification switch
     {
-        AppOvertimeJustification.AccidentPreventionOrDamageRestoration => "Accident prevention / damage restoration",
-        AppOvertimeJustification.UrgentSeasonalTasks                   => "Urgent seasonal tasks",
-        AppOvertimeJustification.ExceptionalWorkload                   => "Exceptional workload",
-        AppOvertimeJustification.SupplementaryTasks                    => "Supplementary tasks",
-        AppOvertimeJustification.LostHoursSuddenCauses                 => "Lost hours — sudden causes",
-        AppOvertimeJustification.LostHoursOfficialHolidays             => "Lost hours — official holidays",
-        AppOvertimeJustification.LostHoursWeatherConditions            => "Lost hours — weather conditions",
-        AppOvertimeJustification.EmergencyClosureDay                   => "Emergency closure day",
-        AppOvertimeJustification.NonWorkdayTasks                       => "Non-workday tasks",
+        AppOvertimeJustification.AccidentPreventionOrDamageRestoration => ErganiManager.Data.UiText.T("Accident prevention / damage restoration"),
+        AppOvertimeJustification.UrgentSeasonalTasks                   => ErganiManager.Data.UiText.T("Urgent seasonal tasks"),
+        AppOvertimeJustification.ExceptionalWorkload                   => ErganiManager.Data.UiText.T("Exceptional workload"),
+        AppOvertimeJustification.SupplementaryTasks                    => ErganiManager.Data.UiText.T("Supplementary tasks"),
+        AppOvertimeJustification.LostHoursSuddenCauses                 => ErganiManager.Data.UiText.T("Lost hours — sudden causes"),
+        AppOvertimeJustification.LostHoursOfficialHolidays             => ErganiManager.Data.UiText.T("Lost hours — official holidays"),
+        AppOvertimeJustification.LostHoursWeatherConditions            => ErganiManager.Data.UiText.T("Lost hours — weather conditions"),
+        AppOvertimeJustification.EmergencyClosureDay                   => ErganiManager.Data.UiText.T("Emergency closure day"),
+        AppOvertimeJustification.NonWorkdayTasks                       => ErganiManager.Data.UiText.T("Non-workday tasks"),
         _                                                              => Justification.ToString()
     };
 

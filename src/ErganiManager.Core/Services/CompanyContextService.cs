@@ -26,10 +26,10 @@ public class CompanyContextService : ICompanyContext
     public void SwitchCompany(int companyId, string companyName)
     {
         if (_session == null)
-            throw new InvalidOperationException("Cannot switch company before a session is set.");
+            throw new InvalidOperationException(ErganiManager.Data.UiText.T("Cannot switch company before a session is set."));
 
         if (!_session.IsSuperAdmin)
-            throw new InvalidOperationException("Only a super-admin (no fixed CompanyId) may switch active company.");
+            throw new InvalidOperationException(ErganiManager.Data.UiText.T("Only a super-admin (no fixed CompanyId) may switch active company."));
 
         _activeCompanyId = companyId;
         _activeCompanyName = companyName;

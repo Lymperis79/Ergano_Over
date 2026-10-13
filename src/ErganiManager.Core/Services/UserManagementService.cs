@@ -47,32 +47,32 @@ public class UserManagementService : IUserManagementService
     public async Task<int> CreateAsync(CreateUserRequest request)
     {
         if (string.IsNullOrWhiteSpace(request.Username))
-            throw new InvalidOperationException("Username is required.");
+            throw new InvalidOperationException(ErganiManager.Data.UiText.T("Username is required."));
 
         if (string.IsNullOrWhiteSpace(request.Password) || request.Password.Length < 8)
-            throw new InvalidOperationException("Password must be at least 8 characters.");
+            throw new InvalidOperationException(ErganiManager.Data.UiText.T("Password must be at least 8 characters."));
 
         // An Operator without a company would never be able to clock anyone
         // in (the terminal scopes everything by ActiveCompanyId), so guard
         // against that configuration mistake here rather than downstream.
         if (request.Role == AppUserRole.Operator && request.CompanyId == null)
-            throw new InvalidOperationException("Operator accounts must be assigned to a company.");
+            throw new InvalidOperationException(ErganiManager.Data.UiText.T("Operator accounts must be assigned to a company."));
 
         // A limited user belongs to one company and must be given at least one menu.
         var allowedMenus = request.AllowedMenus;
         if (request.Role == AppUserRole.Limited)
         {
             if (request.CompanyId == null)
-                throw new InvalidOperationException("Limited accounts must be assigned to a company.");
+                throw new InvalidOperationException(ErganiManager.Data.UiText.T("Limited accounts must be assigned to a company."));
             allowedMenus = SanitizeLimitedMenus(request.AllowedMenus)
-                ?? throw new InvalidOperationException("Select at least one menu for a limited user.");
+                ?? throw new InvalidOperationException(ErganiManager.Data.UiText.T("Select at least one menu for a limited user."));
         }
 
         await using var db = OpenDb();
 
         var usernameTaken = await db.Users.AnyAsync(u => u.Username == request.Username.Trim());
         if (usernameTaken)
-            throw new InvalidOperationException($"Username '{request.Username}' is already taken.");
+            throw new InvalidOperationException(ErganiManager.Data.UiText.F("Username '{0}' is already taken.", request.Username));
 
         var entity = new AppUser
         {
@@ -94,11 +94,11 @@ public class UserManagementService : IUserManagementService
     public async Task ResetPasswordAsync(int userId, string newPassword)
     {
         if (string.IsNullOrWhiteSpace(newPassword) || newPassword.Length < 8)
-            throw new InvalidOperationException("Password must be at least 8 characters.");
+            throw new InvalidOperationException(ErganiManager.Data.UiText.T("Password must be at least 8 characters."));
 
         await using var db = OpenDb();
         var user = await db.Users.FindAsync(userId)
-            ?? throw new InvalidOperationException($"User {userId} not found.");
+            ?? throw new InvalidOperationException(ErganiManager.Data.UiText.F("User {0} not found.", userId));
 
         user.PasswordHash = _passwordHasher.Hash(newPassword);
         await db.SaveChangesAsync();
@@ -108,11 +108,11 @@ public class UserManagementService : IUserManagementService
     {
         await using var db = OpenDb();
         var user = await db.Users.FindAsync(userId)
-            ?? throw new InvalidOperationException($"User {userId} not found.");
+            ?? throw new InvalidOperationException(ErganiManager.Data.UiText.F("User {0} not found.", userId));
 
         if (user.Role == UserRole.Limited)
             allowedMenus = SanitizeLimitedMenus(allowedMenus)
-                ?? throw new InvalidOperationException("Select at least one menu for a limited user.");
+                ?? throw new InvalidOperationException(ErganiManager.Data.UiText.T("Select at least one menu for a limited user."));
 
         user.AllowedMenus = allowedMenus;
         await db.SaveChangesAsync();
@@ -122,7 +122,7 @@ public class UserManagementService : IUserManagementService
     {
         await using var db = OpenDb();
         var user = await db.Users.FindAsync(userId)
-            ?? throw new InvalidOperationException($"User {userId} not found.");
+            ?? throw new InvalidOperationException(ErganiManager.Data.UiText.F("User {0} not found.", userId));
 
         user.IsActive = isActive;
         await db.SaveChangesAsync();
@@ -131,14 +131,14 @@ public class UserManagementService : IUserManagementService
     public async Task UpdateRoleAndAssignmentAsync(int userId, AppUserRole role, int? companyId, int? branchId)
     {
         if (role == AppUserRole.Operator && companyId == null)
-            throw new InvalidOperationException("Operator accounts must be assigned to a company.");
+            throw new InvalidOperationException(ErganiManager.Data.UiText.T("Operator accounts must be assigned to a company."));
 
         await using var db = OpenDb();
         var user = await db.Users.FindAsync(userId)
-            ?? throw new InvalidOperationException($"User {userId} not found.");
+            ?? throw new InvalidOperationException(ErganiManager.Data.UiText.F("User {0} not found.", userId));
 
         if (role == AppUserRole.Limited && companyId == null)
-            throw new InvalidOperationException("Limited accounts must be assigned to a company.");
+            throw new InvalidOperationException(ErganiManager.Data.UiText.T("Limited accounts must be assigned to a company."));
 
         user.Role = role.ToEntityRole();
         user.CompanyId = companyId;

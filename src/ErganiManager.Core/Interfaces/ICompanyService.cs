@@ -24,6 +24,13 @@ public class CompanyDto
     public string? SmtpUser { get; set; }
     public string? SmtpPasswordPlainText { get; set; }
     public bool SmtpUseTls { get; set; } = true;
+
+    /// <summary>Company picture (null = none).</summary>
+    public byte[]? Logo { get; set; }
+
+    /// <summary>Set to true when <see cref="Logo"/> was changed (or removed) and must be saved.
+    /// Callers that only edit other fields leave it false, so an existing picture is never wiped.</summary>
+    public bool UpdateLogo { get; set; }
 }
 
 public interface ICompanyService
