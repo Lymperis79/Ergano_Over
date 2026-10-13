@@ -67,8 +67,8 @@ public class ScheduleLogRow
     public string SubmittedAtText => SubmissionDate.ToLocalTime().ToString("dd/MM/yyyy HH:mm:ss");
     public bool HasProtocol => !string.IsNullOrWhiteSpace(Protocol);
     public string Summary => Success
-        ? (HasProtocol ? $"Protocol: {Protocol}" : "Accepted by Ergani")
-        : (string.IsNullOrWhiteSpace(ErrorMessage) ? "Failed" : ErrorMessage!);
+        ? (HasProtocol ? string.Format(Tr.Loc["Vm.Protocol: {0}"], Protocol) : Tr.Loc["Vm.Accepted by Ergani"])
+        : (string.IsNullOrWhiteSpace(ErrorMessage) ? Tr.Loc["Vm.Failed"] : ErrorMessage!);
 }
 
 public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
@@ -160,20 +160,20 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
     public int SelectedDayCount => _selectedDates.Count;
     public bool HasSelection => _selectedDates.Count > 0;
     public string SelectionLabel => _selectedDates.Count == 0
-        ? "No days selected"
-        : $"{_selectedDates.Count} day(s) selected";
+        ? Loc["Vm.No days selected"]
+        : string.Format(Loc["Vm.{0} day(s) selected"], _selectedDates.Count);
 
     /// <summary>With days selected the button submits only those; otherwise it submits the month.</summary>
     public string SubmitScheduleButtonText => HasSelection
-        ? $"📤 Submit selected ({_selectedDates.Count})"
-        : "📤 Submit Schedule";
+        ? string.Format(Loc["Vm.📤 Submit selected ({0})"], _selectedDates.Count)
+        : Loc["Vm.📤 Submit Schedule"];
     public string SubmitOvertimeButtonText => HasSelection
-        ? $"⏱ Overtime of selected ({_selectedDates.Count})"
-        : "⏱ Submit Overtime";
+        ? string.Format(Loc["Vm.⏱ Overtime of selected ({0})"], _selectedDates.Count)
+        : Loc["Vm.⏱ Submit Overtime"];
     public string SubmitHolidaysButtonText => HasSelection
-        ? $"🏖 Holidays of selected ({_selectedDates.Count})"
-        : "🏖 Submit Holidays";
-    public string DeleteSelectedButtonText => $"🗑 Delete selected ({_selectedDates.Count})";
+        ? string.Format(Loc["Vm.🏖 Holidays of selected ({0})"], _selectedDates.Count)
+        : Loc["Vm.🏖 Submit Holidays"];
+    public string DeleteSelectedButtonText => string.Format(Loc["Vm.🗑 Delete selected ({0})"], _selectedDates.Count);
 
     // ── Bulk / day dialog ─────────────────────────────────────────────────────
     [ObservableProperty] private bool _isDayDialogOpen;
@@ -243,8 +243,8 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
             var start = TimeOnly.FromTimeSpan(EditingStartTime.Value);
             var end   = TimeOnly.FromTimeSpan(EditingEndTime.Value);
             if (ScheduleHours.GetOvertimeRange(start, end) is not { } ot) return string.Empty;
-            return $"⏱ Over {ScheduleHours.NormalDailyHours} hours — {start:HH:mm}–{ot.From:HH:mm} is submitted as the schedule, " +
-                   $"{ot.From:HH:mm}–{ot.To:HH:mm} is submitted as overtime.";
+            return string.Format(Loc["Vm.⏱ Over {0} hours — {1}–{2} is submitted as the schedule, {2}–{3} is submitted as overtime."],
+                ScheduleHours.NormalDailyHours, start.ToString("HH:mm"), ot.From.ToString("HH:mm"), ot.To.ToString("HH:mm"));
         }
     }
 
@@ -312,7 +312,7 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
         _session = session;
         HasActiveCompany = session.CompanyId.HasValue;
         NoCompanyMessage = session.CompanyId.HasValue ? string.Empty
-            : "Select a company first.";
+            : Loc["Vm.Select a company first."];
         if (HasActiveCompany) _ = LoadFiltersAsync();
     }
 
@@ -468,13 +468,13 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
             overtimeByDate.TryGetValue(date, out var dayOvertime);
             var overtimeText = BuildOvertimeText(sched, dayOvertime);
             official.TryGetValue(date, out var officialName);
-            var userHolidayText = dayLeaves is null ? string.Empty : string.Join(" · ", dayLeaves.Select(l => LeaveTypes.Find(l.LeaveTypeCode)?.Description ?? l.LeaveTypeCode));
+            var userHolidayText = dayLeaves is null ? string.Empty : string.Join(" · ", dayLeaves.Select(l => LeaveTypes.Find(l.LeaveTypeCode)?.LocalizedDescription ?? l.LeaveTypeCode));
             var tooltip = string.Join("\n", new[]
             {
                 string.IsNullOrWhiteSpace(officialName) ? null : $"🇬🇷 {officialName}",
                 string.IsNullOrWhiteSpace(userHolidayText) ? null : $"🏖 {userHolidayText}",
-                string.IsNullOrWhiteSpace(overtimeText) ? null : $"{overtimeText} overtime",
-                sched?.Source == ScheduleSource.ErganiImported ? "🇬🇷 Ergani imported" : null
+                string.IsNullOrWhiteSpace(overtimeText) ? null : string.Format(Loc["Vm.{0} overtime"], overtimeText),
+                sched?.Source == ScheduleSource.ErganiImported ? Loc["Vm.🇬🇷 Ergani imported"] : null
             }.Where(x => !string.IsNullOrWhiteSpace(x)));
             cells.Add(new CalendarCellViewModel
             {
@@ -534,13 +534,13 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
             overtimeByDate.TryGetValue(d, out var dayOvertime);
             var overtimeText = BuildOvertimeText(sched, dayOvertime);
             officialByDate.TryGetValue(d, out var officialName);
-            var userHolidayText = dayLeaves is null ? string.Empty : string.Join(" · ", dayLeaves.Select(l => LeaveTypes.Find(l.LeaveTypeCode)?.Description ?? l.LeaveTypeCode));
+            var userHolidayText = dayLeaves is null ? string.Empty : string.Join(" · ", dayLeaves.Select(l => LeaveTypes.Find(l.LeaveTypeCode)?.LocalizedDescription ?? l.LeaveTypeCode));
             var tooltip = string.Join("\n", new[]
             {
                 string.IsNullOrWhiteSpace(officialName) ? null : $"🇬🇷 {officialName}",
                 string.IsNullOrWhiteSpace(userHolidayText) ? null : $"🏖 {userHolidayText}",
-                string.IsNullOrWhiteSpace(overtimeText) ? null : $"{overtimeText} overtime",
-                sched?.Source == ScheduleSource.ErganiImported ? "🇬🇷 Ergani imported" : null
+                string.IsNullOrWhiteSpace(overtimeText) ? null : string.Format(Loc["Vm.{0} overtime"], overtimeText),
+                sched?.Source == ScheduleSource.ErganiImported ? Loc["Vm.🇬🇷 Ergani imported"] : null
             }.Where(x => !string.IsNullOrWhiteSpace(x)));
             cells.Add(new CalendarCellViewModel
             {
@@ -755,13 +755,13 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
         var submitted = withSchedule.Count(d => byDate[d].IsSubmitted);
 
         var message = withSchedule.Count == 1
-            ? $"Delete the schedule for {withSchedule[0]:dd/MM/yyyy}?"
-            : $"Delete the schedule of {withSchedule.Count} days?";
+            ? string.Format(Loc["Vm.Delete the schedule for {0}?"], withSchedule[0].ToString("dd/MM/yyyy"))
+            : string.Format(Loc["Vm.Delete the schedule of {0} days?"], withSchedule.Count);
 
         if (submitted > 0)
             message += submitted == 1 && withSchedule.Count == 1
-                ? "\n\nThis day was already sent to Ergani. Deleting only removes it from this app — it does not change what Ergani received."
-                : $"\n\n{submitted} of them were already sent to Ergani. Deleting only removes them from this app — it does not change what Ergani received.";
+                ? "\n\n" + Loc["Vm.This day was already sent to Ergani. Deleting only removes it from this app — it does not change what Ergani received."]
+                : "\n\n" + string.Format(Loc["Vm.{0} of them were already sent to Ergani. Deleting only removes them from this app — it does not change what Ergani received."], submitted);
 
         _pendingDeleteDates.Clear();
         _pendingDeleteDates.AddRange(withSchedule);
@@ -784,7 +784,7 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
         {
             var removed = await _scheduleService.DeleteDaysAsync(SelectedEmployee.Id, dates);
             IsDayDialogOpen = false;
-            StatusMessage = $"✅ Deleted the schedule of {removed} day(s).";
+            StatusMessage = string.Format(Loc["Vm.✅ Deleted the schedule of {0} day(s)."], removed);
             await RefreshCalendarAsync();
         }
         catch (Exception ex) { StatusMessage = $"❌ {ex.Message}"; }
@@ -850,7 +850,7 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
                 dowFilter);
 
             IsBulkDialogOpen = false;
-            StatusMessage = $"✅ Applied to {count} day(s).";
+            StatusMessage = string.Format(Loc["Vm.✅ Applied to {0} day(s)."], count);
             ClearSelection();
             await RefreshCalendarAsync();
         }
@@ -923,7 +923,7 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
                 SelectedEmployee.Id, CloneFrom.Value, CloneTo.Value, targetIds);
 
             IsCloneDialogOpen = false;
-            StatusMessage = $"✅ Copied {count} schedule entry(ies) to {targetIds.Count} employee(s).";
+            StatusMessage = string.Format(Loc["Vm.✅ Copied {0} schedule entry(ies) to {1} employee(s)."], count, targetIds.Count);
         }
         catch (Exception ex) { StatusMessage = $"❌ {ex.Message}"; }
     }
@@ -941,7 +941,7 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
             var folder   = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
             var filePath = ExcelImportExportService.ExportMonthSchedule(
                 SelectedEmployee.FullName, Year, Month, schedules, folder);
-            StatusMessage = $"✅ Exported: {Path.GetFileName(filePath)}";
+            StatusMessage = string.Format(Loc["Vm.✅ Exported: {0}"], Path.GetFileName(filePath));
         }
         catch (Exception ex) { StatusMessage = $"❌ {ex.Message}"; }
     }
@@ -960,8 +960,7 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
 
         _portalDownloadedFile = filePath;
         PortalImportPromptText =
-            $"The Ergani schedule file was downloaded:\n{Path.GetFileName(filePath)}\n\n" +
-            "Do you want to import its data into the schedules now?";
+            string.Format(Loc["Vm.The Ergani schedule file was downloaded:\n{0}\n\nDo you want to import its data into the schedules now?"], Path.GetFileName(filePath));
         IsPortalImportPromptOpen = true;
     }
 
@@ -1031,26 +1030,20 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
                 .Count();
 
             ImportSummary =
-                $"File: {Path.GetFileName(filePath)}\n" +
-                $"Excel rows: {result.TotalRows}\n" +
-                $"Employees matched: {employeeCount}\n" +
-                $"Schedule rows to import: {_pendingErganiRows.Count}\n" +
-                $"Normal working-time rows: {workDays}\n" +
-                $"Days with overtime: {overtimeDays} ({overtimeRecords} overtime record(s), imported separately from the work time)\n" +
-                $"Holiday days (imported as holidays, not as absent): {leaveDays}\n" +
-                $"Employees/rows not found in the database: {unmatched.Count}\n\n" +
-                "Imported schedule days, overtime and holidays will be marked ERGANI IMPORTED and already SUBMITTED, so they are not sent to Ergani again.";
+                string.Format(Loc["Vm.File: {0}\nExcel rows: {1}\nEmployees matched: {2}\nSchedule rows to import: {3}\nNormal working-time rows: {4}\nDays with overtime: {5} ({6} overtime record(s), imported separately from the work time)\nHoliday days (imported as holidays, not as absent): {7}\nEmployees/rows not found in the database: {8}\n\n"],
+                    Path.GetFileName(filePath), result.TotalRows, employeeCount, _pendingErganiRows.Count, workDays, overtimeDays, overtimeRecords, leaveDays, unmatched.Count) +
+                Loc["Vm.Imported schedule days, overtime and holidays will be marked ERGANI IMPORTED and already SUBMITTED, so they are not sent to Ergani again."];
 
             var warnings = new List<string>();
             warnings.AddRange(result.Warnings.Take(10));
             if (unmatched.Count > 0)
             {
                 foreach (var row in unmatched.Take(10))
-                    warnings.Add($"Row {row.RowNumber}: employee AFM {row.TaxId} was not found.");
+                    warnings.Add(string.Format(Loc["Vm.Row {0}: employee AFM {1} was not found."], row.RowNumber, row.TaxId));
             }
 
             ImportWarnings = warnings.Count == 0
-                ? "No warnings."
+                ? Loc["Vm.No warnings."]
                 : string.Join("\n", warnings);
 
             if (_pendingErganiRows.Count == 0)
@@ -1060,8 +1053,8 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
             }
 
             _importNotes =
-                (unmatched.Count > 0 ? $" ⚠ {unmatched.Count} row(s) skipped: employee AFM not found." : string.Empty) +
-                (result.Warnings.Count > 0 ? $" ⚠ {result.Warnings.Count} warning(s) while reading the file." : string.Empty);
+                (unmatched.Count > 0 ? string.Format(Loc["Vm. ⚠ {0} row(s) skipped: employee AFM not found."], unmatched.Count) : string.Empty) +
+                (result.Warnings.Count > 0 ? string.Format(Loc["Vm. ⚠ {0} warning(s) while reading the file."], result.Warnings.Count) : string.Empty);
 
             if (autoConfirm)
             {
@@ -1132,12 +1125,12 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
 
             var shown = samples.Take(8).Select(x => "• " + x);
             ConflictText =
-                $"{keys.Count} day(s) of the file already have different data in the database:\n" +
+                string.Format(Loc["Vm.{0} day(s) of the file already have different data in the database:\n"], keys.Count) +
                 string.Join("\n", shown) +
-                (samples.Count > 8 ? $"\n… and {samples.Count - 8} more" : string.Empty) +
-                "\n\nDo you want to REPLACE the old data with the data from the file?\n" +
-                "Yes = replace the old data of those days.\n" +
-                "No = keep the old data and skip those lines (the other lines are still imported).";
+                (samples.Count > 8 ? string.Format(Loc["Vm.\n… and {0} more"], samples.Count - 8) : string.Empty) +
+                "\n\n" + Loc["Vm.Do you want to REPLACE the old data with the data from the file?"] + "\n" +
+                Loc["Vm.Yes = replace the old data of those days."] + "\n" +
+                Loc["Vm.No = keep the old data and skip those lines (the other lines are still imported)."];
             StatusMessage = Loc["Vm.Existing data found — choose whether to replace it."];
             IsConflictDialogOpen = true;
         }
@@ -1213,27 +1206,27 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
         if (row.IsLeaveOnly)
         {
             if (existing is { WorkType: AppWorkType.Office or AppWorkType.Home })
-                return "a work schedule exists";
+                return Tr.Loc["Vm.a work schedule exists"];
             if (existing != null && existing.Source != ScheduleSource.ErganiImported)
-                return "a schedule exists";
+                return Tr.Loc["Vm.a schedule exists"];
             if (overtime.Count > 0)
-                return "overtime exists";
+                return Tr.Loc["Vm.overtime exists"];
             if (leaves.Any(l => !string.Equals(l.LeaveTypeCode, row.LeaveTypeCode, StringComparison.OrdinalIgnoreCase)))
-                return "a different holiday exists";
+                return Tr.Loc["Vm.a different holiday exists"];
             return null;
         }
 
         if (existing != null &&
             !(existing.WorkType == row.WorkType && existing.StartTime == row.StartTime && existing.EndTime == row.EndTime))
-            return "a different schedule exists";
+            return Tr.Loc["Vm.a different schedule exists"];
 
         var fileOvertime = row.OvertimeRanges.Select(r => (r.Start, r.End)).ToHashSet();
         var dbOvertime   = overtime.Select(o => (o.StartTime, o.EndTime)).ToHashSet();
         if (dbOvertime.Count > 0 && !fileOvertime.SetEquals(dbOvertime))
-            return "different overtime exists";
+            return Tr.Loc["Vm.different overtime exists"];
 
         if (leaves.Count > 0)
-            return "a holiday exists";
+            return Tr.Loc["Vm.a holiday exists"];
 
         return null;
     }
@@ -1409,7 +1402,7 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
                         SkippedRows     = _pendingSkippedRows + skippedExisting
                     };
                     await _importLogService.AddAsync(entry, logCompanyId);
-                    recorded = $" 📝 Import recorded for {entry.PeriodText}.";
+                    recorded = string.Format(Loc["Vm. 📝 Import recorded for {0}."], entry.PeriodText);
                 }
             }
             catch (Exception ex)
@@ -1424,29 +1417,28 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
 
             var extra = new List<string>();
             if (overtimeCreated + overtimeExisting > 0)
-                extra.Add($"{overtimeCreated} overtime record(s) ({overtimeExisting} already existed)");
+                extra.Add(string.Format(Loc["Vm.{0} overtime record(s) ({1} already existed)"], overtimeCreated, overtimeExisting));
             if (leavesCreated + leavesExisting > 0)
-                extra.Add($"{leavesCreated} holiday day(s) ({leavesExisting} already existed)");
+                extra.Add(string.Format(Loc["Vm.{0} holiday day(s) ({1} already existed)"], leavesCreated, leavesExisting));
             if (staleRemoved > 0)
-                extra.Add($"{staleRemoved} old imported \"absent\" day(s) replaced by holidays");
+                extra.Add(string.Format(Loc["Vm.{0} old imported \"absent\" day(s) replaced by holidays"], staleRemoved));
             if (replacedDays > 0)
-                extra.Add($"{replacedDays} day(s) with old data replaced");
+                extra.Add(string.Format(Loc["Vm.{0} day(s) with old data replaced"], replacedDays));
             if (skippedExisting > 0)
-                extra.Add($"{skippedExisting} day(s) skipped because the database already had data (kept)");
+                extra.Add(string.Format(Loc["Vm.{0} day(s) skipped because the database already had data (kept)"], skippedExisting));
             if (manualKept > 0)
-                extra.Add($"{manualKept} manual schedule day(s) on holidays left unchanged");
+                extra.Add(string.Format(Loc["Vm.{0} manual schedule day(s) on holidays left unchanged"], manualKept));
 
             StatusMessage =
-                $"✅ Ergani import completed: {total} schedule day(s) imported " +
-                $"({saved} new, {overwritten} updated)." +
+                string.Format(Loc["Vm.✅ Ergani import completed: {0} schedule day(s) imported ({1} new, {2} updated)."], total, saved, overwritten) +
                 (extra.Count > 0 ? " " + string.Join(", ", extra) + "." : string.Empty) +
-                " Imported rows are marked ERGANI IMPORTED and already SUBMITTED (they will not be sent again)." + recorded + _importNotes;
+                Loc["Vm. Imported rows are marked ERGANI IMPORTED and already SUBMITTED (they will not be sent again)."] + recorded + _importNotes;
 
             await RefreshCalendarAsync();
         }
         catch (Exception ex)
         {
-            StatusMessage = $"❌ Ergani import failed: {ex.Message}";
+            StatusMessage = string.Format(Loc["Vm.❌ Ergani import failed: {0}"], ex.Message);
         }
     }
 
@@ -1498,15 +1490,15 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
         var alreadySent = candidates.Count(c => c.SubmittedToErgani);
         var restAbsent  = candidates.Count(c => !c.SubmittedToErgani && (c.WorkType is AppWorkType.Rest or AppWorkType.Absent));
         var noSchedule  = pickedCount.HasValue ? pickedCount.Value - candidates.Count : 0;
-        if (alreadySent > 0) notes.Add($"{alreadySent} already submitted");
-        if (restAbsent  > 0) notes.Add($"{restAbsent} rest/absent (not sent to Ergani)");
-        if (noSchedule  > 0) notes.Add($"{noSchedule} without a schedule");
-        var skipped = notes.Count > 0 ? $" Skipped: {string.Join(", ", notes)}." : string.Empty;
+        if (alreadySent > 0) notes.Add(string.Format(Loc["Vm.{0} already submitted"], alreadySent));
+        if (restAbsent  > 0) notes.Add(string.Format(Loc["Vm.{0} rest/absent (not sent to Ergani)"], restAbsent));
+        if (noSchedule  > 0) notes.Add(string.Format(Loc["Vm.{0} without a schedule"], noSchedule));
+        var skipped = notes.Count > 0 ? string.Format(Loc["Vm. Skipped: {0}."], string.Join(", ", notes)) : string.Empty;
 
         if (toSubmit.Count == 0)
         { StatusMessage = Loc["Vm.Nothing to submit."] + skipped; return; }
 
-        StatusMessage = $"Submitting {toSubmit.Count} day(s) to Ergani…";
+        StatusMessage = string.Format(Loc["Vm.Submitting {0} day(s) to Ergani…"], toSubmit.Count);
 
         var result = await _scheduleSubmitter.SubmitScheduleDaysAsync(companyId, toSubmit);
 
@@ -1514,12 +1506,11 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
         var overtime = string.Empty;
         if (result.OvertimeSubmitted > 0 || result.OvertimeFailed > 0)
         {
-            overtime = $" Overtime (hours over 8): {result.OvertimeSubmitted} sent";
+            overtime = string.Format(Loc["Vm. Overtime (hours over 8): {0} sent"], result.OvertimeSubmitted);
             if (result.OvertimeFailed > 0)
             {
                 var bad = result.Days.First(d => d.OvertimeFrom.HasValue && !d.OvertimeSubmitted);
-                overtime += $", {result.OvertimeFailed} NOT sent — {bad.Date:dd/MM}: {bad.OvertimeError} " +
-                            "(saved on the Overtime page)";
+                overtime += string.Format(Loc["Vm., {0} NOT sent — {1}: {2} (saved on the Overtime page)"], result.OvertimeFailed, bad.Date.ToString("dd/MM"), bad.OvertimeError);
             }
             overtime += ".";
         }
@@ -1527,12 +1518,11 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
         if (result.Error != null)
             StatusMessage = $"❌ {result.Error}";
         else if (result.Failed == 0)
-            StatusMessage = $"{(result.OvertimeFailed == 0 ? "✅" : "⚠")} Submitted {result.Submitted} day(s) to Ergani.{overtime}{skipped}";
+            StatusMessage = (result.OvertimeFailed == 0 ? "✅" : "⚠") + " " + string.Format(Loc["Vm.Submitted {0} day(s) to Ergani."], result.Submitted) + overtime + skipped;
         else
         {
             var first = result.Days.First(d => !d.Success);
-            StatusMessage = $"❌ {result.Submitted} submitted, {result.Failed} failed — " +
-                            $"{first.Date:dd/MM}: {first.Error}. Open 📜 Log for the details.{overtime}{skipped}";
+            StatusMessage = string.Format(Loc["Vm.❌ {0} submitted, {1} failed — {2}: {3}. Open 📜 Log for the details."], result.Submitted, result.Failed, first.Date.ToString("dd/MM"), first.Error) + overtime + skipped;
         }
 
         await RefreshCalendarAsync();
@@ -1586,8 +1576,8 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
                 });
 
             HasLogRows = LogRows.Count > 0;
-            LogTitle   = $"📜 Schedule log — {SelectedEmployee.FullName}";
-            LogStatus  = HasLogRows ? $"{LogRows.Count} submission(s), newest first." : string.Empty;
+            LogTitle   = string.Format(Loc["Vm.📜 Schedule log — {0}"], SelectedEmployee.FullName);
+            LogStatus  = HasLogRows ? string.Format(Loc["Vm.{0} submission(s), newest first."], LogRows.Count) : string.Empty;
             IsLogOpen  = true;
         }
         catch (Exception ex) { StatusMessage = $"❌ {ex.Message}"; }
@@ -1602,9 +1592,9 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
         // A failure with no HTTP response (e.g. no connection) has only the error text.
         var text = !string.IsNullOrWhiteSpace(row.ResponseRawJson) ? row.ResponseRawJson : row.ErrorMessage;
         if (string.IsNullOrWhiteSpace(text))
-        { LogStatus = "No stored Ergani response for this entry."; return; }
+        { LogStatus = Loc["Vm.No stored Ergani response for this entry."]; return; }
 
-        ResponseTitle = $"Ergani response — {row.ScheduleDateText} ({row.SubmittedAtText})";
+        ResponseTitle = string.Format(Loc["Vm.Ergani response — {0} ({1})"], row.ScheduleDateText, row.SubmittedAtText);
         ResponseText  = text;
         IsResponseOpen = true;
     }
@@ -1616,7 +1606,7 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
     private async Task DownloadPdfAsync(ScheduleLogRow row)
     {
         if (_session?.CompanyId is not int companyId || !row.HasProtocol)
-        { LogStatus = "A protocol is required before downloading the PDF."; return; }
+        { LogStatus = Loc["Vm.A protocol is required before downloading the PDF."]; return; }
         try
         {
             var submittedDate = DateOnly.FromDateTime(row.SubmissionDate.ToLocalTime());
@@ -1630,9 +1620,9 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
             var path     = Path.Combine(folder, $"Ergani_Schedule_{safeName}_{day}_{row.Protocol}.pdf");
 
             await File.WriteAllBytesAsync(path, bytes);
-            LogStatus = $"✅ PDF saved to Desktop: {Path.GetFileName(path)}";
+            LogStatus = string.Format(Loc["Vm.✅ PDF saved to Desktop: {0}"], Path.GetFileName(path));
         }
-        catch (Exception ex) { LogStatus = $"❌ PDF download failed: {ex.Message}"; }
+        catch (Exception ex) { LogStatus = string.Format(Loc["Vm.❌ PDF download failed: {0}"], ex.Message); }
     }
 
     [RelayCommand]
@@ -1651,18 +1641,17 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
             if (result.Days.Count == 0)
             {
                 StatusMessage = picked.Count > 0
-                    ? "No overtime (over 8 hours) on the selected day(s)."
-                    : "No overtime days found this month (over 8 hours).";
+                    ? Loc["Vm.No overtime (over 8 hours) on the selected day(s)."]
+                    : Loc["Vm.No overtime days found this month (over 8 hours)."];
                 return;
             }
 
             if (result.OvertimeFailed == 0)
-                StatusMessage = $"✅ Submitted {result.OvertimeSubmitted} overtime record(s) to Ergani.";
+                StatusMessage = string.Format(Loc["Vm.✅ Submitted {0} overtime record(s) to Ergani."], result.OvertimeSubmitted);
             else
             {
                 var bad = result.Days.First(d => !d.OvertimeSubmitted);
-                StatusMessage = $"❌ {result.OvertimeSubmitted} overtime sent, {result.OvertimeFailed} NOT sent — " +
-                                $"{bad.Date:dd/MM}: {bad.OvertimeError} (the unsent ones are saved on the Overtime page).";
+                StatusMessage = string.Format(Loc["Vm.❌ {0} overtime sent, {1} NOT sent — {2}: {3} (the unsent ones are saved on the Overtime page)."], result.OvertimeSubmitted, result.OvertimeFailed, bad.Date.ToString("dd/MM"), bad.OvertimeError);
             }
 
             await RefreshCalendarAsync();
@@ -1710,22 +1699,22 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
             if (unsent.Count == 0)
             {
                 StatusMessage = leaves.Count > 0
-                    ? "All holidays on the selected day(s) are already submitted."
+                    ? Loc["Vm.All holidays on the selected day(s) are already submitted."]
                     : picked.Count > 0
-                        ? "No saved holidays on the selected day(s). Use 🏖 Holidays to add them."
-                        : "No saved holidays this month. Use 🏖 Holidays to add them.";
+                        ? Loc["Vm.No saved holidays on the selected day(s). Use 🏖 Holidays to add them."]
+                        : Loc["Vm.No saved holidays this month. Use 🏖 Holidays to add them."];
                 return;
             }
 
-            StatusMessage = $"Submitting {unsent.Count} holiday day(s) to Ergani…";
+            StatusMessage = string.Format(Loc["Vm.Submitting {0} holiday day(s) to Ergani…"], unsent.Count);
             var result = await _leaveSubmitter.SubmitAsync(companyId, unsent.Select(l => l.Id).ToList());
 
             if (result.FailedCount == 0 && result.SubmittedCount > 0)
-                StatusMessage = $"✅ Submitted {result.SubmittedCount} holiday day(s) to Ergani.";
+                StatusMessage = string.Format(Loc["Vm.✅ Submitted {0} holiday day(s) to Ergani."], result.SubmittedCount);
             else if (result.SubmittedCount == 0)
-                StatusMessage = $"❌ Not sent — {result.ErrorMessage}";
+                StatusMessage = string.Format(Loc["Vm.❌ Not sent — {0}"], result.ErrorMessage);
             else
-                StatusMessage = $"❌ {result.SubmittedCount} day(s) sent, {result.FailedCount} NOT sent — {result.ErrorMessage}";
+                StatusMessage = string.Format(Loc["Vm.❌ {0} day(s) sent, {1} NOT sent — {2}"], result.SubmittedCount, result.FailedCount, result.ErrorMessage);
 
             await RefreshCalendarAsync();
         }

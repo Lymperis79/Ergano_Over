@@ -55,7 +55,7 @@ public partial class OvertimeViewModel : ViewModelBase, IAdminSectionViewModel
     public void Initialize(UserSession session)
     {
         _session = session; HasActiveCompany = session.CompanyId.HasValue;
-        NoCompanyMessage = session.CompanyId.HasValue ? string.Empty : "Select a company first.";
+        NoCompanyMessage = session.CompanyId.HasValue ? string.Empty : Loc["Vm.Select a company first."];
         if (HasActiveCompany) _ = LoadDataAsync();
     }
 
@@ -76,7 +76,7 @@ public partial class OvertimeViewModel : ViewModelBase, IAdminSectionViewModel
         if (_session?.CompanyId is not int companyId) return;
         var list = await _overtimeService.GetByCompanyAsync(companyId, DateOnly.FromDateTime((FilterFrom ?? DateTimeOffset.Now.AddMonths(-1)).LocalDateTime), DateOnly.FromDateTime((FilterTo ?? DateTimeOffset.Now).LocalDateTime));
         await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() => { Records.Clear(); _selectedIds.Clear(); foreach (var r in list) Records.Add(r); OnPropertyChanged(nameof(HasSelection)); });
-        StatusMessage = $"{Records.Count} record(s).";
+        StatusMessage = string.Format(Loc["Vm.{0} record(s)."], Records.Count);
     }
 
     public void SetSelected(OvertimeDto record, bool selected)
@@ -91,9 +91,9 @@ public partial class OvertimeViewModel : ViewModelBase, IAdminSectionViewModel
         try
         {
             var result = await _overtimeSubmitter.SubmitAsync(companyId, ids);
-            StatusMessage = result.Success ? $"✅ Submitted {result.SubmittedCount} overtime record(s) in one request per branch. Protocol: {result.Protocol}" : result.SubmittedCount > 0 ? $"⚠ {result.SubmittedCount} sent, {result.Errors.Count} NOT sent — {result.ErrorMessage}" : $"❌ {result.ErrorMessage}";
+            StatusMessage = result.Success ? string.Format(Loc["Vm.✅ Submitted {0} overtime record(s) in one request per branch. Protocol: {1}"], result.SubmittedCount, result.Protocol) : result.SubmittedCount > 0 ? string.Format(Loc["Vm.⚠ {0} sent, {1} NOT sent — {2}"], result.SubmittedCount, result.Errors.Count, result.ErrorMessage) : $"❌ {result.ErrorMessage}";
             _selectedIds.Clear(); OnPropertyChanged(nameof(HasSelection)); await LoadRecordsAsync();
-            if (!string.IsNullOrWhiteSpace(result.ResponseRawJson)) ShowResponse("Ergani Overtime Response", result.ResponseRawJson);
+            if (!string.IsNullOrWhiteSpace(result.ResponseRawJson)) ShowResponse(Loc["Vm.Ergani Overtime Response"], result.ResponseRawJson);
         }
         catch (Exception ex) { StatusMessage = $"❌ {ex.Message}"; }
     }
@@ -102,7 +102,7 @@ public partial class OvertimeViewModel : ViewModelBase, IAdminSectionViewModel
     private void ShowResponseFor(OvertimeDto record)
     {
         if (string.IsNullOrWhiteSpace(record.ResponseRawJson)) { StatusMessage = Loc["Vm.No stored Ergani response is available for this record."]; return; }
-        ShowResponse($"Ergani Response — {record.EmployeeFullName}", record.ResponseRawJson);
+        ShowResponse(string.Format(Loc["Vm.Ergani Response — {0}"], record.EmployeeFullName), record.ResponseRawJson);
     }
 
     private void ShowResponse(string title, string response)
@@ -121,9 +121,9 @@ public partial class OvertimeViewModel : ViewModelBase, IAdminSectionViewModel
             var folder = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
             var safeName = string.Join("_", record.EmployeeFullName.Split(Path.GetInvalidFileNameChars(), StringSplitOptions.RemoveEmptyEntries));
             var path = Path.Combine(folder, $"Ergani_Overtime_{safeName}_{record.OvertimeDate:yyyyMMdd}_{record.Protocol}.pdf");
-            await File.WriteAllBytesAsync(path, bytes); StatusMessage = $"✅ PDF saved to Desktop: {Path.GetFileName(path)}";
+            await File.WriteAllBytesAsync(path, bytes); StatusMessage = string.Format(Loc["Vm.✅ PDF saved to Desktop: {0}"], Path.GetFileName(path));
         }
-        catch (Exception ex) { StatusMessage = $"❌ PDF download failed: {ex.Message}"; }
+        catch (Exception ex) { StatusMessage = string.Format(Loc["Vm.❌ PDF download failed: {0}"], ex.Message); }
     }
 
     [RelayCommand] private void StartCreate()

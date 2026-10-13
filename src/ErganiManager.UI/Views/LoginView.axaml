@@ -4,14 +4,17 @@
         x:Class="ErganiManager.UI.Views.LoginView"
         Icon="avares://ErganiManager.UI/Assets/icon.png"
         x:DataType="vm:LoginViewModel"
-        Title="Ergani Manager"
-        Width="420" Height="440"
+        Title="{Binding Loc[AppTitle]}"
+        Width="420" Height="560"
         WindowStartupLocation="CenterScreen"
         CanResize="False">
 
     <Grid>
         <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Width="320" Spacing="14">
 
+            <Image Source="{Binding Logo.Current}" IsVisible="{Binding Logo.HasLogo}"
+                   MaxHeight="90" MaxWidth="260" Stretch="Uniform"
+                   HorizontalAlignment="Center" />
             <TextBlock Text="{Binding Loc[AppTitle]}" FontSize="26" FontWeight="Bold"
                        HorizontalAlignment="Center" />
             <TextBlock Text="{Binding Loc[SignIn]}" Foreground="Gray"
@@ -43,26 +46,7 @@
                     Classes="accent"
                     HorizontalAlignment="Stretch"
                     HorizontalContentAlignment="Center"
-                    Margin="0,8,0,0" />
-
-            <!-- Ergani API status -->
-            <Border Background="#1A1D23" CornerRadius="6" Padding="12,8" Margin="0,12,0,0">
-                <Grid ColumnDefinitions="Auto,*,Auto">
-                    <TextBlock Grid.Column="0" Text="{Binding ErganiStatusIcon}"
-                               FontSize="16" VerticalAlignment="Center" Margin="0,0,8,0" />
-                    <StackPanel Grid.Column="1">
-                        <TextBlock Text="{Binding ErganiStatusText}"
-                                   Foreground="{Binding ErganiStatusColor}"
-                                   FontSize="12" FontWeight="SemiBold" />
-                        <TextBlock Text="Press ⟳ to check if the Ergani API is reachable"
-                                   FontSize="11" Foreground="#666666" />
-                    </StackPanel>
-                    <Button Grid.Column="2" Content="⟳" FontSize="14" Padding="6,4"
-                            Command="{Binding CheckErganiStatusCommand}"
-                            IsEnabled="{Binding !IsCheckingErgani}"
-                            VerticalAlignment="Center" />
-                </Grid>
-            </Border>
+                    Margin="0,8,0,0" />            
 
         </StackPanel>
     </Grid>

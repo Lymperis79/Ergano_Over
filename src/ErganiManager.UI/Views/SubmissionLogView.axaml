@@ -165,7 +165,7 @@
             <StackPanel Margin="0,0,18,0"
                         Spacing="5">
 
-                <TextBlock Text="From:"
+                <TextBlock Text="{Binding Loc[From2]}"
                            FontSize="12"
                            Foreground="Gray" />
 
@@ -180,7 +180,7 @@
             <StackPanel Margin="0,0,18,0"
                         Spacing="5">
 
-                <TextBlock Text="To:"
+                <TextBlock Text="{Binding Loc[To2]}"
                            FontSize="12"
                            Foreground="Gray" />
 
@@ -217,9 +217,9 @@
 
             <StackPanel Margin="18,0,0,0"
                         Spacing="5"
-                        ToolTip.Tip="Sent as f_aitiologia when the first attempt was more than 10 minutes ago. Within 10 minutes it is sent empty.">
+                        ToolTip.Tip="{Binding Loc[SentAsFAitiologiaWhenThe]}">
 
-                <TextBlock Text="Late reason (&gt;10 min):"
+                <TextBlock Text="{Binding Loc[LateReason10Min]}"
                            FontSize="12"
                            Foreground="Gray" />
 
@@ -436,7 +436,7 @@
 
                     </Border>
 
-                    <TextBlock Text="Response Body"
+                    <TextBlock Text="{Binding Loc[ResponseBody]}"
                                FontWeight="SemiBold"
                                FontSize="12"
                                Foreground="Gray" />

@@ -56,7 +56,7 @@ public partial class SubmissionLogRow : ObservableObject
         LastRetryAt?.ToLocalTime().ToString("dd/MM/yyyy HH:mm:ss") ?? string.Empty;
 
     public string RetrySummary =>
-        HasRetries ? $"Retries: {RetryCount}  •  last: {LastRetryText}" : string.Empty;
+        HasRetries ? string.Format(Tr.Loc["Vm.Retries: {0}  •  last: {1}"], RetryCount, LastRetryText) : string.Empty;
 
     public string StatusIcon => Success ? "✅" : "❌";
 
@@ -81,7 +81,7 @@ public partial class FailedSubmissionRow : ObservableObject
     [ObservableProperty] private int _retryCount;
     [ObservableProperty] private DateTime? _lastRetryAt;
     [ObservableProperty] private string? _lastRetryError;
-    [ObservableProperty] private string _statusText = "Waiting to send";
+    [ObservableProperty] private string _statusText = Tr.Loc["Vm.Waiting to send"];
     [ObservableProperty] private string? _protocol;
     [ObservableProperty] private bool _isPending;
 
@@ -89,7 +89,7 @@ public partial class FailedSubmissionRow : ObservableObject
         OriginalScannedAt.ToString("dd/MM/yyyy HH:mm:ss");
 
     public string LastRetryText =>
-        LastRetryAt?.ToString("dd/MM/yyyy HH:mm") ?? "Never";
+        LastRetryAt?.ToString("dd/MM/yyyy HH:mm") ?? Tr.Loc["Vm.Never"];
 
     public string MovementIcon =>
         MovementType == "Arrival" ? "🟢" : "🔴";
@@ -226,7 +226,7 @@ public partial class SubmissionLogViewModel
                 RetryCount = f.RetryCount,
                 LastRetryAt = f.LastRetryAt,
                 LastRetryError = f.LastRetryError,
-                StatusText = f.Resolved ? "Resolved" : "Failed — retry pending",
+                StatusText = f.Resolved ? Loc["Vm.Resolved"] : Loc["Vm.Failed — retry pending"],
                 IsPending = false
             });
         }
@@ -245,10 +245,10 @@ public partial class SubmissionLogViewModel
                 EmployeeId = p.EmployeeId.ToString(),
                 MovementType = p.MovementType,
                 OriginalScannedAt = p.ScannedAt,
-                FailureReason = "Waiting to send",
+                FailureReason = Loc["Vm.Waiting to send"],
                 ErrorDescription = p.LastSyncError,
                 RetryCount = p.SyncAttempts,
-                StatusText = string.IsNullOrWhiteSpace(p.LastSyncError) ? "Waiting to send" : "Retry waiting",
+                StatusText = string.IsNullOrWhiteSpace(p.LastSyncError) ? Loc["Vm.Waiting to send"] : Loc["Vm.Retry waiting"],
                 IsPending = true
             });
         }
@@ -272,11 +272,11 @@ public partial class SubmissionLogViewModel
             {
                 if (row != null)
                 {
-                    row.StatusText = $"Retrying... (attempt {Math.Max(update.Attempts, 1)})";
+                    row.StatusText = string.Format(Loc["Vm.Retrying... (attempt {0})"], Math.Max(update.Attempts, 1));
                     row.RetryCount = update.Attempts;
                     row.ErrorDescription = update.Error;
                 }
-                StatusMessage = $"Retrying queued work card #{update.PendingId}...";
+                StatusMessage = string.Format(Loc["Vm.Retrying queued work card #{0}..."], update.PendingId);
                 return;
             }
 
@@ -288,10 +288,10 @@ public partial class SubmissionLogViewModel
                 row.StatusText = update.Status switch
                 {
                     QueuedScanStatus.Sent => string.IsNullOrWhiteSpace(update.Protocol)
-                        ? "Successfully sent"
-                        : $"Successfully sent — Protocol: {update.Protocol}",
-                    QueuedScanStatus.Rejected => "Rejected by Ergani",
-                    _ => "Waiting to send"
+                        ? Loc["Vm.Successfully sent"]
+                        : string.Format(Loc["Vm.Successfully sent — Protocol: {0}"], update.Protocol),
+                    QueuedScanStatus.Rejected => Loc["Vm.Rejected by Ergani"],
+                    _ => Loc["Vm.Waiting to send"]
                 };
             }
 
@@ -320,12 +320,12 @@ public partial class SubmissionLogViewModel
             StatusMessage = update.Status switch
             {
                 LogRetryStatus.Succeeded => string.IsNullOrWhiteSpace(update.Protocol)
-                    ? $"Successfully sent API log entry #{update.LogId}."
-                    : $"Successfully sent API log entry #{update.LogId} — Protocol: {update.Protocol}",
+                    ? string.Format(Loc["Vm.Successfully sent API log entry #{0}."], update.LogId)
+                    : string.Format(Loc["Vm.Successfully sent API log entry #{0} — Protocol: {1}"], update.LogId, update.Protocol),
                 LogRetryStatus.Failed when update.Message == "Retrying..."
-                    => $"Retrying API log entry #{update.LogId}...",
-                LogRetryStatus.Failed => $"Retry failed for API log entry #{update.LogId}: {update.Message}",
-                _ => $"Retry skipped for API log entry #{update.LogId}: {update.Message}"
+                    => string.Format(Loc["Vm.Retrying API log entry #{0}..."], update.LogId),
+                LogRetryStatus.Failed => string.Format(Loc["Vm.Retry failed for API log entry #{0}: {1}"], update.LogId, update.Message),
+                _ => string.Format(Loc["Vm.Retry skipped for API log entry #{0}: {1}"], update.LogId, update.Message)
             };
 
             await LoadAsync();
@@ -354,7 +354,7 @@ public partial class SubmissionLogViewModel
 
             StatusMessage =
                 Loc[L.SuccessPrefix] +
-                "Manual retry triggered.";
+                Loc["Vm.Manual retry triggered."];
         }
         catch (Exception ex)
         {
@@ -393,7 +393,7 @@ public partial class SubmissionLogViewModel
         var keepSelectedId = SelectedRow?.Id;
 
         IsRetrying = true;
-        StatusMessage = $"Retrying {ids.Count} work card(s)...";
+        StatusMessage = string.Format(Loc["Vm.Retrying {0} work card(s)..."], ids.Count);
 
         try
         {
@@ -407,8 +407,8 @@ public partial class SubmissionLogViewModel
             await LoadAsync();
             SelectedRow = Rows.FirstOrDefault(r => r.Id == keepSelectedId);
 
-            StatusMessage = $"Retry finished: {ok} succeeded, {failed} failed" +
-                            (skipped > 0 ? $", {skipped} skipped." : ".");
+            StatusMessage = string.Format(Loc["Vm.Retry finished: {0} succeeded, {1} failed"], ok, failed) +
+                            (skipped > 0 ? string.Format(Loc["Vm., {0} skipped."], skipped) : ".");
         }
         catch (Exception ex)
         {
@@ -524,8 +524,8 @@ public partial class SubmissionLogViewModel
             UpdateSelectedRetryCount();
 
             StatusMessage = results.Count == 500
-                ? "Showing latest 500 — narrow date range for more."
-                : $"{results.Count} log entries.";
+                ? Loc["Vm.Showing latest 500 — narrow date range for more."]
+                : string.Format(Loc["Vm.{0} log entries."], results.Count);
         }
         catch (Exception ex)
         {

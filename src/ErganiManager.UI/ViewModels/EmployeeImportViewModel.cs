@@ -43,7 +43,7 @@ public partial class EmployeeImportViewModel : ViewModelBase
             var folder = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
             var path = Path.Combine(folder, "EmployeeImportTemplate.xlsx");
             ExcelImportExportService.GenerateEmployeeImportTemplate(path);
-            StatusMessage = $"✅ Template saved to Desktop: {Path.GetFileName(path)}";
+            StatusMessage = string.Format(Loc["Vm.✅ Template saved to Desktop: {0}"], Path.GetFileName(path));
         }
         catch (Exception ex)
         {
@@ -106,7 +106,7 @@ public partial class EmployeeImportViewModel : ViewModelBase
                     var branchKey = row.BranchName.ToLowerInvariant();
                     if (!branchByName.TryGetValue(branchKey, out var branch))
                     {
-                        errors.Add($"Row {row.RowNumber}: branch '{row.BranchName}' not found.");
+                        errors.Add(string.Format(Loc["Vm.Row {0}: branch '{1}' not found."], row.RowNumber, row.BranchName));
                         continue;
                     }
 
@@ -114,7 +114,7 @@ public partial class EmployeeImportViewModel : ViewModelBase
                     var taken = await _employeeService.IsBarcodeTakenAsync(_companyId, row.BarcodeId);
                     if (taken)
                     {
-                        errors.Add($"Row {row.RowNumber}: barcode '{row.BarcodeId}' already exists — skipped.");
+                        errors.Add(string.Format(Loc["Vm.Row {0}: barcode '{1}' already exists — skipped."], row.RowNumber, row.BarcodeId));
                         continue;
                     }
 
@@ -136,7 +136,7 @@ public partial class EmployeeImportViewModel : ViewModelBase
                 }
                 catch (Exception ex)
                 {
-                    errors.Add($"Row {row.RowNumber}: {ex.Message}");
+                    errors.Add(string.Format(Loc["Vm.Row {0}: {1}"], row.RowNumber, ex.Message));
                 }
             }
 

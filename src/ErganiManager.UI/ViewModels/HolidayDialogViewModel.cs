@@ -30,12 +30,12 @@ public class HolidayRow
     public string TypeText => LeaveTypes.Label(LeaveTypeCode);
     public string HoursText => StartTime.HasValue && EndTime.HasValue
         ? $"{StartTime:HH:mm}–{EndTime:HH:mm}"
-        : "Whole day";
+        : Tr.Loc["Vm.Whole day"];
     public bool IsUnsent => !SubmittedToErgani;
     public bool HasProtocol => SubmittedToErgani && !string.IsNullOrWhiteSpace(Protocol) && SubmittedDate.HasValue;
     public string Summary => SubmittedToErgani
-        ? (string.IsNullOrWhiteSpace(Protocol) ? "Accepted by Ergani" : $"Protocol: {Protocol}")
-        : (string.IsNullOrWhiteSpace(LastError) ? "Not submitted yet" : LastError!);
+        ? (string.IsNullOrWhiteSpace(Protocol) ? Tr.Loc["Vm.Accepted by Ergani"] : string.Format(Tr.Loc["Vm.Protocol: {0}"], Protocol))
+        : (string.IsNullOrWhiteSpace(LastError) ? Tr.Loc["Vm.Not submitted yet"] : LastError!);
 }
 
 /// <summary>The holidays form: pick a holiday type and dates, save, submit to Ergani, and review
@@ -88,7 +88,7 @@ public partial class HolidayDialogViewModel : ViewModelBase
 
     public bool IsHourlyType => SelectedType?.IsHourly == true;
     public int UnsentCount => Rows.Count(r => r.IsUnsent);
-    public string SubmitUnsentText => $"📤 Submit unsent ({UnsentCount})";
+    public string SubmitUnsentText => string.Format(Loc["Vm.📤 Submit unsent ({0})"], UnsentCount);
 
     partial void OnSelectedTypeChanged(LeaveTypeInfo? value) => OnPropertyChanged(nameof(IsHourlyType));
 
@@ -105,7 +105,7 @@ public partial class HolidayDialogViewModel : ViewModelBase
         foreach (var b in branches) Branches.Add(b);
         SelectedBranch = Branches.FirstOrDefault(b => b.Id == employee.BranchId) ?? Branches.FirstOrDefault();
 
-        Title          = $"🏖 Holidays — {employee.FullName}";
+        Title          = string.Format(Loc["Vm.🏖 Holidays — {0}"], employee.FullName);
         SelectedType   = null;
         ReferenceYear  = string.Empty;
         EntitledDays   = string.Empty;
@@ -218,19 +218,19 @@ public partial class HolidayDialogViewModel : ViewModelBase
             await ReloadAsync();
             HolidaysChanged?.Invoke(this, EventArgs.Empty);
 
-            var dupNote = created.Duplicates > 0 ? $" ({created.Duplicates} day(s) already existed)" : string.Empty;
+            var dupNote = created.Duplicates > 0 ? string.Format(Loc["Vm. ({0} day(s) already existed)"], created.Duplicates) : string.Empty;
 
             if (created.Created == 0)
             {
                 StatusMessage = created.Duplicates > 0
-                    ? $"Nothing new to save — those days already exist.{dupNote}"
-                    : "No days to save in that range (weekends are skipped).";
+                    ? Loc["Vm.Nothing new to save — those days already exist."] + dupNote
+                    : Loc["Vm.No days to save in that range (weekends are skipped)."];
                 return;
             }
 
             if (!submit)
             {
-                StatusMessage = $"✅ Saved {created.Created} day(s). Use Submit to send them to Ergani.{dupNote}";
+                StatusMessage = string.Format(Loc["Vm.✅ Saved {0} day(s). Use Submit to send them to Ergani."], created.Created) + dupNote;
                 return;
             }
 
@@ -251,16 +251,16 @@ public partial class HolidayDialogViewModel : ViewModelBase
     {
         try
         {
-            StatusMessage = $"Submitting {ids.Count} holiday day(s) to Ergani…";
+            StatusMessage = string.Format(Loc["Vm.Submitting {0} holiday day(s) to Ergani…"], ids.Count);
             var result = await _leaveSubmitter.SubmitAsync(_companyId, ids);
             await ReloadAsync();
 
             if (result.FailedCount == 0 && result.SubmittedCount > 0)
-                StatusMessage = $"✅ Submitted {result.SubmittedCount} holiday day(s) to Ergani.";
+                StatusMessage = string.Format(Loc["Vm.✅ Submitted {0} holiday day(s) to Ergani."], result.SubmittedCount);
             else if (result.SubmittedCount == 0)
-                StatusMessage = $"❌ {result.ErrorMessage ?? "Nothing was submitted."}";
+                StatusMessage = $"❌ {result.ErrorMessage ?? Loc["Vm.Nothing was submitted."]}";
             else
-                StatusMessage = $"❌ {result.SubmittedCount} day(s) sent, {result.FailedCount} NOT sent — {result.ErrorMessage}";
+                StatusMessage = string.Format(Loc["Vm.❌ {0} day(s) sent, {1} NOT sent — {2}"], result.SubmittedCount, result.FailedCount, result.ErrorMessage);
         }
         catch (Exception ex) { StatusMessage = $"❌ {ex.Message}"; }
     }
@@ -276,7 +276,7 @@ public partial class HolidayDialogViewModel : ViewModelBase
             { StatusMessage = Loc["Vm.A holiday that was already sent to Ergani cannot be deleted here."]; return; }
 
             await ReloadAsync();
-            StatusMessage = $"Deleted the holiday of {row.DateText}.";
+            StatusMessage = string.Format(Loc["Vm.Deleted the holiday of {0}."], row.DateText);
         }
         catch (Exception ex) { StatusMessage = $"❌ {ex.Message}"; }
     }
@@ -289,7 +289,7 @@ public partial class HolidayDialogViewModel : ViewModelBase
         if (string.IsNullOrWhiteSpace(text))
         { StatusMessage = Loc["Vm.This holiday has not been submitted yet — there is no response."]; return; }
 
-        ResponseTitle  = $"Ergani response — {row.DateText}";
+        ResponseTitle  = string.Format(Loc["Vm.Ergani response — {0}"], row.DateText);
         ResponseText   = text;
         IsResponseOpen = true;
     }
@@ -313,8 +313,8 @@ public partial class HolidayDialogViewModel : ViewModelBase
             var path     = Path.Combine(folder, $"Ergani_Holiday_{safeName}_{row.LeaveDate:yyyyMMdd}_{row.Protocol}.pdf");
 
             await File.WriteAllBytesAsync(path, bytes);
-            StatusMessage = $"✅ PDF saved to Desktop: {Path.GetFileName(path)}";
+            StatusMessage = string.Format(Loc["Vm.✅ PDF saved to Desktop: {0}"], Path.GetFileName(path));
         }
-        catch (Exception ex) { StatusMessage = $"❌ PDF download failed: {ex.Message}"; }
+        catch (Exception ex) { StatusMessage = string.Format(Loc["Vm.❌ PDF download failed: {0}"], ex.Message); }
     }
 }

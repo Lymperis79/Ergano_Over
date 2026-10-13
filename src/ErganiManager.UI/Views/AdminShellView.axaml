@@ -5,7 +5,7 @@
         x:Class="ErganiManager.UI.Views.AdminShellView"
         Icon="avares://ErganiManager.UI/Assets/icon.png"
         x:DataType="vm:AdminShellViewModel"
-        Title="Ergani Manager — Admin"
+        Title="{Binding Loc[ErganiManagerAdmin]}"
         Width="1200" Height="760"
         WindowStartupLocation="CenterScreen">
 
@@ -33,17 +33,17 @@
                                    VerticalAlignment="Center" />
                         <Button Content="⟳" FontSize="12" Padding="4,2"
                                 Command="{Binding CheckErganiNowCommand}"
-                                ToolTip.Tip="Check Ergani API status now"
+                                ToolTip.Tip="{Binding Loc[CheckErganiAPIStatusNow]}"
                                 VerticalAlignment="Center" />
                     </StackPanel>
 
                     <!-- Always-on-top scan window launcher -->
-                    <Button Content="📟 Scan Window"
+                    <Button Content="{Binding Loc[ScanWindow]}"
                             Command="{Binding OpenScanWindowCommand}"
                             VerticalAlignment="Center" />
 
                     <!-- Sync offline cache -->
-                    <Button Content="🔄 Sync Cache"
+                    <Button Content="{Binding Loc[SyncCache]}"
                             Command="{Binding RefreshCacheCommand}"
                             VerticalAlignment="Center" />
 
@@ -65,7 +65,7 @@
                     <!-- Company switcher (super-admin only) -->
                     <StackPanel IsVisible="{Binding IsSuperAdmin}"
                                 Orientation="Horizontal" VerticalAlignment="Center" Spacing="8">
-                        <TextBlock Text="Company:" Foreground="#AAAAAA"
+                        <TextBlock Text="{Binding Loc[Company]}" Foreground="#AAAAAA"
                                    VerticalAlignment="Center" FontSize="13" />
                         <ComboBox ItemsSource="{Binding SwitchableCompanies}"
                                   SelectedItem="{Binding SelectedSwitchCompany}"

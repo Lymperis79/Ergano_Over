@@ -105,7 +105,7 @@ public partial class WorkCardHistoryViewModel : ViewModelBase, IAdminSectionView
 
         NoCompanyMessage = session.CompanyId.HasValue
             ? string.Empty
-            : "Select a company first (Super Admin: pick a company from the Companies tab).";
+            : Loc["Vm.Select a company first (Super Admin: pick a company from the Companies tab)."];
 
         if (HasActiveCompany)
             _ = LoadFiltersAsync();
@@ -148,8 +148,8 @@ public partial class WorkCardHistoryViewModel : ViewModelBase, IAdminSectionView
             new EmployeeDto
             {
                 Id = 0,
-                FirstName = "All",
-                LastName = "Employees"
+                FirstName = Loc["Vm.All Employees"],
+                LastName = string.Empty
             });
 
         foreach (var employee in employees)
@@ -166,7 +166,7 @@ public partial class WorkCardHistoryViewModel : ViewModelBase, IAdminSectionView
             new BranchDto
             {
                 Id = 0,
-                Name = "All Branches"
+                Name = Loc["Vm.All Branches"]
             });
 
         foreach (var branch in branches)
@@ -176,7 +176,7 @@ public partial class WorkCardHistoryViewModel : ViewModelBase, IAdminSectionView
         FilterBranch = AvailableBranches[0];
 
         StatusMessage =
-            "Set filters and press Load to view records.";
+            Loc["Vm.Set filters and press Load to view records."];
 
         // Do not automatically load records.
         // Records are loaded only when the user presses Load.
@@ -188,7 +188,7 @@ public partial class WorkCardHistoryViewModel : ViewModelBase, IAdminSectionView
         if (!Records.Any())
         {
             StatusMessage =
-                "No records to export — apply filters and load first.";
+                Loc["Vm.No records to export — apply filters and load first."];
 
             return;
         }
@@ -205,12 +205,12 @@ public partial class WorkCardHistoryViewModel : ViewModelBase, IAdminSectionView
                     folder);
 
             StatusMessage =
-                $"✅ Exported to Desktop: {Path.GetFileName(filePath)}";
+                string.Format(Loc["Vm.✅ Exported to Desktop: {0}"], Path.GetFileName(filePath));
         }
         catch (Exception ex)
         {
             StatusMessage =
-                $"❌ Export failed: {ex.Message}";
+                string.Format(Loc["Vm.❌ Export failed: {0}"], ex.Message);
         }
     }
 
@@ -218,7 +218,7 @@ public partial class WorkCardHistoryViewModel : ViewModelBase, IAdminSectionView
     private void ShowResponseFor(WorkCardHistoryDto record)
     {
         if (string.IsNullOrWhiteSpace(record.ResponseRawJson)) { StatusMessage = Loc["Vm.No stored Ergani response is available for this record."]; return; }
-        ResponseTitle = $"Ergani Response — {record.EmployeeFullName}"; ResponseText = record.ResponseRawJson; IsResponseOpen = true;
+        ResponseTitle = string.Format(Loc["Vm.Ergani Response — {0}"], record.EmployeeFullName); ResponseText = record.ResponseRawJson; IsResponseOpen = true;
     }
 
     [RelayCommand] private void CloseResponse() => IsResponseOpen = false;
@@ -233,9 +233,9 @@ public partial class WorkCardHistoryViewModel : ViewModelBase, IAdminSectionView
             var folder = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
             var safeName = string.Join("_", record.EmployeeFullName.Split(Path.GetInvalidFileNameChars(), StringSplitOptions.RemoveEmptyEntries));
             var path = Path.Combine(folder, $"Ergani_WorkCard_{safeName}_{record.MovementDateTime:yyyyMMdd_HHmmss}_{record.Protocol}.pdf");
-            await File.WriteAllBytesAsync(path, bytes); StatusMessage = $"✅ PDF saved to Desktop: {Path.GetFileName(path)}";
+            await File.WriteAllBytesAsync(path, bytes); StatusMessage = string.Format(Loc["Vm.✅ PDF saved to Desktop: {0}"], Path.GetFileName(path));
         }
-        catch (Exception ex) { StatusMessage = $"❌ PDF download failed: {ex.Message}"; }
+        catch (Exception ex) { StatusMessage = string.Format(Loc["Vm.❌ PDF download failed: {0}"], ex.Message); }
     }
 
 
@@ -251,8 +251,8 @@ public partial class WorkCardHistoryViewModel : ViewModelBase, IAdminSectionView
             row.IsSelected = selectAll;
 
         StatusMessage = selectAll
-            ? $"Selected {retryable.Count} retryable work card(s)."
-            : "Retry selection cleared.";
+            ? string.Format(Loc["Vm.Selected {0} retryable work card(s)."], retryable.Count)
+            : Loc["Vm.Retry selection cleared."];
     }
 
     [RelayCommand]
@@ -268,7 +268,7 @@ public partial class WorkCardHistoryViewModel : ViewModelBase, IAdminSectionView
             return;
         }
 
-        StatusMessage = $"Retry sending {selected.Count} work card(s)...";
+        StatusMessage = string.Format(Loc["Vm.Retry sending {0} work card(s)..."], selected.Count);
         var success = 0;
         var failed = 0;
 
@@ -290,13 +290,13 @@ public partial class WorkCardHistoryViewModel : ViewModelBase, IAdminSectionView
                     {
                         success++;
                         StatusMessage = string.IsNullOrWhiteSpace(result.Protocol)
-                            ? $"Successfully sent pending scan #{result.PendingId}."
-                            : $"Successfully sent pending scan #{result.PendingId} — Protocol: {result.Protocol}";
+                            ? string.Format(Loc["Vm.Successfully sent pending scan #{0}."], result.PendingId)
+                            : string.Format(Loc["Vm.Successfully sent pending scan #{0} — Protocol: {1}"], result.PendingId, result.Protocol);
                     }
                     else
                     {
                         failed++;
-                        StatusMessage = $"Retry failed for pending scan #{result.PendingId}: {result.Error}";
+                        StatusMessage = string.Format(Loc["Vm.Retry failed for pending scan #{0}: {1}"], result.PendingId, result.Error);
                     }
                 }
             }
@@ -342,11 +342,11 @@ public partial class WorkCardHistoryViewModel : ViewModelBase, IAdminSectionView
                 row.IsSelected = false;
 
             if (success > 0 || failed > 0)
-                StatusMessage = $"Retry finished: {success} successfully sent, {failed} failed.";
+                StatusMessage = string.Format(Loc["Vm.Retry finished: {0} successfully sent, {1} failed."], success, failed);
         }
         catch (Exception ex)
         {
-            StatusMessage = $"❌ Retry failed: {ex.Message}";
+            StatusMessage = string.Format(Loc["Vm.❌ Retry failed: {0}"], ex.Message);
         }
     }
 
@@ -364,8 +364,8 @@ public partial class WorkCardHistoryViewModel : ViewModelBase, IAdminSectionView
     {
         await LoadAsync();
         StatusMessage = string.IsNullOrWhiteSpace(protocol)
-            ? $"✅ Successfully sent {employeeName}."
-            : $"✅ Successfully sent {employeeName} — Protocol: {protocol}";
+            ? string.Format(Loc["Vm.✅ Successfully sent {0}."], employeeName)
+            : string.Format(Loc["Vm.✅ Successfully sent {0} — Protocol: {1}"], employeeName, protocol);
     }
 
     private void OnQueuedScanUpdated(object? sender, QueuedScanUpdate update)
@@ -388,14 +388,14 @@ public partial class WorkCardHistoryViewModel : ViewModelBase, IAdminSectionView
             }
             else if (update.Status == QueuedScanStatus.Waiting)
             {
-                StatusMessage = $"⏳ Retry sending {row.EmployeeFullName} — attempt {update.Attempts}" +
+                StatusMessage = string.Format(Loc["Vm.⏳ Retry sending {0} — attempt {1}"], row.EmployeeFullName, update.Attempts) +
                                 (string.IsNullOrWhiteSpace(update.Error) ? "..." : $": {update.Error}");
             }
             else
             {
                 row.IsLocalPending = false;
                 row.IsLocalFailed = true;
-                StatusMessage = $"❌ Ergani rejected {row.EmployeeFullName}: {update.Error}";
+                StatusMessage = string.Format(Loc["Vm.❌ Ergani rejected {0}: {1}"], row.EmployeeFullName, update.Error);
             }
         });
     }
@@ -471,8 +471,8 @@ public partial class WorkCardHistoryViewModel : ViewModelBase, IAdminSectionView
 
             StatusMessage =
                 results.Count == 1000
-                    ? "Showing first 1,000 records — narrow the date range for more precision."
-                    : $"{results.Count} record(s) found.";
+                    ? Loc["Vm.Showing first 1,000 records — narrow the date range for more precision."]
+                    : string.Format(Loc["Vm.{0} record(s) found."], results.Count);
         }
         catch (Exception ex)
         {

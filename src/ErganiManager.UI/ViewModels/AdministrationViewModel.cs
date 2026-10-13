@@ -236,7 +236,7 @@ public partial class AdministrationViewModel : ViewModelBase, IAdminSectionViewM
         LoadShifts(RoundingRules.DefaultShifts());
         NightStartTime = new TimeSpan(22, 0, 0);
         NightEndTime = new TimeSpan(6, 0, 0);
-        RoundingStatus = "Defaults loaded — press Save to apply them.";
+        RoundingStatus = Loc["Vm.Defaults loaded — press Save to apply them."];
     }
 
     [RelayCommand]
@@ -248,7 +248,7 @@ public partial class AdministrationViewModel : ViewModelBase, IAdminSectionViewM
                 nightStart < TimeSpan.Zero || nightStart >= TimeSpan.FromDays(1) ||
                 nightEnd < TimeSpan.Zero || nightEnd >= TimeSpan.FromDays(1) || nightStart == nightEnd)
             {
-                NightStatus = "❌ Night start/end must be valid times between 00:00 and 23:59.";
+                NightStatus = Loc["Vm.❌ Night start/end must be valid times between 00:00 and 23:59."];
                 return;
             }
 
@@ -275,13 +275,13 @@ public partial class AdministrationViewModel : ViewModelBase, IAdminSectionViewM
         foreach (var b in bands)
         {
             if (b.FromMinute < 0 || b.ToMinute > 59 || b.FromMinute > b.ToMinute)
-            { RoundingStatus = $"❌ Invalid range {b.FromMinute}–{b.ToMinute}: minutes must be 0–59 and From ≤ To."; return; }
+            { RoundingStatus = string.Format(Loc["Vm.❌ Invalid range {0}–{1}: minutes must be 0–59 and From ≤ To."], b.FromMinute, b.ToMinute); return; }
             if (b.RoundToMinute is < 0 or > 60)
-            { RoundingStatus = "❌ 'Round to' must be between 0 and 60 minutes."; return; }
+            { RoundingStatus = Loc["Vm.❌ 'Round to' must be between 0 and 60 minutes."]; return; }
         }
         for (var i = 1; i < bands.Count; i++)
             if (bands[i].FromMinute <= bands[i - 1].ToMinute)
-            { RoundingStatus = $"❌ Ranges overlap: {bands[i - 1].FromMinute}–{bands[i - 1].ToMinute} and {bands[i].FromMinute}–{bands[i].ToMinute}."; return; }
+            { RoundingStatus = string.Format(Loc["Vm.❌ Ranges overlap: {0}–{1} and {2}–{3}."], bands[i - 1].FromMinute, bands[i - 1].ToMinute, bands[i].FromMinute, bands[i].ToMinute); return; }
 
         try
         {
@@ -289,7 +289,7 @@ public partial class AdministrationViewModel : ViewModelBase, IAdminSectionViewM
                 nightStart < TimeSpan.Zero || nightStart >= TimeSpan.FromDays(1) ||
                 nightEnd < TimeSpan.Zero || nightEnd >= TimeSpan.FromDays(1) || nightStart == nightEnd)
             {
-                RoundingStatus = "❌ Night start/end must be valid times between 00:00 and 23:59.";
+                RoundingStatus = Loc["Vm.❌ Night start/end must be valid times between 00:00 and 23:59."];
                 return;
             }
 
@@ -315,9 +315,9 @@ public partial class AdministrationViewModel : ViewModelBase, IAdminSectionViewM
         try
         {
             var s = _maintenance.GetLocalCacheStatus();
-            CacheInfo = $"Unsynced scans: {s.PendingScans} · Unresolved failed submissions: {s.FailedSubmissions}";
+            CacheInfo = string.Format(Loc["Vm.Unsynced scans: {0} · Unresolved failed submissions: {1}"], s.PendingScans, s.FailedSubmissions);
         }
-        catch (Exception ex) { CacheInfo = $"Cache unreadable: {ex.Message}"; }
+        catch (Exception ex) { CacheInfo = string.Format(Loc["Vm.Cache unreadable: {0}"], ex.Message); }
     }
 
     /// <summary>Called by the view after the user picked a destination file.</summary>
@@ -325,7 +325,7 @@ public partial class AdministrationViewModel : ViewModelBase, IAdminSectionViewM
     {
         IsBusy = true;
         try { StatusMessage = "✅ " + await _maintenance.BackupAsync(path); }
-        catch (Exception ex) { StatusMessage = $"❌ Backup failed: {ex.Message}"; }
+        catch (Exception ex) { StatusMessage = string.Format(Loc["Vm.❌ Backup failed: {0}"], ex.Message); }
         finally { IsBusy = false; }
     }
 
@@ -338,11 +338,11 @@ public partial class AdministrationViewModel : ViewModelBase, IAdminSectionViewM
         {
             var s = _maintenance.GetLocalCacheStatus();
             extra = s.PendingScans + s.FailedSubmissions > 0
-                ? $" It still holds {s.PendingScans} unsynced scan(s) and {s.FailedSubmissions} unresolved failed submission(s); a .bak copy of the file is kept."
+                ? string.Format(Loc["Vm. It still holds {0} unsynced scan(s) and {1} unresolved failed submission(s); a .bak copy of the file is kept."], s.PendingScans, s.FailedSubmissions)
                 : string.Empty;
         }
         catch { extra = string.Empty; }
-        ConfirmText = "Delete the temporary local database? It is recreated empty automatically." + extra;
+        ConfirmText = Loc["Vm.Delete the temporary local database? It is recreated empty automatically."] + extra;
         IsConfirmOpen = true;
     }
 
@@ -350,9 +350,7 @@ public partial class AdministrationViewModel : ViewModelBase, IAdminSectionViewM
     private void AskDeleteDatabase()
     {
         _pending = PendingAction.DeleteDatabase;
-        ConfirmText = "PERMANENTLY DELETE the main database (" + DatabaseInfo + ")? " +
-                      "All companies, employees, schedules and logs are lost. Make a backup first. " +
-                      "The setup wizard opens afterwards.";
+        ConfirmText = string.Format(Loc["Vm.PERMANENTLY DELETE the main database ({0})? All companies, employees, schedules and logs are lost. Make a backup first. The setup wizard opens afterwards."], DatabaseInfo);
         IsConfirmOpen = true;
     }
 
@@ -372,13 +370,13 @@ public partial class AdministrationViewModel : ViewModelBase, IAdminSectionViewM
             {
                 case PendingAction.DeleteCache:
                     var bak = _maintenance.DeleteLocalCache();
-                    StatusMessage = "✅ Local cache deleted" + (bak != null ? $" (backup: {bak})." : ".") +
-                                    " It is recreated on next use — use 🔄 Sync Cache to refill it.";
+                    StatusMessage = Loc["Vm.✅ Local cache deleted"] + (bak != null ? string.Format(Loc["Vm. (backup: {0})."], bak) : ".") +
+                                    Loc["Vm. It is recreated on next use — use 🔄 Sync Cache to refill it."];
                     break;
 
                 case PendingAction.DeleteDatabase:
                     await _maintenance.DeleteDatabaseAsync();
-                    StatusMessage = "✅ Database deleted.";
+                    StatusMessage = Loc["Vm.✅ Database deleted."];
                     DatabaseDeleted?.Invoke(this, EventArgs.Empty);
                     break;
             }

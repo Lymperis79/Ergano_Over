@@ -99,13 +99,13 @@ public class ExcelImportExportService
 
             // Validate
             var errors = new List<string>();
-            if (string.IsNullOrWhiteSpace(importRow.FirstName)) errors.Add("First name required");
-            if (string.IsNullOrWhiteSpace(importRow.LastName)) errors.Add("Last name required");
-            if (importRow.TaxId.Length != 9) errors.Add("AFM must be 9 digits");
-            if (importRow.SocialSecurityNumber.Length != 11) errors.Add("AMKA must be 11 digits");
-            if (string.IsNullOrWhiteSpace(importRow.BarcodeId)) errors.Add("Barcode ID required");
-            if (importRow.WeeklyWorkdays is not (5 or 6)) errors.Add("Weekly workdays must be 5 or 6");
-            if (string.IsNullOrWhiteSpace(importRow.BranchName)) errors.Add("Branch name required");
+            if (string.IsNullOrWhiteSpace(importRow.FirstName)) errors.Add(Tr.Loc["Vm.First name required"]);
+            if (string.IsNullOrWhiteSpace(importRow.LastName)) errors.Add(Tr.Loc["Vm.Last name required"]);
+            if (importRow.TaxId.Length != 9) errors.Add(Tr.Loc["Vm.AFM must be 9 digits"]);
+            if (importRow.SocialSecurityNumber.Length != 11) errors.Add(Tr.Loc["Vm.AMKA must be 11 digits"]);
+            if (string.IsNullOrWhiteSpace(importRow.BarcodeId)) errors.Add(Tr.Loc["Vm.Barcode ID required"]);
+            if (importRow.WeeklyWorkdays is not (5 or 6)) errors.Add(Tr.Loc["Vm.Weekly workdays must be 5 or 6"]);
+            if (string.IsNullOrWhiteSpace(importRow.BranchName)) errors.Add(Tr.Loc["Vm.Branch name required"]);
 
             importRow.IsValid = errors.Count == 0;
             importRow.Error = errors.Count > 0 ? string.Join("; ", errors) : null;
@@ -128,14 +128,14 @@ public class ExcelImportExportService
         var filePath = Path.Combine(folderPath, fileName);
 
         using var wb = new XLWorkbook();
-        var ws = wb.AddWorksheet("Work Cards");
+        var ws = wb.AddWorksheet(Tr.Loc["Vm.Work Cards"]);
 
         // Header row
         var headers = new[]
         {
-            "Employee", "Tax ID (AFM)", "Branch", "Type",
-            "Date", "Time", "Submitted", "Protocol",
-            "Early Departure", "Early (min)", "Email Alert Sent"
+            Tr.Loc["Vm.Employee"], Tr.Loc["Vm.Tax ID (AFM)"], Tr.Loc["Vm.Branch"], Tr.Loc["Vm.Type"],
+            Tr.Loc["Vm.Date"], Tr.Loc["Vm.Time"], Tr.Loc["Vm.Submitted"], Tr.Loc["Vm.Protocol"],
+            Tr.Loc["Vm.Early Departure"], Tr.Loc["Vm.Early (min)"], Tr.Loc["Vm.Email Alert Sent"]
         };
 
         for (int i = 0; i < headers.Length; i++)
@@ -159,11 +159,11 @@ public class ExcelImportExportService
             ws.Cell(row, 4).Value = r.MovementType;
             ws.Cell(row, 5).Value = r.MovementDateTime.ToString("dd/MM/yyyy");
             ws.Cell(row, 6).Value = r.MovementDateTime.ToString("HH:mm:ss");
-            ws.Cell(row, 7).Value = r.SubmittedToErgani ? "Yes" : "No";
+            ws.Cell(row, 7).Value = r.SubmittedToErgani ? Tr.Loc["Vm.Yes"] : Tr.Loc["Vm.No"];
             ws.Cell(row, 8).Value = r.Protocol ?? "";
-            ws.Cell(row, 9).Value = r.WasEarlyDeparture ? "Yes" : "No";
+            ws.Cell(row, 9).Value = r.WasEarlyDeparture ? Tr.Loc["Vm.Yes"] : Tr.Loc["Vm.No"];
             ws.Cell(row, 10).Value = r.EarlyDepartureMinutes?.ToString() ?? "";
-            ws.Cell(row, 11).Value = r.EmailAlertSent ? "Yes" : "No";
+            ws.Cell(row, 11).Value = r.EmailAlertSent ? Tr.Loc["Vm.Yes"] : Tr.Loc["Vm.No"];
 
             // Highlight early departures in amber
             if (r.WasEarlyDeparture)
@@ -199,12 +199,12 @@ public class ExcelImportExportService
         var ws = wb.AddWorksheet($"{new DateTime(year, month, 1):MMMM yyyy}");
 
         // Header
-        ws.Cell(1, 1).Value = $"Schedule: {employeeFullName}";
+        ws.Cell(1, 1).Value = string.Format(Tr.Loc["Vm.Schedule: {0}"], employeeFullName);
         ws.Cell(1, 1).Style.Font.Bold = true;
         ws.Cell(1, 1).Style.Font.FontSize = 14;
         ws.Range("A1:G1").Merge();
 
-        var dayHeaders = new[] { "Date", "Day", "Work Type", "Start", "End", "Submitted", "Protocol" };
+        var dayHeaders = new[] { Tr.Loc["Vm.Date"], Tr.Loc["Vm.Day"], Tr.Loc["Vm.Work Type"], Tr.Loc["Vm.Start"], Tr.Loc["Vm.End"], Tr.Loc["Vm.Submitted"], Tr.Loc["Vm.Protocol"] };
         for (int i = 0; i < dayHeaders.Length; i++)
         {
             var cell = ws.Cell(3, i + 1);
@@ -230,7 +230,7 @@ public class ExcelImportExportService
                 ws.Cell(row, 3).Value = sched.WorkType.ToString();
                 ws.Cell(row, 4).Value = sched.StartTime?.ToString("HH:mm") ?? "";
                 ws.Cell(row, 5).Value = sched.EndTime?.ToString("HH:mm") ?? "";
-                ws.Cell(row, 6).Value = sched.SubmittedToErgani ? "Yes" : "No";
+                ws.Cell(row, 6).Value = sched.SubmittedToErgani ? Tr.Loc["Vm.Yes"] : Tr.Loc["Vm.No"];
                 ws.Cell(row, 7).Value = sched.Protocol ?? "";
             }
             else
@@ -325,8 +325,7 @@ public class ExcelImportExportService
 
         if (afmCol == 0 || dateCol == 0 || employmentCol == 0)
             throw new InvalidDataException(
-                "This does not appear to be an Ergani declared schedule export. " +
-                "Required columns: ΑΦΜ, Ημ/νια and Απασχόληση.");
+                Tr.Loc["Vm.This does not appear to be an Ergani declared schedule export. Required columns: ΑΦΜ, Ημ/νια and Απασχόληση."]);
 
         var lastRow = ws.LastRowUsed()?.RowNumber() ?? headerRow;
         for (int r = headerRow + 1; r <= lastRow; r++)
@@ -341,13 +340,13 @@ public class ExcelImportExportService
             var employment = ws.Cell(r, employmentCol).GetString().Trim();
             if (string.IsNullOrWhiteSpace(afm) || string.IsNullOrWhiteSpace(employment))
             {
-                result.Warnings.Add($"Excel row {r}: missing AFM or employment description.");
+                result.Warnings.Add(string.Format(Tr.Loc["Vm.Excel row {0}: missing AFM or employment description."], r));
                 continue;
             }
 
             if (!TryReadDate(ws.Cell(r, dateCol), out var date))
             {
-                result.Warnings.Add($"Excel row {r}: invalid date.");
+                result.Warnings.Add(string.Format(Tr.Loc["Vm.Excel row {0}: invalid date."], r));
                 continue;
             }
 
@@ -357,7 +356,7 @@ public class ExcelImportExportService
             var (start, end) = ParseWorkRange(folded);
             var overtimeRanges = ParseOvertimeRanges(folded);
             if (overtimeRanges.Count == 0 && Regex.IsMatch(folded, @"ΥΠΕΡΩΡΙΑ", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant))
-                result.Warnings.Add($"Excel row {r}: overtime mentioned but no hh:mm-hh:mm range found ({employment}).");
+                result.Warnings.Add(string.Format(Tr.Loc["Vm.Excel row {0}: overtime mentioned but no hh:mm-hh:mm range found ({1})."], r, employment));
 
             var hasLeave = Regex.IsMatch(folded, @"\bΑΔΕΙΑ\b", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
             string? leaveCode = null;
@@ -366,7 +365,7 @@ public class ExcelImportExportService
                 (leaveCode, leaveYear) = ResolveLeaveType(folded);
 
             if (hasLeave && start.HasValue && end.HasValue)
-                result.Warnings.Add($"Excel row {r}: work time and leave on the same day — only the work time is imported ({employment}).");
+                result.Warnings.Add(string.Format(Tr.Loc["Vm.Excel row {0}: work time and leave on the same day — only the work time is imported ({1})."], r, employment));
 
             // A day without a work range is a rest day. Whole-day leave is handled separately
             // (IsLeaveOnly): it becomes a holiday record, it is never stored as "Absent".
@@ -530,9 +529,9 @@ public class ExcelImportExportService
         // Header
         var headers = new[]
         {
-            "Last Name", "First Name", "Tax ID (AFM)", "AMKA",
-            "Barcode ID", "Profession Code", "Weekly Workdays",
-            "Branch", "Active"
+            Tr.Loc["Vm.Last Name"], Tr.Loc["Vm.First Name"], Tr.Loc["Vm.Tax ID (AFM)"], Tr.Loc["Vm.AMKA"],
+            Tr.Loc["Vm.Barcode ID"], Tr.Loc["Vm.Profession Code"], Tr.Loc["Vm.Weekly Workdays"],
+            Tr.Loc["Vm.Branch"], Tr.Loc["Vm.Active"]
         };
 
         for (int c = 0; c < headers.Length; c++)
@@ -555,7 +554,7 @@ public class ExcelImportExportService
             ws.Cell(row, 6).Value = e.ProfessionCode;
             ws.Cell(row, 7).Value = e.WeeklyWorkdays;
             ws.Cell(row, 8).Value = branchName ?? string.Empty;
-            ws.Cell(row, 9).Value = e.IsActive ? "Yes" : "No";
+            ws.Cell(row, 9).Value = e.IsActive ? Tr.Loc["Vm.Yes"] : Tr.Loc["Vm.No"];
 
             if (!e.IsActive)
                 ws.Range(row, 1, row, 9).Style.Font.FontColor = XLColor.Gray;

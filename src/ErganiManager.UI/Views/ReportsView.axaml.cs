@@ -19,7 +19,7 @@ public partial class ReportsView : UserControl
 
         var file = await top.StorageProvider.SaveFilePickerAsync(new FilePickerSaveOptions
         {
-            Title = "Export report",
+            Title = Tr.Loc["Vm.Export report"],
             SuggestedFileName = vm.SuggestedFileName,
             DefaultExtension = "csv",
             FileTypeChoices = new[] { new FilePickerFileType("CSV") { Patterns = new[] { "*.csv" } } }

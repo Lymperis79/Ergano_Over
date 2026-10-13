@@ -21,11 +21,11 @@ public partial class EmployeeImportView : Window
 
         var files = await topLevel.StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
         {
-            Title = "Select Employee Import File",
+            Title = Tr.Loc["Vm.Select Employee Import File"],
             AllowMultiple = false,
             FileTypeFilter = new[]
             {
-                new FilePickerFileType("Excel Workbook") { Patterns = new[] { "*.xlsx" } }
+                new FilePickerFileType(Tr.Loc["Vm.Excel Workbook"]) { Patterns = new[] { "*.xlsx" } }
             }
         });
 

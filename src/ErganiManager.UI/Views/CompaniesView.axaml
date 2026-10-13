@@ -35,9 +35,9 @@
                                     <TextBlock Text="{Binding IsActive}" FontSize="11" Foreground="White" />
                                 </Border>
                                 <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="6" Margin="12,0,0,0">
-                                    <Button Content="Edit"   Tag="{Binding}" Click="OnEditClick" />
-                                    <Button Content="Delete" Tag="{Binding}" Click="OnDeleteClick" Foreground="#EF9A9A" />
-                                    <Button Content="Active" Tag="{Binding}" Click="OnToggleActiveClick" />
+                                    <Button Content="{Binding $parent[UserControl].((vm:CompaniesViewModel)DataContext).Loc[Edit]}"   Tag="{Binding}" Click="OnEditClick" />
+                                    <Button Content="{Binding $parent[UserControl].((vm:CompaniesViewModel)DataContext).Loc[Delete]}" Tag="{Binding}" Click="OnDeleteClick" Foreground="#EF9A9A" />
+                                    <Button Content="{Binding $parent[UserControl].((vm:CompaniesViewModel)DataContext).Loc[Active]}" Tag="{Binding}" Click="OnToggleActiveClick" />
                                 </StackPanel>
                             </Grid>
                         </Border>
@@ -54,13 +54,27 @@
                 <Border Background="#1A1D23" CornerRadius="8" Padding="20">
                     <StackPanel Spacing="12">
 
-                        <TextBlock Text="Company Details" FontSize="17" FontWeight="SemiBold" />
+                        <TextBlock Text="{Binding Loc[CompanyDetails]}" FontSize="17" FontWeight="SemiBold" />
 
                         <TextBlock Text="{Binding Loc[CompanyName]}" FontWeight="SemiBold" />
                         <TextBox Text="{Binding FormName}" />
 
                         <TextBlock Text="{Binding Loc[TaxId]}" FontWeight="SemiBold" />
                         <TextBox Text="{Binding FormTaxId}" MaxLength="9" />
+
+                        <TextBlock Text="{Binding Loc[CompanyPicture]}" FontWeight="SemiBold" />
+                        <StackPanel Orientation="Horizontal" Spacing="12">
+                            <Border Background="#0F1115" CornerRadius="6" Width="140" Height="80" ClipToBounds="True">
+                                <Image Source="{Binding FormLogoImage}" Stretch="Uniform" Margin="4" />
+                            </Border>
+                            <StackPanel Spacing="6" VerticalAlignment="Center">
+                                <Button Content="{Binding Loc[ChoosePicture]}" Click="OnChooseLogoClick" />
+                                <Button Content="{Binding Loc[RemovePicture]}" Command="{Binding RemoveLogoCommand}"
+                                        IsEnabled="{Binding HasFormLogo}" />
+                            </StackPanel>
+                            <TextBlock Text="{Binding Loc[CompanyPictureHint]}" Foreground="Gray" FontSize="11"
+                                       TextWrapping="Wrap" MaxWidth="260" VerticalAlignment="Center" />
+                        </StackPanel>
 
                         <TextBlock Text="{Binding Loc[ErganiUsername]}" FontWeight="SemiBold" />
                         <TextBox Text="{Binding FormErganiUsername}" />
@@ -95,14 +109,14 @@
                                 <TextBlock Text="{Binding ErganiTestResult}"
                                            Foreground="White" FontSize="12" />
                             </Border>
-                            <Button Grid.Column="1" Content="🔑 Test Connection"
+                            <Button Grid.Column="1" Content="{Binding Loc[TestConnection2]}"
                                     Command="{Binding TestErganiCredentialsCommand}"
                                     IsEnabled="{Binding !IsTesting}"
                                     Margin="8,0,0,0" />
                         </Grid>
 
                         <!-- Import from Ergani (only shown when saved and test passed) -->
-                        <Button Content="⬇ Import Branches &amp; Employees from Ergani"
+                        <Button Content="{Binding Loc[ImportBranchesEmployeesFromErgani]}"
                                 Command="{Binding ImportFromErganiCommand}"
                                 IsEnabled="{Binding !IsImporting}"
                                 IsVisible="{Binding ErganiTestSuccess}"
@@ -132,17 +146,17 @@
                         <CheckBox Content="{Binding Loc[EmailAlerts]}" IsChecked="{Binding FormAlertEmailEnabled}" />
 
                         <StackPanel IsVisible="{Binding FormAlertEmailEnabled}" Spacing="10">
-                            <TextBlock Text="Alert email recipients (comma-separated)" FontWeight="SemiBold" />
+                            <TextBlock Text="{Binding Loc[AlertEmailRecipientsCommaSeparated]}" FontWeight="SemiBold" />
                             <TextBox Text="{Binding FormAlertEmailRecipients}" />
-                            <TextBlock Text="SMTP Host" FontWeight="SemiBold" />
+                            <TextBlock Text="{Binding Loc[SMTPHost]}" FontWeight="SemiBold" />
                             <TextBox Text="{Binding FormSmtpHost}" PlaceholderText="smtp.example.com" />
-                            <TextBlock Text="SMTP Port" FontWeight="SemiBold" />
+                            <TextBlock Text="{Binding Loc[SMTPPort]}" FontWeight="SemiBold" />
                             <NumericUpDown Value="{Binding FormSmtpPort}" Minimum="1" Maximum="65535" />
-                            <TextBlock Text="SMTP Username" FontWeight="SemiBold" />
+                            <TextBlock Text="{Binding Loc[SMTPUsername]}" FontWeight="SemiBold" />
                             <TextBox Text="{Binding FormSmtpUser}" />
-                            <TextBlock Text="SMTP Password" FontWeight="SemiBold" />
+                            <TextBlock Text="{Binding Loc[SMTPPassword]}" FontWeight="SemiBold" />
                             <TextBox Text="{Binding FormSmtpPassword}" PasswordChar="•" />
-                            <CheckBox Content="Use TLS" IsChecked="{Binding FormSmtpUseTls}" />
+                            <CheckBox Content="{Binding Loc[UseTLS]}" IsChecked="{Binding FormSmtpUseTls}" />
                         </StackPanel>
 
                         <Separator />

@@ -17,25 +17,25 @@
 
             <!-- Line 1: working with the schedule data -->
             <WrapPanel Orientation="Horizontal">
-                <Button Content="⬆ Import"
+                <Button Content="{Binding Loc[Import2]}"
                         Command="{Binding RequestImportCommand}"
                         Margin="0,0,6,6" IsEnabled="{Binding HasActiveCompany}" />
-                <Button Content="📜 Import history"
+                <Button Content="{Binding Loc[ImportHistory]}"
                         Command="{Binding OpenImportHistoryCommand}"
                         Margin="0,0,6,6" IsEnabled="{Binding HasActiveCompany}" />
-                <Button Content="📋 Bulk Apply"
+                <Button Content="{Binding Loc[BulkApply]}"
                         Command="{Binding OpenBulkDialogCommand}"
                         Margin="0,0,6,6" IsEnabled="{Binding HasActiveCompany}" />
-                <Button Content="👥 Clone to..."
+                <Button Content="{Binding Loc[CloneTo]}"
                         Command="{Binding OpenCloneDialogCommand}"
                         Margin="0,0,6,6" IsEnabled="{Binding HasActiveCompany}" />
                 <Button Content="{Binding Loc[ExportMonth]}"
                         Command="{Binding ExportMonthCommand}"
                         Margin="0,0,6,6" IsEnabled="{Binding HasActiveCompany}" />
-                <Button Content="🏖 Holidays"
+                <Button Content="{Binding Loc[Holidays]}"
                         Command="{Binding OpenHolidaysCommand}"
                         Margin="0,0,6,6" IsEnabled="{Binding HasActiveCompany}" />
-                <Button Content="📜 Log"
+                <Button Content="{Binding Loc[Log]}"
                         Command="{Binding OpenLogCommand}"
                         Margin="0,0,6,6" IsEnabled="{Binding HasActiveCompany}" />
             </WrapPanel>
@@ -62,7 +62,7 @@
             <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto,Auto,Auto,Auto,Auto">
 
                 <!-- Employee picker -->
-                <TextBlock Grid.Column="0" Text="Employee:" VerticalAlignment="Center" Margin="0,0,8,0" />
+                <TextBlock Grid.Column="0" Text="{Binding Loc[Employee2]}" VerticalAlignment="Center" Margin="0,0,8,0" />
                 <ComboBox Grid.Column="1" ItemsSource="{Binding AvailableEmployees}"
                           SelectedItem="{Binding SelectedEmployee}" Width="200">
                     <ComboBox.ItemTemplate>
@@ -71,11 +71,11 @@
                 </ComboBox>
 
                 <!-- View mode -->
-                <Button Grid.Column="2" Content="Month"
+                <Button Grid.Column="2" Content="{Binding Loc[Month]}"
                         Command="{Binding SetViewModeCommand}" CommandParameter="Month"
                         Margin="12,0,4,0"
                         Classes.accent="{Binding IsMonthView}" />
-                <Button Grid.Column="3" Content="Week"
+                <Button Grid.Column="3" Content="{Binding Loc[Week]}"
                         Command="{Binding SetViewModeCommand}" CommandParameter="Week"
                         Margin="0,0,12,0"
                         Classes.accent="{Binding IsWeekView}" />
@@ -105,7 +105,7 @@
                         Background="#2D4A2D" CornerRadius="6" Padding="8,4" Margin="12,0,4,0">
                     <TextBlock Text="{Binding SelectionLabel}" Foreground="#81C784" FontSize="12" />
                 </Border>
-                <Button Grid.Column="6" Content="✕ Clear" IsVisible="{Binding HasSelection}"
+                <Button Grid.Column="6" Content="{Binding Loc[Clear2]}" IsVisible="{Binding HasSelection}"
                         Command="{Binding ClearSelectionCommand}" Margin="0,0,4,0" />
                 <Button Grid.Column="7" Content="{Binding DeleteSelectedButtonText}"
                         IsVisible="{Binding HasSelection}"
@@ -125,18 +125,18 @@
             <StackPanel>
 
                 <!-- Tip -->
-                <TextBlock Text="Click a day to open it · Ctrl+Click to select days, then Submit / Bulk Apply / Delete act on just those days"
+                <TextBlock Text="{Binding Loc[ClickADayToOpenIt]}"
                            FontSize="11" Foreground="#666" Margin="0,0,0,8" />
 
                 <!-- Day-of-week headers -->
                 <Grid ColumnDefinitions="*,*,*,*,*,*,*" Margin="0,0,0,4">
-                    <TextBlock Grid.Column="0" Text="Mon" HorizontalAlignment="Center" Foreground="#888" FontSize="12"/>
-                    <TextBlock Grid.Column="1" Text="Tue" HorizontalAlignment="Center" Foreground="#888" FontSize="12"/>
-                    <TextBlock Grid.Column="2" Text="Wed" HorizontalAlignment="Center" Foreground="#888" FontSize="12"/>
-                    <TextBlock Grid.Column="3" Text="Thu" HorizontalAlignment="Center" Foreground="#888" FontSize="12"/>
-                    <TextBlock Grid.Column="4" Text="Fri" HorizontalAlignment="Center" Foreground="#888" FontSize="12"/>
-                    <TextBlock Grid.Column="5" Text="Sat" HorizontalAlignment="Center" Foreground="#777" FontSize="12"/>
-                    <TextBlock Grid.Column="6" Text="Sun" HorizontalAlignment="Center" Foreground="#777" FontSize="12"/>
+                    <TextBlock Grid.Column="0" Text="{Binding Loc[DayMonShort]}" HorizontalAlignment="Center" Foreground="#888" FontSize="12"/>
+                    <TextBlock Grid.Column="1" Text="{Binding Loc[DayTueShort]}" HorizontalAlignment="Center" Foreground="#888" FontSize="12"/>
+                    <TextBlock Grid.Column="2" Text="{Binding Loc[DayWedShort]}" HorizontalAlignment="Center" Foreground="#888" FontSize="12"/>
+                    <TextBlock Grid.Column="3" Text="{Binding Loc[DayThuShort]}" HorizontalAlignment="Center" Foreground="#888" FontSize="12"/>
+                    <TextBlock Grid.Column="4" Text="{Binding Loc[DayFriShort]}" HorizontalAlignment="Center" Foreground="#888" FontSize="12"/>
+                    <TextBlock Grid.Column="5" Text="{Binding Loc[DaySatShort]}" HorizontalAlignment="Center" Foreground="#777" FontSize="12"/>
+                    <TextBlock Grid.Column="6" Text="{Binding Loc[DaySunShort]}" HorizontalAlignment="Center" Foreground="#777" FontSize="12"/>
                 </Grid>
 
                 <!-- Calendar cells -->
@@ -199,15 +199,15 @@
                                             <TextBlock Text="{Binding UserHolidayText}" FontSize="9"
                                                        Foreground="#90CAF9" TextTrimming="CharacterEllipsis" />
                                         </Border>
-                                        <TextBlock Text="📤 sent" FontSize="9" Foreground="#81C784"
+                                        <TextBlock Text="{Binding $parent[UserControl].((vm:SchedulesViewModel)DataContext).Loc[Sent]}" FontSize="9" Foreground="#81C784"
                                                    IsVisible="{Binding IsSubmitted}" />
-                                        <TextBlock Text="🇬🇷 Ergani imported" FontSize="9" Foreground="#64B5F6"
+                                        <TextBlock Text="{Binding $parent[UserControl].((vm:SchedulesViewModel)DataContext).Loc[ErganiImported]}" FontSize="9" Foreground="#64B5F6"
                                                    IsVisible="{Binding IsErganiImported}" />
                                         <!-- Selected indicator -->
                                         <Border IsVisible="{Binding IsSelected}"
                                                 Background="#1B5E20" CornerRadius="3"
                                                 Padding="4,1" Margin="0,2,0,0">
-                                            <TextBlock Text="✓ Selected" FontSize="9" Foreground="#81C784" />
+                                            <TextBlock Text="{Binding $parent[UserControl].((vm:SchedulesViewModel)DataContext).Loc[Selected]}" FontSize="9" Foreground="#81C784" />
                                         </Border>
                                     </StackPanel>
 
@@ -229,7 +229,7 @@
                     VerticalAlignment="Center" HorizontalAlignment="Center">
                 <Grid RowDefinitions="Auto,*,Auto" RowSpacing="12">
                     <TextBlock Grid.Row="0"
-                               Text="🇬🇷 Import declared schedule from Ergani"
+                               Text="{Binding Loc[ImportDeclaredScheduleFromErgani]}"
                                FontSize="18" FontWeight="Bold" />
 
                     <ScrollViewer Grid.Row="1">
@@ -239,14 +239,14 @@
                             <Border Background="#242832" CornerRadius="6" Padding="10"
                                     IsVisible="{Binding ImportWarnings, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
                                 <StackPanel Spacing="6">
-                                    <TextBlock Text="Warnings / rows not imported"
+                                    <TextBlock Text="{Binding Loc[WarningsRowsNotImported]}"
                                                FontWeight="SemiBold" Foreground="#FFCC80" />
                                     <TextBlock Text="{Binding ImportWarnings}"
                                                FontSize="11" Foreground="#BDBDBD"
                                                TextWrapping="Wrap" />
                                 </StackPanel>
                             </Border>
-                            <TextBlock Text="Only after you press Import will the database be changed. Existing schedules for the same employee/date will be updated and marked Ergani imported."
+                            <TextBlock Text="{Binding Loc[OnlyAfterYouPressImportWill]}"
                                        FontSize="12" Foreground="#90CAF9" TextWrapping="Wrap" />
                         </StackPanel>
                     </ScrollViewer>
@@ -255,7 +255,7 @@
                                 HorizontalAlignment="Right" Spacing="8">
                         <Button Content="{Binding Loc[Cancel]}"
                                 Command="{Binding CancelImportCommand}" />
-                        <Button Content="Import to database"
+                        <Button Content="{Binding Loc[ImportToDatabase]}"
                                 Command="{Binding ConfirmImportCommand}"
                                 Classes="accent" />
                     </StackPanel>
@@ -271,7 +271,7 @@
                     Width="680" MaxHeight="560"
                     VerticalAlignment="Center" HorizontalAlignment="Center">
                 <Grid RowDefinitions="Auto,*,Auto" RowSpacing="12">
-                    <TextBlock Grid.Row="0" Text="📜 Ergani import history"
+                    <TextBlock Grid.Row="0" Text="{Binding Loc[ErganiImportHistory]}"
                                FontSize="18" FontWeight="Bold" />
                     <ScrollViewer Grid.Row="1">
                         <ItemsControl ItemsSource="{Binding ImportHistory}">
@@ -292,7 +292,7 @@
                             </ItemsControl.ItemTemplate>
                         </ItemsControl>
                     </ScrollViewer>
-                    <Button Grid.Row="2" Content="Close" HorizontalAlignment="Right"
+                    <Button Grid.Row="2" Content="{Binding Loc[Close]}" HorizontalAlignment="Right"
                             Command="{Binding CloseImportHistoryCommand}" />
                 </Grid>
             </Border>
@@ -306,16 +306,16 @@
                     Width="620" MaxHeight="620"
                     VerticalAlignment="Center" HorizontalAlignment="Center">
                 <Grid RowDefinitions="Auto,*,Auto" RowSpacing="12">
-                    <TextBlock Grid.Row="0" Text="⚠ Existing data found"
+                    <TextBlock Grid.Row="0" Text="{Binding Loc[ExistingDataFound]}"
                                FontSize="18" FontWeight="Bold" Foreground="#FFB74D" />
                     <ScrollViewer Grid.Row="1">
                         <TextBlock Text="{Binding ConflictText}" TextWrapping="Wrap" />
                     </ScrollViewer>
                     <StackPanel Grid.Row="2" Orientation="Horizontal"
                                 HorizontalAlignment="Right" Spacing="8">
-                        <Button Content="No, keep old data"
+                        <Button Content="{Binding Loc[NoKeepOldData]}"
                                 Command="{Binding KeepExistingCommand}" />
-                        <Button Content="Yes, replace"
+                        <Button Content="{Binding Loc[YesReplace]}"
                                 Command="{Binding ReplaceExistingCommand}"
                                 Classes="accent" />
                     </StackPanel>
@@ -331,15 +331,15 @@
                     Width="460"
                     VerticalAlignment="Center" HorizontalAlignment="Center">
                 <StackPanel Spacing="16">
-                    <TextBlock Text="🇬🇷 Import from Ergani?"
+                    <TextBlock Text="{Binding Loc[ImportFromErgani]}"
                                FontSize="18" FontWeight="Bold" />
                     <TextBlock Text="{Binding PortalImportPromptText}"
                                TextWrapping="Wrap" />
                     <StackPanel Orientation="Horizontal"
                                 HorizontalAlignment="Right" Spacing="8">
-                        <Button Content="No"
+                        <Button Content="{Binding Loc[No]}"
                                 Command="{Binding DismissPortalImportCommand}" />
-                        <Button Content="Yes, import"
+                        <Button Content="{Binding Loc[YesImport]}"
                                 Command="{Binding ImportPortalFileCommand}"
                                 Classes="accent" />
                     </StackPanel>
@@ -416,11 +416,11 @@
                                 Spacing="8" Margin="0,12,0,0">
                         <Button Content="{Binding Loc[Cancel]}"
                                 Command="{Binding CloseDayDialogCommand}" />
-                        <Button Content="🗑 Delete"
+                        <Button Content="{Binding Loc[Delete2]}"
                                 Command="{Binding DeleteDayCommand}"
                                 IsVisible="{Binding IsEditingExisting}"
                                 Foreground="#EF9A9A" />
-                        <Button Content="📤 Save &amp; Submit"
+                        <Button Content="{Binding Loc[SaveSubmit]}"
                                 Command="{Binding SaveAndSubmitDayCommand}"
                                 IsVisible="{Binding CanSubmitEditingDay}" />
                         <Button Content="{Binding Loc[Save]}"
@@ -438,7 +438,7 @@
                     Width="420" VerticalAlignment="Center" HorizontalAlignment="Center">
                 <Grid RowDefinitions="*,Auto">
                     <StackPanel Grid.Row="0" Spacing="10">
-                        <TextBlock Text="📋 Bulk Apply Schedule" FontSize="16" FontWeight="Bold" />
+                        <TextBlock Text="{Binding Loc[BulkApplySchedule]}" FontSize="16" FontWeight="Bold" />
                         <TextBlock Text="{Binding SelectionLabel}" FontSize="12" Foreground="Gray" />
 
                         <TextBlock Text="{Binding Loc[WorkType]}" FontWeight="SemiBold" />
@@ -477,15 +477,15 @@
 
                         <!-- Day of week checkboxes — only shown when no specific days selected -->
                         <StackPanel IsVisible="{Binding !HasSelection}" Spacing="6">
-                            <TextBlock Text="Apply to days:" FontWeight="SemiBold" />
+                            <TextBlock Text="{Binding Loc[ApplyToDays]}" FontWeight="SemiBold" />
                             <WrapPanel Orientation="Horizontal">
-                                <CheckBox Content="Mon" IsChecked="{Binding BulkMonday}" Margin="0,0,12,4" />
-                                <CheckBox Content="Tue" IsChecked="{Binding BulkTuesday}" Margin="0,0,12,4" />
-                                <CheckBox Content="Wed" IsChecked="{Binding BulkWednesday}" Margin="0,0,12,4" />
-                                <CheckBox Content="Thu" IsChecked="{Binding BulkThursday}" Margin="0,0,12,4" />
-                                <CheckBox Content="Fri" IsChecked="{Binding BulkFriday}" Margin="0,0,12,4" />
-                                <CheckBox Content="Sat" IsChecked="{Binding BulkSaturday}" Margin="0,0,12,4" />
-                                <CheckBox Content="Sun" IsChecked="{Binding BulkSunday}" Margin="0,0,12,4" />
+                                <CheckBox Content="{Binding Loc[DayMonShort]}" IsChecked="{Binding BulkMonday}" Margin="0,0,12,4" />
+                                <CheckBox Content="{Binding Loc[DayTueShort]}" IsChecked="{Binding BulkTuesday}" Margin="0,0,12,4" />
+                                <CheckBox Content="{Binding Loc[DayWedShort]}" IsChecked="{Binding BulkWednesday}" Margin="0,0,12,4" />
+                                <CheckBox Content="{Binding Loc[DayThuShort]}" IsChecked="{Binding BulkThursday}" Margin="0,0,12,4" />
+                                <CheckBox Content="{Binding Loc[DayFriShort]}" IsChecked="{Binding BulkFriday}" Margin="0,0,12,4" />
+                                <CheckBox Content="{Binding Loc[DaySatShort]}" IsChecked="{Binding BulkSaturday}" Margin="0,0,12,4" />
+                                <CheckBox Content="{Binding Loc[DaySunShort]}" IsChecked="{Binding BulkSunday}" Margin="0,0,12,4" />
                             </WrapPanel>
                         </StackPanel>
                     </StackPanel>
@@ -494,7 +494,7 @@
                         <Button Grid.Column="0" Content="{Binding Loc[Cancel]}"
                                 Command="{Binding CloseBulkDialogCommand}"
                                 HorizontalAlignment="Stretch" />
-                        <Button Grid.Column="1" Content="Apply"
+                        <Button Grid.Column="1" Content="{Binding Loc[Apply]}"
                                 Command="{Binding ApplyBulkCommand}" Classes="accent"
                                 HorizontalAlignment="Stretch" />
                     </Grid>
@@ -510,17 +510,17 @@
                     Width="440" Height="500"
                     VerticalAlignment="Center" HorizontalAlignment="Center">
                 <Grid RowDefinitions="Auto,Auto,Auto,*,Auto">
-                    <TextBlock Grid.Row="0" Text="👥 Clone Schedule to Employees"
+                    <TextBlock Grid.Row="0" Text="{Binding Loc[CloneScheduleToEmployees]}"
                                FontSize="16" FontWeight="Bold" Margin="0,0,0,8" />
                     <TextBlock Grid.Row="1" FontSize="12" Foreground="Gray" Margin="0,0,0,8">
-                        <Run Text="Copying " />
+                        <Run Text="{Binding Loc[CloneCopyingScheduleOf]}" />
                         <Run Text="{Binding SelectedEmployee.FullName}" FontWeight="SemiBold" />
-                        <Run Text="'s schedule for " />
+                        <Run Text="{Binding Loc[CloneScheduleFor]}" />
                         <Run Text="{Binding CloneFrom, StringFormat='{}{0:dd/MM}'}" />
                         <Run Text=" – " />
                         <Run Text="{Binding CloneTo, StringFormat='{}{0:dd/MM/yyyy}'}" />
                     </TextBlock>
-                    <TextBlock Grid.Row="2" Text="Select employees to copy to:"
+                    <TextBlock Grid.Row="2" Text="{Binding Loc[SelectEmployeesToCopyTo]}"
                                FontWeight="SemiBold" Margin="0,0,0,8" />
 
                     <ScrollViewer Grid.Row="3">
@@ -543,7 +543,7 @@
                         <Button Grid.Column="0" Content="{Binding Loc[Cancel]}"
                                 Command="{Binding CloseCloneDialogCommand}"
                                 HorizontalAlignment="Stretch" />
-                        <Button Grid.Column="1" Content="Copy Schedule"
+                        <Button Grid.Column="1" Content="{Binding Loc[CopySchedule]}"
                                 Command="{Binding ApplyCloneCommand}" Classes="accent"
                                 HorizontalAlignment="Stretch" />
                     </Grid>
@@ -567,7 +567,7 @@
                     <TextBlock Grid.Row="0" Text="{Binding LogTitle}" FontSize="17" FontWeight="Bold" />
 
                     <Panel Grid.Row="1">
-                        <TextBlock Text="No schedule has been submitted to Ergani for this employee yet."
+                        <TextBlock Text="{Binding Loc[NoScheduleHasBeenSubmittedTo]}"
                                    Foreground="Gray" IsVisible="{Binding !HasLogRows}" />
                         <ScrollViewer IsVisible="{Binding HasLogRows}">
                             <ItemsControl ItemsSource="{Binding LogRows}">
@@ -585,9 +585,9 @@
                                                            VerticalAlignment="Center" />
                                                 <TextBlock Grid.Column="3" Text="{Binding Summary}"
                                                            TextWrapping="Wrap" VerticalAlignment="Center" />
-                                                <Button Grid.Column="4" Content="Response"
+                                                <Button Grid.Column="4" Content="{Binding $parent[UserControl].((vm:SchedulesViewModel)DataContext).Loc[ResponseLabel]}"
                                                         Tag="{Binding}" Click="OnLogResponseClick" />
-                                                <Button Grid.Column="5" Content="PDF"
+                                                <Button Grid.Column="5" Content="{Binding $parent[UserControl].((vm:SchedulesViewModel)DataContext).Loc[PdfLabel]}"
                                                         Tag="{Binding}" Click="OnLogPdfClick"
                                                         IsEnabled="{Binding HasProtocol}" />
                                             </Grid>
@@ -600,7 +600,7 @@
 
                     <TextBlock Grid.Row="2" Text="{Binding LogStatus}" Foreground="Gray" FontSize="12"
                                IsVisible="{Binding LogStatus, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
-                    <Button Grid.Row="3" Content="Close" Command="{Binding CloseLogCommand}"
+                    <Button Grid.Row="3" Content="{Binding Loc[Close]}" Command="{Binding CloseLogCommand}"
                             HorizontalAlignment="Right" Width="100" />
                 </Grid>
             </Border>
@@ -619,7 +619,7 @@
                              AcceptsReturn="True" TextWrapping="NoWrap" FontFamily="Consolas"
                              ScrollViewer.VerticalScrollBarVisibility="{x:Static ScrollBarVisibility.Auto}"
                              ScrollViewer.HorizontalScrollBarVisibility="{x:Static ScrollBarVisibility.Auto}" />
-                    <Button Grid.Row="2" Content="Close" Command="{Binding CloseResponseCommand}"
+                    <Button Grid.Row="2" Content="{Binding Loc[Close]}" Command="{Binding CloseResponseCommand}"
                             HorizontalAlignment="Right" Width="100" />
                 </Grid>
             </Border>
@@ -632,11 +632,11 @@
             <Border Background="#1E2128" CornerRadius="12" Padding="24"
                     Width="440" VerticalAlignment="Center" HorizontalAlignment="Center">
                 <StackPanel Spacing="16">
-                    <TextBlock Text="🗑 Delete schedule" FontSize="16" FontWeight="Bold" />
+                    <TextBlock Text="{Binding Loc[DeleteSchedule]}" FontSize="16" FontWeight="Bold" />
                     <TextBlock Text="{Binding ConfirmDeleteMessage}" TextWrapping="Wrap" />
                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8">
                         <Button Content="{Binding Loc[Cancel]}" Command="{Binding CancelDeleteCommand}" />
-                        <Button Content="Delete" Command="{Binding ConfirmDeleteCommand}"
+                        <Button Content="{Binding Loc[Delete]}" Command="{Binding ConfirmDeleteCommand}"
                                 Foreground="#EF9A9A" />
                     </StackPanel>
                 </StackPanel>

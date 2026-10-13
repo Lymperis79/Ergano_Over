@@ -160,14 +160,14 @@ public partial class DatabaseSetupViewModel : ViewModelBase
                 }
                 else
                 {
-                    StatusMessage = $"❌ Connection failed: {serverError ?? error}";
+                    StatusMessage = string.Format(Loc["Vm.❌ Connection failed: {0}"], serverError ?? error);
                     ConnectionVerified = false;
                 }
             }
         }
         catch (Exception ex)
         {
-            StatusMessage = $"❌ Connection failed: {ex.Message}";
+            StatusMessage = string.Format(Loc["Vm.❌ Connection failed: {0}"], ex.Message);
             ConnectionVerified = false;
         }
         finally
@@ -200,7 +200,7 @@ public partial class DatabaseSetupViewModel : ViewModelBase
             catch (Exception ex)
             {
                 Log.Error(ex, "Setup: cannot create/access the database.");
-                StatusMessage = $"❌ Cannot create/access the database: {ex.Message}";
+                StatusMessage = string.Format(Loc["Vm.❌ Cannot create/access the database: {0}"], ex.Message);
                 ConnectionVerified = false;
                 return;
             }
@@ -210,7 +210,7 @@ public partial class DatabaseSetupViewModel : ViewModelBase
             if (!success)
             {
                 Log.Error("Setup: cannot connect to the database: {Error}", error);
-                StatusMessage = $"❌ Cannot connect to the database: {error}";
+                StatusMessage = string.Format(Loc["Vm.❌ Cannot connect to the database: {0}"], error);
                 ConnectionVerified = false;
                 return;
             }
@@ -249,7 +249,7 @@ public partial class DatabaseSetupViewModel : ViewModelBase
         catch (Exception ex)
         {
             Log.Error(ex, "Setup failed.");
-            StatusMessage = $"❌ Setup failed: {ex.Message}";
+            StatusMessage = string.Format(Loc["Vm.❌ Setup failed: {0}"], ex.Message);
         }
         finally
         {
@@ -302,7 +302,7 @@ public partial class DatabaseSetupViewModel : ViewModelBase
                 catch (Exception ex)
                 {
                     Log.Error(ex, "Setup: administrator created but the offline database could not be initialized.");
-                    AdminStatusMessage = $"⚠️ Administrator created, but the offline database could not be initialized: {ex.Message}";
+                    AdminStatusMessage = string.Format(Loc["Vm.⚠️ Administrator created, but the offline database could not be initialized: {0}"], ex.Message);
                 }
 
                 SetupCompleted?.Invoke(this, EventArgs.Empty);

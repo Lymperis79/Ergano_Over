@@ -127,9 +127,10 @@ public partial class TerminalViewModel : ViewModelBase
     public void Initialize(UserSession session)
     {
         _session = session;
-        CompanyName = session.CompanyName ?? "Unknown Company";
-        BranchName = session.BranchName ?? "All Branches";
+        CompanyName = session.CompanyName ?? Loc["Vm.Unknown Company"];
+        BranchName = session.BranchName ?? Loc["Vm.All Branches"];
         IsOfflineMode = session.IsOfflineSession;
+        _ = Logo.RefreshAsync(session.CompanyId);
 
         _ = LoadRecentScansAsync(session.CompanyId);
 
@@ -173,7 +174,7 @@ public partial class TerminalViewModel : ViewModelBase
         }
         catch (Exception ex)
         {
-            Serilog.Log.Warning(ex, "Could not load the recent scans for the terminal.");
+            Serilog.Log.Warning(ex, Loc["Vm.Could not load the recent scans for the terminal."]);
         }
     }
 
@@ -225,9 +226,9 @@ public partial class TerminalViewModel : ViewModelBase
                     "Blocked scan: Source={ScanSource}, CompanyId={CompanyId}, ScanKey={ScanKey}, AttemptedAction={AttemptedAction}, Reason={Reason}, Time={ScanTime}",
                     "BarcodeScanView", _session.CompanyId.Value, cooldownKey, "Unknown", "Duplicate scan cooldown", DateTime.Now);
                 ShowPopup(ScanPopupKind.TooEarlyBlocked,
-                    "⏳ ALREADY SCANNED", "",
-                    $"This employee was scanned {(int)elapsed.TotalSeconds}s ago.",
-                    $"Please wait {remaining} more second(s).", "");
+                    Loc["Vm.⏳ ALREADY SCANNED"], "",
+                    Loc["Vm.This employee was scanned"] + $" {(int)elapsed.TotalSeconds}" + Loc["Vm.s ago."],
+                    Loc["Vm.Please wait"] + $" {remaining} " + Loc["Vm.more second(s)."], "");
                 return;
             }
         }
@@ -332,11 +333,11 @@ public partial class TerminalViewModel : ViewModelBase
         if (employee == null)
         {
             var detail = afm != null
-                ? $"No active employee with AFM '{afm}' was found for this company."
-                : $"Barcode '{scanValue}' is not recognized.";
+                ? Loc["Vm.No active employee with AFM"] + $" '{afm}' " + Loc["Vm.was found for this company."]
+                : Loc["Vm.Barcode"]+ $" '{scanValue}' " + Loc["Vm.is not recognized."];
 
             ShowPopup(ScanPopupKind.UnknownBadge, Loc[L.UnknownBadge], "",
-                detail, "Please contact your administrator.", "");
+                detail, Loc["Vm.Please contact your administrator."], "");
             return;
         }
 
@@ -361,11 +362,11 @@ public partial class TerminalViewModel : ViewModelBase
         if (movementType == "Arrival" && schedule != null && schedule.WorkType is 2 or 3 &&
             (settings == null || settings.BlockClockInOnRestOrAbsentDay))
         {
-            var dayType = schedule.WorkType == 2 ? "rest day" : "absence day";
+            var dayType = schedule.WorkType == 2 ? Loc["Vm.rest day"] : Loc["Vm.absence day"];
             await LogBlockedAttemptAsync(cache, employee, companyId, movementType, $"Schedule marked as {dayType}");
             ShowPopup(ScanPopupKind.NoScheduleBlocked, Loc[L.NoSchedule], employee.FullName,
-                $"Today is marked as a {dayType}.",
-                "Clock-in/out is blocked because the employee is not scheduled to work today.", "");
+                Loc["Vm.Today is marked as a"] +$" {dayType}.",
+                Loc["Vm.Clock-in/out is blocked because the employee is not scheduled to work today."], "");
             return;
         }
 
@@ -375,7 +376,7 @@ public partial class TerminalViewModel : ViewModelBase
             {
                 await LogBlockedAttemptAsync(cache, employee, companyId, movementType, "Clock-in blocked: no schedule");
                 ShowPopup(ScanPopupKind.NoScheduleBlocked, Loc[L.NoSchedule], employee.FullName,
-                    "No schedule found for today.", "Clock-in is blocked until a schedule is entered.", "");
+                    Loc["Vm.No schedule found for today."], Loc["Vm.Clock-in is blocked until a schedule is entered."], "");
                 return;
             }
 

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.ObjectModel;
 using System.Threading.Tasks;
+using Avalonia.Media.Imaging;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using ErganiManager.Core.Interfaces;
@@ -20,6 +21,39 @@ IAdminSectionViewModel
     private readonly ICacheSyncService _cacheSyncService;
 
     private UserSession? _session;
+
+    // ── Company picture ──
+    [ObservableProperty] private byte[]? _formLogo;
+    private bool _logoChanged;
+
+    /// <summary>Preview of <see cref="FormLogo"/> shown in the form (null = no picture).</summary>
+    public Bitmap? FormLogoImage
+    {
+        get
+        {
+            if (FormLogo is not { Length: > 0 }) return null;
+            try { return new Bitmap(new System.IO.MemoryStream(FormLogo)); }
+            catch { return null; }
+        }
+    }
+
+    public bool HasFormLogo => FormLogo is { Length: > 0 };
+
+    partial void OnFormLogoChanged(byte[]? value)
+    {
+        OnPropertyChanged(nameof(FormLogoImage));
+        OnPropertyChanged(nameof(HasFormLogo));
+    }
+
+    /// <summary>Called by the view after the user picked a picture file.</summary>
+    public void SetLogo(byte[]? bytes)
+    {
+        FormLogo = bytes;
+        _logoChanged = true;
+    }
+
+    [RelayCommand]
+    private void RemoveLogo() => SetLogo(null);
 
     public event EventHandler? CompaniesChanged;
 
@@ -235,7 +269,7 @@ IAdminSectionViewModel
                 .InvokeAsync(() =>
                 {
                     StatusMessage =
-                        $"❌ Failed to load companies: {ex.Message}";
+                        string.Format(Loc["Vm.❌ Failed to load companies: {0}"], ex.Message);
                 });
         }
     }
@@ -250,6 +284,9 @@ IAdminSectionViewModel
         SelectedCompany = null;
 
         FormId = 0;
+
+        FormLogo = null;
+        _logoChanged = false;
 
         FormName =
             string.Empty;
@@ -334,6 +371,9 @@ IAdminSectionViewModel
 
         FormId =
             company.Id;
+
+        FormLogo = company.Logo;
+        _logoChanged = false;
 
         FormName =
             company.Name;
@@ -446,7 +486,7 @@ IAdminSectionViewModel
                 FormName))
         {
             StatusMessage =
-                "Name is required.";
+                Loc["Vm.Name is required."];
 
             return;
         }
@@ -455,7 +495,7 @@ IAdminSectionViewModel
                 FormTaxId))
         {
             StatusMessage =
-                "Tax ID is required.";
+                Loc["Vm.Tax ID is required."];
 
             return;
         }
@@ -542,7 +582,10 @@ IAdminSectionViewModel
                         : FormSmtpPassword,
 
                 SmtpUseTls =
-                    FormSmtpUseTls
+                    FormSmtpUseTls,
+
+                Logo = FormLogo,
+                UpdateLogo = _logoChanged
             };
 
         try
@@ -553,7 +596,7 @@ IAdminSectionViewModel
                         FormErganiPassword))
                 {
                     StatusMessage =
-                        "Ergani password is required when creating a new company.";
+                        Loc["Vm.Ergani password is required when creating a new company."];
 
                     return;
                 }
@@ -566,7 +609,7 @@ IAdminSectionViewModel
                     newId;
 
                 StatusMessage =
-                    "✅ Company saved.";
+                    Loc["Vm.✅ Company saved."];
             }
             else
             {
@@ -574,11 +617,16 @@ IAdminSectionViewModel
                     .UpdateAsync(dto);
 
                 StatusMessage =
-                    "✅ Company updated.";
+                    Loc["Vm.✅ Company updated."];
             }
 
             IsEditing =
                 false;
+
+            // The login / terminal windows show the picture of the company the user works in.
+            if (_logoChanged && _session?.CompanyId == FormId)
+                Logo.SetLogo(FormLogo);
+            _logoChanged = false;
 
             // Company time rules are cached for offline terminal scans. Refresh
             // the cache immediately after saving so changing the checkbox takes
@@ -590,7 +638,7 @@ IAdminSectionViewModel
                     var syncResult = await _cacheSyncService.RefreshCacheFromMainDatabaseAsync(FormId);
                     if (!syncResult.Success)
                     {
-                        StatusMessage = "Company saved, but terminal settings could not be refreshed. Sync the terminal before scanning. " + syncResult.ErrorMessage;
+                        StatusMessage = Loc["Vm.Company saved, but terminal settings could not be refreshed. Sync the terminal before scanning. "] + syncResult.ErrorMessage;
                     }
                 }
             }
@@ -598,7 +646,7 @@ IAdminSectionViewModel
             {
                 // Do not undo a successfully saved company because cache refresh
                 // failed; surface a clear warning so the operator knows to sync.
-                StatusMessage = "Company saved, but terminal settings could not be refreshed. Sync the terminal before scanning. " + syncEx.Message;
+                StatusMessage = Loc["Vm.Company saved, but terminal settings could not be refreshed. Sync the terminal before scanning. "] + syncEx.Message;
             }
 
             await LoadAsync();
@@ -654,7 +702,7 @@ IAdminSectionViewModel
                 .ExecuteAsync(null);
 
             StatusMessage =
-                "Company deleted.";
+                Loc["Vm.Company deleted."];
         }
         catch (Exception ex)
         {
@@ -678,7 +726,7 @@ IAdminSectionViewModel
                 FormErganiUsername))
         {
             ErganiTestResult =
-                "❌ Enter the Ergani username.";
+                Loc["Vm.❌ Enter the Ergani username."];
 
             ErganiTestSuccess =
                 false;
@@ -690,7 +738,7 @@ IAdminSectionViewModel
                 FormErganiPassword))
         {
             ErganiTestResult =
-                "❌ Enter the Ergani password.";
+                Loc["Vm.❌ Enter the Ergani password."];
 
             ErganiTestSuccess =
                 false;
@@ -702,7 +750,7 @@ IAdminSectionViewModel
             true;
 
         ErganiTestResult =
-            "⏳ Connecting to Ergani...";
+            Loc["Vm.⏳ Connecting to Ergani..."];
 
         ErganiTestSuccess =
             false;
@@ -729,8 +777,8 @@ IAdminSectionViewModel
                         ErganiTestResult =
                             string.IsNullOrWhiteSpace(
                                 test.CompanyName)
-                                ? "✅ Ergani connection successful."
-                                : $"✅ Connected — {test.CompanyName}";
+                                ? Loc["Vm.✅ Ergani connection successful."]
+                                : string.Format(Loc["Vm.✅ Connected — {0}"], test.CompanyName);
 
                         if (!string.IsNullOrWhiteSpace(
                                 test.CompanyName))
@@ -742,7 +790,7 @@ IAdminSectionViewModel
                     else
                     {
                         ErganiTestResult =
-                            $"❌ {test.Error ?? "Authentication failed."}";
+                            $"❌ {test.Error ?? Loc["Vm.Authentication failed."]}";
                     }
                 });
         }
@@ -776,7 +824,7 @@ IAdminSectionViewModel
                 FormErganiUsername))
         {
             StatusMessage =
-                "❌ Enter the Ergani username.";
+                Loc["Vm.❌ Enter the Ergani username."];
 
             return;
         }
@@ -785,7 +833,7 @@ IAdminSectionViewModel
                 FormErganiPassword))
         {
             StatusMessage =
-                "❌ Enter the Ergani password.";
+                Loc["Vm.❌ Enter the Ergani password."];
 
             return;
         }
@@ -794,7 +842,7 @@ IAdminSectionViewModel
             true;
 
         StatusMessage =
-            "⏳ Connecting to Ergani and retrieving company information...";
+            Loc["Vm.⏳ Connecting to Ergani and retrieving company information..."];
 
         try
         {
@@ -827,7 +875,7 @@ IAdminSectionViewModel
                     if (!result.Success)
                     {
                         StatusMessage =
-                            $"❌ Import failed: {result.ErrorMessage}";
+                            string.Format(Loc["Vm.❌ Import failed: {0}"], result.ErrorMessage);
 
                         return;
                     }
@@ -854,14 +902,12 @@ IAdminSectionViewModel
 
                     var companyMessage =
                         result.CompanyCreated
-                            ? "Company created"
-                            : "Company updated";
+                            ? Loc["Vm.Company created"]
+                            : Loc["Vm.Company updated"];
 
                     StatusMessage =
-                        $"✅ {companyMessage}. " +
-                        $"AFM: {result.CompanyTaxId}. " +
-                        $"Branches: {result.TotalBranches}. " +
-                        $"Employees: {result.TotalEmployees}.";
+                        string.Format(Loc["Vm.✅ {0}. AFM: {1}. Branches: {2}. Employees: {3}."],
+                            companyMessage, result.CompanyTaxId, result.TotalBranches, result.TotalEmployees);
 
                     if (result.Warnings.Count > 0)
                     {

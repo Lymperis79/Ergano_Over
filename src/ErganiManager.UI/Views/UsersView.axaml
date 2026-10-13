@@ -26,7 +26,7 @@
                                     <StackPanel Orientation="Horizontal" Spacing="6">
                                         <TextBlock Text="{Binding Username}" FontWeight="SemiBold" FontSize="14" />
                                         <TextBlock Text="🔒" IsVisible="{Binding HasMenuRestrictions}"
-                                                   ToolTip.Tip="This user sees only some menus" />
+                                                   ToolTip.Tip="{Binding $parent[UserControl].((vm:UsersViewModel)DataContext).Loc[UsersLimitedTip]}" />
                                     </StackPanel>
                                     <TextBlock Text="{Binding BranchName}" FontSize="12" Foreground="Gray" />
                                 </StackPanel>
@@ -37,13 +37,13 @@
                                 <TextBlock Grid.Column="2" Text="{Binding IsActive}"
                                            VerticalAlignment="Center" Foreground="#999999"
                                            Margin="8,0" FontSize="12" />
-                                <Button Grid.Column="3" Content="Menus"
+                                <Button Grid.Column="3" Content="{Binding $parent[UserControl].((vm:UsersViewModel)DataContext).Loc[UsersEditMenus]}"
                                         Tag="{Binding}" Click="OnEditMenusClick" Margin="0,0,6,0" />
-                                <Button Grid.Column="4" Content="Reset Password"
+                                <Button Grid.Column="4" Content="{Binding $parent[UserControl].((vm:UsersViewModel)DataContext).Loc[ResetPassword]}"
                                         Tag="{Binding}" Click="OnResetPasswordClick" Margin="0,0,6,0" />
-                                <Button Grid.Column="5" Content="Active"
+                                <Button Grid.Column="5" Content="{Binding $parent[UserControl].((vm:UsersViewModel)DataContext).Loc[Active]}"
                                         Tag="{Binding}" Click="OnToggleActiveClick" Margin="0,0,6,0" />
-                                <Button Grid.Column="6" Content="Delete"
+                                <Button Grid.Column="6" Content="{Binding $parent[UserControl].((vm:UsersViewModel)DataContext).Loc[Delete]}"
                                         Tag="{Binding}" Click="OnDeleteClick" Foreground="#EF9A9A" />
                             </Grid>
                         </Border>
@@ -57,7 +57,7 @@
             <ScrollViewer Grid.Row="0">
                 <Border Background="#1A1D23" CornerRadius="8" Padding="20">
                     <StackPanel Spacing="10">
-                        <TextBlock Text="New User" FontSize="17" FontWeight="SemiBold" />
+                        <TextBlock Text="{Binding Loc[NewUser]}" FontSize="17" FontWeight="SemiBold" />
 
                         <TextBlock Text="{Binding Loc[Username]}" FontWeight="SemiBold" />
                         <TextBox Text="{Binding FormUsername}" />
@@ -135,7 +135,7 @@
                     <TextBlock Text="{Binding ResettingUser.Username, StringFormat='Reset password for {0}'}"
                                FontSize="16" FontWeight="SemiBold" />
                     <TextBox Text="{Binding ResetPasswordValue}" PasswordChar="•"
-                             PlaceholderText="New password (min 8 characters)" />
+                             PlaceholderText="{Binding Loc[NewPassword]}" />
                     <TextBlock Text="{Binding StatusMessage}" Foreground="Red" TextWrapping="Wrap" />
                 </StackPanel>
             </Border>

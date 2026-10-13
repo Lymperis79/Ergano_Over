@@ -61,13 +61,13 @@
 
                             <Border Background="#1A1D23" CornerRadius="8" Padding="20">
                                 <StackPanel Spacing="10">
-                                    <TextBlock Text="⏱ Working time rounding" FontSize="16" FontWeight="SemiBold" />
+                                    <TextBlock Text="{Binding Loc[WorkingTimeRounding]}" FontSize="16" FontWeight="SemiBold" />
                                     <TextBlock TextWrapping="Wrap" Foreground="Gray" FontSize="12"
-                                               Text="Used by the 'Rounded' column of the Declared vs actual report. The worked time is taken from the exact clock-in, then its minutes are matched to a range and rounded to the whole hour plus the 'Round to' minutes (60 = next hour). Minutes not covered by any range stay as they are." />
+                                               Text="{Binding Loc[UsedByTheRoundedColumnOf]}" />
                                     <Grid ColumnDefinitions="110,110,130,*" ColumnSpacing="8">
-                                        <TextBlock Grid.Column="0" Text="From minute" Foreground="Gray" FontSize="11" />
-                                        <TextBlock Grid.Column="1" Text="To minute" Foreground="Gray" FontSize="11" />
-                                        <TextBlock Grid.Column="2" Text="Round to (min)" Foreground="Gray" FontSize="11" />
+                                        <TextBlock Grid.Column="0" Text="{Binding Loc[FromMinute]}" Foreground="Gray" FontSize="11" />
+                                        <TextBlock Grid.Column="1" Text="{Binding Loc[ToMinute]}" Foreground="Gray" FontSize="11" />
+                                        <TextBlock Grid.Column="2" Text="{Binding Loc[RoundToMin]}" Foreground="Gray" FontSize="11" />
                                     </Grid>
                                     <ItemsControl ItemsSource="{Binding RoundingBands}">
                                         <ItemsControl.ItemsPanel>
@@ -87,8 +87,8 @@
                                         </ItemsControl.ItemTemplate>
                                     </ItemsControl>
                                     <StackPanel Orientation="Horizontal" Spacing="8">
-                                        <Button Content="＋ Add range" Command="{Binding AddRoundingBandCommand}" />
-                                        <Button Content="↺ Restore defaults" Command="{Binding RestoreRoundingDefaultsCommand}" />
+                                        <Button Content="{Binding Loc[AddRange]}" Command="{Binding AddRoundingBandCommand}" />
+                                        <Button Content="{Binding Loc[RestoreDefaults]}" Command="{Binding RestoreRoundingDefaultsCommand}" />
                                         <Button Content="{Binding Loc[Save]}" Command="{Binding SaveRoundingCommand}" Classes="accent" />
                                     </StackPanel>
                                 </StackPanel>

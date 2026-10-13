@@ -52,11 +52,11 @@ public partial class SchedulesView : UserControl
         var files = await topLevel.StorageProvider.OpenFilePickerAsync(
             new FilePickerOpenOptions
             {
-                Title             = "Import Schedule from Excel",
+                Title             = Tr.Loc["Vm.Import Schedule from Excel"],
                 AllowMultiple     = false,
                 FileTypeFilter    = new[]
                 {
-                    new FilePickerFileType("Excel Files") { Patterns = new[] { "*.xlsx" } }
+                    new FilePickerFileType(Tr.Loc["Vm.Excel Files"]) { Patterns = new[] { "*.xlsx" } }
                 }
             });
 

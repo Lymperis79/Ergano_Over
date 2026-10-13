@@ -77,7 +77,7 @@ public partial class AdminShellViewModel : ViewModelBase
     private string _erganiStatusIcon = "⚪";
 
     [ObservableProperty]
-    private string _erganiStatusText = "Ergani: Unknown";
+    private string _erganiStatusText = string.Empty;
 
     [ObservableProperty]
     private string _erganiStatusColor = "#888888";
@@ -118,17 +118,58 @@ public partial class AdminShellViewModel : ViewModelBase
     private void ApplyErganiStatus(
         ErganiManager.ErganiApi.Services.ErganiServiceStatus status)
     {
-        (ErganiStatusIcon, ErganiStatusText, ErganiStatusColor) = status switch
+        ApplyErganiKind(status switch
         {
-            ErganiManager.ErganiApi.Services.ErganiServiceStatus.Online =>
-                ("🟢", "Ergani: Online", "#4CAF50"),
+            ErganiManager.ErganiApi.Services.ErganiServiceStatus.Online => ErganiKind.Online,
+            ErganiManager.ErganiApi.Services.ErganiServiceStatus.Offline => ErganiKind.Offline,
+            _ => ErganiKind.Unknown
+        });
+    }
 
-            ErganiManager.ErganiApi.Services.ErganiServiceStatus.Offline =>
-                ("🔴", "Ergani: Offline", "#EF5350"),
+    private enum ErganiKind { Unknown, Checking, Online, Offline, Error }
 
-            _ =>
-                ("⚪", "Ergani: Unknown", "#888888")
+    private ErganiKind _erganiKind = ErganiKind.Unknown;
+
+    /// <summary>Sets the Ergani status badge. The kind is remembered so the text can be
+    /// translated again when the language changes (see <see cref="RefreshLocalizedTexts"/>).</summary>
+    private void ApplyErganiKind(ErganiKind kind)
+    {
+        _erganiKind = kind;
+        (ErganiStatusIcon, ErganiStatusText, ErganiStatusColor) = kind switch
+        {
+            ErganiKind.Online   => ("🟢", Loc["Vm.Ergani: Online"],      "#4CAF50"),
+            ErganiKind.Offline  => ("🔴", Loc["Vm.Ergani: Offline"],     "#EF5350"),
+            ErganiKind.Checking => ("⏳", Loc["Vm.Ergani: Checking…"],   "#888888"),
+            ErganiKind.Error    => ("❌", Loc["Vm.Ergani: Error"],        "#EF5350"),
+            _                   => ("⚪", Loc["Vm.Ergani: Unknown"],      "#888888")
         };
+    }
+
+    // 0 = nothing yet, 1 = "Managing: name", 2 = super admin without company, 3 = own company name
+    private int _companyTextKind;
+    private string? _companyTextName;
+
+    private void SetCompanyText(int kind, string? name)
+    {
+        _companyTextKind = kind;
+        _companyTextName = name;
+        CompanyDisplayText = kind switch
+        {
+            1 => string.Format(Loc["Vm.Managing: {0}"], name),
+            2 => Loc["Vm.Super Admin — select a company above"],
+            3 => name ?? Loc["Vm.No company assigned"],
+            _ => string.Empty
+        };
+    }
+
+    /// <summary>Re-translates the texts that are stored as plain strings when the language changes.</summary>
+    private void RefreshLocalizedTexts()
+    {
+        ApplyErganiKind(_erganiKind);
+        if (_session != null)
+            WelcomeText = string.Format(Loc["Vm.Welcome, {0}"], _session.Username);
+        if (_companyTextKind != 0)
+            SetCompanyText(_companyTextKind, _companyTextName);
     }
 
     [RelayCommand]
@@ -141,9 +182,7 @@ public partial class AdminShellViewModel : ViewModelBase
 
         Avalonia.Threading.Dispatcher.UIThread.Post(() =>
         {
-            ErganiStatusIcon = "⏳";
-            ErganiStatusText = "Ergani: Checking…";
-            ErganiStatusColor = "#888888";
+            ApplyErganiKind(ErganiKind.Checking);
         });
 
         try
@@ -186,12 +225,10 @@ public partial class AdminShellViewModel : ViewModelBase
         {
             Avalonia.Threading.Dispatcher.UIThread.Post(() =>
             {
-                ErganiStatusIcon = "❌";
-                ErganiStatusText = "Ergani: Error";
-                ErganiStatusColor = "#EF5350";
+                ApplyErganiKind(ErganiKind.Error);
 
                 ShowError(
-                    $"Ergani check failed: {ex.Message}");
+                    string.Format(Loc["Vm.Ergani check failed: {0}"], ex.Message));
             });
         }
     }
@@ -212,15 +249,13 @@ public partial class AdminShellViewModel : ViewModelBase
                 if (result.Success)
                 {
                     ShowNotification(
-                        $"✅ Offline cache updated: " +
-                        $"{result.EmployeesSynced} employees, " +
-                        $"{result.SchedulesSynced} schedules.");
+                        string.Format(Loc["Vm.✅ Offline cache updated: {0} employees, {1} schedules."],
+                            result.EmployeesSynced, result.SchedulesSynced));
                 }
                 else
                 {
                     ShowError(
-                        $"⚠️ Cache sync failed: " +
-                        $"{result.ErrorMessage}");
+                        string.Format(Loc["Vm.⚠️ Cache sync failed: {0}"], result.ErrorMessage));
                 }
             });
         }
@@ -228,7 +263,7 @@ public partial class AdminShellViewModel : ViewModelBase
         {
             Avalonia.Threading.Dispatcher.UIThread.Post(() =>
                 ShowError(
-                    $"⚠️ Cache sync error: {ex.Message}"));
+                    string.Format(Loc["Vm.⚠️ Cache sync error: {0}"], ex.Message)));
         }
     }
 
@@ -244,7 +279,7 @@ public partial class AdminShellViewModel : ViewModelBase
         }
         else
         {
-            ShowError("Select a company first.");
+            ShowError(Loc["Vm.Select a company first."]);
         }
     }
 
@@ -299,6 +334,9 @@ public partial class AdminShellViewModel : ViewModelBase
         LanguageSelector =
             services.GetRequiredService<
                 LanguageSelectorViewModel>();
+
+        ApplyErganiKind(ErganiKind.Unknown);
+        Loc.LanguageChanged += (_, _) => RefreshLocalizedTexts();
 
         _erganiHealth.StatusChanged += (_, status) =>
             Avalonia.Threading.Dispatcher.UIThread.Post(() =>
@@ -370,9 +408,10 @@ public partial class AdminShellViewModel : ViewModelBase
     public async void Initialize(UserSession session)
     {
         _session = session;
+        _ = Logo.RefreshAsync(session.CompanyId);
 
         WelcomeText =
-            $"Welcome, {session.Username}";
+            string.Format(Loc["Vm.Welcome, {0}"], session.Username);
 
         IsSuperAdmin =
             session.IsSuperAdmin;
@@ -430,20 +469,16 @@ public partial class AdminShellViewModel : ViewModelBase
 
             if (SelectedSwitchCompany != null)
             {
-                CompanyDisplayText =
-                    $"Managing: {SelectedSwitchCompany.Name}";
+                SetCompanyText(1, SelectedSwitchCompany.Name);
             }
             else
             {
-                CompanyDisplayText =
-                    "Super Admin — select a company above";
+                SetCompanyText(2, null);
             }
         }
         else
         {
-            CompanyDisplayText =
-                session.CompanyName ??
-                "No company assigned";
+            SetCompanyText(3, session.CompanyName);
         }
 
         NavigateTo(FirstAllowedSection(session));
@@ -466,7 +501,7 @@ public partial class AdminShellViewModel : ViewModelBase
 
         // Update the displayed name, but don't refresh everything
         // if this is already the active company.
-        CompanyDisplayText = $"Managing: {value.Name}";
+        SetCompanyText(1, value.Name);
 
         if (_companyContext.ActiveCompanyId == value.Id)
         {
@@ -486,6 +521,7 @@ public partial class AdminShellViewModel : ViewModelBase
             }
         }
 
+        _ = Logo.RefreshAsync(value.Id);
         _ = SyncCacheAsync(value.Id);
         _ = CheckErganiNowAsync();
     }

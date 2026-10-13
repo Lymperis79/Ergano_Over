@@ -25,6 +25,11 @@ internal static class Program
 
             Services = BuildServiceProvider();
 
+            // Messages produced by the lower layers (Data / Core / ErganiApi) are written in English
+            // and translated here, in the language that is active when the message is created.
+            var localization = Services.GetRequiredService<ILocalizationService>();
+            ErganiManager.Data.UiText.Translator = english => localization["Core." + english];
+
             // Start the background Ergani retry service before the UI opens
             var retryService = Services.GetRequiredService<ErganiManager.ErganiApi.Services.ErganiRetryService>();
             retryService.Start();
@@ -96,6 +101,7 @@ internal static class Program
                               ErganiManager.UI.Localization.LocalizationService>();
 
         services.AddErganiManagerCore();
+        services.AddSingleton<ErganiManager.UI.Services.CompanyLogoService>();
         services.AddErganiApiClient();
 
         // ViewModels are transient — a fresh instance each time a view is requested.

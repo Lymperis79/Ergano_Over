@@ -58,7 +58,7 @@ public partial class App : Application
             CanResize = false,
             Content = new Avalonia.Controls.TextBlock
             {
-                Text = "Starting…",
+                Text = Program.Services.GetRequiredService<ILocalizationService>()["Vm.Starting…"],
                 HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Center,
                 VerticalAlignment   = Avalonia.Layout.VerticalAlignment.Center,
                 FontSize = 16
@@ -120,7 +120,7 @@ public partial class App : Application
             Log.Error(ex, "Fatal error during bootstrap.");
             // Show the error in the splash window so the user sees something.
             if (splash.Content is Avalonia.Controls.TextBlock tb)
-                tb.Text = $"Startup error:\n{ex.Message}";
+                tb.Text = string.Format(Program.Services.GetRequiredService<ILocalizationService>()["Vm.Startup error:\n{0}"], ex.Message);
         }
     }
 
@@ -184,9 +184,9 @@ public partial class App : Application
             vm.ResumeAtAdminStep();
         else if (isRetry)
             vm.StatusMessage =
-                "⚠️ The database schema is incomplete" +
+                vm.Loc["Vm.⚠️ The database schema is incomplete"] +
                 (string.IsNullOrWhiteSpace(failureReason) ? "" : $" ({failureReason})") +
-                ". Check the settings below and continue to repair it.";
+                vm.Loc["Vm.. Check the settings below and continue to repair it."];
 
         vm.SetupCompleted += (_, _) => ShowLogin(desktop, isDegraded: false);
 

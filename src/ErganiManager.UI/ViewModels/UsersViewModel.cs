@@ -153,7 +153,7 @@ public partial class UsersViewModel : ViewModelBase, IAdminSectionViewModel
         HasActiveCompany = session.CompanyId.HasValue;
         NoCompanyMessage = session.CompanyId.HasValue
             ? string.Empty
-            : "Select a company first (Super Admin: pick a company from the Companies tab).";
+            : Loc["Vm.Select a company first (Super Admin: pick a company from the Companies tab)."];
 
         if (HasActiveCompany)
             _ = LoadAsync();

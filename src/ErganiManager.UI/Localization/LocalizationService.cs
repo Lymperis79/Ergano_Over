@@ -50,6 +50,11 @@ public class LocalizationService : ILocalizationService
             if (EnglishStrings.Strings.TryGetValue(key, out var fallback))
                 return fallback;
 
+            // Keys written as Loc["Vm.English text"] / Loc["Core.English text"] carry their own
+            // English text, so a string that was never translated still reads correctly.
+            if (key.StartsWith("Vm.", StringComparison.Ordinal)) return key.Substring(3);
+            if (key.StartsWith("Core.", StringComparison.Ordinal)) return key.Substring(5);
+
             // Return the key name itself so missing strings are visible during dev
             return $"[{key}]";
         }
@@ -71,6 +76,20 @@ public class LocalizationService : ILocalizationService
             AppLanguage.Greek   => GreekStrings.Strings,
             _                   => EnglishStrings.Strings
         };
+
+        // Month and weekday names (calendar, terminal clock, report headings) follow the app
+        // language instead of the Windows language. Only the date format is replaced, so number
+        // formatting (decimal separators) is unchanged.
+        try
+        {
+            var dateCulture = new System.Globalization.CultureInfo(
+                language == AppLanguage.Greek ? "el-GR" : "en-GB");
+            var culture = (System.Globalization.CultureInfo)System.Globalization.CultureInfo.CurrentCulture.Clone();
+            culture.DateTimeFormat = dateCulture.DateTimeFormat;
+            System.Globalization.CultureInfo.DefaultThreadCurrentCulture = culture;
+            System.Globalization.CultureInfo.CurrentCulture = culture;
+        }
+        catch { /* culture data missing — keep the system formats */ }
     }
 
     private static void Persist(AppLanguage language)

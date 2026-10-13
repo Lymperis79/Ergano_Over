@@ -6,7 +6,7 @@
 
     <Grid RowDefinitions="Auto,*">
 
-        <TextBlock Grid.Row="0" Text="📟 Manual Work Card Scan"
+        <TextBlock Grid.Row="0" Text="{Binding Loc[ManualWorkCardScan]}"
                    FontSize="22" FontWeight="Bold" Margin="0,0,0,16" />
 
         <Border Grid.Row="1"
@@ -24,11 +24,11 @@
                 <!-- Input panel -->
                 <Border Background="#1A1D23" CornerRadius="8" Padding="20">
                     <StackPanel Spacing="12">
-                        <TextBlock Text="Barcode / Employee ID"
+                        <TextBlock Text="{Binding Loc[BarcodeEmployeeID]}"
                                    FontWeight="SemiBold" FontSize="14" />
 
                         <TextBox Text="{Binding BarcodeInput}"
-                                 PlaceholderText="Scan badge or type barcode and press Enter..."
+                                 PlaceholderText="{Binding Loc[ScanBadgeOrTypeBarcodeAnd]}"
                                  FontSize="18"
                                  FontFamily="Consolas,Menlo,monospace"
                                  IsEnabled="{Binding !IsProcessing}">
@@ -38,28 +38,28 @@
                             </TextBox.KeyBindings>
                         </TextBox>
 
-                        <CheckBox Content="Auto-detect Arrival / Departure"
+                        <CheckBox Content="{Binding Loc[AutoDetectArrivalDeparture]}"
                                   IsChecked="{Binding AutoDetect}" />
 
                         <!-- Manual override -->
                         <StackPanel IsVisible="{Binding !AutoDetect}" Spacing="10">
-                            <TextBlock Text="Movement Type" FontWeight="SemiBold" />
+                            <TextBlock Text="{Binding Loc[MovementType]}" FontWeight="SemiBold" />
                             <StackPanel Orientation="Horizontal" Spacing="24">
-                                <RadioButton Content="🟢 Arrival"
+                                <RadioButton Content="{Binding Loc[Arrival2]}"
                                              IsChecked="{Binding IsArrival}" />
-                                <RadioButton Content="🔴 Departure"
+                                <RadioButton Content="{Binding Loc[Departure2]}"
                                              IsChecked="{Binding !IsArrival}" />
                             </StackPanel>
 
-                            <TextBlock Text="Date" FontWeight="SemiBold" />
+                            <TextBlock Text="{Binding Loc[Date]}" FontWeight="SemiBold" />
                             <DatePicker SelectedDate="{Binding MovementDate, Mode=TwoWay}" HorizontalAlignment="Stretch" MinWidth="150" />
 
-                            <TextBlock Text="Time" FontWeight="SemiBold" />
+                            <TextBlock Text="{Binding Loc[Time]}" FontWeight="SemiBold" />
                             <TimePicker SelectedTime="{Binding MovementTime}"
                                         ClockIdentifier="24HourClock" />
                         </StackPanel>
 
-                        <Button Content="Submit"
+                        <Button Content="{Binding Loc[SubmitSelected]}"
                                 Command="{Binding SubmitScanCommand}"
                                 IsEnabled="{Binding !IsProcessing}"
                                 Classes="accent"
@@ -82,7 +82,7 @@
                                    Foreground="White" TextWrapping="Wrap"
                                    FontFamily="Consolas,Menlo,monospace"
                                    FontSize="12" />
-                        <Button Content="OK / Next scan"
+                        <Button Content="{Binding Loc[OKNextScan]}"
                                 Command="{Binding ClearResponseCommand}"
                                 Margin="0,4,0,0" />
                     </StackPanel>
@@ -91,9 +91,9 @@
                 <!-- Tips -->
                 <Border Background="#1A1D23" CornerRadius="8" Padding="16">
                     <StackPanel Spacing="6">
-                        <TextBlock Text="💡 Tips" FontWeight="SemiBold" Foreground="#AAAAAA" />
+                        <TextBlock Text="{Binding Loc[Tips]}" FontWeight="SemiBold" Foreground="#AAAAAA" />
                         <TextBlock TextWrapping="Wrap" Foreground="#666666" FontSize="12"
-                                   Text="Press Enter after typing the barcode to submit. Auto-detect picks the opposite of the last recorded movement for that employee. Failed submissions are queued and retried automatically when Ergani recovers." />
+                                   Text="{Binding Loc[PressEnterAfterTypingTheBarcode]}" />
                     </StackPanel>
                 </Border>
 
@@ -103,17 +103,17 @@
             <Grid Grid.Column="1" RowDefinitions="Auto,*">
 
                 <Grid Grid.Row="0" ColumnDefinitions="*,Auto" Margin="0,0,0,8">
-                    <TextBlock Grid.Column="0" Text="Recent Scans This Session"
+                    <TextBlock Grid.Column="0" Text="{Binding Loc[RecentScansThisSession]}"
                                FontSize="15" FontWeight="SemiBold"
                                VerticalAlignment="Center" />
-                    <Button Grid.Column="1" Content="Clear"
+                    <Button Grid.Column="1" Content="{Binding Loc[Clear]}"
                             Command="{Binding ClearHistoryCommand}"
                             IsVisible="{Binding RecentScans.Count}" />
                 </Grid>
 
                 <ScrollViewer Grid.Row="1">
                     <StackPanel Spacing="4">
-                        <TextBlock Text="No scans yet."
+                        <TextBlock Text="{Binding Loc[NoScansYet]}"
                                    Foreground="Gray" FontSize="13"
                                    IsVisible="{Binding !RecentScans.Count}" />
 
@@ -171,7 +171,7 @@
             <Border Background="#1E2128" CornerRadius="12" Padding="24"
                     Width="440" VerticalAlignment="Center" HorizontalAlignment="Center">
                 <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto">
-                    <TextBlock Grid.Row="0" Text="⚠️ Submission Failed — Resubmit with Justification?"
+                    <TextBlock Grid.Row="0" Text="{Binding Loc[SubmissionFailedResubmitWithJustification]}"
                                FontSize="15" FontWeight="Bold" Margin="0,0,0,8" />
                     <StackPanel Grid.Row="1" Spacing="4" Margin="0,0,0,12">
                         <TextBlock Text="{Binding RetryEmployeeName}" FontWeight="SemiBold" />
@@ -179,7 +179,7 @@
                         <TextBlock Text="{Binding RetryDateTime, StringFormat=&#39;{}{0:dd/MM/yyyy HH:mm:ss}&#39;}"
                                    Foreground="Gray" FontSize="12" />
                     </StackPanel>
-                    <TextBlock Grid.Row="2" Text="Select reason for late submission (f_aitiologia):"
+                    <TextBlock Grid.Row="2" Text="{Binding Loc[SelectReasonForLateSubmissionF]}"
                                FontWeight="SemiBold" Margin="0,0,0,6" />
                     <ComboBox Grid.Row="3" ItemsSource="{Binding AvailableAitiologiai}"
                               SelectedValueBinding="{Binding Code}"
@@ -192,10 +192,10 @@
                         </ComboBox.ItemTemplate>
                     </ComboBox>
                     <Grid Grid.Row="4" ColumnDefinitions="*,*" ColumnSpacing="8">
-                        <Button Grid.Column="0" Content="Cancel"
+                        <Button Grid.Column="0" Content="{Binding Loc[Cancel]}"
                                 Command="{Binding CloseRetryDialogCommand}"
                                 HorizontalAlignment="Stretch" />
-                        <Button Grid.Column="1" Content="🔄 Retry Submission"
+                        <Button Grid.Column="1" Content="{Binding Loc[RetrySubmission]}"
                                 Command="{Binding SubmitRetryCommand}"
                                 Classes="accent" HorizontalAlignment="Stretch" />
                     </Grid>

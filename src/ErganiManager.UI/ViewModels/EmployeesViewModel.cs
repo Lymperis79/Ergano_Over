@@ -84,7 +84,7 @@ public partial class EmployeesViewModel : ViewModelBase, IAdminSectionViewModel
         NoCompanyMessage =
             session.CompanyId.HasValue
                 ? string.Empty
-                : "Select a company first.";
+                : Loc["Vm.Select a company first."];
 
         if (HasActiveCompany)
         {
@@ -98,7 +98,7 @@ public partial class EmployeesViewModel : ViewModelBase, IAdminSectionViewModel
         if (_session?.CompanyId is not int companyId)
         {
             StatusMessage =
-                "❌ No active company selected.";
+                Loc["Vm.❌ No active company selected."];
 
             return;
         }
@@ -106,7 +106,7 @@ public partial class EmployeesViewModel : ViewModelBase, IAdminSectionViewModel
         try
         {
             StatusMessage =
-                "Loading branches and employees...";
+                Loc["Vm.Loading branches and employees..."];
 
             // =====================================================
             // LOAD BRANCHES FIRST
@@ -152,13 +152,13 @@ public partial class EmployeesViewModel : ViewModelBase, IAdminSectionViewModel
 
             StatusMessage =
                 AvailableBranches.Count == 0
-                    ? "⚠ No branches found for this company. Import branches from Ergani first."
-                    : $"Loaded {AvailableBranches.Count} branch(es) and {Employees.Count} employee(s).";
+                    ? Loc["Vm.⚠ No branches found for this company. Import branches from Ergani first."]
+                    : string.Format(Loc["Vm.Loaded {0} branch(es) and {1} employee(s)."], AvailableBranches.Count, Employees.Count);
         }
         catch (Exception ex)
         {
             StatusMessage =
-                $"❌ Error loading employees/branches: {ex.Message}";
+                string.Format(Loc["Vm.❌ Error loading employees/branches: {0}"], ex.Message);
         }
     }
 
@@ -183,7 +183,7 @@ public partial class EmployeesViewModel : ViewModelBase, IAdminSectionViewModel
 
         StatusMessage =
             AvailableBranches.Count == 0
-                ? "⚠ No branches are available. Import branches from Ergani first."
+                ? Loc["Vm.⚠ No branches are available. Import branches from Ergani first."]
                 : string.Empty;
 
         IsEditing = true;
@@ -225,7 +225,7 @@ public partial class EmployeesViewModel : ViewModelBase, IAdminSectionViewModel
 
         StatusMessage =
             FormBranch == null
-                ? "⚠ The employee's branch is not present in the current branch list."
+                ? Loc["Vm.⚠ The employee's branch is not present in the current branch list."]
                 : string.Empty;
 
         IsEditing = true;
@@ -254,7 +254,7 @@ public partial class EmployeesViewModel : ViewModelBase, IAdminSectionViewModel
         if (_session?.CompanyId is not int companyId)
         {
             StatusMessage =
-                "❌ No active company selected.";
+                Loc["Vm.❌ No active company selected."];
 
             return;
         }
@@ -262,7 +262,7 @@ public partial class EmployeesViewModel : ViewModelBase, IAdminSectionViewModel
         if (FormBranch == null)
         {
             StatusMessage =
-                "Please select a branch.";
+                Loc["Vm.Please select a branch."];
 
             return;
         }
@@ -374,7 +374,7 @@ public partial class EmployeesViewModel : ViewModelBase, IAdminSectionViewModel
         if (!Employees.Any())
         {
             StatusMessage =
-                "No employees to export.";
+                Loc["Vm.No employees to export."];
 
             return;
         }
@@ -385,7 +385,7 @@ public partial class EmployeesViewModel : ViewModelBase, IAdminSectionViewModel
                 AvailableBranches
                     .ToDictionary(
                         b => b.Id,
-                        b => b.Name ?? $"Branch {b.BranchNumber}");
+                        b => b.Name ?? string.Format(Loc["Vm.Branch {0}"], b.BranchNumber));
 
             var folder =
                 Environment.GetFolderPath(
@@ -398,7 +398,7 @@ public partial class EmployeesViewModel : ViewModelBase, IAdminSectionViewModel
                     folder);
 
             StatusMessage =
-                $"✅ Exported: {System.IO.Path.GetFileName(filePath)}";
+                string.Format(Loc["Vm.✅ Exported: {0}"], System.IO.Path.GetFileName(filePath));
         }
         catch (Exception ex)
         {

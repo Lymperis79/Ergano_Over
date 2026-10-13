@@ -38,7 +38,7 @@ public class SubmittedTextConverter : IValueConverter
     public static readonly SubmittedTextConverter Instance = new();
 
     public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
-        => value is true ? "✅ Submitted" : "⏳ Pending";
+        => value is true ? Tr.Loc["Vm.✅ Submitted"] : Tr.Loc["Vm.⏳ Pending"];
 
     public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
         => throw new NotImplementedException();
@@ -50,7 +50,7 @@ public class CancelledTextConverter : IValueConverter
     public static readonly CancelledTextConverter Instance = new();
 
     public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
-        => value is true ? "❌ Cancelled" : "✅ Active";
+        => value is true ? Tr.Loc["Vm.❌ Cancelled"] : Tr.Loc["Vm.✅ Active"];
 
     public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
         => throw new NotImplementedException();
@@ -62,7 +62,7 @@ public class SentTextConverter : IValueConverter
     public static readonly SentTextConverter Instance = new();
 
     public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
-        => value is true ? "✅ Sent" : "Not sent";
+        => value is true ? Tr.Loc["Vm.✅ Sent"] : Tr.Loc["Vm.Not sent"];
 
     public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
         => throw new NotImplementedException();
@@ -78,15 +78,15 @@ public class OvertimeJustificationConverter : IValueConverter
         if (value is not AppOvertimeJustification j) return string.Empty;
         return j switch
         {
-            AppOvertimeJustification.AccidentPreventionOrDamageRestoration => "Accident prevention / damage restoration",
-            AppOvertimeJustification.UrgentSeasonalTasks                   => "Urgent seasonal tasks",
-            AppOvertimeJustification.ExceptionalWorkload                   => "Exceptional workload",
-            AppOvertimeJustification.SupplementaryTasks                    => "Supplementary tasks",
-            AppOvertimeJustification.LostHoursSuddenCauses                 => "Lost hours — sudden causes",
-            AppOvertimeJustification.LostHoursOfficialHolidays             => "Lost hours — official holidays",
-            AppOvertimeJustification.LostHoursWeatherConditions            => "Lost hours — weather conditions",
-            AppOvertimeJustification.EmergencyClosureDay                   => "Emergency closure day",
-            AppOvertimeJustification.NonWorkdayTasks                       => "Non-workday tasks",
+            AppOvertimeJustification.AccidentPreventionOrDamageRestoration => Tr.Loc["Vm.Accident prevention / damage restoration"],
+            AppOvertimeJustification.UrgentSeasonalTasks                   => Tr.Loc["Vm.Urgent seasonal tasks"],
+            AppOvertimeJustification.ExceptionalWorkload                   => Tr.Loc["Vm.Exceptional workload"],
+            AppOvertimeJustification.SupplementaryTasks                    => Tr.Loc["Vm.Supplementary tasks"],
+            AppOvertimeJustification.LostHoursSuddenCauses                 => Tr.Loc["Vm.Lost hours — sudden causes"],
+            AppOvertimeJustification.LostHoursOfficialHolidays             => Tr.Loc["Vm.Lost hours — official holidays"],
+            AppOvertimeJustification.LostHoursWeatherConditions            => Tr.Loc["Vm.Lost hours — weather conditions"],
+            AppOvertimeJustification.EmergencyClosureDay                   => Tr.Loc["Vm.Emergency closure day"],
+            AppOvertimeJustification.NonWorkdayTasks                       => Tr.Loc["Vm.Non-workday tasks"],
             _                                                              => j.ToString()
         };
     }

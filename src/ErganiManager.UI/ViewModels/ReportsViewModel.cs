@@ -74,20 +74,20 @@ public partial class ReportsViewModel : ViewModelBase, IAdminSectionViewModel
     partial void OnHasTableDataChanged(bool value) => OnPropertyChanged(nameof(CanExport));
 
     public string TotalsLabel => Kind == ReportKind.Compare
-        ? "Total actual working time (from scans, h:mm)"
-        : "Grand total (h:mm)";
+        ? Loc["Vm.Total actual working time (from scans, h:mm)"]
+        : Loc["Vm.Grand total (h:mm)"];
 
     public string ReportTitle => Kind switch
     {
-        ReportKind.Overtime => "Overtime per employee / month",
-        ReportKind.WorkTime => "Total working time per employee / month",
-        ReportKind.Compare  => "Declared vs actual time, with overtime",
-        ReportKind.RoundingImpact   => "Rounding impact",
-        ReportKind.SubmissionStatus => "Submission status",
-        ReportKind.FailureLog       => "Retry and failure log",
-        ReportKind.Consistency      => "Rest-day / schedule consistency",
-        ReportKind.Roster           => "Roster (same From and To date = daily roster; otherwise one column per day, up to 31 days)",
-        _                           => "Overtime trend"
+        ReportKind.Overtime => Loc["Vm.Overtime per employee / month"],
+        ReportKind.WorkTime => Loc["Vm.Total working time per employee / month"],
+        ReportKind.Compare  => Loc["Vm.Declared vs actual time, with overtime"],
+        ReportKind.RoundingImpact   => Loc["Vm.Rounding impact"],
+        ReportKind.SubmissionStatus => Loc["Vm.Submission status"],
+        ReportKind.FailureLog       => Loc["Vm.Retry and failure log"],
+        ReportKind.Consistency      => Loc["Vm.Rest-day / schedule consistency"],
+        ReportKind.Roster           => Loc["Vm.Roster (same From and To date = daily roster; otherwise one column per day, up to 31 days)"],
+        _                           => Loc["Vm.Overtime trend"]
     };
 
     public ReportsViewModel(IReportService reports, IEmployeeService employees)
@@ -117,7 +117,7 @@ public partial class ReportsViewModel : ViewModelBase, IAdminSectionViewModel
     {
         _session = session;
         HasActiveCompany = session.CompanyId.HasValue;
-        NoCompanyMessage = session.CompanyId.HasValue ? string.Empty : "Select a company first.";
+        NoCompanyMessage = session.CompanyId.HasValue ? string.Empty : Loc["Vm.Select a company first."];
         if (HasActiveCompany) _ = LoadEmployeesAsync();
     }
 
@@ -127,7 +127,7 @@ public partial class ReportsViewModel : ViewModelBase, IAdminSectionViewModel
         var list = await _employees.GetByCompanyAsync(companyId);
 
         AvailableEmployees.Clear();
-        AvailableEmployees.Add(new EmployeeDto { Id = 0, FirstName = "All employees" });
+        AvailableEmployees.Add(new EmployeeDto { Id = 0, FirstName = Loc["Vm.All employees"] });
         foreach (var e in list.OrderBy(e => e.LastName).ThenBy(e => e.FirstName)) AvailableEmployees.Add(e);
         SelectedEmployee = AvailableEmployees[0];
 
@@ -186,8 +186,8 @@ public partial class ReportsViewModel : ViewModelBase, IAdminSectionViewModel
                 GrandTotalText = ReportFormat.Hours(_summary.ActualHours);
                 NightTotalText = ReportFormat.Hours(_summary.NightHours);
                 HasData = _summary.Months.Count > 0;
-                StatusMessage = $"Declared {ReportFormat.Hours(_summary.DeclaredHours)} · Actual (from scans) {ReportFormat.Hours(_summary.ActualHours)} · Night {ReportFormat.Hours(_summary.NightHours)} · Overtime {ReportFormat.Hours(_summary.OvertimeHours)}. " +
-                                "Actual = first arrival to last departure of the day; '?' = a scan is missing.";
+                StatusMessage = string.Format(Loc["Vm.Declared {0} · Actual (from scans) {1} · Night {2} · Overtime {3}. "], ReportFormat.Hours(_summary.DeclaredHours), ReportFormat.Hours(_summary.ActualHours), ReportFormat.Hours(_summary.NightHours), ReportFormat.Hours(_summary.OvertimeHours)) +
+                                Loc["Vm.Actual = first arrival to last departure of the day; '?' = a scan is missing."];
             }
             else if (IsOvertimeReport)
             {
@@ -198,7 +198,7 @@ public partial class ReportsViewModel : ViewModelBase, IAdminSectionViewModel
                 GrandTotalText = ReportFormat.Hours(_overtime.GrandTotalHours);
                 NightTotalText = "0:00";
                 HasData = _overtime.Months.Count > 0;
-                StatusMessage = $"{_overtime.Months.Sum(m => m.Records.Count)} overtime record(s) in {_overtime.Months.Count} employee-month group(s).";
+                StatusMessage = string.Format(Loc["Vm.{0} overtime record(s) in {1} employee-month group(s)."], _overtime.Months.Sum(m => m.Records.Count), _overtime.Months.Count);
             }
             else
             {
@@ -209,7 +209,7 @@ public partial class ReportsViewModel : ViewModelBase, IAdminSectionViewModel
                 GrandTotalText = ReportFormat.Hours(_workTime.GrandTotalHours);
                 NightTotalText = "0:00";
                 HasData = _workTime.Rows.Count > 0;
-                StatusMessage = $"{_workTime.Rows.Count} employee-month row(s). Based on the Office/Home schedule days.";
+                StatusMessage = string.Format(Loc["Vm.{0} employee-month row(s). Based on the Office/Home schedule days."], _workTime.Rows.Count);
             }
         }
         catch (Exception ex) { StatusMessage = $"❌ {ex.Message}"; }
@@ -237,46 +237,46 @@ public partial class ReportsViewModel : ViewModelBase, IAdminSectionViewModel
 
         if (Kind == ReportKind.Compare && _summary != null)
         {
-            sb.AppendLine("Employee;Month;Date;Declared;Declared hours;Actual;Actual hours;Night hours;Rounded hours;Rounded in → out;Difference;Overtime;Overtime hours");
+            sb.AppendLine(string.Join(";", new[] { Loc["Vm.Employee"], Loc["Vm.Month"], Loc["Vm.Date"], Loc["Vm.Declared"], Loc["Vm.Declared hours"], Loc["Vm.Actual"], Loc["Vm.Actual hours"], Loc["Vm.Night hours"], Loc["Vm.Rounded hours"], Loc["Vm.Rounded in → out"], Loc["Vm.Difference"], Loc["Vm.Overtime"], Loc["Vm.Overtime hours"] }));
             foreach (var m in _summary.Months)
             {
                 foreach (var d in m.Days)
                     sb.AppendLine(string.Join(";", Q(m.EmployeeName), m.MonthLabel, d.Date.ToString("dd/MM/yyyy", inv),
                         Q(d.DeclaredText), d.DeclaredHoursText, Q(d.ActualText), d.ActualHoursText, d.NightHoursText, d.RoundedHoursText, Q(d.RoundedInOutCsvText), CsvDiff(d.DiffHours),
                         Q(d.OvertimeRanges), d.OvertimeHours > 0 ? ReportFormat.Hours(d.OvertimeHours) : string.Empty));
-                sb.AppendLine(string.Join(";", Q(m.EmployeeName), m.MonthLabel, Q("MONTH TOTAL"), "",
+                sb.AppendLine(string.Join(";", Q(m.EmployeeName), m.MonthLabel, Q(Loc["Vm.MONTH TOTAL"]), "",
                     ReportFormat.Hours(m.DeclaredHours), "", ReportFormat.Hours(m.ActualHours),
                     ReportFormat.Hours(m.NightHours), ReportFormat.Hours(m.RoundedHours), "", CsvDiff(m.DiffHours), "", ReportFormat.Hours(m.OvertimeHours)));
             }
-            sb.AppendLine(string.Join(";", Q("ALL EMPLOYEES"), "", Q("GRAND TOTAL"), "",
+            sb.AppendLine(string.Join(";", Q(Loc["Vm.ALL EMPLOYEES"]), "", Q(Loc["Vm.GRAND TOTAL"]), "",
                 ReportFormat.Hours(_summary.DeclaredHours), "", ReportFormat.Hours(_summary.ActualHours), ReportFormat.Hours(_summary.NightHours), ReportFormat.Hours(_summary.RoundedHours), "", "", "", ReportFormat.Hours(_summary.OvertimeHours)));
         }
         else if (IsOvertimeReport && _overtime != null)
         {
-            sb.AppendLine("Employee;Month;Date;From;To;Hours;Justification;Sent to Ergani;Protocol;Month total");
+            sb.AppendLine(string.Join(";", new[] { Loc["Vm.Employee"], Loc["Vm.Month"], Loc["Vm.Date"], Loc["Vm.From"], Loc["Vm.To"], Loc["Vm.Hours"], Loc["Vm.Justification"], Loc["Vm.Sent to Ergani"], Loc["Vm.Protocol"], Loc["Vm.Month total"] }));
             foreach (var m in _overtime.Months)
             {
                 foreach (var r in m.Records)
                     sb.AppendLine(string.Join(";", Q(m.EmployeeName), m.MonthLabel,
                         r.OvertimeDate.ToString("dd/MM/yyyy", inv), r.StartTime.ToString("HH:mm", inv), r.EndTime.ToString("HH:mm", inv),
                         ReportFormat.Hours(r.HoursWorked), Q(r.JustificationLabel),
-                        r.SubmittedToErgani ? "Yes" : "No", Q(r.Protocol), string.Empty));
-                sb.AppendLine(string.Join(";", Q(m.EmployeeName), m.MonthLabel, "", "", "", "", Q("TOTAL"), "", "", m.TotalText));
+                        r.SubmittedToErgani ? Loc["Vm.Yes"] : Loc["Vm.No"], Q(r.Protocol), string.Empty));
+                sb.AppendLine(string.Join(";", Q(m.EmployeeName), m.MonthLabel, "", "", "", "", Q(Loc["Vm.TOTAL"]), "", "", m.TotalText));
             }
             sb.AppendLine();
             foreach (var t in _overtime.EmployeeTotals)
-                sb.AppendLine(string.Join(";", Q(t.EmployeeName), "", "", "", "", "", Q("EMPLOYEE TOTAL"), "", "", t.HoursText));
-            sb.AppendLine(string.Join(";", Q("ALL EMPLOYEES"), "", "", "", "", "", Q("GRAND TOTAL"), "", "", GrandTotalText));
+                sb.AppendLine(string.Join(";", Q(t.EmployeeName), "", "", "", "", "", Q(Loc["Vm.EMPLOYEE TOTAL"]), "", "", t.HoursText));
+            sb.AppendLine(string.Join(";", Q(Loc["Vm.ALL EMPLOYEES"]), "", "", "", "", "", Q(Loc["Vm.GRAND TOTAL"]), "", "", GrandTotalText));
         }
         else if (_workTime != null)
         {
-            sb.AppendLine("Employee;Month;Days;Total working time;Normal (up to 8h/day);Over 8h/day");
+            sb.AppendLine(string.Join(";", new[] { Loc["Vm.Employee"], Loc["Vm.Month"], Loc["Vm.Days"], Loc["Vm.Total working time"], Loc["Vm.Normal (up to 8h/day)"], Loc["Vm.Over 8h/day"] }));
             foreach (var r in _workTime.Rows)
                 sb.AppendLine(string.Join(";", Q(r.EmployeeName), r.MonthLabel, r.DaysWorked, r.TotalText, r.NormalText, r.OverText));
             sb.AppendLine();
             foreach (var t in _workTime.EmployeeTotals)
-                sb.AppendLine(string.Join(";", Q(t.EmployeeName), "EMPLOYEE TOTAL", "", t.HoursText, "", ""));
-            sb.AppendLine(string.Join(";", Q("ALL EMPLOYEES"), "GRAND TOTAL", "", GrandTotalText, "", ""));
+                sb.AppendLine(string.Join(";", Q(t.EmployeeName), Loc["Vm.EMPLOYEE TOTAL"], "", t.HoursText, "", ""));
+            sb.AppendLine(string.Join(";", Q(Loc["Vm.ALL EMPLOYEES"]), Loc["Vm.GRAND TOTAL"], "", GrandTotalText, "", ""));
         }
         return sb.ToString();
     }

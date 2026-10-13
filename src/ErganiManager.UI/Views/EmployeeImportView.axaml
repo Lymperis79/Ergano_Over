@@ -4,7 +4,7 @@
         x:Class="ErganiManager.UI.Views.EmployeeImportView"
         Icon="avares://ErganiManager.UI/Assets/icon.png"
         x:DataType="vm:EmployeeImportViewModel"
-        Title="Import Employees from Excel"
+        Title="{Binding Loc[ImportEmployeesFromExcel]}"
         Width="780" Height="620"
         WindowStartupLocation="CenterOwner"
         CanResize="True">
@@ -12,15 +12,15 @@
     <ScrollViewer Padding="24">
         <StackPanel Spacing="16">
 
-            <TextBlock Text="Import Employees from Excel" FontSize="20" FontWeight="Bold" />
+            <TextBlock Text="{Binding Loc[ImportEmployeesFromExcel]}" FontSize="20" FontWeight="Bold" />
             <TextBlock TextWrapping="Wrap" Foreground="Gray"
-                       Text="Download the template, fill it in, then select your completed file to preview and import." />
+                       Text="{Binding Loc[DownloadTheTemplateFillItIn]}" />
 
             <!-- Step 1: Download template -->
             <Border Background="#1A1D23" CornerRadius="8" Padding="16">
                 <StackPanel Spacing="8">
-                    <TextBlock Text="Step 1 — Download the import template" FontWeight="SemiBold" />
-                    <Button Content="⬇  Download Template (saves to Desktop)"
+                    <TextBlock Text="{Binding Loc[Step1DownloadTheImportTemplate]}" FontWeight="SemiBold" />
+                    <Button Content="{Binding Loc[DownloadTemplateSavesToDesktop]}"
                             Command="{Binding DownloadTemplateCommand}" />
                 </StackPanel>
             </Border>
@@ -28,11 +28,11 @@
             <!-- Step 2: Choose file -->
             <Border Background="#1A1D23" CornerRadius="8" Padding="16">
                 <StackPanel Spacing="8">
-                    <TextBlock Text="Step 2 — Select your completed file" FontWeight="SemiBold" />
+                    <TextBlock Text="{Binding Loc[Step2SelectYourCompletedFile]}" FontWeight="SemiBold" />
                     <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
                         <TextBox Grid.Column="0" Text="{Binding SelectedFilePath}"
-                                 PlaceholderText="Click Browse to select a file..." IsReadOnly="True" />
-                        <Button Grid.Column="1" Content="Browse…" Click="OnBrowseClick" />
+                                 PlaceholderText="{Binding Loc[ClickBrowseToSelectAFile]}" IsReadOnly="True" />
+                        <Button Grid.Column="1" Content="{Binding Loc[Browse]}" Click="OnBrowseClick" />
                     </Grid>
                 </StackPanel>
             </Border>
@@ -40,7 +40,7 @@
             <!-- Step 3: Preview -->
             <Border Background="#1A1D23" CornerRadius="8" Padding="16" IsVisible="{Binding HasPreview}">
                 <StackPanel Spacing="10">
-                    <TextBlock Text="Step 3 — Review and import" FontWeight="SemiBold" />
+                    <TextBlock Text="{Binding Loc[Step3ReviewAndImport]}" FontWeight="SemiBold" />
 
                     <!-- Valid rows summary -->
                     <Border Background="#1B3A27" CornerRadius="6" Padding="10">

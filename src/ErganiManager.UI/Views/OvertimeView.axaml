@@ -88,7 +88,7 @@
                 <Grid RowDefinitions="Auto,*,Auto" RowSpacing="12">
                     <TextBlock Grid.Row="0" Text="{Binding ResponseTitle}" FontSize="17" FontWeight="Bold" />
                     <TextBox Grid.Row="1" Text="{Binding ResponseText}" IsReadOnly="True" AcceptsReturn="True" TextWrapping="NoWrap" ScrollViewer.VerticalScrollBarVisibility="{x:Static ScrollBarVisibility.Auto}" ScrollViewer.HorizontalScrollBarVisibility="{x:Static ScrollBarVisibility.Auto}" FontFamily="Consolas" />
-                    <Button Grid.Row="2" Content="Close" Command="{Binding CloseResponseCommand}" HorizontalAlignment="Right" Width="100" />
+                    <Button Grid.Row="2" Content="{Binding Loc[Close]}" Command="{Binding CloseResponseCommand}" HorizontalAlignment="Right" Width="100" />
                 </Grid>
             </Border>
         </Border>
@@ -140,7 +140,7 @@
                     <TextBlock Text="{Binding Loc[WeeklyWorkdays]}" FontWeight="SemiBold" />
                     <NumericUpDown Value="{Binding FormWeeklyWorkdays}" Minimum="5" Maximum="6" />
 
-                    <TextBlock Text="ASEE Approval Number (if applicable)" FontWeight="SemiBold" />
+                    <TextBlock Text="{Binding Loc[ASEEApprovalNumberIfApplicable]}" FontWeight="SemiBold" />
                     <TextBox Text="{Binding FormAseeApproval}" />
 
                     <TextBlock Text="{Binding StatusMessage}" Foreground="Red" TextWrapping="Wrap"

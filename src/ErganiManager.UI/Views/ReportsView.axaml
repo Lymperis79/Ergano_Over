@@ -91,8 +91,8 @@
                         </ComboBox>
                     </StackPanel>
                     <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Bottom" Margin="0,0,0,8">
-                        <Button Content="Generate" Command="{Binding GenerateCommand}" Classes="accent" />
-                        <Button Content="💾 Export CSV…" Click="OnExportClick" IsEnabled="{Binding CanExport}" />
+                        <Button Content="{Binding Loc[Generate]}" Command="{Binding GenerateCommand}" Classes="accent" />
+                        <Button Content="{Binding Loc[ExportCSV]}" Click="OnExportClick" IsEnabled="{Binding CanExport}" />
                     </StackPanel>
                 </WrapPanel>
 
@@ -103,7 +103,7 @@
                     <StackPanel Spacing="6">
                         <TextBlock Text="{Binding ReportTitle}" FontWeight="SemiBold" FontSize="15" />
                         <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="18" IsVisible="{Binding IsCompareReport}">
-                            <TextBlock Grid.Column="1" Text="Actual" Foreground="Gray" FontSize="11" />
+                            <TextBlock Grid.Column="1" Text="{Binding Loc[Actual]}" Foreground="Gray" FontSize="11" />
                             <TextBlock Grid.Column="2" Text="{Binding $parent[UserControl].DataContext.Loc[ReportNightHours]}" Foreground="Gray" FontSize="11" />
                         </Grid>
                         <ItemsControl ItemsSource="{Binding EmployeeTotals}">
@@ -199,7 +199,7 @@
                                             <TextBlock Grid.Column="4" Text="{Binding $parent[UserControl].DataContext.Loc[ActualHours]}" Foreground="Gray" FontSize="11" />
                                             <TextBlock Grid.Column="5" Text="{Binding $parent[UserControl].DataContext.Loc[ReportNightHours]}" Foreground="Gray" FontSize="11" />
                                             <TextBlock Grid.Column="6" Text="{Binding $parent[UserControl].DataContext.Loc[Rounded]}" Foreground="Gray" FontSize="11" />
-                                            <TextBlock Grid.Column="7" Text="Rounded in → out" Foreground="Gray" FontSize="11" />
+                                            <TextBlock Grid.Column="7" Text="{Binding $parent[UserControl].DataContext.Loc[RoundedInOut]}" Foreground="Gray" FontSize="11" />
                                             <TextBlock Grid.Column="8" Text="{Binding $parent[UserControl].DataContext.Loc[Difference]}" Foreground="Gray" FontSize="11" />
                                             <TextBlock Grid.Column="9" Text="{Binding $parent[UserControl].DataContext.Loc[OvertimeTotal]}" Foreground="Gray" FontSize="11" />
                                         </Grid>
@@ -239,11 +239,11 @@
                 <StackPanel IsVisible="{Binding IsWorkTimeReport}" Spacing="4">
                     <Grid ColumnDefinitions="*,90,70,130,150,120" Margin="14,0">
                         <TextBlock Text="{Binding Loc[Employee]}" Foreground="Gray" FontSize="12" />
-                        <TextBlock Grid.Column="1" Text="Month" Foreground="Gray" FontSize="12" />
-                        <TextBlock Grid.Column="2" Text="Days" Foreground="Gray" FontSize="12" />
-                        <TextBlock Grid.Column="3" Text="Total (h:mm)" Foreground="Gray" FontSize="12" />
-                        <TextBlock Grid.Column="4" Text="Normal (≤8h/day)" Foreground="Gray" FontSize="12" />
-                        <TextBlock Grid.Column="5" Text="Over 8h/day" Foreground="Gray" FontSize="12" />
+                        <TextBlock Grid.Column="1" Text="{Binding Loc[Month]}" Foreground="Gray" FontSize="12" />
+                        <TextBlock Grid.Column="2" Text="{Binding Loc[Days]}" Foreground="Gray" FontSize="12" />
+                        <TextBlock Grid.Column="3" Text="{Binding Loc[TotalHMm]}" Foreground="Gray" FontSize="12" />
+                        <TextBlock Grid.Column="4" Text="{Binding Loc[Normal8hDay]}" Foreground="Gray" FontSize="12" />
+                        <TextBlock Grid.Column="5" Text="{Binding Loc[Over8hDay]}" Foreground="Gray" FontSize="12" />
                     </Grid>
                     <ItemsControl ItemsSource="{Binding WorkTimeRows}">
                         <ItemsControl.ItemsPanel>

@@ -4,7 +4,7 @@
         x:Class="ErganiManager.UI.Views.DatabaseSetupView"
         Icon="avares://ErganiManager.UI/Assets/icon.png"
         x:DataType="vm:DatabaseSetupViewModel"
-        Title="Ergani Manager"
+        Title="{Binding Loc[AppTitle]}"
         Width="560" Height="640"
         WindowStartupLocation="CenterScreen"
         CanResize="False">

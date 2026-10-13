@@ -32,12 +32,12 @@ public partial class LoginViewModel : ViewModelBase
 
     // Ergani status
     [ObservableProperty] private string _erganiStatusIcon  = "⚪";
-    [ObservableProperty] private string _erganiStatusText  = "Ergani API: Not checked";
+    [ObservableProperty] private string _erganiStatusText  = string.Empty;  // set in the constructor (needs Loc)
     [ObservableProperty] private string _erganiStatusColor = "#888888";
     [ObservableProperty] private bool   _isCheckingErgani;
 
     public string DegradedBannerText =>
-        "⚠️ Database unavailable — working in offline mode. Only previously synced users can log in.";
+        Loc["Vm.⚠️ Database unavailable — working in offline mode. Only previously synced users can log in."];
 
     public LoginViewModel(IAuthService authService, IErganiHealthCheckService erganiHealth,
         IConnectionStateService connectionState)
@@ -46,6 +46,7 @@ public partial class LoginViewModel : ViewModelBase
         _erganiHealth = erganiHealth;
         _connectionState = connectionState;
         UpgradeWarning = connectionState.UpgradeWarning ?? string.Empty;
+        ErganiStatusText = Loc["Vm.Ergani API: Not checked"];
     }
 
     [RelayCommand]
@@ -55,7 +56,7 @@ public partial class LoginViewModel : ViewModelBase
 
         if (string.IsNullOrWhiteSpace(Username) || string.IsNullOrWhiteSpace(Password))
         {
-            ErrorMessage = "Please enter both username and password.";
+            ErrorMessage = Loc["Vm.Please enter both username and password."];
             return;
         }
 
@@ -66,12 +67,12 @@ public partial class LoginViewModel : ViewModelBase
             if (result.Success && result.Session != null)
                 LoginSucceeded?.Invoke(this, result.Session);
             else
-                ErrorMessage = result.ErrorMessage ?? "Login failed.";
+                ErrorMessage = result.ErrorMessage ?? Loc["Vm.Login failed."];
         }
         catch (Exception ex)
         {
             Serilog.Log.Error(ex, "Unexpected error during login.");
-            ErrorMessage = $"Login error: {ex.Message}";
+            ErrorMessage = string.Format(Loc["Vm.Login error: {0}"], ex.Message);
         }
         finally
         {
@@ -85,7 +86,7 @@ public partial class LoginViewModel : ViewModelBase
     {
         IsCheckingErgani = true;
         ErganiStatusIcon  = "⏳";
-        ErganiStatusText  = "Ergani API: Checking…";
+        ErganiStatusText  = Loc["Vm.Ergani API: Checking…"];
         ErganiStatusColor = "#888888";
 
         try
@@ -120,15 +121,15 @@ public partial class LoginViewModel : ViewModelBase
 
             (ErganiStatusIcon, ErganiStatusText, ErganiStatusColor) = status switch
             {
-                ErganiServiceStatus.Online  => ("🟢", "Ergani API: Online",  "#4CAF50"),
-                ErganiServiceStatus.Offline => ("🔴", "Ergani API: Offline", "#EF5350"),
-                _                           => ("⚪", "Ergani API: Unknown", "#888888")
+                ErganiServiceStatus.Online  => ("🟢", Loc["Vm.Ergani API: Online"],  "#4CAF50"),
+                ErganiServiceStatus.Offline => ("🔴", Loc["Vm.Ergani API: Offline"], "#EF5350"),
+                _                           => ("⚪", Loc["Vm.Ergani API: Unknown"], "#888888")
             };
         }
         catch (Exception ex)
         {
             ErganiStatusIcon  = "❌";
-            ErganiStatusText  = $"Ergani API: Error — {ex.Message}";
+            ErganiStatusText  = string.Format(Loc["Vm.Ergani API: Error — {0}"], ex.Message);
             ErganiStatusColor = "#EF5350";
         }
         finally

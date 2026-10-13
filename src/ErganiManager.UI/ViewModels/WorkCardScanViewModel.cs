@@ -69,13 +69,13 @@ public partial class ScanResultRow : ObservableObject
     public string StatusText =>
         IsPending
             ? (RetryAttempts > 0
-                ? $"Retrying to Ergani — attempt {RetryAttempts}" +
+                ? string.Format(Tr.Loc["Vm.Retrying to Ergani — attempt {0}"], RetryAttempts) +
                   (string.IsNullOrEmpty(ErrorDescription) ? "…" : $" ({ErrorDescription})")
                 : (string.IsNullOrEmpty(ErrorDescription)
-                    ? "Sending to Ergani in the background…"
-                    : $"Waiting — will retry automatically ({ErrorDescription})"))
+                    ? Tr.Loc["Vm.Sending to Ergani in the background…"]
+                    : string.Format(Tr.Loc["Vm.Waiting — will retry automatically ({0})"], ErrorDescription)))
             : Success
-                ? $"Protocol: {Protocol}"
+                ? string.Format(Tr.Loc["Vm.Protocol: {0}"], Protocol)
                 : ErrorDescription;
 }
 
@@ -222,7 +222,7 @@ public partial class WorkCardScanViewModel :
         NoCompanyMessage =
             companyId.HasValue
                 ? string.Empty
-                : "Select a company first.";
+                : Loc["Vm.Select a company first."];
 
         /*
          * The company ComboBox is a display of the main
@@ -307,7 +307,7 @@ public partial class WorkCardScanViewModel :
                     NoCompanyMessage =
                         SelectedCompany != null
                             ? string.Empty
-                            : "Select a company first.";
+                            : Loc["Vm.Select a company first."];
                 });
         }
         catch (Exception ex)
@@ -324,7 +324,7 @@ public partial class WorkCardScanViewModel :
                     HasActiveCompany = false;
 
                     NoCompanyMessage =
-                        "Unable to load companies.";
+                        Loc["Vm.Unable to load companies."];
                 });
         }
     }
@@ -343,7 +343,7 @@ public partial class WorkCardScanViewModel :
                 SelectedCompany = null;
                 HasActiveCompany = false;
                 NoCompanyMessage =
-                    "Select a company first.";
+                    Loc["Vm.Select a company first."];
             });
 
             return;
@@ -404,7 +404,7 @@ public partial class WorkCardScanViewModel :
         NoCompanyMessage =
             value != null
                 ? string.Empty
-                : "Select a company first.";
+                : Loc["Vm.Select a company first."];
     }
 
     // ────────────────────────────────────────────────────────────────────────
@@ -593,8 +593,8 @@ public partial class WorkCardScanViewModel :
         {
             ShowResponse(
                 false,
-                "No Company",
-                "Select a company before submitting a work card.");
+                Loc["Vm.No Company"],
+                Loc["Vm.Select a company before submitting a work card."]);
 
             return;
         }
@@ -659,10 +659,9 @@ public partial class WorkCardScanViewModel :
 
                 ShowResponse(
                     false,
-                    "⏳ Already Scanned",
-                    $"This employee was scanned " +
-                    $"{(int)elapsed.TotalSeconds}s ago.\n" +
-                    $"Please wait {remaining} more second(s).");
+                    Loc["Vm.⏳ Already Scanned"],
+                    Loc["Vm.This employee was scanned"] + $" {(int)elapsed.TotalSeconds}" + Loc["Vm.s ago."] + "\n" +
+                    Loc["Vm.Please wait"] + $" {remaining} " + Loc["Vm.more second(s)."]);
 
                 BarcodeInput = string.Empty;
 
@@ -693,18 +692,18 @@ public partial class WorkCardScanViewModel :
                 {
                     ShowResponse(
                         false,
-                        "Unknown Employee",
-                        $"No active employee found " +
-                        $"with AFM '{afm}' " +
-                        $"for the selected company.");
+                        Loc["Vm.Unknown Employee"],
+                        Loc["Vm.No active employee found "] + " " +
+                        Loc["Vm.with AFM"] + $" '{afm}' " +
+                        Loc["Vm.for the selected company. "]);
                 }
                 else
                 {
                     ShowResponse(
                         false,
-                        "Unknown Badge",
-                        $"No active employee found " +
-                        $"with barcode '{scanValue}'.");
+                         Loc["Vm.Unknown Badge"],
+                        Loc["Vm.No active employee found "] + " " +
+                        Loc["Vm.with barcode"] + $" '{scanValue}'.");
                 }
 
                 return;
@@ -762,11 +761,11 @@ public partial class WorkCardScanViewModel :
             if (movement == "Arrival" && schedule != null && schedule.WorkType is 2 or 3 &&
                 (companySettings == null || companySettings.BlockClockInOnRestOrAbsentDay))
             {
-                var dayType = schedule.WorkType == 2 ? "rest day" : "absence day";
+                var dayType = schedule.WorkType == 2 ? Loc["Vm.rest day"] : Loc["Vm.absence day"];
                 LogBlockedScan("WorkCardScanView", employee, companyId.Value, movement,
                     $"Schedule marked as {dayType}", scanTime);
-                ShowResponse(false, "🚫 Scan blocked",
-                    $"This date is marked as a {dayType}. Clock-in and clock-out are not allowed.");
+                ShowResponse(false, Loc["Vm.🚫 Scan blocked"],
+                    string.Format(Loc["Vm.This date is marked as a {0}. Clock-in and clock-out are not allowed."], dayType));
                 return;
             }
 
@@ -775,8 +774,8 @@ public partial class WorkCardScanViewModel :
             {
                 LogBlockedScan("WorkCardScanView", employee, companyId.Value, movement,
                     "Clock-in blocked: no schedule", scanTime);
-                ShowResponse(false, "🚫 Scan blocked",
-                    "No schedule exists for this date. Clock-in is blocked by the company settings.");
+                ShowResponse(false, Loc["Vm.🚫 Scan blocked"],
+                    Loc["Vm.No schedule exists for this date. Clock-in is blocked by the company settings."]);
                 return;
             }
 
@@ -789,8 +788,8 @@ public partial class WorkCardScanViewModel :
                 {
                     LogBlockedScan("WorkCardScanView", employee, companyId.Value, movement,
                         $"Clock-in blocked: too early; shift starts {shiftStart:HH:mm}, earliest allowed {earliestAllowed:HH:mm}", scanTime);
-                    ShowResponse(false, "🚫 Too early to clock in",
-                        $"Shift starts at {shiftStart:HH:mm}. Earliest allowed clock-in is {earliestAllowed:HH:mm}.");
+                    ShowResponse(false, Loc["Vm.🚫 Too early to clock in"],
+                        string.Format(Loc["Vm.Shift starts at {0}. Earliest allowed clock-in is {1}."], shiftStart.ToString("HH:mm"), earliestAllowed.ToString("HH:mm")));
                     return;
                 }
             }
@@ -846,9 +845,9 @@ public partial class WorkCardScanViewModel :
 
             ShowResponse(
                 true,
-                $"✅ {movement.ToUpper()} — {name}",
-                $"Saved — sending to Ergani in the background.\n" +
-                $"Time:          {scanTime:HH:mm:ss dd/MM/yyyy}");
+                $"✅ {(movement == "Arrival" ? Loc[L.Arrival] : Loc[L.Departure]).ToUpper()} — {name}",
+                Loc["Vm.Saved — sending to Ergani in the background."] + "\n" +
+                string.Format(Loc["Vm.Time:          {0}"], scanTime.ToString("HH:mm:ss dd/MM/yyyy")));
 
             RecentScans.Insert(
                 0,
@@ -879,7 +878,7 @@ public partial class WorkCardScanViewModel :
         {
             ShowResponse(
                 false,
-                "Error",
+                Loc["Vm.Error"],
                 ex.Message);
         }
         finally
@@ -934,9 +933,8 @@ public partial class WorkCardScanViewModel :
 
             ShowResponse(
                 false,
-                "Retry Error",
-                "There is no failed submission " +
-                "available to retry.");
+                Loc["Vm.Retry Error"],
+                Loc["Vm.There is no failed submission available to retry."]);
 
             return;
         }
@@ -946,9 +944,8 @@ public partial class WorkCardScanViewModel :
         {
             ShowResponse(
                 false,
-                "Reason Required",
-                "Please select an Ergani " +
-                "justification code.");
+                Loc["Vm.Reason Required"],
+                Loc["Vm.Please select an Ergani justification code."]);
 
             return;
         }
@@ -971,13 +968,11 @@ public partial class WorkCardScanViewModel :
             {
                 ShowResponse(
                     true,
-                    $"✅ Retry Successful — " +
-                    $"{RetryEmployeeName}",
-                    $"Protocol:      {result.Protocol}\n" +
-                    $"Submission ID: {result.SubmissionId}\n" +
-                    $"Time:          " +
-                    $"{request.MovementDateTime:HH:mm:ss dd/MM/yyyy}\n" +
-                    $"Reason:        {RetryAitiologia}");
+                    string.Format(Loc["Vm.✅ Retry Successful — {0}"], RetryEmployeeName),
+                    string.Format(Loc["Vm.Protocol:      {0}"], result.Protocol) + "\n" +
+                    string.Format(Loc["Vm.Submission ID: {0}"], result.SubmissionId) + "\n" +
+                    string.Format(Loc["Vm.Time:          {0}"], request.MovementDateTime.ToString("HH:mm:ss dd/MM/yyyy")) + "\n" +
+                    string.Format(Loc["Vm.Reason:        {0}"], RetryAitiologia));
 
                 RecentScans.Insert(
                     0,
@@ -1012,12 +1007,11 @@ public partial class WorkCardScanViewModel :
             {
                 var error =
                     result.ErrorMessage ??
-                    "Ergani rejected the retry submission.";
+                    Loc["Vm.Ergani rejected the retry submission."];
 
                 ShowResponse(
                     false,
-                    $"❌ Retry Failed — " +
-                    $"{RetryEmployeeName}",
+                    string.Format(Loc["Vm.❌ Retry Failed — {0}"], RetryEmployeeName),
                     error);
 
                 IsRetryDialogOpen =
@@ -1028,7 +1022,7 @@ public partial class WorkCardScanViewModel :
         {
             ShowResponse(
                 false,
-                "Retry Error",
+                Loc["Vm.Retry Error"],
                 ex.Message);
 
             IsRetryDialogOpen =
@@ -1091,7 +1085,7 @@ public partial class WorkCardScanViewModel :
                 case QueuedScanStatus.Rejected:
                     row.IsPending = false;
                     row.Success = false;
-                    row.ErrorDescription = update.Error ?? "Rejected by Ergani.";
+                    row.ErrorDescription = update.Error ?? Loc["Vm.Rejected by Ergani."];
                     break;
 
                 default: // Waiting
@@ -1103,25 +1097,25 @@ public partial class WorkCardScanViewModel :
             // Keep the big message at the top in step when it belongs to the latest scan.
             if (RecentScans.Count > 0 && ReferenceEquals(RecentScans[0], row))
             {
-                var title = $"{row.MovementType.ToUpper()} — {row.EmployeeName}";
+                var title = $"{(row.MovementType == "Arrival" ? Loc[L.Arrival] : Loc[L.Departure]).ToUpper()} — {row.EmployeeName}";
 
                 if (update.Status == QueuedScanStatus.Sent)
                     ShowResponse(
                         true,
-                        $"✅ {title} — Successfully sent",
-                        $"Protocol:      {row.Protocol}\n" +
-                        $"Time:          {row.ScannedAt:HH:mm:ss dd/MM/yyyy}");
+                        string.Format(Loc["Vm.✅ {0} — Successfully sent"], title),
+                        string.Format(Loc["Vm.Protocol:      {0}"], row.Protocol) + "\n" +
+                        string.Format(Loc["Vm.Time:          {0}"], row.ScannedAt.ToString("HH:mm:ss dd/MM/yyyy")));
                 else if (update.Status == QueuedScanStatus.Waiting)
                     ShowResponse(
                         false,
-                        $"⏳ Retry sending — {row.EmployeeName}",
-                        $"Attempt:       {row.RetryAttempts}\n" +
-                        $"Status:        Waiting for Ergani / internet\n" +
-                        (string.IsNullOrWhiteSpace(row.ErrorDescription) ? string.Empty : $"Reason:        {row.ErrorDescription}"));
+                        string.Format(Loc["Vm.⏳ Retry sending — {0}"], row.EmployeeName),
+                        string.Format(Loc["Vm.Attempt:       {0}"], row.RetryAttempts) + "\n" +
+                        Loc["Vm.Status:        Waiting for Ergani / internet"] + "\n" +
+                        (string.IsNullOrWhiteSpace(row.ErrorDescription) ? string.Empty : string.Format(Loc["Vm.Reason:        {0}"], row.ErrorDescription)));
                 else
                     ShowResponse(
                         false,
-                        $"❌ Failed — {row.EmployeeName}",
+                        string.Format(Loc["Vm.❌ Failed — {0}"], row.EmployeeName),
                         row.ErrorDescription);
             }
         });

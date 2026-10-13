@@ -12,9 +12,14 @@ public abstract class ViewModelBase : ObservableObject
     /// </summary>
     public ILocalizationService Loc { get; }
 
+    /// <summary>The company picture shown in the login and terminal windows
+    /// (bind to <c>Logo.Current</c> / <c>Logo.HasLogo</c>).</summary>
+    public ErganiManager.UI.Services.CompanyLogoService Logo { get; }
+
     protected ViewModelBase()
     {
         Loc = Program.Services.GetRequiredService<ILocalizationService>();
+        Logo = Program.Services.GetRequiredService<ErganiManager.UI.Services.CompanyLogoService>();
 
         // Raising PropertyChanged("Loc") alone isn't enough — Avalonia sees the same
         // ILocalizationService reference and skips re-evaluating the indexer.

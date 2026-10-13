@@ -290,8 +290,8 @@
                                 <!-- Protocol -->
 
                                 <TextBlock Grid.Column="6" Text="{Binding Protocol}" FontSize="11" Foreground="#888888" VerticalAlignment="Center" IsVisible="{Binding Protocol, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
-                                <Button Grid.Column="7" Content="Response" Tag="{Binding}" Click="OnResponseClick" IsEnabled="{Binding SubmittedToErgani}" Margin="6,0" />
-                                <Button Grid.Column="8" Content="PDF" Tag="{Binding}" Click="OnPdfClick" IsEnabled="{Binding SubmittedToErgani}" />
+                                <Button Grid.Column="7" Content="{Binding $parent[UserControl].((vm:WorkCardHistoryViewModel)DataContext).Loc[ResponseLabel]}" Tag="{Binding}" Click="OnResponseClick" IsEnabled="{Binding SubmittedToErgani}" Margin="6,0" />
+                                <Button Grid.Column="8" Content="{Binding $parent[UserControl].((vm:WorkCardHistoryViewModel)DataContext).Loc[PdfLabel]}" Tag="{Binding}" Click="OnPdfClick" IsEnabled="{Binding SubmittedToErgani}" />
 
                             </Grid>
 
@@ -311,7 +311,7 @@
             <Grid RowDefinitions="Auto,*,Auto" RowSpacing="12">
                 <TextBlock Grid.Row="0" Text="{Binding ResponseTitle}" FontSize="17" FontWeight="Bold" />
                 <TextBox Grid.Row="1" Text="{Binding ResponseText}" IsReadOnly="True" AcceptsReturn="True" TextWrapping="NoWrap" ScrollViewer.VerticalScrollBarVisibility="{x:Static ScrollBarVisibility.Auto}" ScrollViewer.HorizontalScrollBarVisibility="{x:Static ScrollBarVisibility.Auto}" FontFamily="Consolas" />
-                <Button Grid.Row="2" Content="Close" Command="{Binding CloseResponseCommand}" HorizontalAlignment="Right" Width="100" />
+                <Button Grid.Row="2" Content="{Binding Loc[Close]}" Command="{Binding CloseResponseCommand}" HorizontalAlignment="Right" Width="100" />
             </Grid>
         </Border>
     </Border>

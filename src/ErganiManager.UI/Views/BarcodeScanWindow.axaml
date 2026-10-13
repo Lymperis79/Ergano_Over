@@ -4,7 +4,7 @@
         x:Class="ErganiManager.UI.Views.BarcodeScanWindow"
         Icon="avares://ErganiManager.UI/Assets/icon.png"
         x:DataType="vm:WorkCardScanViewModel"
-        Title="Ergani Manager — Barcode Scan"
+        Title="{Binding Loc[ErganiManagerBarcodeScan]}"
         Width="520"
         Height="680"
         Topmost="True"
@@ -18,11 +18,11 @@
         <StackPanel Grid.Row="0"
                     Margin="0,0,0,12">
 
-            <TextBlock Text="📟 Barcode / AFM Scan"
+            <TextBlock Text="{Binding Loc[BarcodeAFMScan]}"
                        FontSize="20"
                        FontWeight="Bold" />
 
-            <TextBlock Text="Scan AFM, Ergani employee string or barcode."
+            <TextBlock Text="{Binding Loc[ScanAFMErganiEmployeeStringOr]}"
                        Foreground="Gray"
                        FontSize="12" />
 
@@ -38,7 +38,7 @@
 
             <StackPanel Spacing="6">
 
-                <TextBlock Text="Selected Company"
+                <TextBlock Text="{Binding Loc[SelectedCompany]}"
                            FontWeight="SemiBold"
                            FontSize="12"
                            Foreground="#AAAAAA" />
@@ -111,7 +111,7 @@
 
                 <TextBox Name="ScanInputBox"
                          Text="{Binding BarcodeInput}"
-                         PlaceholderText="Scan AFM, Ergani string or barcode..."
+                         PlaceholderText="{Binding Loc[ScanAFMErganiStringOrBarcode]}"
                          FontSize="20"
                          FontFamily="Consolas,Menlo,monospace"
                          IsEnabled="{Binding !IsProcessing}">
@@ -126,7 +126,7 @@
                 </TextBox>
 
 
-                <TextBlock Text="Examples:"
+                <TextBlock Text="{Binding Loc[Examples]}"
                            Foreground="#888888"
                            FontSize="11" />
 
@@ -141,7 +141,7 @@
                            FontSize="11"
                            TextWrapping="Wrap" />
 
-                <CheckBox Content="Auto-detect Arrival / Departure"
+                <CheckBox Content="{Binding Loc[AutoDetectArrivalDeparture]}"
                           IsChecked="{Binding AutoDetect}" />
 
 
@@ -149,16 +149,16 @@
                             Orientation="Horizontal"
                             Spacing="20">
 
-                    <RadioButton Content="🟢 Arrival"
+                    <RadioButton Content="{Binding Loc[Arrival2]}"
                                  IsChecked="{Binding IsArrival}" />
 
-                    <RadioButton Content="🔴 Departure"
+                    <RadioButton Content="{Binding Loc[Departure2]}"
                                  IsChecked="{Binding !IsArrival}" />
 
                 </StackPanel>
 
 
-                <Button Content="Submit"
+                <Button Content="{Binding Loc[SubmitSelected]}"
                         Command="{Binding SubmitScanCommand}"
                         IsEnabled="{Binding !IsProcessing}"
                         Classes="accent"
@@ -182,12 +182,12 @@
                   Margin="0,0,0,6">
 
                 <TextBlock Grid.Column="0"
-                           Text="Recent Scans"
+                           Text="{Binding Loc[RecentScans2]}"
                            FontWeight="SemiBold"
                            VerticalAlignment="Center" />
 
                 <Button Grid.Column="1"
-                        Content="Clear"
+                        Content="{Binding Loc[Clear]}"
                         Command="{Binding ClearHistoryCommand}"
                         IsVisible="{Binding RecentScans.Count}" />
 
@@ -281,7 +281,7 @@
                 <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto">
 
                     <TextBlock Grid.Row="0"
-                               Text="⚠️ Submission Failed — Resubmit with Justification?"
+                               Text="{Binding Loc[SubmissionFailedResubmitWithJustification]}"
                                FontSize="15"
                                FontWeight="Bold"
                                Margin="0,0,0,8" />
@@ -305,7 +305,7 @@
                     </StackPanel>
 
                     <TextBlock Grid.Row="2"
-                               Text="Select reason for late submission (f_aitiologia):"
+                               Text="{Binding Loc[SelectReasonForLateSubmissionF]}"
                                FontWeight="SemiBold"
                                Margin="0,0,0,6" />
 
@@ -320,12 +320,12 @@
                           ColumnSpacing="8">
 
                         <Button Grid.Column="0"
-                                Content="Cancel"
+                                Content="{Binding Loc[Cancel]}"
                                 Command="{Binding CloseRetryDialogCommand}"
                                 HorizontalAlignment="Stretch" />
 
                         <Button Grid.Column="1"
-                                Content="🔄 Retry Submission"
+                                Content="{Binding Loc[RetrySubmission]}"
                                 Command="{Binding SubmitRetryCommand}"
                                 Classes="accent"
                                 HorizontalAlignment="Stretch" />

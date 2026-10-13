@@ -31,7 +31,7 @@ public partial class AdministrationView : UserControl
 
         var file = await top.StorageProvider.SaveFilePickerAsync(new FilePickerSaveOptions
         {
-            Title = "Backup database",
+            Title = Tr.Loc["Vm.Backup database"],
             SuggestedFileName = vm.SuggestedBackupName,
             ShowOverwritePrompt = true
         });
