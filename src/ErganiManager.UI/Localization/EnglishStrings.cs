@@ -530,7 +530,7 @@ public static class EnglishStrings
         [L.Clear2] = "✕ Clear",
         [L.Week] = "Week",
         [L.Employee2] = "Employee:",
-        [L.Log] = "📜 Log",
+        [L.Log] = "📜 Schedule Log",
         [L.Holidays] = "🏖 Holidays",
         [L.CloneTo] = "👥 Clone to...",
         [L.BulkApply] = "📋 Bulk Apply",

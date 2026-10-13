@@ -36,7 +36,7 @@
             <Image Source="{Binding Logo.Current}" IsVisible="{Binding Logo.HasLogo}"
                    MaxHeight="120" MaxWidth="360" Stretch="Uniform"
                    HorizontalAlignment="Center" Margin="0,0,0,6" />
-            <TextBlock Text="{Binding CompanyName}" FontSize="22" FontWeight="SemiBold"
+            <TextBlock IsVisible="{Binding !Logo.HasLogo}" Text="{Binding CompanyName}" FontSize="22" FontWeight="SemiBold"
                        HorizontalAlignment="Center" Foreground="White" />
             <TextBlock HorizontalAlignment="Center" Foreground="#AAAAAA" FontSize="14">
                 <Run Text="{Binding Loc[Branch2]}" /><Run Text="{Binding BranchName}" />

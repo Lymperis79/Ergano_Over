@@ -528,7 +528,7 @@ public static class GreekStrings
         [L.Clear2] = "✕ Καθαρισμός",
         [L.Week] = "Εβδομάδα",
         [L.Employee2] = "Εργαζόμενος:",
-        [L.Log] = "📜 Ιστορικό",
+        [L.Log] = "📜 Ιστορικό προγράμματος",
         [L.Holidays] = "🏖 Άδειες",
         [L.CloneTo] = "👥 Αντιγραφή σε...",
         [L.BulkApply] = "📋 Μαζική εφαρμογή",

@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
@@ -9,6 +9,7 @@
     <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
     <RootNamespace>ErganiManager.UI</RootNamespace>
     <ApplicationIcon>Assets\icon.ico</ApplicationIcon>
+    <StartupObject>ErganiManager.UI.Program</StartupObject>
   </PropertyGroup>
 
   <ItemGroup>

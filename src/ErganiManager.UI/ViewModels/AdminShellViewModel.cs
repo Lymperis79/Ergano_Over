@@ -149,6 +149,12 @@ public partial class AdminShellViewModel : ViewModelBase
     private int _companyTextKind;
     private string? _companyTextName;
 
+    /// <summary>True when the header shows the company picture instead of the company name
+    /// (only while a company is selected — never for "select a company above").</summary>
+    public bool ShowCompanyLogo => Logo.HasLogo && (_companyTextKind == 1 || _companyTextKind == 3);
+
+    public bool ShowCompanyText => !ShowCompanyLogo;
+
     private void SetCompanyText(int kind, string? name)
     {
         _companyTextKind = kind;
@@ -160,6 +166,8 @@ public partial class AdminShellViewModel : ViewModelBase
             3 => name ?? Loc["Vm.No company assigned"],
             _ => string.Empty
         };
+        OnPropertyChanged(nameof(ShowCompanyLogo));
+        OnPropertyChanged(nameof(ShowCompanyText));
     }
 
     /// <summary>Re-translates the texts that are stored as plain strings when the language changes.</summary>
@@ -337,6 +345,11 @@ public partial class AdminShellViewModel : ViewModelBase
 
         ApplyErganiKind(ErganiKind.Unknown);
         Loc.LanguageChanged += (_, _) => RefreshLocalizedTexts();
+        Logo.PropertyChanged += (_, _) =>
+        {
+            OnPropertyChanged(nameof(ShowCompanyLogo));
+            OnPropertyChanged(nameof(ShowCompanyText));
+        };
 
         _erganiHealth.StatusChanged += (_, status) =>
             Avalonia.Threading.Dispatcher.UIThread.Post(() =>

@@ -17,25 +17,54 @@
 
         <!-- Header -->
         <Border Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2" Background="#1E2128" Padding="20,14">
-            <Grid ColumnDefinitions="*,Auto">
-                <StackPanel Grid.Column="0">
-                    <TextBlock Text="{Binding WelcomeText}" FontSize="18" FontWeight="Bold" Foreground="White" />
-                    <TextBlock Text="{Binding CompanyDisplayText}" FontSize="13" Foreground="#AAAAAA" />
-                </StackPanel>
+            <Grid RowDefinitions="Auto,Auto">
 
-                <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" Spacing="16">
+                <!-- Line 1: company logo (or name) on the left, welcome next to it,
+                     Ergani status and Logout on the right -->
+                <Grid Grid.Row="0" ColumnDefinitions="Auto,*,Auto">
 
-                    <!-- Ergani API status indicator -->
-                    <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
-                        <TextBlock Text="{Binding ErganiStatusIcon}" FontSize="14" VerticalAlignment="Center" />
-                        <TextBlock Text="{Binding ErganiStatusText}" FontSize="12"
-                                   Foreground="{Binding ErganiStatusColor}"
-                                   VerticalAlignment="Center" />
-                        <Button Content="⟳" FontSize="12" Padding="4,2"
-                                Command="{Binding CheckErganiNowCommand}"
-                                ToolTip.Tip="{Binding Loc[CheckErganiAPIStatusNow]}"
-                                VerticalAlignment="Center" />
+                    <Panel Grid.Column="0" VerticalAlignment="Center">
+                        <!-- With a company picture the picture replaces the company name -->
+                        <Image Source="{Binding Logo.Current}" IsVisible="{Binding ShowCompanyLogo}"
+                               MaxHeight="32" MaxWidth="220" Stretch="Uniform"
+                               HorizontalAlignment="Left"
+                               ToolTip.Tip="{Binding CompanyDisplayText}" />
+                        <TextBlock Text="{Binding CompanyDisplayText}" FontSize="13" FontWeight="SemiBold"
+                                   Foreground="#CCCCCC" IsVisible="{Binding ShowCompanyText}"
+                                   TextTrimming="CharacterEllipsis" />
+                    </Panel>
+
+                    <TextBlock Grid.Column="1" Text="{Binding WelcomeText}" FontSize="12" Foreground="#AAAAAA"
+                               Margin="16,0,16,0" VerticalAlignment="Bottom"
+                               TextTrimming="CharacterEllipsis" />
+
+                    <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
+
+                        <!-- Ergani API status indicator -->
+                        <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+                            <TextBlock Text="{Binding ErganiStatusIcon}" FontSize="14" VerticalAlignment="Center" />
+                            <TextBlock Text="{Binding ErganiStatusText}" FontSize="12"
+                                       Foreground="{Binding ErganiStatusColor}"
+                                       VerticalAlignment="Center" />
+                            <Button Content="⟳" FontSize="12" Padding="4,2"
+                                    Command="{Binding CheckErganiNowCommand}"
+                                    ToolTip.Tip="{Binding Loc[CheckErganiAPIStatusNow]}"
+                                    VerticalAlignment="Center" />
+                        </StackPanel>
+
+                        <!-- Sign out and return to the login screen -->
+                        <Button Command="{Binding LogoutCommand}" VerticalAlignment="Center">
+                            <StackPanel Orientation="Horizontal" Spacing="6">
+                                <TextBlock Text="🚪" />
+                                <TextBlock Text="{Binding Loc[Logout]}" />
+                            </StackPanel>
+                        </Button>
                     </StackPanel>
+                </Grid>
+
+                <!-- Line 2: the other buttons and drop-downs, aligned to the right (wraps on small windows) -->
+                <WrapPanel Grid.Row="1" Orientation="Horizontal" ItemSpacing="16" LineSpacing="8"
+                           HorizontalAlignment="Right" Margin="0,10,0,0">
 
                     <!-- Always-on-top scan window launcher -->
                     <Button Content="{Binding Loc[ScanWindow]}"
@@ -53,7 +82,7 @@
                                    VerticalAlignment="Center" FontSize="12" />
                         <ComboBox ItemsSource="{Binding LanguageSelector.AvailableLanguages}"
                                   SelectedItem="{Binding LanguageSelector.SelectedLanguage}"
-                                  Width="100">
+                                  Width="120">
                             <ComboBox.ItemTemplate>
                                 <DataTemplate>
                                     <TextBlock Text="{Binding Converter={x:Static vm:AppLanguageConverter.Instance}}" />
@@ -69,7 +98,7 @@
                                    VerticalAlignment="Center" FontSize="13" />
                         <ComboBox ItemsSource="{Binding SwitchableCompanies}"
                                   SelectedItem="{Binding SelectedSwitchCompany}"
-                                  Width="220">
+                                  Width="250">
                             <ComboBox.ItemTemplate>
                                 <DataTemplate>
                                     <TextBlock Text="{Binding Name}" />
@@ -78,15 +107,7 @@
                         </ComboBox>
                     </StackPanel>
 
-                    <!-- Sign out and return to the login screen -->
-                    <Button Command="{Binding LogoutCommand}" VerticalAlignment="Center">
-                        <StackPanel Orientation="Horizontal" Spacing="6">
-                            <TextBlock Text="🚪" />
-                            <TextBlock Text="{Binding Loc[Logout]}" />
-                        </StackPanel>
-                    </Button>
-
-                </StackPanel>
+                </WrapPanel>
             </Grid>
         </Border>
 
