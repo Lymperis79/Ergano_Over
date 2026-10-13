@@ -1,9 +1,7 @@
-using System;
-using System.Linq;
-using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
+using Avalonia.Input.Platform;
 using Avalonia.Markup.Xaml;
 using Avalonia.Media;
 using ErganiManager.Core.Interfaces;
@@ -12,6 +10,9 @@ using ErganiManager.UI.ViewModels;
 using ErganiManager.UI.Views;
 using Microsoft.Extensions.DependencyInjection;
 using Serilog;
+using System;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace ErganiManager.UI;
 
@@ -35,6 +36,9 @@ public partial class App : Application
             var splash = BuildSplash();
             desktop.MainWindow = splash;
             splash.Show();
+            Log.Information("UI thread apartment state: {Apt}",
+            System.Threading.Thread.CurrentThread.GetApartmentState());
+            _ = TestClipboardAsync(splash);
 
             // Fire-and-forget — transitions away from splash once ready.
             _ = BootstrapAsync(desktop, splash);
@@ -43,6 +47,26 @@ public partial class App : Application
         base.OnFrameworkInitializationCompleted();
     }
 
+    private static async Task TestClipboardAsync(Window window)
+    {
+        try
+        {
+            var clipboard = TopLevel.GetTopLevel(window)?.Clipboard;
+            if (clipboard is null)
+            {
+                Log.Warning("Clipboard test: Clipboard is null.");
+                return;
+            }
+
+            await clipboard.SetTextAsync("ergani-clipboard-test");
+            var back = await clipboard.TryGetTextAsync();
+            Log.Information("Clipboard test round trip returned: {Back}", back);
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Clipboard test failed.");
+        }
+    }
     // ── Bootstrap ─────────────────────────────────────────────────────────────
 
     private static Window BuildSplash()

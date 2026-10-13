@@ -15,7 +15,7 @@ internal static class Program
     public static IServiceProvider Services { get; private set; } = null!;
 
     [STAThread]
-    public static async Task Main(string[] args)
+    public static void Main(string[] args)
     {
         ConfigureLogging();
 
@@ -55,8 +55,9 @@ internal static class Program
             BuildAvaloniaApp()
                 .StartWithClassicDesktopLifetime(args);
 
+            
             // Graceful shutdown
-            await retryService.StopAsync();
+            retryService.StopAsync().GetAwaiter().GetResult();
         }
         catch (Exception ex)
         {

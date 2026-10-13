@@ -68,12 +68,12 @@
             },
             "Microsoft.Extensions.DependencyInjection.Abstractions": {
               "target": "Package",
-              "version": "[10.0.10, )",
+              "version": "[10.0.12, )",
               "versionCentrallyManaged": true
             },
             "Microsoft.Extensions.Logging.Abstractions": {
               "target": "Package",
-              "version": "[10.0.10, )",
+              "version": "[10.0.12, )",
               "versionCentrallyManaged": true
             }
           },
@@ -86,17 +86,17 @@
             "ClosedXML": "0.105.1",
             "CommunityToolkit.Mvvm": "8.4.2",
             "MailKit": "4.18.0",
-            "Microsoft.EntityFrameworkCore": "10.0.10",
-            "Microsoft.EntityFrameworkCore.Design": "10.0.10",
-            "Microsoft.EntityFrameworkCore.Sqlite": "10.0.10",
-            "Microsoft.EntityFrameworkCore.SqlServer": "10.0.10",
-            "Microsoft.Extensions.DependencyInjection": "10.0.10",
-            "Microsoft.Extensions.DependencyInjection.Abstractions": "10.0.10",
-            "Microsoft.Extensions.Hosting": "10.0.10",
+            "Microsoft.EntityFrameworkCore": "10.0.12",
+            "Microsoft.EntityFrameworkCore.Design": "10.0.12",
+            "Microsoft.EntityFrameworkCore.Sqlite": "10.0.12",
+            "Microsoft.EntityFrameworkCore.SqlServer": "10.0.12",
+            "Microsoft.Extensions.DependencyInjection": "10.0.12",
+            "Microsoft.Extensions.DependencyInjection.Abstractions": "10.0.12",
+            "Microsoft.Extensions.Hosting": "10.0.12",
             "Microsoft.Extensions.Http": "10.0.10",
             "Microsoft.Extensions.Logging": "10.0.10",
-            "Microsoft.Extensions.Logging.Abstractions": "10.0.10",
-            "Microting.EntityFrameworkCore.MySql": "10.0.8",
+            "Microsoft.Extensions.Logging.Abstractions": "10.0.12",
+            "Microting.EntityFrameworkCore.MySql": "10.0.12",
             "Selenium.WebDriver": "4.27.0",
             "Serilog": "4.4.0",
             "Serilog.Extensions.Logging": "10.0.0",
@@ -118,7 +118,7 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.400/PortableRuntimeIdentifierGraph.json",
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.401/PortableRuntimeIdentifierGraph.json",
           "packagesToPrune": {
             "Microsoft.CSharp": "(,4.7.32767]",
             "Microsoft.VisualBasic": "(,10.4.32767]",
@@ -448,29 +448,29 @@
           "dependencies": {
             "Microsoft.EntityFrameworkCore": {
               "target": "Package",
-              "version": "[10.0.10, )",
+              "version": "[10.0.12, )",
               "versionCentrallyManaged": true
             },
             "Microsoft.EntityFrameworkCore.Design": {
               "include": "Runtime, Build, Native, ContentFiles, Analyzers, BuildTransitive",
               "suppressParent": "All",
               "target": "Package",
-              "version": "[10.0.10, )",
+              "version": "[10.0.12, )",
               "versionCentrallyManaged": true
             },
             "Microsoft.EntityFrameworkCore.SqlServer": {
               "target": "Package",
-              "version": "[10.0.10, )",
+              "version": "[10.0.12, )",
               "versionCentrallyManaged": true
             },
             "Microsoft.EntityFrameworkCore.Sqlite": {
               "target": "Package",
-              "version": "[10.0.10, )",
+              "version": "[10.0.12, )",
               "versionCentrallyManaged": true
             },
             "Microting.EntityFrameworkCore.MySql": {
               "target": "Package",
-              "version": "[10.0.8, )",
+              "version": "[10.0.12, )",
               "versionCentrallyManaged": true
             }
           },
@@ -483,17 +483,17 @@
             "ClosedXML": "0.105.1",
             "CommunityToolkit.Mvvm": "8.4.2",
             "MailKit": "4.18.0",
-            "Microsoft.EntityFrameworkCore": "10.0.10",
-            "Microsoft.EntityFrameworkCore.Design": "10.0.10",
-            "Microsoft.EntityFrameworkCore.Sqlite": "10.0.10",
-            "Microsoft.EntityFrameworkCore.SqlServer": "10.0.10",
-            "Microsoft.Extensions.DependencyInjection": "10.0.10",
-            "Microsoft.Extensions.DependencyInjection.Abstractions": "10.0.10",
-            "Microsoft.Extensions.Hosting": "10.0.10",
+            "Microsoft.EntityFrameworkCore": "10.0.12",
+            "Microsoft.EntityFrameworkCore.Design": "10.0.12",
+            "Microsoft.EntityFrameworkCore.Sqlite": "10.0.12",
+            "Microsoft.EntityFrameworkCore.SqlServer": "10.0.12",
+            "Microsoft.Extensions.DependencyInjection": "10.0.12",
+            "Microsoft.Extensions.DependencyInjection.Abstractions": "10.0.12",
+            "Microsoft.Extensions.Hosting": "10.0.12",
             "Microsoft.Extensions.Http": "10.0.10",
             "Microsoft.Extensions.Logging": "10.0.10",
-            "Microsoft.Extensions.Logging.Abstractions": "10.0.10",
-            "Microting.EntityFrameworkCore.MySql": "10.0.8",
+            "Microsoft.Extensions.Logging.Abstractions": "10.0.12",
+            "Microting.EntityFrameworkCore.MySql": "10.0.12",
             "Selenium.WebDriver": "4.27.0",
             "Serilog": "4.4.0",
             "Serilog.Extensions.Logging": "10.0.0",
@@ -515,7 +515,7 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.400/PortableRuntimeIdentifierGraph.json",
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.401/PortableRuntimeIdentifierGraph.json",
           "packagesToPrune": {
             "Microsoft.CSharp": "(,4.7.32767]",
             "Microsoft.VisualBasic": "(,10.4.32767]",
@@ -862,7 +862,7 @@
             },
             "Microsoft.Extensions.Logging.Abstractions": {
               "target": "Package",
-              "version": "[10.0.10, )",
+              "version": "[10.0.12, )",
               "versionCentrallyManaged": true
             },
             "Selenium.WebDriver": {
@@ -880,17 +880,17 @@
             "ClosedXML": "0.105.1",
             "CommunityToolkit.Mvvm": "8.4.2",
             "MailKit": "4.18.0",
-            "Microsoft.EntityFrameworkCore": "10.0.10",
-            "Microsoft.EntityFrameworkCore.Design": "10.0.10",
-            "Microsoft.EntityFrameworkCore.Sqlite": "10.0.10",
-            "Microsoft.EntityFrameworkCore.SqlServer": "10.0.10",
-            "Microsoft.Extensions.DependencyInjection": "10.0.10",
-            "Microsoft.Extensions.DependencyInjection.Abstractions": "10.0.10",
-            "Microsoft.Extensions.Hosting": "10.0.10",
+            "Microsoft.EntityFrameworkCore": "10.0.12",
+            "Microsoft.EntityFrameworkCore.Design": "10.0.12",
+            "Microsoft.EntityFrameworkCore.Sqlite": "10.0.12",
+            "Microsoft.EntityFrameworkCore.SqlServer": "10.0.12",
+            "Microsoft.Extensions.DependencyInjection": "10.0.12",
+            "Microsoft.Extensions.DependencyInjection.Abstractions": "10.0.12",
+            "Microsoft.Extensions.Hosting": "10.0.12",
             "Microsoft.Extensions.Http": "10.0.10",
             "Microsoft.Extensions.Logging": "10.0.10",
-            "Microsoft.Extensions.Logging.Abstractions": "10.0.10",
-            "Microting.EntityFrameworkCore.MySql": "10.0.8",
+            "Microsoft.Extensions.Logging.Abstractions": "10.0.12",
+            "Microting.EntityFrameworkCore.MySql": "10.0.12",
             "Selenium.WebDriver": "4.27.0",
             "Serilog": "4.4.0",
             "Serilog.Extensions.Logging": "10.0.0",
@@ -912,7 +912,7 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.400/PortableRuntimeIdentifierGraph.json",
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.401/PortableRuntimeIdentifierGraph.json",
           "packagesToPrune": {
             "Microsoft.CSharp": "(,4.7.32767]",
             "Microsoft.VisualBasic": "(,10.4.32767]",
@@ -1244,12 +1244,12 @@
               "include": "Runtime, Build, Native, ContentFiles, Analyzers, BuildTransitive",
               "suppressParent": "All",
               "target": "Package",
-              "version": "[10.0.10, )",
+              "version": "[10.0.12, )",
               "versionCentrallyManaged": true
             },
             "Microsoft.EntityFrameworkCore.Sqlite": {
               "target": "Package",
-              "version": "[10.0.10, )",
+              "version": "[10.0.12, )",
               "versionCentrallyManaged": true
             }
           },
@@ -1262,17 +1262,17 @@
             "ClosedXML": "0.105.1",
             "CommunityToolkit.Mvvm": "8.4.2",
             "MailKit": "4.18.0",
-            "Microsoft.EntityFrameworkCore": "10.0.10",
-            "Microsoft.EntityFrameworkCore.Design": "10.0.10",
-            "Microsoft.EntityFrameworkCore.Sqlite": "10.0.10",
-            "Microsoft.EntityFrameworkCore.SqlServer": "10.0.10",
-            "Microsoft.Extensions.DependencyInjection": "10.0.10",
-            "Microsoft.Extensions.DependencyInjection.Abstractions": "10.0.10",
-            "Microsoft.Extensions.Hosting": "10.0.10",
+            "Microsoft.EntityFrameworkCore": "10.0.12",
+            "Microsoft.EntityFrameworkCore.Design": "10.0.12",
+            "Microsoft.EntityFrameworkCore.Sqlite": "10.0.12",
+            "Microsoft.EntityFrameworkCore.SqlServer": "10.0.12",
+            "Microsoft.Extensions.DependencyInjection": "10.0.12",
+            "Microsoft.Extensions.DependencyInjection.Abstractions": "10.0.12",
+            "Microsoft.Extensions.Hosting": "10.0.12",
             "Microsoft.Extensions.Http": "10.0.10",
             "Microsoft.Extensions.Logging": "10.0.10",
-            "Microsoft.Extensions.Logging.Abstractions": "10.0.10",
-            "Microting.EntityFrameworkCore.MySql": "10.0.8",
+            "Microsoft.Extensions.Logging.Abstractions": "10.0.12",
+            "Microting.EntityFrameworkCore.MySql": "10.0.12",
             "Selenium.WebDriver": "4.27.0",
             "Serilog": "4.4.0",
             "Serilog.Extensions.Logging": "10.0.0",
@@ -1294,7 +1294,7 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.400/PortableRuntimeIdentifierGraph.json",
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.401/PortableRuntimeIdentifierGraph.json",
           "packagesToPrune": {
             "Microsoft.CSharp": "(,4.7.32767]",
             "Microsoft.VisualBasic": "(,10.4.32767]",
@@ -1667,12 +1667,12 @@
             },
             "Microsoft.Extensions.DependencyInjection": {
               "target": "Package",
-              "version": "[10.0.10, )",
+              "version": "[10.0.12, )",
               "versionCentrallyManaged": true
             },
             "Microsoft.Extensions.Hosting": {
               "target": "Package",
-              "version": "[10.0.10, )",
+              "version": "[10.0.12, )",
               "versionCentrallyManaged": true
             },
             "Serilog": {
@@ -1700,17 +1700,17 @@
             "ClosedXML": "0.105.1",
             "CommunityToolkit.Mvvm": "8.4.2",
             "MailKit": "4.18.0",
-            "Microsoft.EntityFrameworkCore": "10.0.10",
-            "Microsoft.EntityFrameworkCore.Design": "10.0.10",
-            "Microsoft.EntityFrameworkCore.Sqlite": "10.0.10",
-            "Microsoft.EntityFrameworkCore.SqlServer": "10.0.10",
-            "Microsoft.Extensions.DependencyInjection": "10.0.10",
-            "Microsoft.Extensions.DependencyInjection.Abstractions": "10.0.10",
-            "Microsoft.Extensions.Hosting": "10.0.10",
+            "Microsoft.EntityFrameworkCore": "10.0.12",
+            "Microsoft.EntityFrameworkCore.Design": "10.0.12",
+            "Microsoft.EntityFrameworkCore.Sqlite": "10.0.12",
+            "Microsoft.EntityFrameworkCore.SqlServer": "10.0.12",
+            "Microsoft.Extensions.DependencyInjection": "10.0.12",
+            "Microsoft.Extensions.DependencyInjection.Abstractions": "10.0.12",
+            "Microsoft.Extensions.Hosting": "10.0.12",
             "Microsoft.Extensions.Http": "10.0.10",
             "Microsoft.Extensions.Logging": "10.0.10",
-            "Microsoft.Extensions.Logging.Abstractions": "10.0.10",
-            "Microting.EntityFrameworkCore.MySql": "10.0.8",
+            "Microsoft.Extensions.Logging.Abstractions": "10.0.12",
+            "Microting.EntityFrameworkCore.MySql": "10.0.12",
             "Selenium.WebDriver": "4.27.0",
             "Serilog": "4.4.0",
             "Serilog.Extensions.Logging": "10.0.0",
@@ -1732,7 +1732,7 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.400/PortableRuntimeIdentifierGraph.json",
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.401/PortableRuntimeIdentifierGraph.json",
           "packagesToPrune": {
             "Microsoft.CSharp": "(,4.7.32767]",
             "Microsoft.VisualBasic": "(,10.4.32767]",

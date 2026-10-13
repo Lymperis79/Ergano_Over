@@ -26,7 +26,7 @@
             </Border>
 
             <TextBlock Text="{Binding Loc[Username]}" FontWeight="SemiBold" />
-            <TextBox Text="{Binding Username}" PlaceholderText="{Binding Loc[Username]}" />
+            <TextBox x:Name="UsernameBox" Text="{Binding Username}" PlaceholderText="{Binding Loc[Username]}" />      
 
             <TextBlock Text="{Binding Loc[Password]}" FontWeight="SemiBold" />
             <TextBox Text="{Binding Password}" PasswordChar="•"

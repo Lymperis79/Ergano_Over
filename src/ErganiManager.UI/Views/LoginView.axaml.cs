@@ -10,6 +10,8 @@ public partial class LoginView : Window
     {
         InitializeComponent();
         KeyDown += OnWindowKeyDown;
+        Opened += (_, _) =>
+            Avalonia.Threading.Dispatcher.UIThread.Post(() => UsernameBox.Focus());
     }
 
     private void OnWindowKeyDown(object? sender, KeyEventArgs e)

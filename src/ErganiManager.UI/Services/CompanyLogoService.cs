@@ -112,7 +112,7 @@ public sealed class CompanyLogoService : ObservableObject
 
         using var scaled = Bitmap.DecodeToWidth(new MemoryStream(raw), Math.Min(MaxWidth, probe.PixelSize.Width));
         using var output = new MemoryStream();
-        scaled.Save(output);
+        scaled.Save(output, PngBitmapEncoderOptions.Default);
         return output.ToArray();
     }
 }
