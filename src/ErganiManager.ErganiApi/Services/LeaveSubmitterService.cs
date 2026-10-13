@@ -20,19 +20,19 @@ public sealed class LeaveSubmitterService : ILeaveSubmitter
         int companyId, IReadOnlyList<int> leaveIds, CancellationToken ct = default)
     {
         var outcome = new LeaveBatchSubmissionResult();
-        if (leaveIds.Count == 0) { outcome.ErrorMessage = "No holidays selected."; return outcome; }
+        if (leaveIds.Count == 0) { outcome.ErrorMessage = ErganiManager.Data.UiText.T("No holidays selected."); return outcome; }
 
         await using var db = new AppDbContext(_connectionState.GetDbOptions());
 
         var company = await db.Companies.FindAsync(new object[] { companyId }, ct);
-        if (company == null) { outcome.ErrorMessage = "Company not found."; return outcome; }
+        if (company == null) { outcome.ErrorMessage = ErganiManager.Data.UiText.T("Company not found."); return outcome; }
 
         var records = await db.Leaves
             .Include(l => l.Employee).Include(l => l.Branch)
             .Where(l => leaveIds.Contains(l.Id) && l.Employee != null
                      && l.Employee.CompanyId == companyId && !l.SubmittedToErgani)
             .ToListAsync(ct);
-        if (records.Count == 0) { outcome.ErrorMessage = "There are no unsent holidays to submit."; return outcome; }
+        if (records.Count == 0) { outcome.ErrorMessage = ErganiManager.Data.UiText.T("There are no unsent holidays to submit."); return outcome; }
 
         var credentials = new ErganiCredentials
         {
@@ -57,9 +57,9 @@ public sealed class LeaveSubmitterService : ILeaveSubmitter
 
             if (stopped)
             {
-                Fail(items, "Not sent — Ergani was unreachable.");
+                Fail(items, ErganiManager.Data.UiText.T("Not sent — Ergani was unreachable."));
                 outcome.FailedCount += items.Count;
-                outcome.ErrorMessage ??= "Not sent — Ergani was unreachable.";
+                outcome.ErrorMessage ??= ErganiManager.Data.UiText.T("Not sent — Ergani was unreachable.");
                 await db.SaveChangesAsync(ct);
                 continue;
             }
@@ -68,9 +68,9 @@ public sealed class LeaveSubmitterService : ILeaveSubmitter
             var employee = items[0].Employee!;
             if (branch == null)
             {
-                Fail(items, "Branch not found.");
+                Fail(items, ErganiManager.Data.UiText.T("Branch not found."));
                 outcome.FailedCount += items.Count;
-                outcome.ErrorMessage ??= "Branch not found.";
+                outcome.ErrorMessage ??= ErganiManager.Data.UiText.T("Branch not found.");
                 await db.SaveChangesAsync(ct);
                 continue;
             }
@@ -101,7 +101,7 @@ public sealed class LeaveSubmitterService : ILeaveSubmitter
             var success       = result.Success && !businessError;
             var error         = success
                 ? null
-                : (result.ErrorMessage ?? response?.Description ?? "Ergani leave submission failed.");
+                : (result.ErrorMessage ?? response?.Description ?? ErganiManager.Data.UiText.T("Ergani leave submission failed."));
 
             var submittedDate = DateOnly.FromDateTime(DateTime.Today);
             foreach (var l in items)

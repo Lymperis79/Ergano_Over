@@ -46,7 +46,7 @@ public class ScheduleSubmitterService : IScheduleSubmitter
         var company = await db.Companies.FindAsync(companyId);
         if (company == null)
         {
-            outcome.Error = "Company not found.";
+            outcome.Error = ErganiManager.Data.UiText.T("Company not found.");
             return outcome;
         }
 
@@ -60,7 +60,7 @@ public class ScheduleSubmitterService : IScheduleSubmitter
             if (branch == null)
             {
                 foreach (var d in branchGroup)
-                    AddDayResult(outcome, d, false, null, "Branch not found.");
+                    AddDayResult(outcome, d, false, null, ErganiManager.Data.UiText.T("Branch not found."));
                 continue;
             }
 
@@ -74,7 +74,7 @@ public class ScheduleSubmitterService : IScheduleSubmitter
                 if (stopped)
                 {
                     foreach (var d in dateGroup)
-                        AddDayResult(outcome, d, false, null, "Not sent — Ergani was unreachable.");
+                        AddDayResult(outcome, d, false, null, ErganiManager.Data.UiText.T("Not sent — Ergani was unreachable."));
                     continue;
                 }
 
@@ -93,7 +93,7 @@ public class ScheduleSubmitterService : IScheduleSubmitter
                 if (scheduleEntries.Count == 0)
                 {
                     foreach (var d in dateGroup)
-                        AddDayResult(outcome, d, false, null, "Employee not found.");
+                        AddDayResult(outcome, d, false, null, ErganiManager.Data.UiText.T("Employee not found."));
                     continue;
                 }
 
@@ -116,7 +116,7 @@ public class ScheduleSubmitterService : IScheduleSubmitter
                 var success       = result.Success && !businessError;
                 var error         = success
                     ? null
-                    : (result.ErrorMessage ?? response?.Description ?? "Ergani schedule submission failed.");
+                    : (result.ErrorMessage ?? response?.Description ?? ErganiManager.Data.UiText.T("Ergani schedule submission failed."));
 
                 // Audit log — one row per attempt, successful or not (same table the work cards use).
                 var distinctEmployees = dateGroup.Select(d => d.EmployeeId).Distinct().ToList();
@@ -227,7 +227,7 @@ public class ScheduleSubmitterService : IScheduleSubmitter
                 var employee = await db.Employees.FindAsync(day.EmployeeId);
                 if (employee == null)
                 {
-                    dayResult.OvertimeError = "Employee not found.";
+                    dayResult.OvertimeError = ErganiManager.Data.UiText.T("Employee not found.");
                     outcome.OvertimeFailed++;
                     return null;
                 }
@@ -282,7 +282,7 @@ public class ScheduleSubmitterService : IScheduleSubmitter
                 {
                     day.OvertimeError = ot.Errors.TryGetValue(id, out var reason)
                         ? reason
-                        : (ot.ErrorMessage ?? "Overtime submission failed.");
+                        : (ot.ErrorMessage ?? ErganiManager.Data.UiText.T("Overtime submission failed."));
                     outcome.OvertimeFailed++;
                 }
             }
@@ -347,7 +347,7 @@ public class ScheduleSubmitterService : IScheduleSubmitter
 
         await using var db = OpenDb();
         var company = await db.Companies.FindAsync(companyId);
-        if (company == null) return (0, "Company not found.");
+        if (company == null) return (0, ErganiManager.Data.UiText.T("Company not found."));
 
         var credentials = BuildCredentials(company);
         int submitted   = 0;

@@ -43,7 +43,7 @@ public class ErganiApiService : IWorkCardSubmitter
     {
         var config = _connectionState.LoadConfig();
         if (config == null)
-            return new WorkCardSubmissionOutcome { Success = false, ErrorMessage = "Database not configured." };
+            return new WorkCardSubmissionOutcome { Success = false, ErrorMessage = ErganiManager.Data.UiText.T("Database not configured.") };
         var optionsBuilder = new DbContextOptionsBuilder<AppDbContext>();
         DbProviderFactory.Configure(optionsBuilder, config);
 
@@ -58,7 +58,7 @@ public class ErganiApiService : IWorkCardSubmitter
             return new WorkCardSubmissionOutcome
             {
                 Success = false,
-                ErrorMessage = "Employee, company, or branch no longer exists — cannot submit queued scan."
+                ErrorMessage = ErganiManager.Data.UiText.T("Employee, company, or branch no longer exists — cannot submit queued scan.")
             };
         }
 
@@ -119,7 +119,7 @@ public class ErganiApiService : IWorkCardSubmitter
         var succeeded = callResult.Success && !isBusinessError;
         var errorMessage = succeeded
             ? null
-            : (callResult.ErrorMessage ?? firstResponse?.Description ?? "Ergani submission failed.");
+            : (callResult.ErrorMessage ?? firstResponse?.Description ?? ErganiManager.Data.UiText.T("Ergani submission failed."));
 
         var movementEnum = movementTypeCode == WorkCardMovementTypeCodes.Arrival
             ? Data.Entities.MovementType.Arrival

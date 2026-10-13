@@ -17,14 +17,14 @@ public sealed class OvertimeSubmitterService : IOvertimeSubmitter
 
     public async Task<OvertimeBatchSubmissionResult> SubmitAsync(int companyId, IReadOnlyList<int> overtimeIds, CancellationToken ct = default)
     {
-        if (overtimeIds.Count == 0) return new() { ErrorMessage = "No overtime records selected." };
+        if (overtimeIds.Count == 0) return new() { ErrorMessage = ErganiManager.Data.UiText.T("No overtime records selected.") };
         await using var db = new AppDbContext(_connectionState.GetDbOptions());
         var company = await db.Companies.FindAsync(new object[] { companyId }, ct);
-        if (company == null) return new() { ErrorMessage = "Company not found." };
+        if (company == null) return new() { ErrorMessage = ErganiManager.Data.UiText.T("Company not found.") };
         var records = await db.Overtimes.Include(x => x.Employee).Include(x => x.Branch)
             .Where(x => overtimeIds.Contains(x.Id) && x.Employee != null && x.Employee.CompanyId == companyId && !x.IsCancelled && !x.SubmittedToErgani)
             .ToListAsync(ct);
-        if (records.Count == 0) return new() { ErrorMessage = "No eligible unsent overtime records were selected." };
+        if (records.Count == 0) return new() { ErrorMessage = ErganiManager.Data.UiText.T("No eligible unsent overtime records were selected.") };
 
         // Records past the 2-hour cutoff are skipped (and reported); the rest are still sent.
         var errors = new Dictionary<int, string>();
@@ -69,7 +69,7 @@ public sealed class OvertimeSubmitterService : IOvertimeSubmitter
             var response = result.Data?.FirstOrDefault();
             var success = result.Success && response?.IsBusinessError != true && !string.IsNullOrWhiteSpace(response?.Protocol);
             var protocol = response?.Protocol; var submissionId = response?.SubmissionId;
-            var error = success ? null : (result.ErrorMessage ?? response?.Description ?? "Ergani overtime submission failed.");
+            var error = success ? null : (result.ErrorMessage ?? response?.Description ?? ErganiManager.Data.UiText.T("Ergani overtime submission failed."));
             var submittedDate = DateOnly.FromDateTime(DateTime.Today);
             foreach (var entity in group)
             {
