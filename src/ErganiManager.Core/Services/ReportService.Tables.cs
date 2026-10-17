@@ -23,6 +23,7 @@ public partial class ReportService
         TableReportKind.Consistency      => BuildConsistencyAsync(companyId, from, to, employeeId),
         TableReportKind.Roster           => BuildRosterAsync(companyId, from, to, employeeId),
         TableReportKind.OvertimeTrend    => BuildOvertimeTrendAsync(companyId, from, to, employeeId),
+        TableReportKind.Holidays         => BuildHolidaysAsync(companyId, from, to, employeeId),
         _ => throw new ArgumentOutOfRangeException(nameof(kind))
     };
 
@@ -616,5 +617,104 @@ public partial class ReportService
         report.Summary = UiText.F("{0} of overtime for {1} employee(s) in {2} month(s). ", ReportFormat.Hours(grand), byEmployee.Count, months.Count) +
                          UiText.F("Highest month: {0} ({1}).", Label(months[topMonth]), ReportFormat.Hours(totals[topMonth]));
         return report;
+    }
+
+    // -- 7. Holidays (employee leave) grouped by category ---------------------
+
+    private async Task<TableReport> BuildHolidaysAsync(int companyId, DateOnly from, DateOnly to, int? employeeId)
+    {
+        await using var db = new AppDbContext(_connectionState.GetDbOptions());
+
+        var names = await db.Employees.Where(e => e.CompanyId == companyId)
+            .Select(e => new { e.Id, e.FirstName, e.LastName })
+            .ToDictionaryAsync(e => e.Id, e => $"{e.LastName} {e.FirstName}".Trim());
+        string Emp(int id) => names.TryGetValue(id, out var n) ? n : $"#{id}";
+
+        var leaves = await db.Leaves
+            .Where(l => l.Employee!.CompanyId == companyId && l.LeaveDate >= from && l.LeaveDate <= to
+                        && (employeeId == null || l.EmployeeId == employeeId))
+            .Select(l => new HolidayDay(l.EmployeeId, l.LeaveDate, l.LeaveTypeCode, l.StartTime, l.EndTime,
+                                        l.Comments, l.SubmittedToErgani, l.Protocol))
+            .ToListAsync();
+
+        var report = new TableReport { Title = UiText.T("Holidays by category") };
+
+        var byCategory = leaves.GroupBy(l => l.TypeCode).OrderBy(g => g.Key, StringComparer.OrdinalIgnoreCase).ToList();
+
+        // Summary per category.
+        var summary = report.AddSection(UiText.T("Summary per category"),
+            (UiText.T("Category"), 380), (UiText.T("Employees"), 100), (UiText.T("Days"), 80), (UiText.T("Hours"), 100));
+        foreach (var g in byCategory)
+        {
+            var hourly = g.Where(l => l.Start != null && l.End != null).Sum(l => SpanHours(l.Start!.Value, l.End!.Value));
+            summary.Add(ErganiManager.Core.Models.LeaveTypes.Label(g.Key), g.Select(l => l.EmployeeId).Distinct().Count().ToString(Inv),
+                g.Count().ToString(Inv), hourly > 0 ? ReportFormat.Hours(hourly) : string.Empty);
+        }
+        if (byCategory.Count > 0)
+            summary.Add(RowStyle.Total, UiText.T("All"), leaves.Select(l => l.EmployeeId).Distinct().Count().ToString(Inv),
+                leaves.Count.ToString(Inv), string.Empty);
+
+        // Details: one group per category, consecutive days of the same holiday merged into one row.
+        var details = report.AddSection(UiText.T("Holidays in detail"),
+            (UiText.T("Employee"), 220), (UiText.T("From"), 100), (UiText.T("To"), 100), (UiText.T("Days"), 60),
+            (UiText.T("Hours"), 120), (UiText.T("Comment"), 300), (UiText.T("Submitted to Ergani"), 150), (UiText.T("Protocol"), 200));
+        foreach (var g in byCategory)
+        {
+            details.Add(RowStyle.Group, UiText.F("{0} — {1} day(s), {2} employee(s)", ErganiManager.Core.Models.LeaveTypes.Label(g.Key), g.Count(),
+                g.Select(l => l.EmployeeId).Distinct().Count()));
+
+            var ranges = new List<List<HolidayDay>>();
+            foreach (var l in g.OrderBy(l => Emp(l.EmployeeId), StringComparer.CurrentCultureIgnoreCase)
+                               .ThenBy(l => l.Start).ThenBy(l => l.End).ThenBy(l => l.Comments ?? string.Empty).ThenBy(l => l.Date))
+            {
+                if (ranges.Count > 0 && ContinuesHoliday(ranges[^1][^1], l)) ranges[^1].Add(l);
+                else ranges.Add(new List<HolidayDay> { l });
+            }
+
+            foreach (var r in ranges.OrderBy(r => Emp(r[0].EmployeeId), StringComparer.CurrentCultureIgnoreCase).ThenBy(r => r[0].Date))
+            {
+                var first = r[0];
+                var sent = r.Count(x => x.Submitted);
+                details.Add(Emp(first.EmployeeId), first.Date.ToString("dd/MM/yyyy", Inv), r[^1].Date.ToString("dd/MM/yyyy", Inv),
+                    r.Count.ToString(Inv),
+                    first.Start is { } s && first.End is { } e ? $"{Clock(s)} - {Clock(e)}" : string.Empty,
+                    first.Comments ?? string.Empty,
+                    sent == r.Count ? UiText.T("Yes") : sent == 0 ? UiText.T("No") : $"{UiText.T("Partial")} ({sent}/{r.Count})",
+                    string.Join(", ", r.Select(x => x.Protocol).Where(p => !string.IsNullOrWhiteSpace(p)).Distinct()));
+            }
+        }
+
+        // The Greek public holidays inside the period (not employee leave).
+        var publicHolidays = Enumerable.Range(from.Year, to.Year - from.Year + 1)
+            .SelectMany(ErganiManager.Core.Models.GreekHolidays.ForYear)
+            .Where(h => h.Date >= from && h.Date <= to)
+            .OrderBy(h => h.Date)
+            .ToList();
+        var pub = report.AddSection(UiText.T("Public holidays in this period"),
+            (UiText.T("Date"), 110), (UiText.T("Day"), 140), (UiText.T("Holiday"), 360));
+        foreach (var h in publicHolidays)
+            pub.Add(h.Date.ToString("dd/MM/yyyy", Inv), h.Date.ToString("dddd", CultureInfo.CurrentCulture), UiText.T(h.Name));
+
+        report.Summary = leaves.Count == 0
+            ? UiText.T("No holidays in this period.")
+            : UiText.F("{0} holiday day(s) of {1} employee(s) in {2} categor(ies).", leaves.Count,
+                leaves.Select(l => l.EmployeeId).Distinct().Count(), byCategory.Count);
+        return report;
+    }
+
+    private sealed record HolidayDay(int EmployeeId, DateOnly Date, string TypeCode, TimeOnly? Start, TimeOnly? End,
+        string? Comments, bool Submitted, string? Protocol);
+
+    /// <summary>Same employee, type, hours and comment, with only weekend days between the two dates.</summary>
+    private static bool ContinuesHoliday(HolidayDay previous, HolidayDay next)
+    {
+        if (previous.EmployeeId != next.EmployeeId || previous.TypeCode != next.TypeCode ||
+            previous.Start != next.Start || previous.End != next.End ||
+            (previous.Comments ?? string.Empty) != (next.Comments ?? string.Empty) || next.Date <= previous.Date)
+            return false;
+
+        for (var day = previous.Date.AddDays(1); day < next.Date; day = day.AddDays(1))
+            if (day.DayOfWeek is not (DayOfWeek.Saturday or DayOfWeek.Sunday)) return false;
+        return true;
     }
 }

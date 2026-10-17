@@ -10,7 +10,8 @@ public enum TableReportKind
     FailureLog,
     Consistency,
     Roster,
-    OvertimeTrend
+    OvertimeTrend,
+    Holidays
 }
 
 public enum RowStyle { Normal, Group, Total, Warning }

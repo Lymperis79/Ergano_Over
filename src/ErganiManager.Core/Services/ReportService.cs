@@ -69,8 +69,13 @@ public partial class ReportService : IReportService
 
         var days = await query.ToListAsync();
 
+        // What the employee really worked comes from the clock-in/out scans: the same figure the
+        // "Declared vs actual" report shows. The schedule only says what he was supposed to work.
+        var summary = await GetTimeSummaryReportAsync(companyId, from, to, employeeId);
+        var actualByMonth = summary.Months.ToDictionary(m => (m.EmployeeId, m.Year, m.Month));
+
         const double normalPerDay = 8.0;
-        var rows = days
+        var scheduledRows = days
             .Select(s =>
             {
                 var span = s.EndTime!.Value.ToTimeSpan() - s.StartTime!.Value.ToTimeSpan();
@@ -78,8 +83,6 @@ public partial class ReportService : IReportService
                 return (Day: s, Hours: span.TotalHours);
             })
             .GroupBy(x => (x.Day.EmployeeId, Name: x.Day.Employee!.FullName, x.Day.ScheduleDate.Year, x.Day.ScheduleDate.Month))
-            .OrderBy(g => g.Key.Name, StringComparer.CurrentCultureIgnoreCase)
-            .ThenBy(g => g.Key.Year).ThenBy(g => g.Key.Month)
             .Select(g => new WorkTimeReportRow
             {
                 EmployeeId   = g.Key.EmployeeId,
@@ -88,9 +91,29 @@ public partial class ReportService : IReportService
                 Month        = g.Key.Month,
                 DaysWorked   = g.Count(),
                 TotalHours   = g.Sum(x => x.Hours),
+                ActualHours  = actualByMonth.TryGetValue((g.Key.EmployeeId, g.Key.Year, g.Key.Month), out var am) ? am.ActualHours : 0,
                 NormalHours  = g.Sum(x => Math.Min(x.Hours, normalPerDay)),
                 OverHours    = g.Sum(x => Math.Max(0, x.Hours - normalPerDay))
             })
+            .ToList();
+
+        // A month with real scans but no Office/Home schedule still gets a row (scheduled = 0).
+        var scheduledKeys = scheduledRows.Select(r => (r.EmployeeId, r.Year, r.Month)).ToHashSet();
+        var scanOnlyRows = actualByMonth
+            .Where(kv => !scheduledKeys.Contains(kv.Key) && kv.Value.ActualHours > 0)
+            .Select(kv => new WorkTimeReportRow
+            {
+                EmployeeId   = kv.Value.EmployeeId,
+                EmployeeName = kv.Value.EmployeeName,
+                Year         = kv.Value.Year,
+                Month        = kv.Value.Month,
+                DaysWorked   = kv.Value.Days.Count(d => d.ActualHours != null),
+                ActualHours  = kv.Value.ActualHours
+            });
+
+        var rows = scheduledRows.Concat(scanOnlyRows)
+            .OrderBy(r => r.EmployeeName, StringComparer.CurrentCultureIgnoreCase)
+            .ThenBy(r => r.Year).ThenBy(r => r.Month)
             .ToList();
 
         return new WorkTimeReport
@@ -99,9 +122,13 @@ public partial class ReportService : IReportService
             EmployeeTotals = rows
                 .GroupBy(r => (r.EmployeeId, r.EmployeeName))
                 .Select(g => new ReportEmployeeTotal
-                    { EmployeeId = g.Key.EmployeeId, EmployeeName = g.Key.EmployeeName, Hours = g.Sum(r => r.TotalHours) })
+                {
+                    EmployeeId = g.Key.EmployeeId, EmployeeName = g.Key.EmployeeName,
+                    Hours = g.Sum(r => r.TotalHours), ActualHours = g.Sum(r => r.ActualHours)
+                })
                 .ToList(),
-            GrandTotalHours = rows.Sum(r => r.TotalHours)
+            GrandTotalHours  = rows.Sum(r => r.TotalHours),
+            GrandActualHours = rows.Sum(r => r.ActualHours)
         };
     }
 

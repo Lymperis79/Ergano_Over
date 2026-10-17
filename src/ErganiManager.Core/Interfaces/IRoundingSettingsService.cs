@@ -41,6 +41,18 @@ public sealed class RoundingRules
     /// <summary>End of the configurable night-work window, as minutes after midnight on the following day.</summary>
     public int NightEndMinuteOfDay { get; set; } = 6 * 60;
 
+    /// <summary>
+    /// How many minutes after the scan Ergani still counts a work card as on time. Within this
+    /// window f_aitiologia is sent empty; after it the late justification code is required.
+    /// Editable in Administration so a change by Ergani needs no new build.
+    /// </summary>
+    public int OnTimeWindowMinutes { get; set; } = DefaultOnTimeWindowMinutes;
+
+    public const int DefaultOnTimeWindowMinutes = 10;
+    public const int MaxOnTimeWindowMinutes = 1440;
+
+    public TimeSpan OnTimeWindow => TimeSpan.FromMinutes(Math.Clamp(OnTimeWindowMinutes, 0, MaxOnTimeWindowMinutes));
+
     public TimeOnly NightStart => TimeOnly.FromTimeSpan(TimeSpan.FromMinutes(Math.Clamp(NightStartMinuteOfDay, 0, 1439)));
     public TimeOnly NightEnd => TimeOnly.FromTimeSpan(TimeSpan.FromMinutes(Math.Clamp(NightEndMinuteOfDay, 0, 1439)));
 

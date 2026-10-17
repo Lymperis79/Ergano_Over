@@ -8,6 +8,8 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <!-- Explicit reference so the patched version (see Directory.Packages.props) wins over the vulnerable transitive one. -->
+    <PackageReference Include="System.Security.Cryptography.Pkcs" />
     <PackageReference Include="BCrypt.Net-Next" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />

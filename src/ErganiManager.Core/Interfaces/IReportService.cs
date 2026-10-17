@@ -9,6 +9,10 @@ public static class ReportFormat
         return $"{(int)total.TotalHours}:{total.Minutes:00}";
     }
 
+    /// <summary>Hours with an explicit sign (+1:05 / −0:20); a difference under half a minute shows 0:00.</summary>
+    public static string Signed(double hours) =>
+        Math.Abs(hours) < 1.0 / 120 ? "0:00" : (hours < 0 ? "−" : "+") + Hours(Math.Abs(hours));
+
     public static string MonthLabel(int year, int month) => $"{month:00}/{year}";
 }
 
@@ -19,6 +23,9 @@ public sealed class ReportEmployeeTotal
     public string EmployeeName { get; init; } = string.Empty;
     public double Hours { get; init; }
     public double NightHours { get; init; }
+    /// <summary>Hours really worked, from the clock-in/out scans (Working time report only).</summary>
+    public double ActualHours { get; init; }
+    public string ActualHoursText => ReportFormat.Hours(ActualHours);
     public string HoursText => ReportFormat.Hours(Hours);
     public string NightHoursText => ReportFormat.Hours(NightHours);
 }
@@ -37,7 +44,7 @@ public sealed class OvertimeReportMonth
     public string Header => $"{EmployeeName} — {MonthLabel}";
 }
 
-/// <summary>Working time of one employee in one month, taken from the schedules.</summary>
+/// <summary>Working time of one employee in one month: scheduled (from the schedules) and actually worked (from the scans).</summary>
 public sealed class WorkTimeReportRow
 {
     public int EmployeeId { get; init; }
@@ -47,14 +54,21 @@ public sealed class WorkTimeReportRow
     public string MonthLabel => ReportFormat.MonthLabel(Year, Month);
     public int DaysWorked { get; init; }
 
-    /// <summary>Total scheduled working time (Office + Home days).</summary>
+    /// <summary>Total scheduled working time (Office + Home days) — what the employee was supposed to work.</summary>
     public double TotalHours { get; init; }
     /// <summary>The part of it within the normal 8 hours per day.</summary>
     public double NormalHours { get; init; }
     /// <summary>The part of it over 8 hours per day (what goes to Ergani as overtime).</summary>
     public double OverHours { get; init; }
 
+    /// <summary>Time the employee really worked, from the clock-in/out scans of that month.</summary>
+    public double ActualHours { get; init; }
+    /// <summary>Actual minus scheduled.</summary>
+    public double DiffHours => ActualHours - TotalHours;
+
     public string TotalText  => ReportFormat.Hours(TotalHours);
+    public string ActualText => ReportFormat.Hours(ActualHours);
+    public string DiffText   => ReportFormat.Signed(DiffHours);
     public string NormalText => ReportFormat.Hours(NormalHours);
     public string OverText   => ReportFormat.Hours(OverHours);
 }
@@ -70,7 +84,10 @@ public sealed class WorkTimeReport
 {
     public List<WorkTimeReportRow> Rows { get; init; } = new();
     public List<ReportEmployeeTotal> EmployeeTotals { get; init; } = new();
+    /// <summary>Total scheduled hours.</summary>
     public double GrandTotalHours { get; init; }
+    /// <summary>Total hours really worked, from the scans.</summary>
+    public double GrandActualHours { get; init; }
 }
 
 
