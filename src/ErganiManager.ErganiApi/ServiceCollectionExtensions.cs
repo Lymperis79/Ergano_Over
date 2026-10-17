@@ -23,6 +23,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<ICredentialProtector>(_ => new CredentialProtector(AppPaths.GetAppDataFolder()));
         services.AddSingleton<IErganiClient, ErganiClient>();
         services.AddSingleton<IErganiHealthCheckService, ErganiHealthCheckService>();
+        services.AddSingleton<IInternetCheckService, InternetCheckService>();
         services.AddSingleton<ErganiRetryService>();
         services.AddTransient<IWorkCardSubmitter, ErganiApiService>();
         services.AddTransient<WorkCardLogRetryService>();

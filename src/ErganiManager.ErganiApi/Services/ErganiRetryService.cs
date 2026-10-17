@@ -8,6 +8,7 @@ using ErganiManager.Data;
 using ErganiManager.Data.Entities;
 using ErganiManager.ErganiApi.Models;
 using ErganiManager.LocalCache;
+using ErganiManager.LocalCache.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
@@ -43,6 +44,7 @@ public class ErganiRetryService
 
     private readonly IErganiClient _erganiClient;
     private readonly IErganiHealthCheckService _healthCheck;
+    private readonly IInternetCheckService _internetCheck;
     private readonly IConnectionStateService _connectionState;
     private readonly ICredentialProtector _credentialProtector;
     private readonly IWorkCardSubmitter _workCardSubmitter;
@@ -75,6 +77,7 @@ public class ErganiRetryService
     public ErganiRetryService(
         IErganiClient erganiClient,
         IErganiHealthCheckService healthCheck,
+        IInternetCheckService internetCheck,
         IConnectionStateService connectionState,
         ICredentialProtector credentialProtector,
         IWorkCardSubmitter workCardSubmitter,
@@ -82,6 +85,7 @@ public class ErganiRetryService
     {
         _erganiClient = erganiClient;
         _healthCheck = healthCheck;
+        _internetCheck = internetCheck;
         _connectionState = connectionState;
         _credentialProtector = credentialProtector;
         _workCardSubmitter = workCardSubmitter;
@@ -167,6 +171,10 @@ public class ErganiRetryService
         if (status == ErganiServiceStatus.Offline)
         {
             _logger.LogDebug("Ergani offline for company {Id} — retry deferred.", company.Id);
+
+            // Remember WHY the queued cards are waiting: they will be sent later with their
+            // original scan time and this reason.
+            await RecordOutageReasonAsync(company.Id, cache, ct);
             return;
         }
 
@@ -177,6 +185,43 @@ public class ErganiRetryService
         if (company.AutoRetryFailedSubmissions)
             await FlushFailedSubmissionsAsync(company, credentials, db, cache, ct);
     }
+
+    /// <summary>
+    /// Gives the queued cards that have no reason yet the f_aitiologia code that matches the
+    /// outage happening right now: no internet → 001 (power / telecommunications), internet fine
+    /// but Ergani not answering → 003 (problem connecting to ERGANI). A reason that was already
+    /// recorded is never replaced, so it keeps describing the moment the card could not be sent.
+    /// </summary>
+    private async Task RecordOutageReasonAsync(int companyId, LocalCache.LocalCacheDbContext cache, CancellationToken ct)
+    {
+        try
+        {
+            var unmarked = await cache.PendingSubmissions
+                .Where(p => p.CompanyId == companyId && !p.Synced && p.LateJustification == null)
+                .ToListAsync(ct);
+            if (unmarked.Count == 0) return;
+
+            var internetOnline = await _internetCheck.IsOnlineAsync(ct);
+            var code = AitiologiaCodes.AutoDetect(erganiOnline: false, internetOnline: internetOnline);
+
+            foreach (var p in unmarked) p.LateJustification = code;
+            await cache.SaveChangesAsync(ct);
+
+            _logger.LogInformation(
+                "{Count} queued scan(s) of company {Id} waiting: internet {Internet} → f_aitiologia {Code}.",
+                unmarked.Count, companyId, internetOnline ? "up" : "down", code);
+        }
+        catch (OperationCanceledException) { throw; }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Could not record the outage reason for company {Id}.", companyId);
+        }
+    }
+
+    /// <summary>The recorded outage reason is only used when the card is really late; on time
+    /// (≤ 10 minutes after the scan) Ergani gets an empty f_aitiologia.</summary>
+    private static string? ReasonFor(PendingSubmission item) =>
+        DateTime.Now - item.ScannedAt > WorkCardLogRetryService.OnTimeWindow ? item.LateJustification : null;
 
     private async Task FlushFailedSubmissionsAsync(
         Company company, ErganiCredentials credentials,
@@ -350,8 +395,8 @@ public class ErganiRetryService
                 {
                     EmployeeId = item.EmployeeId, CompanyId = item.CompanyId,
                     BranchId = item.BranchId, MovementType = item.MovementType,
-                    MovementDateTime = item.ScannedAt
-                });
+                    MovementDateTime = item.ScannedAt          // always the time of the scan
+                }, ReasonFor(item));
 
                 item.SyncAttempts++;
 
@@ -378,6 +423,7 @@ public class ErganiRetryService
                     // Connection / service problem: keep it queued, keep the order, try next cycle.
                     item.LastSyncError = outcome.ErrorMessage;
                     await cache.SaveChangesAsync(ct);
+                    await RecordOutageReasonAsync(company.Id, cache, ct);
                     _logger.LogInformation("Queued scan {Id} not delivered yet: {Error}", item.Id, outcome.ErrorMessage);
                     Notify(item.Id, QueuedScanStatus.Waiting, null, outcome.ErrorMessage, item.SyncAttempts);
                     break;
@@ -392,6 +438,7 @@ public class ErganiRetryService
                 item.LastSyncError = ex.Message;
                 await cache.SaveChangesAsync(ct);
                 _logger.LogError(ex, "Exception sending queued scan {Id}; will retry.", item.Id);
+                await RecordOutageReasonAsync(company.Id, cache, ct);
                 Notify(item.Id, QueuedScanStatus.Waiting, null, ex.Message, item.SyncAttempts);
                 break;
             }
@@ -438,7 +485,7 @@ public class ErganiRetryService
                         BranchId = item.BranchId,
                         MovementType = item.MovementType,
                         MovementDateTime = item.ScannedAt
-                    });
+                    }, ReasonFor(item));
 
                     if (outcome.Success)
                     {

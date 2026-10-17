@@ -28,9 +28,9 @@ public record LogRetryUpdate(int LogId, LogRetryStatus Status, string? Message, 
 ///  * The original request payload stored on the row is re-sent. f_aitiologia depends on the
 ///    time since the FIRST attempt (ApiSubmissionLog.SubmissionDate, which is never changed
 ///    by a retry):
-///      - within 10 minutes of the first attempt → f_aitiologia is sent EMPTY
+///      - within the on-time window (default 10 minutes) of the first attempt → f_aitiologia is sent EMPTY
 ///        (Ergani rejects a justification on an on-time submission)
-///      - more than 10 minutes after it           → the chosen justification code is sent
+///      - after the on-time window                     → the chosen justification code is sent
 ///        (a late submission without one is rejected)
 ///  * When a retry succeeds the matching WorkCard record is marked as submitted.
 /// </summary>
@@ -52,8 +52,11 @@ public class WorkCardLogRetryService
 
     private static readonly TimeSpan DelayBetweenCalls = TimeSpan.FromSeconds(1);
 
-    /// <summary>Ergani's on-time window, measured from the first attempt.</summary>
-    public static readonly TimeSpan OnTimeWindow = TimeSpan.FromMinutes(10);
+    /// <summary>
+    /// Ergani's on-time window, measured from the first attempt. Configurable in
+    /// Administration (default 10 minutes); read on every use so a change applies immediately.
+    /// </summary>
+    public static TimeSpan OnTimeWindow => ErganiManager.Core.Services.RoundingSettingsService.Active.OnTimeWindow;
 
     /// <summary>Used when the caller does not pick a code. 002 = problem with employer systems.</summary>
     public const string DefaultLateJustification = AitiologiaCodes.EmployerSystemUnavailable;

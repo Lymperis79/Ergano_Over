@@ -28,4 +28,13 @@ public class PendingSubmission
 
     public int SyncAttempts { get; set; } = 0;
     public string? LastSyncError { get; set; }
+
+    /// <summary>
+    /// Ergani f_aitiologia code (001 / 002 / 003) that describes WHY this card could not be sent
+    /// on time. It is filled in while the outage is happening (internet down → 001, Ergani down →
+    /// 003) and used when the card is finally sent, together with the original scan time.
+    /// Null = no outage was observed (a late card then gets 002, employer systems problem).
+    /// </summary>
+    [MaxLength(3)]
+    public string? LateJustification { get; set; }
 }

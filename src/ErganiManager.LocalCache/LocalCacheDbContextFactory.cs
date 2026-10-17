@@ -61,6 +61,49 @@ public static class LocalCacheDbContextFactory
 
     private static string SignaturePath(string dbPath) => dbPath + ".schema";
 
+    /// <summary>Adds columns that newer releases need to an existing cache file.
+    /// Returns true when something was added.</summary>
+    private static bool AddMissingColumns(string dbPath)
+    {
+        try
+        {
+            using var connection = new SqliteConnection($"Data Source={dbPath}");
+            connection.Open();
+
+            bool TableExists(string table)
+            {
+                using var cmd = connection.CreateCommand();
+                cmd.CommandText = "SELECT 1 FROM sqlite_master WHERE type='table' AND name=$n";
+                cmd.Parameters.AddWithValue("$n", table);
+                return cmd.ExecuteScalar() != null;
+            }
+
+            bool ColumnExists(string table, string column)
+            {
+                using var cmd = connection.CreateCommand();
+                cmd.CommandText = $"PRAGMA table_info({table})";
+                using var reader = cmd.ExecuteReader();
+                while (reader.Read())
+                    if (string.Equals(reader.GetString(1), column, StringComparison.OrdinalIgnoreCase))
+                        return true;
+                return false;
+            }
+
+            if (TableExists("PendingSubmissions") && !ColumnExists("PendingSubmissions", "LateJustification"))
+            {
+                using var alter = connection.CreateCommand();
+                alter.CommandText = "ALTER TABLE PendingSubmissions ADD COLUMN LateJustification TEXT NULL";
+                alter.ExecuteNonQuery();
+                return true;
+            }
+        }
+        catch
+        {
+            // If the file cannot be altered the normal signature check (rebuild) takes over.
+        }
+        return false;
+    }
+
     private static void EnsureSchemaCurrent(string dbPath)
     {
         if (_schemaChecked) return;
@@ -75,7 +118,11 @@ public static class LocalCacheDbContextFactory
 
             // stored == null: file from a release before signatures existed — assume it is
             // current and just record the signature. (Use Administration → Rebuild if it is not.)
-            if (stored != null && stored != signature && File.Exists(dbPath))
+            // A new nullable column is added in place, so queued scans that were not sent yet are
+            // never lost to a rebuild.
+            var addedColumns = File.Exists(dbPath) && AddMissingColumns(dbPath);
+
+            if (stored != null && stored != signature && File.Exists(dbPath) && !addedColumns)
                 RebuildCore(dbPath, backup: true);
 
             File.WriteAllText(sigPath, signature);
