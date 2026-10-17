@@ -64,6 +64,10 @@ public partial class AdministrationViewModel : ViewModelBase, IAdminSectionViewM
     [ObservableProperty] private TimeSpan? _nightEndTime = new(6, 0, 0);
     [ObservableProperty] private string _nightStatus = string.Empty;
 
+    /// <summary>Minutes after a scan during which Ergani treats the work card as on time.</summary>
+    [ObservableProperty] private decimal? _onTimeWindowMinutes = RoundingRules.DefaultOnTimeWindowMinutes;
+    [ObservableProperty] private string _onTimeWindowStatus = string.Empty;
+
     public AdministrationViewModel(IDatabaseMaintenanceService maintenance, IRoundingSettingsService rounding,
         IPortalSettingsService portal)
     {
@@ -95,6 +99,7 @@ public partial class AdministrationViewModel : ViewModelBase, IAdminSectionViewM
         LoadShifts(rules.Shifts);
         NightStartTime = TimeSpan.FromMinutes(Math.Clamp(rules.NightStartMinuteOfDay, 0, 1439));
         NightEndTime = TimeSpan.FromMinutes(Math.Clamp(rules.NightEndMinuteOfDay, 0, 1439));
+        OnTimeWindowMinutes = rules.OnTimeWindowMinutes;
     }
 
     private void LoadRounding(System.Collections.Generic.IEnumerable<RoundingBand> bands)
@@ -258,11 +263,38 @@ public partial class AdministrationViewModel : ViewModelBase, IAdminSectionViewM
                 Bands = current.Bands,
                 Shifts = BuildShifts(),
                 NightStartMinuteOfDay = nightStart.Hours * 60 + nightStart.Minutes,
-                NightEndMinuteOfDay = nightEnd.Hours * 60 + nightEnd.Minutes
+                NightEndMinuteOfDay = nightEnd.Hours * 60 + nightEnd.Minutes,
+                OnTimeWindowMinutes = _rounding.Current.OnTimeWindowMinutes
             });
             NightStatus = Loc[L.NightSettingsSaved] + " " + Loc[L.NightSettingsApply];
         }
         catch (Exception ex) { NightStatus = $"❌ {ex.Message}"; }
+    }
+
+    [RelayCommand]
+    private void SaveOnTimeWindow()
+    {
+        try
+        {
+            if (OnTimeWindowMinutes is not { } value || value < 0 || value > RoundingRules.MaxOnTimeWindowMinutes ||
+                value != decimal.Truncate(value))
+            {
+                OnTimeWindowStatus = string.Format(Loc[L.OnTimeWindowInvalid], RoundingRules.MaxOnTimeWindowMinutes);
+                return;
+            }
+
+            var current = _rounding.Current;
+            _rounding.Save(new RoundingRules
+            {
+                Bands = current.Bands,
+                Shifts = current.Shifts,
+                NightStartMinuteOfDay = current.NightStartMinuteOfDay,
+                NightEndMinuteOfDay = current.NightEndMinuteOfDay,
+                OnTimeWindowMinutes = (int)value
+            });
+            OnTimeWindowStatus = Loc[L.OnTimeWindowSaved];
+        }
+        catch (Exception ex) { OnTimeWindowStatus = $"❌ {ex.Message}"; }
     }
 
     [RelayCommand]
@@ -298,7 +330,8 @@ public partial class AdministrationViewModel : ViewModelBase, IAdminSectionViewM
                 Bands = bands,
                 Shifts = BuildShifts(),
                 NightStartMinuteOfDay = nightStart.Hours * 60 + nightStart.Minutes,
-                NightEndMinuteOfDay = nightEnd.Hours * 60 + nightEnd.Minutes
+                NightEndMinuteOfDay = nightEnd.Hours * 60 + nightEnd.Minutes,
+                OnTimeWindowMinutes = _rounding.Current.OnTimeWindowMinutes
             });
             RoundingStatus = Loc[L.NightSettingsSaved] + " " + Loc[L.NightSettingsApply];
         }

@@ -43,6 +43,7 @@
 
                         <!-- Manual override -->
                         <StackPanel IsVisible="{Binding !AutoDetect}" Spacing="10">
+                            <TextBlock Text="{Binding Loc[ManualCardTitle]}" FontWeight="Bold" TextWrapping="Wrap" />
                             <TextBlock Text="{Binding Loc[MovementType]}" FontWeight="SemiBold" />
                             <StackPanel Orientation="Horizontal" Spacing="24">
                                 <RadioButton Content="{Binding Loc[Arrival2]}"
@@ -55,8 +56,28 @@
                             <DatePicker SelectedDate="{Binding MovementDate, Mode=TwoWay}" HorizontalAlignment="Stretch" MinWidth="150" />
 
                             <TextBlock Text="{Binding Loc[Time]}" FontWeight="SemiBold" />
-                            <TimePicker SelectedTime="{Binding MovementTime}"
-                                        ClockIdentifier="24HourClock" />
+                            <StackPanel Orientation="Horizontal" Spacing="10">
+                                <TimePicker SelectedTime="{Binding MovementTime}"
+                                            ClockIdentifier="24HourClock" />
+                                <Button Content="{Binding Loc[SetToNow]}"
+                                        Command="{Binding SetManualTimeToNowCommand}"
+                                        VerticalAlignment="Bottom" />
+                            </StackPanel>
+
+                            <TextBlock Text="{Binding Loc[ManualLateReasonLabel]}" FontWeight="SemiBold"
+                                       TextWrapping="Wrap" />
+                            <ComboBox ItemsSource="{Binding AvailableAitiologiai}"
+                                      SelectedValueBinding="{Binding Code}"
+                                      SelectedValue="{Binding ManualLateReason}"
+                                      HorizontalAlignment="Stretch">
+                                <ComboBox.ItemTemplate>
+                                    <DataTemplate x:DataType="vm:LocalizedCodeOption">
+                                        <TextBlock Text="{Binding Display}" TextWrapping="Wrap" />
+                                    </DataTemplate>
+                                </ComboBox.ItemTemplate>
+                            </ComboBox>
+                            <TextBlock Text="{Binding Loc[ManualCardSentHint]}" Foreground="Gray" FontSize="11"
+                                       TextWrapping="Wrap" />
                         </StackPanel>
 
                         <Button Content="{Binding Loc[SubmitSelected]}"

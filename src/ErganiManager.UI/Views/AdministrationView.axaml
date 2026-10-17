@@ -112,6 +112,19 @@
                                     <Button Content="{Binding Loc[Save]}" Command="{Binding SaveNightHoursCommand}" Classes="accent" HorizontalAlignment="Left" />
                                 </StackPanel>
                             </Border>
+
+                            <Border Background="#1A1D23" CornerRadius="8" Padding="20">
+                                <StackPanel Spacing="10">
+                                    <TextBlock Text="{Binding Loc[OnTimeWindowTitle]}" FontSize="16" FontWeight="SemiBold" />
+                                    <TextBlock Text="{Binding Loc[OnTimeWindowDescription]}" Foreground="Gray" FontSize="12" TextWrapping="Wrap" />
+                                    <StackPanel Spacing="4" HorizontalAlignment="Left">
+                                        <TextBlock Text="{Binding Loc[OnTimeWindowMinutesLabel]}" Foreground="Gray" FontSize="11" />
+                                        <NumericUpDown Value="{Binding OnTimeWindowMinutes}" Minimum="0" Maximum="1440" Increment="1" FormatString="0" MinWidth="160" />
+                                    </StackPanel>
+                                    <TextBlock Text="{Binding OnTimeWindowStatus}" TextWrapping="Wrap" />
+                                    <Button Content="{Binding Loc[Save]}" Command="{Binding SaveOnTimeWindowCommand}" Classes="accent" HorizontalAlignment="Left" />
+                                </StackPanel>
+                            </Border>
                         </StackPanel>
                     </TabItem>
 

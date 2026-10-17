@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Globalization;
 using System.Linq;
@@ -8,6 +9,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using ErganiManager.Core.Interfaces;
 using ErganiManager.Core.Models;
+using ErganiManager.UI.Services;
 
 namespace ErganiManager.UI.ViewModels;
 
@@ -15,7 +17,7 @@ public enum ReportKind
 {
     Overtime, WorkTime, Compare,
     // analysis reports shown as generic tables
-    RoundingImpact, SubmissionStatus, FailureLog, Consistency, Roster, OvertimeTrend
+    RoundingImpact, SubmissionStatus, FailureLog, Consistency, Roster, OvertimeTrend, Holidays
 }
 
 /// <summary>Reports: overtime, total working time, and declared vs actual time with overtime.</summary>
@@ -53,17 +55,20 @@ public partial class ReportsViewModel : ViewModelBase, IAdminSectionViewModel
     public bool IsConsistencyReport  { get => Kind == ReportKind.Consistency;      set { if (value) Kind = ReportKind.Consistency; } }
     public bool IsRosterReport       { get => Kind == ReportKind.Roster;           set { if (value) Kind = ReportKind.Roster; } }
     public bool IsTrendReport        { get => Kind == ReportKind.OvertimeTrend;    set { if (value) Kind = ReportKind.OvertimeTrend; } }
+    public bool IsHolidaysReport     { get => Kind == ReportKind.Holidays;         set { if (value) Kind = ReportKind.Holidays; } }
 
     /// <summary>True for the analysis reports that are shown as generic tables.</summary>
     public bool IsTableReport => Kind >= ReportKind.RoundingImpact;
 
     [ObservableProperty] private DateTimeOffset? _fromDate =
-        new DateTimeOffset(new DateTime(DateTime.Today.Year, 1, 1));
+        new DateTimeOffset(new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1));   // start of the current month
     [ObservableProperty] private DateTimeOffset? _toDate = DateTimeOffset.Now;
     [ObservableProperty] private EmployeeDto? _selectedEmployee;
 
     [ObservableProperty] private string _grandTotalText = "0:00";
     [ObservableProperty] private string _nightTotalText = "0:00";
+    /// <summary>Working-time report: grand total of the hours really worked (from the scans).</summary>
+    [ObservableProperty] private string _actualTotalText = "0:00";
     [ObservableProperty] private bool _hasData;
     [ObservableProperty] private bool _hasTableData;
 
@@ -73,9 +78,14 @@ public partial class ReportsViewModel : ViewModelBase, IAdminSectionViewModel
     partial void OnHasDataChanged(bool value) => OnPropertyChanged(nameof(CanExport));
     partial void OnHasTableDataChanged(bool value) => OnPropertyChanged(nameof(CanExport));
 
-    public string TotalsLabel => Kind == ReportKind.Compare
-        ? Loc["Vm.Total actual working time (from scans, h:mm)"]
-        : Loc["Vm.Grand total (h:mm)"];
+    public string TotalsLabel => Kind switch
+    {
+        ReportKind.Compare  => Loc["Vm.Total actual working time (from scans, h:mm)"],
+        ReportKind.WorkTime => Loc["Vm.Total scheduled working time (h:mm)"],
+        _                   => Loc["Vm.Grand total (h:mm)"]
+    };
+
+    public string ActualTotalsLabel => Loc["Vm.Total actual working time (from scans, h:mm)"];
 
     public string ReportTitle => Kind switch
     {
@@ -87,6 +97,7 @@ public partial class ReportsViewModel : ViewModelBase, IAdminSectionViewModel
         ReportKind.FailureLog       => Loc["Vm.Retry and failure log"],
         ReportKind.Consistency      => Loc["Vm.Rest-day / schedule consistency"],
         ReportKind.Roster           => Loc["Vm.Roster (same From and To date = daily roster; otherwise one column per day, up to 31 days)"],
+        ReportKind.Holidays         => Loc["Vm.Holidays by category"],
         _                           => Loc["Vm.Overtime trend"]
     };
 
@@ -107,6 +118,7 @@ public partial class ReportsViewModel : ViewModelBase, IAdminSectionViewModel
         OnPropertyChanged(nameof(IsConsistencyReport));
         OnPropertyChanged(nameof(IsRosterReport));
         OnPropertyChanged(nameof(IsTrendReport));
+        OnPropertyChanged(nameof(IsHolidaysReport));
         OnPropertyChanged(nameof(IsTableReport));
         OnPropertyChanged(nameof(ReportTitle));
         OnPropertyChanged(nameof(TotalsLabel));
@@ -161,6 +173,7 @@ public partial class ReportsViewModel : ViewModelBase, IAdminSectionViewModel
                         ReportKind.FailureLog       => TableReportKind.FailureLog,
                         ReportKind.Consistency      => TableReportKind.Consistency,
                         ReportKind.Roster           => TableReportKind.Roster,
+                        ReportKind.Holidays         => TableReportKind.Holidays,
                         _                           => TableReportKind.OvertimeTrend
                     }, companyId, from, to, employeeId);
                 foreach (var s in _table.Sections.Where(s => s.HasRows)) TableSections.Add(s);
@@ -207,16 +220,52 @@ public partial class ReportsViewModel : ViewModelBase, IAdminSectionViewModel
                 foreach (var r in _workTime.Rows) WorkTimeRows.Add(r);
                 foreach (var t in _workTime.EmployeeTotals) EmployeeTotals.Add(t);
                 GrandTotalText = ReportFormat.Hours(_workTime.GrandTotalHours);
+                ActualTotalText = ReportFormat.Hours(_workTime.GrandActualHours);
                 NightTotalText = "0:00";
                 HasData = _workTime.Rows.Count > 0;
-                StatusMessage = string.Format(Loc["Vm.{0} employee-month row(s). Based on the Office/Home schedule days."], _workTime.Rows.Count);
+                StatusMessage = string.Format(Loc["Vm.{0} employee-month row(s). Scheduled time is from the Office/Home schedule; actual time is from the clock-in/out scans."], _workTime.Rows.Count);
             }
         }
         catch (Exception ex) { StatusMessage = $"❌ {ex.Message}"; }
     }
 
+    /// <summary>Selected From/To dates; false (with a status message) when the range is invalid.</summary>
+    private bool TryGetRange(out DateOnly from, out DateOnly to)
+    {
+        from = DateOnly.FromDateTime((FromDate ?? DateTimeOffset.Now).LocalDateTime);
+        to   = DateOnly.FromDateTime((ToDate ?? DateTimeOffset.Now).LocalDateTime);
+        if (to >= from) return true;
+        StatusMessage = Loc["Vm.The 'To' date is before the 'From' date."];
+        return false;
+    }
+
+    public string ExcelSuggestedFileName =>
+        TryGetRange(out var f, out var t) ? $"working-hours-{f:yyyy-MM-dd}_{t:yyyy-MM-dd}" : "working-hours";
+
+    /// <summary>
+    /// Writes one Excel workbook for the current company / dates / employee filter:
+    /// scheduled vs actual hours, Saturday hours and Sunday hours (one sheet each).
+    /// </summary>
+    public async Task ExportTimeWorkbookAsync(string path)
+    {
+        if (_session?.CompanyId is not int companyId) return;
+        if (!TryGetRange(out var from, out var to)) return;
+        int? employeeId = SelectedEmployee is { Id: > 0 } e ? e.Id : null;
+
+        try
+        {
+            var report = await _reports.GetTimeSummaryReportAsync(companyId, from, to, employeeId);
+            var rows = AvailableEmployees.Where(x => x.Id > 0 && (employeeId == null || x.Id == employeeId)).ToList();
+            var holidays = await _reports.GetTableReportAsync(TableReportKind.Holidays, companyId, from, to, employeeId);
+
+            TimeWorkbookExporter.Save(path, report, from, to, rows, holidays);
+            StatusMessage = string.Format(Loc["Vm.Excel Saved"], path);
+        }
+        catch (Exception ex) { StatusMessage = $"❌ {ex.Message}"; }   // e.g. the file is open in Excel
+    }
+
     public string SuggestedFileName =>
-        $"{Kind switch { ReportKind.Overtime => "overtime-report", ReportKind.WorkTime => "working-time-report", ReportKind.Compare => "declared-vs-actual-report", ReportKind.RoundingImpact => "rounding-impact", ReportKind.SubmissionStatus => "submission-status", ReportKind.FailureLog => "retry-failure-log", ReportKind.Consistency => "schedule-consistency", ReportKind.Roster => "roster", _ => "overtime-trend" }}-{DateTime.Now:yyyyMMdd}.csv";
+        $"{Kind switch { ReportKind.Overtime => "overtime-report", ReportKind.WorkTime => "working-time-report", ReportKind.Compare => "declared-vs-actual-report", ReportKind.RoundingImpact => "rounding-impact", ReportKind.SubmissionStatus => "submission-status", ReportKind.FailureLog => "retry-failure-log", ReportKind.Consistency => "schedule-consistency", ReportKind.Roster => "roster", ReportKind.Holidays => "holidays", _ => "overtime-trend" }}-{DateTime.Now:yyyyMMdd}.csv";
 
     /// <summary>
     /// Difference for the CSV. A leading '-' or '+' makes Excel treat the cell as a formula (#VALUE!),
@@ -270,13 +319,13 @@ public partial class ReportsViewModel : ViewModelBase, IAdminSectionViewModel
         }
         else if (_workTime != null)
         {
-            sb.AppendLine(string.Join(";", new[] { Loc["Vm.Employee"], Loc["Vm.Month"], Loc["Vm.Days"], Loc["Vm.Total working time"], Loc["Vm.Normal (up to 8h/day)"], Loc["Vm.Over 8h/day"] }));
+            sb.AppendLine(string.Join(";", new[] { Loc["Vm.Employee"], Loc["Vm.Month"], Loc["Vm.Days"], Loc["Vm.Scheduled working time"], Loc["Vm.Actual worked"], Loc["Vm.Normal (up to 8h/day)"], Loc["Vm.Over 8h/day"] }));
             foreach (var r in _workTime.Rows)
-                sb.AppendLine(string.Join(";", Q(r.EmployeeName), r.MonthLabel, r.DaysWorked, r.TotalText, r.NormalText, r.OverText));
+                sb.AppendLine(string.Join(";", Q(r.EmployeeName), r.MonthLabel, r.DaysWorked, r.TotalText, r.ActualText, r.NormalText, r.OverText));
             sb.AppendLine();
             foreach (var t in _workTime.EmployeeTotals)
-                sb.AppendLine(string.Join(";", Q(t.EmployeeName), Loc["Vm.EMPLOYEE TOTAL"], "", t.HoursText, "", ""));
-            sb.AppendLine(string.Join(";", Q(Loc["Vm.ALL EMPLOYEES"]), Loc["Vm.GRAND TOTAL"], "", GrandTotalText, "", ""));
+                sb.AppendLine(string.Join(";", Q(t.EmployeeName), Loc["Vm.EMPLOYEE TOTAL"], "", t.HoursText, t.ActualHoursText, "", ""));
+            sb.AppendLine(string.Join(";", Q(Loc["Vm.ALL EMPLOYEES"]), Loc["Vm.GRAND TOTAL"], "", GrandTotalText, ActualTotalText, "", ""));
         }
         return sb.ToString();
     }

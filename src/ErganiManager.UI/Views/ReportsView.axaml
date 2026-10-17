@@ -45,18 +45,18 @@
                 <TextBlock Text="{Binding Loc[NavReports]}" FontSize="22" FontWeight="Bold" />
 
                 <!-- Report selector -->
-                <StackPanel Orientation="Horizontal" Spacing="16">
-                    <RadioButton GroupName="ReportKind" Content="{Binding Loc[Overtime]}"
+                <WrapPanel HorizontalAlignment="Left" MaxWidth="{Binding $parent[ScrollViewer].Viewport.Width}">
+                    <RadioButton GroupName="ReportKind" Content="{Binding Loc[Overtime]}" Margin="0,0,16,4"
                                  IsChecked="{Binding IsOvertimeReport, Mode=TwoWay}" />
-                    <RadioButton GroupName="ReportKind" Content="{Binding Loc[TotalWorkingTime]}"
+                    <RadioButton GroupName="ReportKind" Content="{Binding Loc[TotalWorkingTime]}" Margin="0,0,16,4"
                                  IsChecked="{Binding IsWorkTimeReport, Mode=TwoWay}" />
-                    <RadioButton GroupName="ReportKind" Content="{Binding Loc[DeclaredVsActual]}"
+                    <RadioButton GroupName="ReportKind" Content="{Binding Loc[DeclaredVsActual]}" Margin="0,0,16,4"
                                  IsChecked="{Binding IsCompareReport, Mode=TwoWay}" />
-                </StackPanel>
+                </WrapPanel>
 
                 <!-- Analysis reports (shown as tables) -->
                 <TextBlock Text="{Binding Loc[Analysis]}" FontSize="12" Foreground="Gray" Margin="0,2,0,-8" />
-                <WrapPanel>
+                <WrapPanel HorizontalAlignment="Left" MaxWidth="{Binding $parent[ScrollViewer].Viewport.Width}">
                     <RadioButton GroupName="ReportKind" Content="{Binding Loc[RoundingImpact]}" Margin="0,0,16,4"
                                  IsChecked="{Binding IsRoundingReport, Mode=TwoWay}" />
                     <RadioButton GroupName="ReportKind" Content="{Binding Loc[SubmissionStatus]}" Margin="0,0,16,4"
@@ -69,10 +69,12 @@
                                  IsChecked="{Binding IsRosterReport, Mode=TwoWay}" />
                     <RadioButton GroupName="ReportKind" Content="{Binding Loc[OvertimeTrend]}" Margin="0,0,16,4"
                                  IsChecked="{Binding IsTrendReport, Mode=TwoWay}" />
+                    <RadioButton GroupName="ReportKind" Content="{Binding Loc[Holidays]}" Margin="0,0,16,4"
+                                 IsChecked="{Binding IsHolidaysReport, Mode=TwoWay}" />
                 </WrapPanel>
 
                 <!-- Filters -->
-                <WrapPanel>
+                <WrapPanel HorizontalAlignment="Left" MaxWidth="{Binding $parent[ScrollViewer].Viewport.Width}">
                     <StackPanel Spacing="4" Margin="0,0,12,8">
                         <TextBlock Text="{Binding Loc[From]}" FontSize="12" Foreground="Gray" />
                         <DatePicker SelectedDate="{Binding FromDate, Mode=TwoWay}" MinWidth="150" />
@@ -93,6 +95,7 @@
                     <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Bottom" Margin="0,0,0,8">
                         <Button Content="{Binding Loc[Generate]}" Command="{Binding GenerateCommand}" Classes="accent" />
                         <Button Content="{Binding Loc[ExportCSV]}" Click="OnExportClick" IsEnabled="{Binding CanExport}" />
+                        <Button Content="{Binding Loc[ExportExcelHours]}" Click="OnExportExcelClick" IsEnabled="{Binding HasActiveCompany}" />
                     </StackPanel>
                 </WrapPanel>
 
@@ -106,6 +109,10 @@
                             <TextBlock Grid.Column="1" Text="{Binding Loc[Actual]}" Foreground="Gray" FontSize="11" />
                             <TextBlock Grid.Column="2" Text="{Binding $parent[UserControl].DataContext.Loc[ReportNightHours]}" Foreground="Gray" FontSize="11" />
                         </Grid>
+                        <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="18" IsVisible="{Binding IsWorkTimeReport}">
+                            <TextBlock Grid.Column="1" Text="{Binding Loc[ScheduledHMm]}" Foreground="Gray" FontSize="11" />
+                            <TextBlock Grid.Column="2" Text="{Binding Loc[ActualWorkedHMm]}" Foreground="Gray" FontSize="11" />
+                        </Grid>
                         <ItemsControl ItemsSource="{Binding EmployeeTotals}">
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate x:DataType="core:ReportEmployeeTotal">
@@ -114,6 +121,8 @@
                                         <TextBlock Grid.Column="1" Text="{Binding HoursText}" FontWeight="SemiBold" />
                                         <TextBlock Grid.Column="2" Text="{Binding NightHoursText}" FontWeight="SemiBold" Foreground="#81D4FA"
                                                    IsVisible="{Binding $parent[ItemsControl].((vm:ReportsViewModel)DataContext).IsCompareReport}" />
+                                        <TextBlock Grid.Column="2" Text="{Binding ActualHoursText}" FontWeight="SemiBold" Foreground="#81C784"
+                                                   IsVisible="{Binding $parent[ItemsControl].((vm:ReportsViewModel)DataContext).IsWorkTimeReport}" />
                                     </Grid>
                                 </DataTemplate>
                             </ItemsControl.ItemTemplate>
@@ -130,6 +139,10 @@
                         <Grid ColumnDefinitions="*,Auto" IsVisible="{Binding !IsCompareReport}">
                             <TextBlock Text="{Binding TotalsLabel}" FontWeight="Bold" />
                             <TextBlock Grid.Column="1" Text="{Binding GrandTotalText}" FontWeight="Bold" FontSize="16" />
+                        </Grid>
+                        <Grid ColumnDefinitions="*,Auto" IsVisible="{Binding IsWorkTimeReport}">
+                            <TextBlock Text="{Binding ActualTotalsLabel}" FontWeight="Bold" />
+                            <TextBlock Grid.Column="1" Text="{Binding ActualTotalText}" FontWeight="Bold" FontSize="16" Foreground="#81C784" />
                         </Grid>
                     </StackPanel>
                 </Border>
@@ -237,13 +250,14 @@
 
                 <!-- Working time report: one row per employee + month -->
                 <StackPanel IsVisible="{Binding IsWorkTimeReport}" Spacing="4">
-                    <Grid ColumnDefinitions="*,90,70,130,150,120" Margin="14,0">
+                    <Grid ColumnDefinitions="*,90,70,140,140,150,120" Margin="14,0">
                         <TextBlock Text="{Binding Loc[Employee]}" Foreground="Gray" FontSize="12" />
                         <TextBlock Grid.Column="1" Text="{Binding Loc[Month]}" Foreground="Gray" FontSize="12" />
                         <TextBlock Grid.Column="2" Text="{Binding Loc[Days]}" Foreground="Gray" FontSize="12" />
-                        <TextBlock Grid.Column="3" Text="{Binding Loc[TotalHMm]}" Foreground="Gray" FontSize="12" />
-                        <TextBlock Grid.Column="4" Text="{Binding Loc[Normal8hDay]}" Foreground="Gray" FontSize="12" />
-                        <TextBlock Grid.Column="5" Text="{Binding Loc[Over8hDay]}" Foreground="Gray" FontSize="12" />
+                        <TextBlock Grid.Column="3" Text="{Binding Loc[ScheduledHMm]}" Foreground="Gray" FontSize="12" />
+                        <TextBlock Grid.Column="4" Text="{Binding Loc[ActualWorkedHMm]}" Foreground="Gray" FontSize="12" />
+                        <TextBlock Grid.Column="5" Text="{Binding Loc[Normal8hDay]}" Foreground="Gray" FontSize="12" />
+                        <TextBlock Grid.Column="6" Text="{Binding Loc[Over8hDay]}" Foreground="Gray" FontSize="12" />
                     </Grid>
                     <ItemsControl ItemsSource="{Binding WorkTimeRows}">
                         <ItemsControl.ItemsPanel>
@@ -252,13 +266,15 @@
                         <ItemsControl.ItemTemplate>
                             <DataTemplate x:DataType="core:WorkTimeReportRow">
                                 <Border Background="#1A1D23" CornerRadius="6" Padding="14,8">
-                                    <Grid ColumnDefinitions="*,90,70,130,150,120">
+                                    <Grid ColumnDefinitions="*,90,70,140,140,150,120">
                                         <TextBlock Text="{Binding EmployeeName}" FontWeight="SemiBold" />
                                         <TextBlock Grid.Column="1" Text="{Binding MonthLabel}" />
                                         <TextBlock Grid.Column="2" Text="{Binding DaysWorked}" />
                                         <TextBlock Grid.Column="3" Text="{Binding TotalText}" FontWeight="Bold" Foreground="#64B5F6" />
-                                        <TextBlock Grid.Column="4" Text="{Binding NormalText}" />
-                                        <TextBlock Grid.Column="5" Text="{Binding OverText}" />
+                                        <TextBlock Grid.Column="4" Text="{Binding ActualText}" FontWeight="Bold" Foreground="#81C784"
+                                                   ToolTip.Tip="{Binding DiffText}" />
+                                        <TextBlock Grid.Column="5" Text="{Binding NormalText}" />
+                                        <TextBlock Grid.Column="6" Text="{Binding OverText}" />
                                     </Grid>
                                 </Border>
                             </DataTemplate>

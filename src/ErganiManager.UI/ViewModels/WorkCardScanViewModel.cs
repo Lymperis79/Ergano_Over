@@ -161,6 +161,23 @@ public partial class WorkCardScanViewModel :
 
     [ObservableProperty] private TimeSpan? _movementTime = DateTime.Now.TimeOfDay;
 
+    /// <summary>Ergani f_aitiologia code sent when a manual card is more than 10 minutes late.</summary>
+    [ObservableProperty] private string? _manualLateReason = "002";
+
+    /// <summary>Switching to a manual card starts from the current date and time, not from the
+    /// moment this window was created.</summary>
+    partial void OnAutoDetectChanged(bool value)
+    {
+        if (!value) SetManualTimeToNow();
+    }
+
+    [RelayCommand]
+    private void SetManualTimeToNow()
+    {
+        MovementDate = DateTimeOffset.Now;
+        MovementTime = new TimeSpan(DateTime.Now.Hour, DateTime.Now.Minute, 0);
+    }
+
     /*
      * Normal response
      */
@@ -639,7 +656,8 @@ public partial class WorkCardScanViewModel :
         /*
          * Prevent accidental duplicate scans.
          */
-        if (_lastScanTime.TryGetValue(
+        // (A manual card for a forgotten scan is exempt: arrival and departure are entered back to back.)
+        if (AutoDetect && _lastScanTime.TryGetValue(
                 cooldownKey,
                 out var lastTime))
         {
@@ -742,6 +760,13 @@ public partial class WorkCardScanViewModel :
 
                 scanTime =
                     date + time;
+
+                if (scanTime > DateTime.Now.AddMinutes(1))
+                {
+                    ShowResponse(false, Loc["Vm.🚫 Time is in the future"],
+                        Loc["Vm.The date and time of a manual work card cannot be in the future."]);
+                    return;
+                }
             }
 
             // Enforce the same schedule rules as the dedicated barcode terminal.
@@ -821,6 +846,15 @@ public partial class WorkCardScanViewModel :
             var name =
                 employee.FullName;
 
+            // Forgotten card entered by hand: sent to Ergani at once so the operator sees the
+            // result and the chosen late reason is used (it is not put in the offline queue).
+            if (!AutoDetect)
+            {
+                await SubmitManualCardAsync(request, name, movement, scanTime);
+                BarcodeInput = string.Empty;
+                return;
+            }
+
             /*
              * Save-first: record the scan locally and free the scanner at once so the
              * next person can scan. The background service sends it to Ergani and keeps
@@ -890,6 +924,56 @@ public partial class WorkCardScanViewModel :
     // ────────────────────────────────────────────────────────────────────────
     // RETRY
     // ────────────────────────────────────────────────────────────────────────
+
+    private async Task SubmitManualCardAsync(
+        WorkCardSubmissionRequest request, string name, string movement, DateTime scanTime)
+    {
+        var isLate = DateTime.Now - scanTime > WorkCardLogRetryService.OnTimeWindow;
+
+        if (isLate && string.IsNullOrWhiteSpace(ManualLateReason))
+        {
+            ShowResponse(false, Loc["Vm.Reason Required"], Loc["Vm.Please select an Ergani justification code."]);
+            return;
+        }
+
+        // An empty reason means "on time": Ergani gets an empty f_aitiologia.
+        var reason = isLate ? ManualLateReason! : string.Empty;
+        var result = await _workCardSubmitter.SubmitAsync(request, reason);
+
+        if (result.Success)
+        {
+            ShowResponse(
+                true,
+                $"✅ {(movement == "Arrival" ? Loc[L.Arrival] : Loc[L.Departure]).ToUpper()} — {name}",
+                string.Format(Loc["Vm.Protocol:      {0}"], result.Protocol) + "\n" +
+                string.Format(Loc["Vm.Time:          {0}"], scanTime.ToString("HH:mm:ss dd/MM/yyyy")) +
+                (isLate ? "\n" + string.Format(Loc["Vm.Reason:        {0}"], reason) : string.Empty));
+
+            RecentScans.Insert(0, new ScanResultRow
+            {
+                ScannedAt = scanTime,
+                EmployeeName = name,
+                MovementType = movement,
+                Success = true,
+                Protocol = result.Protocol ?? string.Empty
+            });
+
+            while (RecentScans.Count > 50)
+                RecentScans.RemoveAt(RecentScans.Count - 1);
+
+            ClearRetryState();
+        }
+        else
+        {
+            ShowResponse(
+                false,
+                string.Format(Loc["Vm.❌ Failed — {0}"], name),
+                result.ErrorMessage ?? Loc["Vm.Ergani rejected the retry submission."]);
+
+            // The retry dialog lets the operator pick a reason and send the same card again.
+            OpenRetryDialog(request, name, movement, scanTime);
+        }
+    }
 
     private void OpenRetryDialog(
         WorkCardSubmissionRequest request,

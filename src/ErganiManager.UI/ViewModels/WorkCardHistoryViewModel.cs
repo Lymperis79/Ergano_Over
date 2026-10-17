@@ -57,7 +57,7 @@ public partial class WorkCardHistoryViewModel : ViewModelBase, IAdminSectionView
 
     [ObservableProperty]
     private DateTimeOffset? _filterFromDate =
-        new DateTimeOffset(DateTime.Today.AddDays(-30));
+        new DateTimeOffset(DateTime.Today.AddDays(-0));
 
     [ObservableProperty]
     private DateTimeOffset? _filterToDate =
@@ -418,7 +418,7 @@ public partial class WorkCardHistoryViewModel : ViewModelBase, IAdminSectionView
              * the user, not the UTC timestamp.
              */
             var fromDate =
-                (FilterFromDate ?? DateTimeOffset.Now.AddDays(-30))
+                (FilterFromDate ?? DateTimeOffset.Now.AddDays(-0))
                 .Date;
 
             var toDate =

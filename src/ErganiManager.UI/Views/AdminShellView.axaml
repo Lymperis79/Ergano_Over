@@ -35,7 +35,7 @@
                     </Panel>
 
                     <TextBlock Grid.Column="1" Text="{Binding WelcomeText}" FontSize="12" Foreground="#AAAAAA"
-                               Margin="16,0,16,0" VerticalAlignment="Bottom"
+                               Margin="16,0,16,0" VerticalAlignment="Center"
                                TextTrimming="CharacterEllipsis" />
 
                     <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
@@ -82,7 +82,7 @@
                                    VerticalAlignment="Center" FontSize="12" />
                         <ComboBox ItemsSource="{Binding LanguageSelector.AvailableLanguages}"
                                   SelectedItem="{Binding LanguageSelector.SelectedLanguage}"
-                                  Width="120">
+                                  Width="100">
                             <ComboBox.ItemTemplate>
                                 <DataTemplate>
                                     <TextBlock Text="{Binding Converter={x:Static vm:AppLanguageConverter.Instance}}" />
@@ -98,7 +98,7 @@
                                    VerticalAlignment="Center" FontSize="13" />
                         <ComboBox ItemsSource="{Binding SwitchableCompanies}"
                                   SelectedItem="{Binding SelectedSwitchCompany}"
-                                  Width="250">
+                                  Width="220">
                             <ComboBox.ItemTemplate>
                                 <DataTemplate>
                                     <TextBlock Text="{Binding Name}" />
@@ -180,10 +180,7 @@
                     IsVisible="{Binding ShowApiLog}"
                     Command="{Binding NavigateToCommand}" CommandParameter="SubmissionLog"
                     HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" />
-            <Button Content="{Binding Loc[NavHelp]}" Classes="navItem"
-                    IsVisible="{Binding ShowHelp}"
-                    Command="{Binding NavigateToCommand}" CommandParameter="Help"
-                    HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" />
+           
 
             <!-- Administration: users, and (super administrator only) the database tools -->
             <StackPanel IsVisible="{Binding ShowAdminGroup}" Spacing="2">
@@ -202,6 +199,10 @@
                 </StackPanel>
             </StackPanel>
 
+             <Button Content="{Binding Loc[NavHelp]}" Classes="navItem"
+                    IsVisible="{Binding ShowHelp}"
+                    Command="{Binding NavigateToCommand}" CommandParameter="Help"
+                    HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" />
         </StackPanel>
         </ScrollViewer>
 

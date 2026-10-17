@@ -55,7 +55,6 @@ internal static class Program
             BuildAvaloniaApp()
                 .StartWithClassicDesktopLifetime(args);
 
-            
             // Graceful shutdown
             retryService.StopAsync().GetAwaiter().GetResult();
         }

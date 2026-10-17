@@ -5,7 +5,9 @@
              x:DataType="vm:OvertimeViewModel">
 
     <Grid>
-        <StackPanel Spacing="16">
+        <!-- The shell does not scroll its sections: the page scrolls here, the list scrolls inside it. -->
+        <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+        <StackPanel Spacing="16" Margin="0,0,14,0">
 
             <Border IsVisible="{Binding !HasActiveCompany}" Background="#332D9CDB" CornerRadius="6" Padding="14">
                 <TextBlock Text="{Binding NoCompanyMessage}" TextWrapping="Wrap" />
@@ -81,6 +83,7 @@
 
             </StackPanel>
         </StackPanel>
+        </ScrollViewer>
 
         <!-- Ergani response viewer -->
         <Border IsVisible="{Binding IsResponseOpen}" Background="#AA000000" ZIndex="100">

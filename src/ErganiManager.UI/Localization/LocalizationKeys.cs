@@ -71,6 +71,11 @@ public static class L
     public const string NightStart          = nameof(NightStart);
     public const string NightEnd            = nameof(NightEnd);
     public const string NightSettingsSaved  = nameof(NightSettingsSaved);
+    public const string OnTimeWindowTitle = nameof(OnTimeWindowTitle);
+    public const string OnTimeWindowDescription = nameof(OnTimeWindowDescription);
+    public const string OnTimeWindowMinutesLabel = nameof(OnTimeWindowMinutesLabel);
+    public const string OnTimeWindowSaved = nameof(OnTimeWindowSaved);
+    public const string OnTimeWindowInvalid = nameof(OnTimeWindowInvalid);
     public const string NightSettingsApply  = nameof(NightSettingsApply);
     public const string EarlyClockInBlock   = nameof(EarlyClockInBlock);
     public const string EarlyDepartureAlert = nameof(EarlyDepartureAlert);
@@ -418,10 +423,13 @@ public static class L
     public const string Over8hDay = nameof(Over8hDay);
     public const string Normal8hDay = nameof(Normal8hDay);
     public const string TotalHMm = nameof(TotalHMm);
+    public const string ScheduledHMm = nameof(ScheduledHMm);
+    public const string ActualWorkedHMm = nameof(ActualWorkedHMm);
     public const string Days = nameof(Days);
     public const string Month = nameof(Month);
     public const string RoundedInOut = nameof(RoundedInOut);
     public const string ExportCSV = nameof(ExportCSV);
+    public const string ExportExcelHours = nameof(ExportExcelHours);
     public const string Generate = nameof(Generate);
     public const string DeleteSchedule = nameof(DeleteSchedule);
     public const string NoScheduleHasBeenSubmittedTo = nameof(NoScheduleHasBeenSubmittedTo);
@@ -490,4 +498,10 @@ public static class L
     public const string ChoosePicture = nameof(ChoosePicture);
     public const string RemovePicture = nameof(RemovePicture);
     public const string CompanyPictureHint = nameof(CompanyPictureHint);
+
+    // Added by the localization completion pass
+    public const string ManualCardTitle = nameof(ManualCardTitle);
+    public const string SetToNow = nameof(SetToNow);
+    public const string ManualLateReasonLabel = nameof(ManualLateReasonLabel);
+    public const string ManualCardSentHint = nameof(ManualCardSentHint);
 }

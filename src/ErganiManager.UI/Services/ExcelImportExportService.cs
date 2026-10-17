@@ -210,7 +210,7 @@ public class ExcelImportExportService
             var cell = ws.Cell(3, i + 1);
             cell.Value = dayHeaders[i];
             cell.Style.Font.Bold = true;
-            cell.Style.Fill.BackgroundColor = XLColor.FromArgb(0xB0, 0xB0, 0xB0);
+            cell.Style.Fill.BackgroundColor = XLColor.FromArgb(0x1E, 0x21, 0x28);
             cell.Style.Font.FontColor = XLColor.White;
         }
 
@@ -242,7 +242,7 @@ public class ExcelImportExportService
 
             // Weekend shading
             if (date.DayOfWeek is DayOfWeek.Saturday or DayOfWeek.Sunday)
-                ws.Range(row, 1, row, 7).Style.Fill.BackgroundColor = XLColor.FromArgb(0xB0, 0xB0, 0xB0);
+                ws.Range(row, 1, row, 7).Style.Fill.BackgroundColor = XLColor.FromArgb(0x23, 0x26, 0x2D);
         }
 
         ws.Columns().AdjustToContents();

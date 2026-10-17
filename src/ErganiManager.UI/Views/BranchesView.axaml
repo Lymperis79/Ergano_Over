@@ -34,8 +34,7 @@
                                     <TextBlock Text="{Binding Name}" FontWeight="SemiBold" FontSize="14" />
                                     <TextBlock Text="{Binding Address}" FontSize="12" Foreground="Gray" />
                                 </StackPanel>
-                                
-                                <Border Grid.Column="2" CornerRadius="10" Padding="8,3"
+                                 <Border Grid.Column="2" CornerRadius="10" Padding="8,3"
                                         VerticalAlignment="Center" Background="#2D9CDB">
                                     <TextBlock Text="{Binding IsActive}" FontSize="11" Foreground="White" />
                                 </Border>
