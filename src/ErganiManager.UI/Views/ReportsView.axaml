@@ -36,7 +36,7 @@
     <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
         <StackPanel Spacing="14">
 
-            <Border IsVisible="{Binding !HasActiveCompany}" Background="#332D9CDB" CornerRadius="6" Padding="14">
+            <Border IsVisible="{Binding !HasActiveCompany}" Background="{DynamicResource AccentSoftBrush}" CornerRadius="6" Padding="14">
                 <TextBlock Text="{Binding NoCompanyMessage}" TextWrapping="Wrap" />
             </Border>
 
@@ -102,7 +102,7 @@
                 <TextBlock Text="{Binding StatusMessage}" Foreground="Gray" FontSize="12" TextWrapping="Wrap" />
 
                 <!-- Totals per employee + grand total -->
-                <Border Background="#1A1D23" CornerRadius="8" Padding="16" IsVisible="{Binding HasData}">
+                <Border Background="{DynamicResource CardBrush}" CornerRadius="8" Padding="16" IsVisible="{Binding HasData}">
                     <StackPanel Spacing="6">
                         <TextBlock Text="{Binding ReportTitle}" FontWeight="SemiBold" FontSize="15" />
                         <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="18" IsVisible="{Binding IsCompareReport}">
@@ -154,12 +154,12 @@
                     </ItemsControl.ItemsPanel>
                     <ItemsControl.ItemTemplate>
                         <DataTemplate x:DataType="core:OvertimeReportMonth">
-                            <Border Background="#1A1D23" CornerRadius="8" Padding="14,10">
+                            <Border Background="{DynamicResource CardBrush}" CornerRadius="8" Padding="14,10">
                                 <StackPanel Spacing="6">
                                     <Grid ColumnDefinitions="*,Auto">
                                         <TextBlock Text="{Binding Header}" FontWeight="SemiBold" FontSize="14" />
                                         <TextBlock Grid.Column="1" Text="{Binding TotalText, StringFormat='Month total: {0}'}"
-                                                   FontWeight="Bold" Foreground="#64B5F6" />
+                                                   FontWeight="Bold" Foreground="{DynamicResource AccentLightBrush}" />
                                     </Grid>
                                     <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto" MaxHeight="360">
                                     <ItemsControl ItemsSource="{Binding Records}">
@@ -198,11 +198,11 @@
                         </ItemsControl.ItemsPanel>
                         <ItemsControl.ItemTemplate>
                             <DataTemplate x:DataType="core:TimeSummaryMonth" x:CompileBindings="False">
-                                <Border Background="#1A1D23" CornerRadius="8" Padding="14,10" MinWidth="1180">
+                                <Border Background="{DynamicResource CardBrush}" CornerRadius="8" Padding="14,10" MinWidth="1180">
                                     <StackPanel Spacing="6">
                                         <Grid ColumnDefinitions="*,Auto">
                                             <TextBlock Text="{Binding Header}" FontWeight="SemiBold" FontSize="14" />
-                                            <TextBlock Grid.Column="1" Text="{Binding TotalsText}" FontWeight="Bold" Foreground="#64B5F6" />
+                                            <TextBlock Grid.Column="1" Text="{Binding TotalsText}" FontWeight="Bold" Foreground="{DynamicResource AccentLightBrush}" />
                                         </Grid>
                                         <Grid ColumnDefinitions="120,130,70,200,80,100,90,120,80,100" ColumnSpacing="8">
                                             <TextBlock Text="{Binding $parent[UserControl].DataContext.Loc[Date]}" Foreground="Gray" FontSize="11" />
@@ -265,12 +265,12 @@
                         </ItemsControl.ItemsPanel>
                         <ItemsControl.ItemTemplate>
                             <DataTemplate x:DataType="core:WorkTimeReportRow">
-                                <Border Background="#1A1D23" CornerRadius="6" Padding="14,8">
+                                <Border Background="{DynamicResource CardBrush}" CornerRadius="6" Padding="14,8">
                                     <Grid ColumnDefinitions="*,90,70,140,140,150,120">
                                         <TextBlock Text="{Binding EmployeeName}" FontWeight="SemiBold" />
                                         <TextBlock Grid.Column="1" Text="{Binding MonthLabel}" />
                                         <TextBlock Grid.Column="2" Text="{Binding DaysWorked}" />
-                                        <TextBlock Grid.Column="3" Text="{Binding TotalText}" FontWeight="Bold" Foreground="#64B5F6" />
+                                        <TextBlock Grid.Column="3" Text="{Binding TotalText}" FontWeight="Bold" Foreground="{DynamicResource AccentLightBrush}" />
                                         <TextBlock Grid.Column="4" Text="{Binding ActualText}" FontWeight="Bold" Foreground="#81C784"
                                                    ToolTip.Tip="{Binding DiffText}" />
                                         <TextBlock Grid.Column="5" Text="{Binding NormalText}" />
@@ -289,7 +289,7 @@
                     </ItemsControl.ItemsPanel>
                     <ItemsControl.ItemTemplate>
                         <DataTemplate x:DataType="core:TableSection">
-                            <Border Background="#1A1D23" CornerRadius="8" Padding="14,10">
+                            <Border Background="{DynamicResource CardBrush}" CornerRadius="8" Padding="14,10">
                                 <StackPanel Spacing="6">
                                     <TextBlock Text="{Binding Title}" IsVisible="{Binding HasTitle}"
                                                FontWeight="SemiBold" FontSize="15" />

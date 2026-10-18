@@ -26,7 +26,7 @@
 
         <!-- No company -->
         <Border Grid.Row="0" IsVisible="{Binding !HasActiveCompany}"
-                Background="#332D9CDB" CornerRadius="6" Padding="14">
+                Background="{DynamicResource AccentSoftBrush}" CornerRadius="6" Padding="14">
             <TextBlock Text="{Binding Loc[TodayNoCompany]}" TextWrapping="Wrap" />
         </Border>
 
@@ -115,7 +115,7 @@
         </ScrollViewer>
 
         <!-- Details of the selected employee (scrolls when long) -->
-        <Border Grid.Row="4" Background="#1E2128" CornerRadius="6" Padding="12" MaxHeight="190"
+        <Border Grid.Row="4" Background="{DynamicResource PanelBrush}" CornerRadius="6" Padding="12" MaxHeight="190"
                 IsVisible="{Binding SelectedRow, Converter={x:Static ObjectConverters.IsNotNull}}">
             <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto"
                           AllowAutoHide="False">

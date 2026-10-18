@@ -451,6 +451,10 @@ public static class L
     public const string EmailStatusAll = nameof(EmailStatusAll);
     public const string EmailRefresh = nameof(EmailRefresh);
     public const string EmailDetails = nameof(EmailDetails);
+    public const string AppearanceTitle = nameof(AppearanceTitle);
+    public const string AppearanceBackground = nameof(AppearanceBackground);
+    public const string AppearanceAccent = nameof(AppearanceAccent);
+    public const string AppearanceReset = nameof(AppearanceReset);
     public const string Generate = nameof(Generate);
     public const string DeleteSchedule = nameof(DeleteSchedule);
     public const string NoScheduleHasBeenSubmittedTo = nameof(NoScheduleHasBeenSubmittedTo);

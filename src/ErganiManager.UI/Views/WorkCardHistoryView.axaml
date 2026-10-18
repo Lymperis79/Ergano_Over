@@ -12,7 +12,7 @@
         <!-- No active company -->
 
         <Border IsVisible="{Binding !HasActiveCompany}"
-                Background="#332D9CDB"
+                Background="{DynamicResource AccentSoftBrush}"
                 CornerRadius="6"
                 Padding="14">
 
@@ -46,7 +46,7 @@
 
             <!-- Filters -->
 
-            <Border Background="#1A1D23"
+            <Border Background="{DynamicResource CardBrush}"
                     CornerRadius="8"
                     Padding="16">
 
@@ -209,7 +209,7 @@
 
                     <DataTemplate>
 
-                        <Border Background="#1A1D23"
+                        <Border Background="{DynamicResource CardBrush}"
                                 CornerRadius="6"
                                 Padding="14,10">
 
@@ -313,7 +313,7 @@
     </ScrollViewer>
 
     <Border IsVisible="{Binding IsResponseOpen}" Background="#AA000000" ZIndex="100">
-        <Border Background="#1E2128" CornerRadius="12" Padding="20" Width="800" Height="600" VerticalAlignment="Center" HorizontalAlignment="Center">
+        <Border Background="{DynamicResource PanelBrush}" CornerRadius="12" Padding="20" Width="800" Height="600" VerticalAlignment="Center" HorizontalAlignment="Center">
             <Grid RowDefinitions="Auto,*,Auto" RowSpacing="12">
                 <TextBlock Grid.Row="0" Text="{Binding ResponseTitle}" FontSize="17" FontWeight="Bold" />
                 <TextBox Grid.Row="1" Text="{Binding ResponseText}" IsReadOnly="True" AcceptsReturn="True" TextWrapping="NoWrap" ScrollViewer.VerticalScrollBarVisibility="{x:Static ScrollBarVisibility.Auto}" ScrollViewer.HorizontalScrollBarVisibility="{x:Static ScrollBarVisibility.Auto}" FontFamily="Consolas" />

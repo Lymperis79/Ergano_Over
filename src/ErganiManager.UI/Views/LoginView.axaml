@@ -7,7 +7,8 @@
         Title="{Binding Loc[AppTitle]}"
         Width="420" Height="560"
         WindowStartupLocation="CenterScreen"
-        CanResize="False">
+        CanResize="False"
+        Background="{DynamicResource WindowBrush}">
 
     <Grid>
         <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Width="320" Spacing="14">
@@ -21,7 +22,7 @@
                        HorizontalAlignment="Center" Margin="0,0,0,8" />
 
             <Border IsVisible="{Binding IsDegradedMode}"
-                    Background="#332D9CDB" CornerRadius="6" Padding="10" Margin="0,0,0,8">
+                    Background="{DynamicResource AccentSoftBrush}" CornerRadius="6" Padding="10" Margin="0,0,0,8">
                 <TextBlock Text="{Binding Loc[OfflineBanner]}" TextWrapping="Wrap" FontSize="12" />
             </Border>
 

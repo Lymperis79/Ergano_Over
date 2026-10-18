@@ -24,6 +24,10 @@ public partial class App : Application
 
     public override void OnFrameworkInitializationCompleted()
     {
+        // The colours the user picked (background style + accent), before any window is shown.
+        ErganiManager.UI.Services.AppearanceService.Load();
+        ErganiManager.UI.Services.AppearanceService.Apply();
+
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
             // Exit when the user closes the main window.

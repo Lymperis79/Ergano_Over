@@ -43,7 +43,7 @@
             </TextBlock>
 
             <Border IsVisible="{Binding IsOfflineMode}"
-                    Background="#332D9CDB" CornerRadius="6" Padding="8" Margin="0,4,0,0">
+                    Background="{DynamicResource AccentSoftBrush}" CornerRadius="6" Padding="8" Margin="0,4,0,0">
                 <TextBlock Text="{Binding Loc[OfflineMode]}"
                            Foreground="White" FontSize="12" HorizontalAlignment="Center" />
             </Border>
@@ -70,7 +70,7 @@
 
         <!-- The last 10 clock-ins / clock-outs -->
         <Border Grid.Row="1" Width="820" HorizontalAlignment="Center" Margin="0,0,0,28"
-                Background="#1A1D23" CornerRadius="10" Padding="16,10"
+                Background="{DynamicResource CardBrush}" CornerRadius="10" Padding="16,10"
                 IsVisible="{Binding HasRecentScans}">
             <StackPanel Spacing="4">
                 <TextBlock Text="{Binding Loc[RecentScans]}" FontSize="13" FontWeight="SemiBold"
@@ -100,9 +100,9 @@
         <!-- Result popup overlay (closes by itself after 2 seconds) -->
         <Border Grid.RowSpan="2" IsVisible="{Binding IsPopupVisible}"
                 Background="#CC000000">
-            <Border Background="#1E2128" CornerRadius="12" Padding="36"
+            <Border Background="{DynamicResource PanelBrush}" CornerRadius="12" Padding="36"
                     Width="560" VerticalAlignment="Center" HorizontalAlignment="Center"
-                    BorderBrush="#3A3F4B" BorderThickness="1">
+                    BorderBrush="{DynamicResource LineBrush}" BorderThickness="1">
                 <StackPanel Spacing="10">
                     <TextBlock Text="{Binding PopupTitle}" FontSize="24" FontWeight="Bold"
                                Classes="popupTitle" Classes.ok="{Binding IsPopupOk}"
@@ -134,9 +134,9 @@
 
         <!-- Close the application? -->
         <Border Grid.RowSpan="2" IsVisible="{Binding IsExitConfirmVisible}" Background="#CC000000">
-            <Border Background="#1E2128" CornerRadius="12" Padding="36" Width="460"
+            <Border Background="{DynamicResource PanelBrush}" CornerRadius="12" Padding="36" Width="460"
                     VerticalAlignment="Center" HorizontalAlignment="Center"
-                    BorderBrush="#3A3F4B" BorderThickness="1">
+                    BorderBrush="{DynamicResource LineBrush}" BorderThickness="1">
                 <StackPanel Spacing="20">
                     <TextBlock Text="{Binding Loc[CloseAppQuestion]}" FontSize="20" FontWeight="SemiBold"
                                Foreground="White" TextWrapping="Wrap" HorizontalAlignment="Center" />

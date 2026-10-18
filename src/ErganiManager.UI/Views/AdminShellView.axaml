@@ -7,6 +7,7 @@
         x:DataType="vm:AdminShellViewModel"
         Title="{Binding Loc[ErganiManagerAdmin]}"
         Width="1200" Height="760"
+        Background="{DynamicResource WindowBrush}"
         WindowStartupLocation="CenterScreen">
 
     <Window.Resources>
@@ -16,7 +17,7 @@
     <Grid ColumnDefinitions="220,*" RowDefinitions="Auto,Auto,*">
 
         <!-- Header -->
-        <Border Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2" Background="#1E2128" Padding="20,14">
+        <Border Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2" Background="{DynamicResource PanelBrush}" Padding="20,14">
             <Grid RowDefinitions="Auto,Auto">
 
                 <!-- Line 1: company logo (or name) on the left, welcome next to it,
@@ -39,6 +40,10 @@
                                TextTrimming="CharacterEllipsis" />
 
                     <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
+
+                        <!-- Colours of the interface: background style and accent colour -->
+                        <Button Content="🎨" Click="OnAppearanceClick" VerticalAlignment="Center"
+                                ToolTip.Tip="{Binding Loc[AppearanceTitle]}" />
 
                         <!-- Ergani API status indicator -->
                         <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
@@ -127,7 +132,7 @@
         </Border>
 
         <!-- Sidebar: master data and administration are groups; every menu can be hidden per user -->
-        <ScrollViewer Grid.Row="2" Grid.Column="0" Background="#16181D"
+        <ScrollViewer Grid.Row="2" Grid.Column="0" Background="{DynamicResource SidebarBrush}"
                       VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
         <StackPanel Spacing="2">
 
@@ -229,7 +234,7 @@
             <Setter Property="FontSize" Value="14" />
         </Style>
         <Style Selector="Button.navGroup">
-            <Setter Property="Background" Value="#1E2128" />
+            <Setter Property="Background" Value="{DynamicResource PanelBrush}" />
             <Setter Property="Foreground" Value="#FFFFFF" />
             <Setter Property="FontWeight" Value="SemiBold" />
             <Setter Property="Padding" Value="20,12" />
@@ -237,14 +242,28 @@
             <Setter Property="FontSize" Value="14" />
         </Style>
         <Style Selector="Button.navGroup:pointerover /template/ ContentPresenter">
-            <Setter Property="Background" Value="#22252C" />
+            <Setter Property="Background" Value="{DynamicResource HoverBrush}" />
         </Style>
         <Style Selector="Button.navChild">
             <Setter Property="Padding" Value="38,10,20,10" />
             <Setter Property="FontSize" Value="13" />
         </Style>
         <Style Selector="Button.navItem:pointerover /template/ ContentPresenter">
-            <Setter Property="Background" Value="#22252C" />
+            <Setter Property="Background" Value="{DynamicResource HoverBrush}" />
+        </Style>
+
+        <!-- The section that is open: highlighted background, blue marker on the left, bold white text. -->
+        <Style Selector="Button.navItem.active">
+            <Setter Property="Foreground" Value="#FFFFFF" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+        </Style>
+        <Style Selector="Button.navItem.active /template/ ContentPresenter">
+            <Setter Property="Background" Value="{DynamicResource NavActiveBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource AccentLightBrush}" />
+            <Setter Property="BorderThickness" Value="4,0,0,0" />
+        </Style>
+        <Style Selector="Button.navItem.active:pointerover /template/ ContentPresenter">
+            <Setter Property="Background" Value="{DynamicResource NavActiveHoverBrush}" />
         </Style>
     </Window.Styles>
 

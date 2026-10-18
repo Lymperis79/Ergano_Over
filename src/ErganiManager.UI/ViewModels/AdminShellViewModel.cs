@@ -172,6 +172,20 @@ public partial class AdminShellViewModel : ViewModelBase
     }
 
     /// <summary>Re-translates the texts that are stored as plain strings when the language changes.</summary>
+    /// <summary>
+    /// The sections are kept alive between visits and many of them build texts when they load (calendar
+    /// cells, table rows, status lines). After a language change they are thrown away and the open one is
+    /// opened again, so nothing is left in the old language. (Unsaved input in the open section is lost.)
+    /// </summary>
+    private void RebuildSectionsForLanguage()
+    {
+        if (_session == null) return;
+
+        var active = ActiveSection;
+        _sectionCache.Clear();
+        NavigateTo(active.ToString());
+    }
+
     private void RefreshLocalizedTexts()
     {
         ApplyErganiKind(_erganiKind);
@@ -345,7 +359,11 @@ public partial class AdminShellViewModel : ViewModelBase
                 LanguageSelectorViewModel>();
 
         ApplyErganiKind(ErganiKind.Unknown);
-        Loc.LanguageChanged += (_, _) => RefreshLocalizedTexts();
+        Loc.LanguageChanged += (_, _) =>
+        {
+            RefreshLocalizedTexts();
+            RebuildSectionsForLanguage();
+        };
         Logo.PropertyChanged += (_, _) =>
         {
             OnPropertyChanged(nameof(ShowCompanyLogo));

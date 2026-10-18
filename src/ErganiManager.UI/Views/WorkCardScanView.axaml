@@ -11,7 +11,7 @@
 
         <Border Grid.Row="1"
                 IsVisible="{Binding !HasActiveCompany}"
-                Background="#332D9CDB" CornerRadius="6" Padding="14">
+                Background="{DynamicResource AccentSoftBrush}" CornerRadius="6" Padding="14">
             <TextBlock Text="{Binding NoCompanyMessage}" TextWrapping="Wrap" />
         </Border>
 
@@ -22,7 +22,7 @@
             <StackPanel Grid.Column="0" Spacing="16">
 
                 <!-- Input panel -->
-                <Border Background="#1A1D23" CornerRadius="8" Padding="20">
+                <Border Background="{DynamicResource CardBrush}" CornerRadius="8" Padding="20">
                     <StackPanel Spacing="12">
                         <TextBlock Text="{Binding Loc[BarcodeEmployeeID]}"
                                    FontWeight="SemiBold" FontSize="14" />
@@ -110,7 +110,7 @@
                 </Border>
 
                 <!-- Tips -->
-                <Border Background="#1A1D23" CornerRadius="8" Padding="16">
+                <Border Background="{DynamicResource CardBrush}" CornerRadius="8" Padding="16">
                     <StackPanel Spacing="6">
                         <TextBlock Text="{Binding Loc[Tips]}" FontWeight="SemiBold" Foreground="#AAAAAA" />
                         <TextBlock TextWrapping="Wrap" Foreground="#666666" FontSize="12"
@@ -146,7 +146,7 @@
                             </ItemsControl.ItemsPanel>
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate x:DataType="vm:ScanResultRow">
-                                    <Border Background="#1A1D23" CornerRadius="6" Padding="12,8">
+                                    <Border Background="{DynamicResource CardBrush}" CornerRadius="6" Padding="12,8">
                                         <Grid ColumnDefinitions="Auto,Auto,*,Auto">
                                             <TextBlock Grid.Column="0"
                                                        Text="{Binding MovementIcon}"
@@ -189,7 +189,7 @@
         <!-- ── Retry dialog — shown when submission fails ── -->
         <Border IsVisible="{Binding IsRetryDialogOpen}"
                 Background="#BB000000" ZIndex="99">
-            <Border Background="#1E2128" CornerRadius="12" Padding="24"
+            <Border Background="{DynamicResource PanelBrush}" CornerRadius="12" Padding="24"
                     Width="440" VerticalAlignment="Center" HorizontalAlignment="Center">
                 <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto">
                     <TextBlock Grid.Row="0" Text="{Binding Loc[SubmissionFailedResubmitWithJustification]}"

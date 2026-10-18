@@ -9,7 +9,7 @@
         <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
         <StackPanel Spacing="16" Margin="0,0,14,0">
 
-            <Border IsVisible="{Binding !HasActiveCompany}" Background="#332D9CDB" CornerRadius="6" Padding="14">
+            <Border IsVisible="{Binding !HasActiveCompany}" Background="{DynamicResource AccentSoftBrush}" CornerRadius="6" Padding="14">
                 <TextBlock Text="{Binding NoCompanyMessage}" TextWrapping="Wrap" />
             </Border>
 
@@ -37,7 +37,7 @@
                     </ItemsControl.ItemsPanel>
                     <ItemsControl.ItemTemplate>
                         <DataTemplate x:CompileBindings="False">
-                            <Border Background="#1A1D23" CornerRadius="8" Padding="14,10">
+                            <Border Background="{DynamicResource CardBrush}" CornerRadius="8" Padding="14,10">
                                 <Grid MinWidth="1100" ColumnDefinitions="Auto,*,Auto,Auto,Auto,Auto,Auto,Auto,Auto">
                                     <CheckBox Grid.Column="0" Tag="{Binding}" Click="OnSelectionClick" VerticalAlignment="Center" Margin="0,0,10,0" />
                                     <StackPanel Grid.Column="1">
@@ -87,7 +87,7 @@
 
         <!-- Ergani response viewer -->
         <Border IsVisible="{Binding IsResponseOpen}" Background="#AA000000" ZIndex="100">
-            <Border Background="#1E2128" CornerRadius="12" Padding="20" Width="800" Height="600" VerticalAlignment="Center" HorizontalAlignment="Center">
+            <Border Background="{DynamicResource PanelBrush}" CornerRadius="12" Padding="20" Width="800" Height="600" VerticalAlignment="Center" HorizontalAlignment="Center">
                 <Grid RowDefinitions="Auto,*,Auto" RowSpacing="12">
                     <TextBlock Grid.Row="0" Text="{Binding ResponseTitle}" FontSize="17" FontWeight="Bold" />
                     <TextBox Grid.Row="1" Text="{Binding ResponseText}" IsReadOnly="True" AcceptsReturn="True" TextWrapping="NoWrap" ScrollViewer.VerticalScrollBarVisibility="{x:Static ScrollBarVisibility.Auto}" ScrollViewer.HorizontalScrollBarVisibility="{x:Static ScrollBarVisibility.Auto}" FontFamily="Consolas" />
@@ -98,9 +98,9 @@
 
         <!-- New overtime form overlay -->
         <Border IsVisible="{Binding IsCreating}" Background="#AA000000">
-            <Border Background="#1E2128" CornerRadius="12" Padding="28"
+            <Border Background="{DynamicResource PanelBrush}" CornerRadius="12" Padding="28"
                     Width="500" VerticalAlignment="Center" HorizontalAlignment="Center"
-                    BorderBrush="#3A3F4B" BorderThickness="1">
+                    BorderBrush="{DynamicResource LineBrush}" BorderThickness="1">
                 <StackPanel Spacing="12">
                     <TextBlock Text="{Binding Loc[NewOvertimeEntry]}" FontSize="17" FontWeight="Bold" />
 

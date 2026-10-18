@@ -1,7 +1,25 @@
 <Application xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              x:Class="ErganiManager.UI.App"
-             RequestedThemeVariant="Default">
+             RequestedThemeVariant="Dark">
+
+    <!-- The colours of the interface. These are the defaults; AppearanceService replaces them at runtime
+         with the background style and accent colour the user picked (the 🎨 button in the header). -->
+    <Application.Resources>
+        <SolidColorBrush x:Key="WindowBrush" Color="#202020" />
+        <SolidColorBrush x:Key="SidebarBrush" Color="#16181D" />
+        <SolidColorBrush x:Key="PanelBrush" Color="#1E2128" />
+        <SolidColorBrush x:Key="CardBrush" Color="#1A1D23" />
+        <SolidColorBrush x:Key="HoverBrush" Color="#22252C" />
+        <SolidColorBrush x:Key="LineBrush" Color="#3A3F4B" />
+        <SolidColorBrush x:Key="AccentBrush" Color="#2D9CDB" />
+        <SolidColorBrush x:Key="AccentHoverBrush" Color="#258AC4" />
+        <SolidColorBrush x:Key="AccentLightBrush" Color="#64B5F6" />
+        <SolidColorBrush x:Key="AccentSoftBrush" Color="#332D9CDB" />
+        <SolidColorBrush x:Key="AccentFaintBrush" Color="#1A2D9CDB" />
+        <SolidColorBrush x:Key="NavActiveBrush" Color="#2A3F5F" />
+        <SolidColorBrush x:Key="NavActiveHoverBrush" Color="#2F4A72" />
+    </Application.Resources>
 
     <Application.Styles>
         <FluentTheme />
@@ -20,12 +38,12 @@
             <Setter Property="CornerRadius" Value="6" />
         </Style>
         <Style Selector="Button.accent">
-            <Setter Property="Background" Value="#2D9CDB" />
+            <Setter Property="Background" Value="{DynamicResource AccentBrush}" />
             <Setter Property="Foreground" Value="White" />
             <Setter Property="FontWeight" Value="SemiBold" />
         </Style>
         <Style Selector="Button.accent:pointerover /template/ ContentPresenter">
-            <Setter Property="Background" Value="#258AC4" />
+            <Setter Property="Background" Value="{DynamicResource AccentHoverBrush}" />
         </Style>
     </Application.Styles>
 

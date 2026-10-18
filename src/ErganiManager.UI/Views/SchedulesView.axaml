@@ -58,7 +58,7 @@
         </StackPanel>
 
         <!-- Row 1: Controls bar -->
-        <Border Grid.Row="1" Background="#1A1D23" CornerRadius="8" Padding="12" Margin="0,0,0,8">
+        <Border Grid.Row="1" Background="{DynamicResource CardBrush}" CornerRadius="8" Padding="12" Margin="0,0,0,8">
             <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto,Auto,Auto,Auto,Auto">
 
                 <!-- Employee picker -->
@@ -166,7 +166,7 @@
                                     </Border.Background>
                                     <Border.Styles>
                                         <Style Selector="Border:pointerover">
-                                            <Setter Property="Background" Value="#22252C" />
+                                            <Setter Property="Background" Value="{DynamicResource HoverBrush}" />
                                         </Style>
                                     </Border.Styles>
                                     <Border.BorderBrush>
@@ -201,7 +201,7 @@
                                         </Border>
                                         <TextBlock Text="{Binding $parent[UserControl].((vm:SchedulesViewModel)DataContext).Loc[Sent]}" FontSize="9" Foreground="#81C784"
                                                    IsVisible="{Binding IsSubmitted}" />
-                                        <TextBlock Text="{Binding $parent[UserControl].((vm:SchedulesViewModel)DataContext).Loc[ErganiImported]}" FontSize="9" Foreground="#64B5F6"
+                                        <TextBlock Text="{Binding $parent[UserControl].((vm:SchedulesViewModel)DataContext).Loc[ErganiImported]}" FontSize="9" Foreground="{DynamicResource AccentLightBrush}"
                                                    IsVisible="{Binding IsErganiImported}" />
                                         <!-- Selected indicator -->
                                         <Border IsVisible="{Binding IsSelected}"
@@ -224,7 +224,7 @@
         <Border Grid.Row="0" Grid.RowSpan="4"
                 IsVisible="{Binding IsImportDialogOpen}"
                 Background="#BB000000" ZIndex="80">
-            <Border Background="#1E2128" CornerRadius="12" Padding="24"
+            <Border Background="{DynamicResource PanelBrush}" CornerRadius="12" Padding="24"
                     Width="620" MaxHeight="620"
                     VerticalAlignment="Center" HorizontalAlignment="Center">
                 <Grid RowDefinitions="Auto,*,Auto" RowSpacing="12">
@@ -267,7 +267,7 @@
         <Border Grid.Row="0" Grid.RowSpan="4"
                 IsVisible="{Binding IsImportHistoryOpen}"
                 Background="#BB000000" ZIndex="85">
-            <Border Background="#1E2128" CornerRadius="12" Padding="24"
+            <Border Background="{DynamicResource PanelBrush}" CornerRadius="12" Padding="24"
                     Width="680" MaxHeight="560"
                     VerticalAlignment="Center" HorizontalAlignment="Center">
                 <Grid RowDefinitions="Auto,*,Auto" RowSpacing="12">
@@ -302,7 +302,7 @@
         <Border Grid.Row="0" Grid.RowSpan="4"
                 IsVisible="{Binding IsConflictDialogOpen}"
                 Background="#BB000000" ZIndex="95">
-            <Border Background="#1E2128" CornerRadius="12" Padding="24"
+            <Border Background="{DynamicResource PanelBrush}" CornerRadius="12" Padding="24"
                     Width="620" MaxHeight="620"
                     VerticalAlignment="Center" HorizontalAlignment="Center">
                 <Grid RowDefinitions="Auto,*,Auto" RowSpacing="12">
@@ -327,7 +327,7 @@
         <Border Grid.Row="0" Grid.RowSpan="4"
                 IsVisible="{Binding IsPortalImportPromptOpen}"
                 Background="#BB000000" ZIndex="90">
-            <Border Background="#1E2128" CornerRadius="12" Padding="24"
+            <Border Background="{DynamicResource PanelBrush}" CornerRadius="12" Padding="24"
                     Width="460"
                     VerticalAlignment="Center" HorizontalAlignment="Center">
                 <StackPanel Spacing="16">
@@ -351,7 +351,7 @@
         <Border Grid.Row="0" Grid.RowSpan="4"
                 IsVisible="{Binding IsDayDialogOpen}"
                 Background="#BB000000" ZIndex="50">
-            <Border Background="#1E2128" CornerRadius="12" Padding="24"
+            <Border Background="{DynamicResource PanelBrush}" CornerRadius="12" Padding="24"
                     Width="500" MaxHeight="520"
                     VerticalAlignment="Center" HorizontalAlignment="Center">
                 <Grid RowDefinitions="*,Auto">
@@ -434,7 +434,7 @@
         <Border Grid.Row="0" Grid.RowSpan="4"
                 IsVisible="{Binding IsBulkDialogOpen}"
                 Background="#BB000000" ZIndex="50">
-            <Border Background="#1E2128" CornerRadius="12" Padding="24"
+            <Border Background="{DynamicResource PanelBrush}" CornerRadius="12" Padding="24"
                     Width="420" VerticalAlignment="Center" HorizontalAlignment="Center">
                 <Grid RowDefinitions="*,Auto">
                     <StackPanel Grid.Row="0" Spacing="10">
@@ -506,7 +506,7 @@
         <Border Grid.Row="0" Grid.RowSpan="4"
                 IsVisible="{Binding IsCloneDialogOpen}"
                 Background="#BB000000" ZIndex="50">
-            <Border Background="#1E2128" CornerRadius="12" Padding="24"
+            <Border Background="{DynamicResource PanelBrush}" CornerRadius="12" Padding="24"
                     Width="440" Height="500"
                     VerticalAlignment="Center" HorizontalAlignment="Center">
                 <Grid RowDefinitions="Auto,Auto,Auto,*,Auto">
@@ -530,7 +530,7 @@
                             </ItemsControl.ItemsPanel>
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate x:DataType="vm:CloneTargetEmployee">
-                                    <Border Background="#22252C" CornerRadius="6" Padding="12,8">
+                                    <Border Background="{DynamicResource HoverBrush}" CornerRadius="6" Padding="12,8">
                                         <CheckBox IsChecked="{Binding IsSelected}"
                                                   Content="{Binding Name}" />
                                     </Border>
@@ -560,7 +560,7 @@
         <Border Grid.Row="0" Grid.RowSpan="4"
                 IsVisible="{Binding IsLogOpen}"
                 Background="#BB000000" ZIndex="50">
-            <Border Background="#1E2128" CornerRadius="12" Padding="20"
+            <Border Background="{DynamicResource PanelBrush}" CornerRadius="12" Padding="20"
                     Width="900" Height="560"
                     VerticalAlignment="Center" HorizontalAlignment="Center">
                 <Grid RowDefinitions="Auto,*,Auto,Auto" RowSpacing="10">
@@ -573,7 +573,7 @@
                             <ItemsControl ItemsSource="{Binding LogRows}">
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate x:DataType="vm:ScheduleLogRow">
-                                        <Border Background="#22252C" CornerRadius="6"
+                                        <Border Background="{DynamicResource HoverBrush}" CornerRadius="6"
                                                 Padding="10,8" Margin="0,0,0,4">
                                             <Grid ColumnDefinitions="Auto,100,150,*,Auto,Auto" ColumnSpacing="10">
                                                 <TextBlock Grid.Column="0" Text="{Binding StatusIcon}"
@@ -610,7 +610,7 @@
         <Border Grid.Row="0" Grid.RowSpan="4"
                 IsVisible="{Binding IsResponseOpen}"
                 Background="#AA000000" ZIndex="60">
-            <Border Background="#1E2128" CornerRadius="12" Padding="20"
+            <Border Background="{DynamicResource PanelBrush}" CornerRadius="12" Padding="20"
                     Width="800" Height="560"
                     VerticalAlignment="Center" HorizontalAlignment="Center">
                 <Grid RowDefinitions="Auto,*,Auto" RowSpacing="12">
@@ -629,7 +629,7 @@
         <Border Grid.Row="0" Grid.RowSpan="4"
                 IsVisible="{Binding IsConfirmDeleteOpen}"
                 Background="#BB000000" ZIndex="70">
-            <Border Background="#1E2128" CornerRadius="12" Padding="24"
+            <Border Background="{DynamicResource PanelBrush}" CornerRadius="12" Padding="24"
                     Width="440" VerticalAlignment="Center" HorizontalAlignment="Center">
                 <StackPanel Spacing="16">
                     <TextBlock Text="{Binding Loc[DeleteSchedule]}" FontSize="16" FontWeight="Bold" />

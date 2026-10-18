@@ -16,7 +16,7 @@
 
         <!-- Read mode -->
         <ScrollViewer Grid.Row="1" IsVisible="{Binding !IsEditing}">
-            <Border Background="#1A1D23" CornerRadius="8" Padding="20">
+            <Border Background="{DynamicResource CardBrush}" CornerRadius="8" Padding="20">
                 <SelectableTextBlock Text="{Binding HelpText}" TextWrapping="Wrap" />
             </Border>
         </ScrollViewer>

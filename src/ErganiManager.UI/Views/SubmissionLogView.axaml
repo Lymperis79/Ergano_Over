@@ -10,7 +10,7 @@
                     Spacing="12">
 
             <Border IsVisible="{Binding !HasActiveCompany}"
-                    Background="#332D9CDB"
+                    Background="{DynamicResource AccentSoftBrush}"
                     CornerRadius="6"
                     Padding="14">
 
@@ -28,7 +28,7 @@
 
                 <!-- Failed Submissions — Pending Retry -->
 
-                <Border Background="#1A1D23"
+                <Border Background="{DynamicResource CardBrush}"
                         CornerRadius="8"
                         Padding="16"
                         Margin="0,0,0,8">
@@ -77,7 +77,7 @@
 
                                 <DataTemplate x:DataType="vm:FailedSubmissionRow">
 
-                                    <Border Background="#22252C"
+                                    <Border Background="{DynamicResource HoverBrush}"
                                             CornerRadius="6"
                                             Padding="12,8">
 
@@ -149,7 +149,7 @@
 
 <!-- Filters -->
 
-<Border Background="#1A1D23"
+<Border Background="{DynamicResource CardBrush}"
         CornerRadius="8"
         Padding="14">
 
@@ -294,7 +294,7 @@
                                     Padding="12,8"
                                     Tag="{Binding}"
                                     PointerPressed="OnRowPressed"
-                                    Background="#1A1D23"
+                                    Background="{DynamicResource CardBrush}"
                                     Cursor="Hand">
 
                                 <Grid ColumnDefinitions="Auto,Auto,*,Auto,Auto,Auto,Auto">
@@ -371,7 +371,7 @@
                                     <TextBlock Grid.Column="6"
                                                Text="{Binding Protocol}"
                                                VerticalAlignment="Center"
-                                               Foreground="#2D9CDB"
+                                               Foreground="{DynamicResource AccentBrush}"
                                                FontSize="11"
                                                FontFamily="Consolas,Menlo,monospace"
                                                IsVisible="{Binding Protocol,

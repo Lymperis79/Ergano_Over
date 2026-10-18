@@ -20,7 +20,7 @@
                 </ItemsControl.ItemsPanel>
                 <ItemsControl.ItemTemplate>
                     <DataTemplate>
-                        <Border Background="#1A1D23" CornerRadius="8" Padding="16">
+                        <Border Background="{DynamicResource CardBrush}" CornerRadius="8" Padding="16">
                             <Grid ColumnDefinitions="*,Auto,Auto,Auto,Auto,Auto,Auto">
                                 <StackPanel Grid.Column="0">
                                     <StackPanel Orientation="Horizontal" Spacing="6">
@@ -31,7 +31,7 @@
                                     <TextBlock Text="{Binding BranchName}" FontSize="12" Foreground="Gray" />
                                 </StackPanel>
                                 <Border Grid.Column="1" CornerRadius="10" Padding="8,3"
-                                        VerticalAlignment="Center" Background="#3A3F4B" Margin="8,0">
+                                        VerticalAlignment="Center" Background="{DynamicResource LineBrush}" Margin="8,0">
                                     <TextBlock Text="{Binding Role}" FontSize="11" Foreground="White" />
                                 </Border>
                                 <TextBlock Grid.Column="2" Text="{Binding IsActive}"
@@ -55,7 +55,7 @@
         <!-- Create user form -->
         <Grid Grid.Row="1" IsVisible="{Binding IsCreating}" RowDefinitions="*,Auto">
             <ScrollViewer Grid.Row="0">
-                <Border Background="#1A1D23" CornerRadius="8" Padding="20">
+                <Border Background="{DynamicResource CardBrush}" CornerRadius="8" Padding="20">
                     <StackPanel Spacing="10">
                         <TextBlock Text="{Binding Loc[NewUser]}" FontSize="17" FontWeight="SemiBold" />
 
@@ -130,7 +130,7 @@
         <Grid Grid.Row="1"
               IsVisible="{Binding ResettingUser, Converter={x:Static ObjectConverters.IsNotNull}}"
               RowDefinitions="*,Auto">
-            <Border Grid.Row="0" Background="#1A1D23" CornerRadius="8" Padding="20">
+            <Border Grid.Row="0" Background="{DynamicResource CardBrush}" CornerRadius="8" Padding="20">
                 <StackPanel Spacing="10">
                     <TextBlock Text="{Binding ResettingUser.Username, StringFormat='Reset password for {0}'}"
                                FontSize="16" FontWeight="SemiBold" />
@@ -155,7 +155,7 @@
               IsVisible="{Binding EditingMenusUser, Converter={x:Static ObjectConverters.IsNotNull}}"
               RowDefinitions="*,Auto">
             <ScrollViewer Grid.Row="0">
-                <Border Background="#1A1D23" CornerRadius="8" Padding="20">
+                <Border Background="{DynamicResource CardBrush}" CornerRadius="8" Padding="20">
                     <StackPanel Spacing="10">
                         <TextBlock Text="{Binding MenusPanelTitle}" FontSize="16" FontWeight="SemiBold" />
                         <TextBlock Text="{Binding Loc[UsersMenusHint]}" Foreground="#9E9E9E"

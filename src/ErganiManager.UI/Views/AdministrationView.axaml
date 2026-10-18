@@ -12,7 +12,7 @@
                 <TabControl>
                     <TabItem Header="{Binding Loc[AdminGeneralSettings]}">
                         <StackPanel Spacing="16" Margin="0,12,0,0">
-                            <Border Background="#1A1D23" CornerRadius="8" Padding="20">
+                            <Border Background="{DynamicResource CardBrush}" CornerRadius="8" Padding="20">
                                 <StackPanel Spacing="10">
                                     <TextBlock Text="{Binding Loc[AdminDatabaseSettings]}" FontSize="16" FontWeight="SemiBold" />
                                     <TextBlock Text="{Binding DatabaseInfo}" Foreground="Gray" TextWrapping="Wrap" />
@@ -20,7 +20,7 @@
                                 </StackPanel>
                             </Border>
 
-                            <Border Background="#1A1D23" CornerRadius="8" Padding="20">
+                            <Border Background="{DynamicResource CardBrush}" CornerRadius="8" Padding="20">
                                 <StackPanel Spacing="10">
                                     <TextBlock Text="{Binding Loc[AdminLocalCache]}" FontSize="16" FontWeight="SemiBold" />
                                     <TextBlock Text="{Binding CacheInfo}" Foreground="Gray" TextWrapping="Wrap" />
@@ -32,7 +32,7 @@
 
                     <TabItem Header="{Binding Loc[AdminHoursSettings]}">
                         <StackPanel Spacing="16" Margin="0,12,0,0">
-                            <Border Background="#1A1D23" CornerRadius="8" Padding="20">
+                            <Border Background="{DynamicResource CardBrush}" CornerRadius="8" Padding="20">
                                 <StackPanel Spacing="10">
                                     <TextBlock Text="{Binding Loc[AdminShifts]}" FontSize="16" FontWeight="SemiBold" />
                                     <TextBlock Text="{Binding Loc[AdminShiftsDescription]}" Foreground="Gray" FontSize="12" TextWrapping="Wrap" />
@@ -59,7 +59,7 @@
                                 </StackPanel>
                             </Border>
 
-                            <Border Background="#1A1D23" CornerRadius="8" Padding="20">
+                            <Border Background="{DynamicResource CardBrush}" CornerRadius="8" Padding="20">
                                 <StackPanel Spacing="10">
                                     <TextBlock Text="{Binding Loc[WorkingTimeRounding]}" FontSize="16" FontWeight="SemiBold" />
                                     <TextBlock TextWrapping="Wrap" Foreground="Gray" FontSize="12"
@@ -94,7 +94,7 @@
                                 </StackPanel>
                             </Border>
 
-                            <Border Background="#1A1D23" CornerRadius="8" Padding="20">
+                            <Border Background="{DynamicResource CardBrush}" CornerRadius="8" Padding="20">
                                 <StackPanel Spacing="10">
                                     <TextBlock Text="{Binding Loc[NightWorkingHours]}" FontSize="16" FontWeight="SemiBold" />
                                     <TextBlock Text="{Binding Loc[NightWorkingHoursDescription]}" Foreground="Gray" FontSize="12" TextWrapping="Wrap" />
@@ -113,7 +113,7 @@
                                 </StackPanel>
                             </Border>
 
-                            <Border Background="#1A1D23" CornerRadius="8" Padding="20">
+                            <Border Background="{DynamicResource CardBrush}" CornerRadius="8" Padding="20">
                                 <StackPanel Spacing="10">
                                     <TextBlock Text="{Binding Loc[OnTimeWindowTitle]}" FontSize="16" FontWeight="SemiBold" />
                                     <TextBlock Text="{Binding Loc[OnTimeWindowDescription]}" Foreground="Gray" FontSize="12" TextWrapping="Wrap" />
@@ -130,7 +130,7 @@
 
                     <TabItem Header="{Binding Loc[AdminPortalSettings]}">
                         <StackPanel Spacing="16" Margin="0,12,0,0">
-                            <Border Background="#1A1D23" CornerRadius="8" Padding="20">
+                            <Border Background="{DynamicResource CardBrush}" CornerRadius="8" Padding="20">
                                 <StackPanel Spacing="10">
                                     <TextBlock Text="{Binding Loc[SchedulePortal]}" FontSize="16" FontWeight="SemiBold" />
                                     <TextBlock TextWrapping="Wrap" Foreground="Gray" FontSize="12" Text="{Binding Loc[SchedulePortalDescription]}" />
@@ -157,7 +157,7 @@
                                 </StackPanel>
                             </Border>
 
-                            <Border Background="#1A1D23" CornerRadius="8" Padding="20">
+                            <Border Background="{DynamicResource CardBrush}" CornerRadius="8" Padding="20">
                                 <StackPanel Spacing="10">
                                     <TextBlock Text="{Binding Loc[WorkCardsPortal]}" FontSize="16" FontWeight="SemiBold" />
                                     <TextBlock TextWrapping="Wrap" Foreground="Gray" FontSize="12" Text="{Binding Loc[WorkCardsPortalDescription]}" />
@@ -198,7 +198,7 @@
         </ScrollViewer>
 
         <Border IsVisible="{Binding IsConfirmOpen}" Background="#CC000000" ZIndex="50">
-            <Border Background="#1E2128" CornerRadius="10" Padding="24" Width="460" HorizontalAlignment="Center" VerticalAlignment="Center">
+            <Border Background="{DynamicResource PanelBrush}" CornerRadius="10" Padding="24" Width="460" HorizontalAlignment="Center" VerticalAlignment="Center">
                 <StackPanel Spacing="16">
                     <TextBlock Text="{Binding ConfirmText}" TextWrapping="Wrap" />
                     <Grid ColumnDefinitions="*,*" ColumnSpacing="8">

@@ -8,7 +8,7 @@
     <Grid>
         <!-- ── Holidays form + list ── -->
         <Border Background="#BB000000">
-            <Border Background="#1E2128" CornerRadius="12" Padding="20"
+            <Border Background="{DynamicResource PanelBrush}" CornerRadius="12" Padding="20"
                     Width="920" Height="700"
                     VerticalAlignment="Center" HorizontalAlignment="Center">
                 <Grid RowDefinitions="Auto,Auto,Auto,Auto,*,Auto" RowSpacing="10">
@@ -100,7 +100,7 @@
                             <ItemsControl ItemsSource="{Binding Rows}">
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate x:DataType="vm:HolidayRow">
-                                        <Border Background="#22252C" CornerRadius="6" Padding="10,6" Margin="0,0,0,4">
+                                        <Border Background="{DynamicResource HoverBrush}" CornerRadius="6" Padding="10,6" Margin="0,0,0,4">
                                             <Grid ColumnDefinitions="Auto,92,*,100,230,Auto,Auto,Auto" ColumnSpacing="10">
                                                 <TextBlock Grid.Column="0" Text="{Binding StatusIcon}" VerticalAlignment="Center" />
                                                 <TextBlock Grid.Column="1" Text="{Binding DateText}" FontWeight="SemiBold"
@@ -140,7 +140,7 @@
 
         <!-- ── Raw Ergani response ── -->
         <Border Background="#AA000000" IsVisible="{Binding IsResponseOpen}">
-            <Border Background="#1E2128" CornerRadius="12" Padding="20"
+            <Border Background="{DynamicResource PanelBrush}" CornerRadius="12" Padding="20"
                     Width="800" Height="520"
                     VerticalAlignment="Center" HorizontalAlignment="Center">
                 <Grid RowDefinitions="Auto,*,Auto" RowSpacing="12">

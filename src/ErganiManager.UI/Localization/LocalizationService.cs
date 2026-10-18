@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.IO;
 using System.Text.Json;
 using ErganiManager.LocalCache;
@@ -19,6 +20,12 @@ public class LocalizationService : ILocalizationService
         new[] { AppLanguage.English, AppLanguage.Greek };
 
     public event EventHandler? LanguageChanged;
+
+    /// <summary>
+    /// Raised when the language changes. "Item[]" is what makes every {Binding Loc[Key]} re-read its
+    /// text (the indexer is the property that changed), so the whole open window switches language.
+    /// </summary>
+    public event PropertyChangedEventHandler? PropertyChanged;
 
     public LocalizationService()
     {
@@ -65,6 +72,13 @@ public class LocalizationService : ILocalizationService
         if (language == CurrentLanguage) return;
         ApplyLanguage(language);
         Persist(language);
+
+        // First the plain {Binding Loc[Key]} texts, then the screens that built texts themselves.
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs("Item[]"));
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs("Item"));
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(CurrentLanguage)));
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(string.Empty));
+
         LanguageChanged?.Invoke(this, EventArgs.Empty);
     }
 

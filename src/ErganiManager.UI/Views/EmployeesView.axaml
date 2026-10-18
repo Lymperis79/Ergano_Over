@@ -24,7 +24,7 @@
                 </ItemsControl.ItemsPanel>
                 <ItemsControl.ItemTemplate>
                     <DataTemplate>
-                        <Border Background="#1A1D23" CornerRadius="8" Padding="16">
+                        <Border Background="{DynamicResource CardBrush}" CornerRadius="8" Padding="16">
                             <Grid ColumnDefinitions="*,Auto,Auto,Auto">
                                 <StackPanel Grid.Column="0">
                                     <TextBlock Text="{Binding FullName}" FontWeight="SemiBold" FontSize="14" />
@@ -35,7 +35,7 @@
                                            Margin="12,0" FontSize="12"
                                            FontFamily="Consolas,Menlo,monospace" />
                                 <Border Grid.Column="2" CornerRadius="10" Padding="8,3"
-                                        VerticalAlignment="Center" Background="#2D9CDB">
+                                        VerticalAlignment="Center" Background="{DynamicResource AccentBrush}">
                                     <TextBlock Text="{Binding IsActive}" FontSize="11" Foreground="White" />
                                 </Border>
                                 <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="6" Margin="12,0,0,0">
@@ -52,7 +52,7 @@
 
         <Grid Grid.Row="1" IsVisible="{Binding IsEditing}" RowDefinitions="*,Auto">
             <ScrollViewer Grid.Row="0">
-                <Border Background="#1A1D23" CornerRadius="8" Padding="20">
+                <Border Background="{DynamicResource CardBrush}" CornerRadius="8" Padding="20">
                     <StackPanel Spacing="10">
                         <TextBlock Text="{Binding Loc[EmployeeDetails]}" FontSize="17" FontWeight="SemiBold" />
 

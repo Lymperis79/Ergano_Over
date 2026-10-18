@@ -7,7 +7,8 @@
         Title="{Binding Loc[AppTitle]}"
         Width="560" Height="640"
         WindowStartupLocation="CenterScreen"
-        CanResize="False">
+        CanResize="False"
+        Background="{DynamicResource WindowBrush}">
 
     <ScrollViewer Padding="32">
         <StackPanel Spacing="16">
@@ -24,7 +25,7 @@
                           HorizontalAlignment="Stretch" />
 
                 <!-- SQLite -->
-                <Border IsVisible="{Binding IsSqlite}" Background="#1A2D9CDB"
+                <Border IsVisible="{Binding IsSqlite}" Background="{DynamicResource AccentFaintBrush}"
                         CornerRadius="6" Padding="12" Margin="0,8,0,0">
                     <TextBlock TextWrapping="Wrap" Text="{Binding Loc[DbSqliteNote]}" />
                 </Border>

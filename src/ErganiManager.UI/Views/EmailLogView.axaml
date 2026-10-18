@@ -8,7 +8,7 @@
     <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
         <StackPanel Spacing="16" Margin="0,0,14,0">
 
-            <Border IsVisible="{Binding !HasActiveCompany}" Background="#332D9CDB" CornerRadius="6" Padding="14">
+            <Border IsVisible="{Binding !HasActiveCompany}" Background="{DynamicResource AccentSoftBrush}" CornerRadius="6" Padding="14">
                 <TextBlock Text="{Binding NoCompanyMessage}" TextWrapping="Wrap" />
             </Border>
 
@@ -39,7 +39,7 @@
                 <TextBlock Text="{Binding StatusMessage}" Foreground="Gray" TextWrapping="Wrap" />
 
                 <!-- List -->
-                <Border Background="#1A1D23" CornerRadius="8" Padding="8">
+                <Border Background="{DynamicResource CardBrush}" CornerRadius="8" Padding="8">
                     <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
                         <StackPanel MinWidth="940" Spacing="4">
                             <Grid ColumnDefinitions="150,170,150,*,260" Margin="14,4">
@@ -71,7 +71,7 @@
                 </Border>
 
                 <!-- The selected mail, exactly as it was written -->
-                <Border IsVisible="{Binding HasSelection}" Background="#1A1D23" CornerRadius="8" Padding="16">
+                <Border IsVisible="{Binding HasSelection}" Background="{DynamicResource CardBrush}" CornerRadius="8" Padding="16">
                     <StackPanel Spacing="8">
                         <TextBlock Text="{Binding Loc[EmailDetails]}" FontSize="16" FontWeight="SemiBold" />
                         <TextBox Text="{Binding SelectedRow.DetailsText, Mode=OneWay}" IsReadOnly="True"

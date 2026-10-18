@@ -31,7 +31,7 @@
 
         <!-- Company -->
         <Border Grid.Row="1"
-                Background="#1A1D23"
+                Background="{DynamicResource CardBrush}"
                 CornerRadius="8"
                 Padding="12"
                 Margin="0,0,0,10">
@@ -102,7 +102,7 @@
 
         <!-- Scan input -->
         <Border Grid.Row="3"
-                Background="#1A1D23"
+                Background="{DynamicResource CardBrush}"
                 CornerRadius="8"
                 Padding="16"
                 Margin="0,0,0,12">
@@ -212,7 +212,7 @@
 
                         <DataTemplate x:DataType="vm:ScanResultRow">
 
-                            <Border Background="#1A1D23"
+                            <Border Background="{DynamicResource CardBrush}"
                                     CornerRadius="6"
                                     Padding="10,7">
 
@@ -271,7 +271,7 @@
                 Background="#BB000000"
                 ZIndex="99">
 
-            <Border Background="#1E2128"
+            <Border Background="{DynamicResource PanelBrush}"
                     CornerRadius="12"
                     Padding="24"
                     Width="440"

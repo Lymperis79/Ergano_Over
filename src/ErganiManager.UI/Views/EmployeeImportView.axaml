@@ -7,7 +7,8 @@
         Title="{Binding Loc[ImportEmployeesFromExcel]}"
         Width="780" Height="620"
         WindowStartupLocation="CenterOwner"
-        CanResize="True">
+        CanResize="True"
+        Background="{DynamicResource WindowBrush}">
 
     <ScrollViewer Padding="24">
         <StackPanel Spacing="16">
@@ -17,7 +18,7 @@
                        Text="{Binding Loc[DownloadTheTemplateFillItIn]}" />
 
             <!-- Step 1: Download template -->
-            <Border Background="#1A1D23" CornerRadius="8" Padding="16">
+            <Border Background="{DynamicResource CardBrush}" CornerRadius="8" Padding="16">
                 <StackPanel Spacing="8">
                     <TextBlock Text="{Binding Loc[Step1DownloadTheImportTemplate]}" FontWeight="SemiBold" />
                     <Button Content="{Binding Loc[DownloadTemplateSavesToDesktop]}"
@@ -26,7 +27,7 @@
             </Border>
 
             <!-- Step 2: Choose file -->
-            <Border Background="#1A1D23" CornerRadius="8" Padding="16">
+            <Border Background="{DynamicResource CardBrush}" CornerRadius="8" Padding="16">
                 <StackPanel Spacing="8">
                     <TextBlock Text="{Binding Loc[Step2SelectYourCompletedFile]}" FontWeight="SemiBold" />
                     <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
@@ -38,7 +39,7 @@
             </Border>
 
             <!-- Step 3: Preview -->
-            <Border Background="#1A1D23" CornerRadius="8" Padding="16" IsVisible="{Binding HasPreview}">
+            <Border Background="{DynamicResource CardBrush}" CornerRadius="8" Padding="16" IsVisible="{Binding HasPreview}">
                 <StackPanel Spacing="10">
                     <TextBlock Text="{Binding Loc[Step3ReviewAndImport]}" FontWeight="SemiBold" />
 
