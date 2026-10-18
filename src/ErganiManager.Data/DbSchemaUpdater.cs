@@ -103,6 +103,14 @@ public static class DbSchemaUpdater
 
     private static readonly ColumnPatch[] Patches =
     {
+        new("Companies", "AlertEvents",
+            "ALTER TABLE Companies ADD COLUMN AlertEvents INTEGER NOT NULL DEFAULT 1",
+            "ALTER TABLE Companies ADD AlertEvents int NOT NULL CONSTRAINT DF_Companies_AlertEvents DEFAULT 1",
+            "ALTER TABLE Companies ADD COLUMN AlertEvents INT NOT NULL DEFAULT 1"),
+        new("Companies", "ClockInAlertMinutes",
+            "ALTER TABLE Companies ADD COLUMN ClockInAlertMinutes INTEGER NOT NULL DEFAULT 10",
+            "ALTER TABLE Companies ADD ClockInAlertMinutes int NOT NULL CONSTRAINT DF_Companies_ClockInAlertMinutes DEFAULT 10",
+            "ALTER TABLE Companies ADD COLUMN ClockInAlertMinutes INT NOT NULL DEFAULT 10"),
         new("Schedules", "Source",
             "ALTER TABLE Schedules ADD COLUMN Source TEXT NOT NULL DEFAULT 'Manual'",
             "ALTER TABLE Schedules ADD Source nvarchar(30) NOT NULL CONSTRAINT DF_Schedules_Source DEFAULT 'Manual'",

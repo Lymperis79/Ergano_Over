@@ -37,6 +37,12 @@ public class Company
     /// When false the scan is accepted on those days.</summary>
     public bool BlockClockInOnRestOrAbsentDay { get; set; } = true;
 
+    /// <summary>Bit mask of the events that send an alert mail (1 = early departure, the original behaviour).</summary>
+    public int AlertEvents { get; set; } = 1;
+
+    /// <summary>Clock-in earlier/later than the scheduled start by more than this many minutes sends an alert (0 = off).</summary>
+    public int ClockInAlertMinutes { get; set; } = 10;
+
     // Email / SMTP settings
     public bool AlertEmailEnabled { get; set; } = false;
 

@@ -16,6 +16,11 @@ public class CompanyDto
     public bool BlockClockInWithoutSchedule { get; set; } = true;
     public bool BlockClockInOnRestOrAbsentDay { get; set; } = true;
 
+    /// <summary>Which events send an alert mail (bit mask of <see cref="AlertEvent"/>).</summary>
+    public int AlertEvents { get; set; } = (int)AlertEvent.Default;
+    /// <summary>Clock-in earlier/later than the scheduled start by more than this many minutes sends an alert (0 = off).</summary>
+    public int ClockInAlertMinutes { get; set; } = 10;
+
     public bool AlertEmailEnabled { get; set; }
     public bool AutoRetryFailedSubmissions { get; set; } = true;
     public string? AlertEmailRecipients { get; set; }

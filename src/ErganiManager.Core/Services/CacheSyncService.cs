@@ -48,6 +48,8 @@ public class CacheSyncService : ICacheSyncService
             cachedSettings.EarlyDepartureAlertMinutes = company.EarlyDepartureAlertMinutes;
             cachedSettings.BlockClockInWithoutSchedule = company.BlockClockInWithoutSchedule;
             cachedSettings.BlockClockInOnRestOrAbsentDay = company.BlockClockInOnRestOrAbsentDay;
+            cachedSettings.AlertEvents = company.AlertEvents;
+            cachedSettings.ClockInAlertMinutes = company.ClockInAlertMinutes;
             cachedSettings.LastSyncAt = DateTime.UtcNow;
         }
 

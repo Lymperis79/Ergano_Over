@@ -17,6 +17,7 @@ public class AppDbContext : DbContext
     public DbSet<Leave> Leaves => Set<Leave>();
     public DbSet<ApiSubmissionLog> ApiSubmissionLogs => Set<ApiSubmissionLog>();
     public DbSet<AppLog> AppLogs => Set<AppLog>();
+    public DbSet<EmailLog> EmailLogs => Set<EmailLog>();
     public DbSet<ReportDefinition> ReportDefinitions => Set<ReportDefinition>();
     public DbSet<EmployeeImport> EmployeeImports => Set<EmployeeImport>();
     public DbSet<ErganiImportLog> ErganiImportLogs => Set<ErganiImportLog>();
@@ -169,6 +170,11 @@ public class AppDbContext : DbContext
         {
             e.HasIndex(l => l.SubmissionDate);
             e.HasIndex(l => l.CompanyId);
+        });
+
+        modelBuilder.Entity<EmailLog>(e =>
+        {
+            e.HasIndex(l => new { l.CompanyId, l.CreatedAt });
         });
 
         modelBuilder.Entity<AppLog>(e =>
