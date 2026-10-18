@@ -89,13 +89,25 @@ public static class LocalCacheDbContextFactory
                 return false;
             }
 
-            if (TableExists("PendingSubmissions") && !ColumnExists("PendingSubmissions", "LateJustification"))
+            var added = false;
+            void AddColumn(string table, string column, string ddl)
             {
+                if (!TableExists(table) || ColumnExists(table, column)) return;
                 using var alter = connection.CreateCommand();
-                alter.CommandText = "ALTER TABLE PendingSubmissions ADD COLUMN LateJustification TEXT NULL";
+                alter.CommandText = ddl;
                 alter.ExecuteNonQuery();
-                return true;
+                added = true;
             }
+
+            AddColumn("PendingSubmissions", "LateJustification",
+                "ALTER TABLE PendingSubmissions ADD COLUMN LateJustification TEXT NULL");
+            // The cached company settings are re-filled from the main database on every sync, so an
+            // in-place column is enough (and queued scans are never lost to a rebuild).
+            AddColumn("CachedCompanySettings", "AlertEvents",
+                "ALTER TABLE CachedCompanySettings ADD COLUMN AlertEvents INTEGER NOT NULL DEFAULT 1");
+            AddColumn("CachedCompanySettings", "ClockInAlertMinutes",
+                "ALTER TABLE CachedCompanySettings ADD COLUMN ClockInAlertMinutes INTEGER NOT NULL DEFAULT 10");
+            return added;
         }
         catch
         {

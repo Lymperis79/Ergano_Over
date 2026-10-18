@@ -48,6 +48,7 @@ public class ErganiRetryService
     private readonly IConnectionStateService _connectionState;
     private readonly ICredentialProtector _credentialProtector;
     private readonly IWorkCardSubmitter _workCardSubmitter;
+    private readonly IEmailAlertService _emailAlerts;
     private readonly ILogger<ErganiRetryService> _logger;
 
     private CancellationTokenSource? _cts;
@@ -81,6 +82,7 @@ public class ErganiRetryService
         IConnectionStateService connectionState,
         ICredentialProtector credentialProtector,
         IWorkCardSubmitter workCardSubmitter,
+        IEmailAlertService emailAlerts,
         ILogger<ErganiRetryService> logger)
     {
         _erganiClient = erganiClient;
@@ -89,6 +91,7 @@ public class ErganiRetryService
         _connectionState = connectionState;
         _credentialProtector = credentialProtector;
         _workCardSubmitter = workCardSubmitter;
+        _emailAlerts = emailAlerts;
         _logger = logger;
     }
 
@@ -172,11 +175,19 @@ public class ErganiRetryService
         {
             _logger.LogDebug("Ergani offline for company {Id} — retry deferred.", company.Id);
 
+            // Alert mails: "Ergani is down" now, "internet was down" once the connection is back.
+            await TrackOutageAsync(company, cache, ct);
+
             // Remember WHY the queued cards are waiting: they will be sent later with their
             // original scan time and this reason.
             await RecordOutageReasonAsync(company.Id, cache, ct);
             return;
         }
+
+        // Ergani answers again, so the internet works: close an outage (mails the internet outage
+        // that just ended) and send the alert mails that could not be delivered earlier.
+        EndOutage(company);
+        await _emailAlerts.FlushOutboxAsync(company.Id);
 
         // Scans saved by the scan screens are the first delivery, so they are always sent.
         await FlushPendingSubmissionsAsync(company, cache, ct);
@@ -184,6 +195,132 @@ public class ErganiRetryService
         // The older failed-submission table is only retried when auto-retry is enabled.
         if (company.AutoRetryFailedSubmissions)
             await FlushFailedSubmissionsAsync(company, credentials, db, cache, ct);
+    }
+
+    // -- Alert mails -----------------------------------------------------------
+
+    private enum OutageKind { Ergani, Internet }
+
+    private sealed class Outage
+    {
+        public OutageKind Kind;
+        public DateTime Since = DateTime.Now;
+        public int Checks = 1;          // consecutive failed checks
+        public bool Alerted;
+    }
+
+    private readonly Dictionary<int, Outage> _outages = new();
+
+    /// <summary>
+    /// Called on every check where Ergani did not answer. Two failed checks in a row (about a minute)
+    /// make a real outage, so a short blip sends nothing.
+    ///  - internet up, Ergani silent  → "Ergani service is down" mail right away (once per outage);
+    ///  - internet down               → nothing can be mailed now; the mail "internet was down" is
+    ///                                  sent when the connection is back.
+    /// </summary>
+    private async Task TrackOutageAsync(Company company, LocalCache.LocalCacheDbContext cache, CancellationToken ct)
+    {
+        try
+        {
+            var internetOnline = await _internetCheck.IsOnlineAsync(ct);
+            var kind = internetOnline ? OutageKind.Ergani : OutageKind.Internet;
+
+            Outage? finished = null;
+            Outage current;
+            lock (_outages)
+            {
+                if (_outages.TryGetValue(company.Id, out var existing) && existing.Kind == kind)
+                {
+                    existing.Checks++;
+                    current = existing;
+                }
+                else
+                {
+                    if (existing is { Kind: OutageKind.Internet }) finished = existing;   // internet is back, Ergani is not
+                    current = new Outage { Kind = kind };
+                    _outages[company.Id] = current;
+                }
+            }
+
+            if (finished != null) SendInternetRestored(company.Id, finished);
+
+            if (kind == OutageKind.Ergani && current.Checks >= 2 && !current.Alerted)
+            {
+                current.Alerted = true;
+                var queued = await cache.PendingSubmissions.CountAsync(p => p.CompanyId == company.Id && !p.Synced, ct);
+
+                _ = _emailAlerts.SendAlertAsync(company.Id, new AlertMessage
+                {
+                    Event = AlertEvent.ErganiDown,
+                    Title = ErganiManager.Data.UiText.T("Ergani service is down"),
+                    OccurredAt = current.Since
+                }
+                .Add("Status", ErganiManager.Data.UiText.T("The internet connection works, but Ergani does not answer."))
+                .Add("Down since", current.Since.ToString("dd/MM/yyyy HH:mm"))
+                .Add("Scans waiting", queued.ToString())
+                .Add("What happens now", ErganiManager.Data.UiText.T("Scans are kept and sent automatically when Ergani answers again.")));
+            }
+        }
+        catch (OperationCanceledException) { throw; }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Could not track the outage for company {Id}.", company.Id);
+        }
+    }
+
+    /// <summary>Ergani answered: an internet outage that just ended is mailed now that mail can be sent.</summary>
+    private void EndOutage(Company company)
+    {
+        Outage? finished;
+        lock (_outages)
+        {
+            if (!_outages.Remove(company.Id, out finished)) return;
+        }
+        if (finished.Kind == OutageKind.Internet) SendInternetRestored(company.Id, finished);
+    }
+
+    private void SendInternetRestored(int companyId, Outage outage)
+    {
+        if (outage.Checks < 2) return;      // a blip, not an outage
+
+        var end = DateTime.Now;
+        _ = _emailAlerts.SendAlertAsync(companyId, new AlertMessage
+        {
+            Event = AlertEvent.InternetDown,
+            Title = ErganiManager.Data.UiText.T("Internet connection was down"),
+            OccurredAt = outage.Since
+        }
+        .Add("Down from", outage.Since.ToString("dd/MM/yyyy HH:mm"))
+        .Add("Back at", end.ToString("dd/MM/yyyy HH:mm"))
+        .Add("Duration", ErganiManager.Data.UiText.F("{0} minute(s)", Math.Max(1, (int)Math.Round((end - outage.Since).TotalMinutes))))
+        .Add("What happened", ErganiManager.Data.UiText.T("Scans made during this time were saved and are sent to Ergani automatically.")));
+    }
+
+    /// <summary>Ergani refused a queued scan: mail the details (the employee name is read before the
+    /// mail is sent in the background, so the database context is not used after this returns).</summary>
+    private async Task AlertRejectedAsync(LocalCache.LocalCacheDbContext cache, PendingSubmission item, string? error)
+    {
+        try
+        {
+            var employee = await cache.CachedEmployees.FindAsync(item.EmployeeId);
+            var who = employee != null ? $"{employee.FullName} (AFM: {employee.TaxId})" : $"#{item.EmployeeId}";
+
+            _ = _emailAlerts.SendAlertAsync(item.CompanyId, new AlertMessage
+            {
+                Event = AlertEvent.ScanRejected,
+                Title = ErganiManager.Data.UiText.F("Scan rejected by Ergani – {0}", employee?.FullName ?? $"#{item.EmployeeId}")
+            }
+            .Add("Employee", who)
+            .Add("Movement", ErganiManager.Data.UiText.T(item.MovementType))
+            .Add("Scan time", item.ScannedAt.ToString("dd/MM/yyyy HH:mm:ss"))
+            .Add("Attempts", item.SyncAttempts.ToString())
+            .Add("Ergani answer", error)
+            .Add("What to do", ErganiManager.Data.UiText.T("Check the API log and correct the card manually in Work card history.")));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Could not prepare the rejected-scan alert for scan {Id}.", item.Id);
+        }
     }
 
     /// <summary>
@@ -417,6 +554,7 @@ public class ErganiRetryService
                     await cache.SaveChangesAsync(ct);
                     _logger.LogWarning("Ergani rejected queued scan {Id}: {Error}", item.Id, outcome.ErrorMessage);
                     Notify(item.Id, QueuedScanStatus.Rejected, null, outcome.ErrorMessage, item.SyncAttempts);
+                    await AlertRejectedAsync(cache, item, outcome.ErrorMessage);
                 }
                 else
                 {
@@ -503,6 +641,7 @@ public class ErganiRetryService
                         item.LastSyncError = outcome.ErrorMessage;
                         results.Add((item.Id, false, null, outcome.ErrorMessage));
                         Notify(item.Id, QueuedScanStatus.Rejected, null, outcome.ErrorMessage, item.SyncAttempts);
+                        await AlertRejectedAsync(cache, item, outcome.ErrorMessage);
                     }
                     else
                     {

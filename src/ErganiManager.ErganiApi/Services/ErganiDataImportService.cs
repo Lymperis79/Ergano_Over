@@ -396,6 +396,12 @@ public class ErganiDataImportService : IErganiDataImportService
                     AlertEmailEnabled =
                         existingCompany?.AlertEmailEnabled ?? false,
 
+                    AlertEvents =
+                        existingCompany?.AlertEvents ?? 1,
+
+                    ClockInAlertMinutes =
+                        existingCompany?.ClockInAlertMinutes ?? 10,
+
                     AutoRetryFailedSubmissions =
                         existingCompany?.AutoRetryFailedSubmissions ?? true,
 

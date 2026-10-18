@@ -13,6 +13,8 @@ public class CachedCompanySettings
     public int EarlyDepartureAlertMinutes { get; set; } = 10;
     public bool BlockClockInWithoutSchedule { get; set; } = true;
     public bool BlockClockInOnRestOrAbsentDay { get; set; } = true;
+    public int AlertEvents { get; set; } = 1;
+    public int ClockInAlertMinutes { get; set; } = 10;
 
     public DateTime LastSyncAt { get; set; } = DateTime.UtcNow;
 }
