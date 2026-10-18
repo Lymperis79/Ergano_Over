@@ -364,6 +364,9 @@ public partial class TerminalViewModel : ViewModelBase
         {
             var dayType = schedule.WorkType == 2 ? Loc["Vm.rest day"] : Loc["Vm.absence day"];
             await LogBlockedAttemptAsync(cache, employee, companyId, movementType, $"Schedule marked as {dayType}");
+            SendAlert(companyId, AlertEvent.NoScheduleClockIn, employee, isOnline,
+                ("Reason", ErganiManager.Data.UiText.T(schedule.WorkType == 2 ? "The schedule marks today as a rest day." : "The schedule marks today as an absence day.")),
+                ("Result", ErganiManager.Data.UiText.T("Clock-in blocked")), ("Time", $"{now:HH:mm:ss}"));
             ShowPopup(ScanPopupKind.NoScheduleBlocked, Loc[L.NoSchedule], employee.FullName,
                 Loc["Vm.Today is marked as a"] +$" {dayType}.",
                 Loc["Vm.Clock-in/out is blocked because the employee is not scheduled to work today."], "");
@@ -375,6 +378,8 @@ public partial class TerminalViewModel : ViewModelBase
             if (schedule == null && settings != null && settings.BlockClockInWithoutSchedule)
             {
                 await LogBlockedAttemptAsync(cache, employee, companyId, movementType, "Clock-in blocked: no schedule");
+                SendAlert(companyId, AlertEvent.NoScheduleClockIn, employee, isOnline,
+                    ("Reason", ErganiManager.Data.UiText.T("There is no schedule for today.")), ("Result", ErganiManager.Data.UiText.T("Clock-in blocked")), ("Time", $"{now:HH:mm:ss}"));
                 ShowPopup(ScanPopupKind.NoScheduleBlocked, Loc[L.NoSchedule], employee.FullName,
                     Loc["Vm.No schedule found for today."], Loc["Vm.Clock-in is blocked until a schedule is entered."], "");
                 return;
@@ -401,6 +406,27 @@ public partial class TerminalViewModel : ViewModelBase
             }
 
             await QueueScanAsync(cache, employee, companyId, "Arrival", now);
+
+            // Alert mails for the arrival (each one only when the company selected that event).
+            if (schedule == null || schedule.WorkType is 2 or 3)
+            {
+                SendAlert(companyId, AlertEvent.NoScheduleClockIn, employee, isOnline,
+                    ("Reason", ErganiManager.Data.UiText.T(schedule == null ? "There is no schedule for today."
+                        : "The schedule marks today as a rest or absence day.")),
+                    ("Result", ErganiManager.Data.UiText.T("Clock-in accepted")), ("Time", $"{now:HH:mm:ss}"));
+            }
+            else if (shift.ShiftStart is { } plannedStart && settings is { ClockInAlertMinutes: > 0 })
+            {
+                var offset = (int)Math.Round((now - plannedStart).TotalMinutes);   // + late, - early
+                if (offset > settings.ClockInAlertMinutes)
+                    SendAlert(companyId, AlertEvent.LateClockIn, employee, isOnline,
+                        ("Scheduled start", $"{plannedStart:HH:mm}"), ("Clock-in", $"{now:HH:mm:ss}"),
+                        ("Late by", ErganiManager.Data.UiText.F("{0} minute(s)", offset)));
+                else if (-offset > settings.ClockInAlertMinutes)
+                    SendAlert(companyId, AlertEvent.EarlyClockIn, employee, isOnline,
+                        ("Scheduled start", $"{plannedStart:HH:mm}"), ("Clock-in", $"{now:HH:mm:ss}"),
+                        ("Early by", ErganiManager.Data.UiText.F("{0} minute(s)", -offset)));
+            }
 
             var shiftText = schedule is { StartTime: not null, EndTime: not null }
                 ? $"{Loc[L.ShiftLabel]}: {schedule.StartTime:HH:mm} → {schedule.EndTime:HH:mm}"
@@ -433,7 +459,7 @@ public partial class TerminalViewModel : ViewModelBase
                     _ = _emailAlertService.SendEarlyDepartureAlertAsync(companyId, new EarlyDepartureAlertRequest
                     {
                         EmployeeFullName = employee.FullName,
-                        EmployeeTaxId = string.Empty,
+                        EmployeeTaxId = employee.TaxId,
                         BranchName = BranchName,
                         CompanyName = CompanyName,
                         ScheduledEndTime = schedule.EndTime.Value,
@@ -458,6 +484,32 @@ public partial class TerminalViewModel : ViewModelBase
                     isOnline ? "" : Loc[L.OfflineMode]);
             }
         }
+    }
+
+    /// <summary>
+    /// Mails an alert about a scan (fire and forget). The mail service itself checks whether the
+    /// company enabled alerts and selected this kind of event, and keeps the mail for later when the
+    /// mail server cannot be reached. Nothing is sent while the main database is unreachable.
+    /// </summary>
+    private void SendAlert(int companyId, AlertEvent kind, CachedEmployee employee, bool isOnline,
+        params (string Label, string Value)[] details)
+    {
+        if (!isOnline) return;
+
+        var title = kind switch
+        {
+            AlertEvent.LateClockIn        => ErganiManager.Data.UiText.F("Late clock-in – {0}", employee.FullName),
+            AlertEvent.EarlyClockIn       => ErganiManager.Data.UiText.F("Early clock-in – {0}", employee.FullName),
+            AlertEvent.NoScheduleClockIn  => ErganiManager.Data.UiText.F("Clock-in without a schedule – {0}", employee.FullName),
+            _                             => ErganiManager.Data.UiText.F("Alert – {0}", employee.FullName)
+        };
+
+        var alert = new AlertMessage { Event = kind, Title = title, OccurredAt = DateTime.Now }
+            .Add("Branch", BranchName)
+            .Add("Employee", $"{employee.FullName} (AFM: {employee.TaxId})");
+        foreach (var (label, value) in details) alert.Add(label, value);
+
+        _ = _emailAlertService.SendAlertAsync(companyId, alert);
     }
 
     /// <summary>

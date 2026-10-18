@@ -180,6 +180,10 @@
                     IsVisible="{Binding ShowApiLog}"
                     Command="{Binding NavigateToCommand}" CommandParameter="SubmissionLog"
                     HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" />
+            <Button Content="{Binding Loc[NavEmailLog]}" Classes="navItem"
+                    IsVisible="{Binding ShowEmailLog}"
+                    Command="{Binding NavigateToCommand}" CommandParameter="EmailLog"
+                    HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" />
            
 
             <!-- Administration: users, and (super administrator only) the database tools -->

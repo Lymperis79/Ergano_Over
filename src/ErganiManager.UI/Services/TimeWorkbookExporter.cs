@@ -8,19 +8,23 @@ using ErganiManager.Core.Interfaces;
 namespace ErganiManager.UI.Services;
 
 /// <summary>
-/// Builds one Excel workbook from the time summary report:
-/// sheet 1 = scheduled vs actual hours (every day), sheet 2 = Saturdays, sheet 3 = Sundays,
-/// then one overtime grid for the selected dates (employees x days, details in a comment on each cell),
-/// then the Holidays report (employee leave grouped by category, plus the public holidays of the period).
-/// All hour cells are real Excel durations (format [h]:mm), so they can be summed and filtered in Excel.
+/// Builds one Excel workbook from the time summary report. Sheets, in this order:
+///   1 scheduled vs actual hours (every day)   2 holidays (employee leave by category + public holidays)
+///   3 overtime grid (employees x days; declared overtime and the small undeclared extra minutes)
+///   4 undertime (days worked under the scheduled hours)   5 Saturdays   6 Sundays.
+/// Every day sheet shows the actual AND the rounded hours. Hour cells are real Excel durations
+/// (format [h]:mm), so they can be summed and filtered in Excel.
 /// </summary>
 public static class TimeWorkbookExporter
 {
     private const string Duration = "[h]:mm";
     private const string SignedMinutes = "+0;-0;0";
-    private const int ColumnCount = 8;
+    private const int ColumnCount = 10;
+    private const double HalfMinute = 1.0 / 120;
     private const int HeaderRow = 3;
     private const string WeekendGreen = "#C6E0B4";
+    private const string SmallExtraFill = "#FFE699";   // extra work under 1 hour, not declared
+    private const string LargeExtraFill = "#F4B084";   // extra work of 1 hour or more, not declared
 
     private static string T(string key) => Tr.Loc[key];
 
@@ -30,22 +34,36 @@ public static class TimeWorkbookExporter
         using var workbook = new XLWorkbook();
         var period = $"{from:dd/MM/yyyy} – {to:dd/MM/yyyy}";
 
+        // 1
         WriteSheet(workbook, T("Vm.Excel Sheet scheduled vs actual"), T("Vm.Excel Title scheduled vs actual"), period, report,
             _ => true);
+        // 2
+        WriteTableReportSheet(workbook, T("Vm.Excel Sheet holidays"), holidays, from, to);
+        // 3
+        WriteOvertimeSheet(workbook, from, to, employees, report);
+        // 4
+        WriteSheet(workbook, T("Vm.Excel Sheet undertime"), T("Vm.Excel Title undertime"), period, report, IsUndertime);
+        // 5 and 6
         WriteSheet(workbook, T("Vm.Excel Sheet Saturday"), T("Vm.Excel Title Saturday"), period, report,
             d => d.Date.DayOfWeek == DayOfWeek.Saturday && IsWorkday(d));
         WriteSheet(workbook, T("Vm.Excel Sheet Sunday"), T("Vm.Excel Title Sunday"), period, report,
             d => d.Date.DayOfWeek == DayOfWeek.Sunday && IsWorkday(d));
-
-        // One overtime grid covering exactly the selected dates.
-        WriteOvertimeSheet(workbook, from, to, employees, report);
-        WriteTableReportSheet(workbook, T("Vm.Excel Sheet holidays"), holidays, from, to);
 
         workbook.SaveAs(path);
     }
 
     /// <summary>A day counts for the Saturday/Sunday sheets when work was scheduled or really done.</summary>
     private static bool IsWorkday(DayTimeRow d) => (d.DeclaredHours ?? 0) > 0 || (d.ActualHours ?? 0) > 0;
+
+    /// <summary>The payroll figure of the day: the rounded hours (the real hours when rounding gave nothing).</summary>
+    private static double? Rounded(DayTimeRow d) => d.RoundedHours ?? d.ActualHours;
+
+    private static double? RoundedDiff(DayTimeRow d) =>
+        d.DeclaredHours is { } scheduled && Rounded(d) is { } worked ? worked - scheduled : null;
+
+    /// <summary>Undertime: a scheduled day with real work, but fewer (rounded) hours than scheduled.</summary>
+    private static bool IsUndertime(DayTimeRow d) =>
+        (d.DeclaredHours ?? 0) > 0 && (d.ActualHours ?? 0) > 0 && (Rounded(d) ?? 0) < d.DeclaredHours!.Value - HalfMinute;
 
     private static void WriteSheet(XLWorkbook workbook, string sheetName, string title, string period,
         TimeSummaryReport report, Func<DayTimeRow, bool> include)
@@ -59,16 +77,14 @@ public static class TimeWorkbookExporter
         var headers = new[]
         {
             T("Vm.Excel Employee"), T("Vm.Excel Date"), T("Vm.Excel Day"), T("Vm.Excel Scheduled"),
-            T("Vm.Excel Scheduled hours"), T("Vm.Excel Actual in/out"), T("Vm.Excel Actual hours"), T("Vm.Excel Difference")
+            T("Vm.Excel Scheduled hours"), T("Vm.Excel Actual in/out"), T("Vm.Excel Actual hours"),
+            T("Vm.Excel Rounded hours"), T("Vm.Excel Difference"), T("Vm.Excel Difference rounded")
         };
         for (var c = 0; c < headers.Length; c++) ws.Cell(HeaderRow, c + 1).Value = headers[c];
-        var header = ws.Range(HeaderRow, 1, HeaderRow, ColumnCount);
-        header.Style.Font.Bold = true;
-        header.Style.Font.FontColor = XLColor.White;
-        header.Style.Fill.BackgroundColor = XLColor.FromHtml("#1F4E78");
+        StyleHeader(ws.Range(HeaderRow, 1, HeaderRow, ColumnCount));
 
         var row = HeaderRow + 1;
-        double grandScheduled = 0, grandActual = 0, grandDiff = 0;
+        double grandScheduled = 0, grandActual = 0, grandRounded = 0, grandDiff = 0, grandDiffRounded = 0;
         var grandDays = 0;
 
         foreach (var month in report.Months)
@@ -86,21 +102,30 @@ public static class TimeWorkbookExporter
                 SetDuration(ws.Cell(row, 5), d.DeclaredHours);
                 ws.Cell(row, 6).Value = d.Pairs.Count > 0 ? d.ActualText : string.Empty;
                 SetDuration(ws.Cell(row, 7), d.ActualHours);
+                SetDuration(ws.Cell(row, 8), d.RoundedHours);
                 if (d.DiffHours is { } diff)
                 {
-                    SetMinutes(ws.Cell(row, 8), diff);
-                    if (d.IsLate) ws.Cell(row, 8).Style.Font.FontColor = XLColor.Red;
+                    SetMinutes(ws.Cell(row, 9), diff);
+                    if (d.IsLate) ws.Cell(row, 9).Style.Font.FontColor = XLColor.Red;
+                }
+                if (RoundedDiff(d) is { } roundedDiff)
+                {
+                    SetMinutes(ws.Cell(row, 10), roundedDiff);
+                    if (roundedDiff < -HalfMinute) ws.Cell(row, 10).Style.Font.FontColor = XLColor.Red;
                 }
                 row++;
             }
 
             var scheduled = days.Sum(d => d.DeclaredHours ?? 0);
             var actual = days.Sum(d => d.ActualHours ?? 0);
+            var rounded = days.Sum(d => d.RoundedHours ?? 0);
             var difference = days.Sum(d => d.DiffHours ?? 0);
+            var differenceRounded = days.Sum(d => RoundedDiff(d) ?? 0);
             WriteTotalRow(ws, row++, month.EmployeeName, $"{T("Vm.Excel Total")} {month.Month:00}/{month.Year}",
-                $"{days.Count} {T("Vm.Excel days")}", scheduled, actual, difference);
+                $"{days.Count} {T("Vm.Excel days")}", scheduled, actual, rounded, difference, differenceRounded);
 
-            grandScheduled += scheduled; grandActual += actual; grandDiff += difference; grandDays += days.Count;
+            grandScheduled += scheduled; grandActual += actual; grandRounded += rounded;
+            grandDiff += difference; grandDiffRounded += differenceRounded; grandDays += days.Count;
         }
 
         if (row == HeaderRow + 1)
@@ -111,7 +136,7 @@ public static class TimeWorkbookExporter
         else
         {
             WriteTotalRow(ws, row, string.Empty, T("Vm.Excel Grand total"), $"{grandDays} {T("Vm.Excel days")}",
-                grandScheduled, grandActual, grandDiff);
+                grandScheduled, grandActual, grandRounded, grandDiff, grandDiffRounded);
         }
 
         ws.SheetView.FreezeRows(HeaderRow);
@@ -119,10 +144,35 @@ public static class TimeWorkbookExporter
         ws.Column(1).Width = Math.Max(ws.Column(1).Width, 24);
     }
 
+    private enum ExtraKind { None, Declared, SmallUndeclared, LargeUndeclared }
+
+    /// <summary>
+    /// The extra work of a day, in minutes, on the rounded hours:
+    ///  - a registered (declared) overtime is shown as it was declared;
+    ///  - otherwise the time worked beyond the schedule that was NOT declared: a small period under an hour
+    ///    (no declaration needed) or an hour or more (probably should have been declared).
+    /// Also returns the undeclared part, which can exist next to a declared overtime.
+    /// </summary>
+    private static (double Minutes, ExtraKind Kind, double UndeclaredMinutes) ExtraWork(DayTimeRow d)
+    {
+        var declared = Math.Round(d.OvertimeHours * 60);
+
+        double undeclared = 0;
+        if ((d.DeclaredHours ?? 0) > 0 && Rounded(d) is { } worked)
+            undeclared = Math.Round((worked - d.DeclaredHours!.Value - d.OvertimeHours) * 60);
+        if (undeclared < 1) undeclared = 0;
+
+        if (declared >= 1) return (declared, ExtraKind.Declared, undeclared);
+        if (undeclared >= 1)
+            return (undeclared, undeclared < 60 ? ExtraKind.SmallUndeclared : ExtraKind.LargeUndeclared, undeclared);
+        return (0, ExtraKind.None, 0);
+    }
+
     /// <summary>
     /// Overtime grid for the selected dates: one row per employee, one column per day, weekends in green.
-    /// Cell = the registered overtime of that day in minutes (the same records as the Overtime report).
-    /// A comment on the cell shows the scans, the overtime and the rounded times.
+    /// Cell = the extra minutes of the day: the declared overtime (same records as the Overtime report), or
+    /// the extra worked time that was not declared (orange = under 1 hour, red = 1 hour or more).
+    /// A comment on the cell shows the scans, the actual and the rounded times.
     /// </summary>
     private static void WriteOvertimeSheet(XLWorkbook workbook, DateOnly first, DateOnly last,
         IReadOnlyList<EmployeeDto> employees, TimeSummaryReport report)
@@ -142,6 +192,20 @@ public static class TimeWorkbookExporter
         ws.Cell(2, 2).Value = T("Vm.Excel Total");
         ws.Range(2, 1, 2, 2).Style.Font.Bold = true;
 
+        // Legend of the colours.
+        void Legend(int fromColumn, int toColumn, string text, string? fill)
+        {
+            var range = ws.Range(1, fromColumn, 1, toColumn);
+            range.Merge();
+            range.FirstCell().Value = text;
+            range.Style.Font.Bold = true;
+            range.Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
+            if (fill != null) range.Style.Fill.BackgroundColor = XLColor.FromHtml(fill);
+        }
+        Legend(3, 7, T("Vm.Excel Legend declared"), null);
+        Legend(8, 14, T("Vm.Excel Legend small"), SmallExtraFill);
+        Legend(15, 21, T("Vm.Excel Legend large"), LargeExtraFill);
+
         var dayCount = last.DayNumber - first.DayNumber + 1;
         var dayTotals = new double[dayCount];
         for (var i = 0; i < dayCount; i++)
@@ -152,6 +216,7 @@ public static class TimeWorkbookExporter
             header.Style.Font.Bold = true;
         }
 
+        var cellFills = new List<(int Row, int Column, string Color)>();
         var row = 3;
         foreach (var employee in employees)
         {
@@ -168,13 +233,16 @@ public static class TimeWorkbookExporter
             {
                 if (!days.TryGetValue(first.AddDays(i), out var day)) continue;
 
-                var minutes = Math.Round(day.OvertimeHours * 60);
-                if (minutes < 1) continue;
+                var (minutes, kind, undeclared) = ExtraWork(day);
+                if (kind == ExtraKind.None) continue;
 
                 var cell = ws.Cell(row, 3 + i);
                 cell.Value = minutes;
                 cell.Style.NumberFormat.Format = "0.00";
-                AddOvertimeComment(cell, day);
+                AddOvertimeComment(cell, day, minutes, undeclared);
+
+                if (kind == ExtraKind.SmallUndeclared) cellFills.Add((row, 3 + i, SmallExtraFill));
+                else if (kind == ExtraKind.LargeUndeclared) cellFills.Add((row, 3 + i, LargeExtraFill));
 
                 total += minutes;
                 dayTotals[i] += minutes;
@@ -205,13 +273,16 @@ public static class TimeWorkbookExporter
             ws.Cell(row, 1).Style.Font.Italic = true;
         }
 
-        // Weekend columns in green (header + all rows), then style the total row on top.
+        // Weekend columns in green (header + all rows); the colours of the extra-work cells go on top.
         var lastRow = Math.Max(row, 3);
         for (var i = 0; i < dayCount; i++)
         {
             if (first.AddDays(i).DayOfWeek is DayOfWeek.Saturday or DayOfWeek.Sunday)
                 ws.Range(2, 3 + i, lastRow, 3 + i).Style.Fill.BackgroundColor = XLColor.FromHtml(WeekendGreen);
         }
+        foreach (var (fillRow, fillColumn, color) in cellFills)
+            ws.Cell(fillRow, fillColumn).Style.Fill.BackgroundColor = XLColor.FromHtml(color);
+
         if (lastEmployeeRow >= 3)
         {
             var totalRange = ws.Range(row, 1, row, 2 + dayCount);
@@ -224,25 +295,29 @@ public static class TimeWorkbookExporter
         for (var i = 0; i < dayCount; i++) ws.Column(3 + i).Width = 11;
     }
 
-    /// <summary>The yellow balloon: scans, registered overtime, rounded out time and rounded worked time.</summary>
-    private static void AddOvertimeComment(IXLCell cell, DayTimeRow day)
+    /// <summary>The yellow balloon: scans, the extra time, rounded out time, rounded and actual worked time.</summary>
+    private static void AddOvertimeComment(IXLCell cell, DayTimeRow day, double extraMinutes, double undeclaredMinutes)
     {
         var inOut = string.Join(" | ", day.Pairs.Select(p =>
             $"{(p.In is { } i ? i.ToString("HH:mm") : "?")} - {(p.Out is { } o ? o.ToString("HH:mm") : "?")}"));
-        var overtime = day.OvertimeHours;
+        var extraHours = extraMinutes / 60.0;
         var modOut = day.RoundedPairs.Select(p => p.Out).LastOrDefault(x => x != null);
-        var worked = day.RoundedHours ?? day.ActualHours;
 
         var lines = new List<string>
         {
-            $"In - Out: {inOut}",
-            $"Hours: {overtime.ToString("0.00", CultureInfo.CurrentCulture)}",
-            $"TotTime: {HoursMinutes(overtime)}",
-            $"Mod Out Time: {(modOut is { } m ? m.ToString("HH:mm") : string.Empty)}",
-            $"Tot work MH: {HoursMinutes(worked ?? 0)}"
+            $"{T("Vm.Excel Bal In - Out")}: {inOut}",
+            $"{T("Vm.Excel Bal Hours")}: {extraHours.ToString("0.00", CultureInfo.CurrentCulture)}",
+            $"{T("Vm.Excel Bal TotTime")}: {HoursMinutes(extraHours)}",
+            $"{T("Vm.Excel Bal Mod Out Time")}: {(modOut is { } m ? m.ToString("HH:mm") : string.Empty)}",
+            $"{T("Vm.Excel Bal Tot work MH")}: {HoursMinutes(Rounded(day) ?? 0)}",
+            $"{T("Vm.Excel Bal Actual work")}: {HoursMinutes(day.ActualHours ?? 0)}",
+            $"{T("Vm.Excel Bal Scheduled")}: {HoursMinutes(day.DeclaredHours ?? 0)}"
         };
-        if (!string.IsNullOrEmpty(day.OvertimeRanges))
-            lines.Add($"{T("Vm.Excel Registered overtime")}: {day.OvertimeRanges}");
+        if (day.OvertimeHours > 0)
+            lines.Add($"{T("Vm.Excel Bal Declared overtime")}: {HoursMinutes(day.OvertimeHours)}" +
+                      (string.IsNullOrEmpty(day.OvertimeRanges) ? string.Empty : $" ({day.OvertimeRanges})"));
+        if (undeclaredMinutes >= 1)
+            lines.Add($"{T("Vm.Excel Bal Not declared")}: {undeclaredMinutes:0} {T("Vm.Excel min")}");
 
         var comment = cell.CreateComment();
         comment.AddText(string.Join("\n", lines));
@@ -341,14 +416,16 @@ public static class TimeWorkbookExporter
     }
 
     private static void WriteTotalRow(IXLWorksheet ws, int row, string employee, string label, string days,
-        double scheduled, double actual, double difference)
+        double scheduled, double actual, double rounded, double difference, double differenceRounded)
     {
         ws.Cell(row, 1).Value = employee;
         ws.Cell(row, 2).Value = label;
         ws.Cell(row, 3).Value = days;
         SetDuration(ws.Cell(row, 5), scheduled);
         SetDuration(ws.Cell(row, 7), actual);
-        SetMinutes(ws.Cell(row, 8), difference);
+        SetDuration(ws.Cell(row, 8), rounded);
+        SetMinutes(ws.Cell(row, 9), difference);
+        SetMinutes(ws.Cell(row, 10), differenceRounded);
 
         var range = ws.Range(row, 1, row, ColumnCount);
         range.Style.Font.Bold = true;

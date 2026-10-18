@@ -27,6 +27,7 @@ public enum AdminSection
     Overtime,
     Reports,
     SubmissionLog,
+    EmailLog,
     Help,
     Administration
 }
@@ -369,6 +370,7 @@ public partial class AdminShellViewModel : ViewModelBase
     [ObservableProperty] private bool _showOvertime = true;
     [ObservableProperty] private bool _showReports = true;
     [ObservableProperty] private bool _showApiLog = true;
+    [ObservableProperty] private bool _showEmailLog = true;
     [ObservableProperty] private bool _showHelp = true;
     [ObservableProperty] private bool _showAdministration;
 
@@ -407,6 +409,7 @@ public partial class AdminShellViewModel : ViewModelBase
         ShowOvertime       = session.CanSee(MenuKeys.Overtime);
         ShowReports        = session.CanSee(MenuKeys.Reports);
         ShowApiLog         = session.CanSee(MenuKeys.ApiLog);
+        ShowEmailLog       = session.CanSee(MenuKeys.ApiLog);   // same permission as the API log
         ShowHelp           = session.CanSee(MenuKeys.Help);
         ShowAdministration = session.CanSee(MenuKeys.Administration);
 
@@ -703,6 +706,11 @@ public partial class AdminShellViewModel : ViewModelBase
                     _services
                         .GetRequiredService<
                             SubmissionLogViewModel>(),
+
+                AdminSection.EmailLog =>
+                    _services
+                        .GetRequiredService<
+                            EmailLogViewModel>(),
 
                 AdminSection.Help =>
                     _services

@@ -121,6 +121,7 @@ internal static class Program
         services.AddTransient<ViewModels.OvertimeViewModel>();
         services.AddTransient<ViewModels.ReportsViewModel>();
         services.AddTransient<ViewModels.SubmissionLogViewModel>();
+        services.AddTransient<ViewModels.EmailLogViewModel>();
         services.AddTransient<ViewModels.AdministrationViewModel>();
         services.AddTransient<ViewModels.HelpViewModel>();
 

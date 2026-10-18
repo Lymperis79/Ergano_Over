@@ -157,6 +157,19 @@
                             <TextBlock Text="{Binding Loc[SMTPPassword]}" FontWeight="SemiBold" />
                             <TextBox Text="{Binding FormSmtpPassword}" PasswordChar="•" />
                             <CheckBox Content="{Binding Loc[UseTLS]}" IsChecked="{Binding FormSmtpUseTls}" />
+
+                            <Separator />
+                            <TextBlock Text="{Binding Loc[AlertEventsTitle]}" FontWeight="SemiBold" />
+                            <CheckBox Content="{Binding Loc[AlertEvEarlyDeparture]}" IsChecked="{Binding FormAlertEvEarlyDeparture}" />
+                            <CheckBox Content="{Binding Loc[AlertEvErganiDown]}" IsChecked="{Binding FormAlertEvErganiDown}" />
+                            <CheckBox Content="{Binding Loc[AlertEvInternetDown]}" IsChecked="{Binding FormAlertEvInternetDown}" />
+                            <CheckBox Content="{Binding Loc[AlertEvEarlyClockIn]}" IsChecked="{Binding FormAlertEvEarlyClockIn}" />
+                            <CheckBox Content="{Binding Loc[AlertEvLateClockIn]}" IsChecked="{Binding FormAlertEvLateClockIn}" />
+                            <CheckBox Content="{Binding Loc[AlertEvNoSchedule]}" IsChecked="{Binding FormAlertEvNoSchedule}" />
+                            <CheckBox Content="{Binding Loc[AlertEvScanRejected]}" IsChecked="{Binding FormAlertEvScanRejected}" />
+                            <TextBlock Text="{Binding Loc[ClockInAlertMinutes]}" FontWeight="SemiBold" />
+                            <NumericUpDown Value="{Binding FormClockInAlertMinutes}" Minimum="0" Maximum="240" />
+                            <TextBlock Text="{Binding Loc[AlertEventsHint]}" TextWrapping="Wrap" Foreground="Gray" FontSize="11" />
                         </StackPanel>
 
                         <Separator />

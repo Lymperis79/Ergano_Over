@@ -60,6 +60,7 @@ public class SectionViewModelTemplateSelector : IDataTemplate
             OvertimeViewModel       => new OvertimeView        { DataContext = data },
             ReportsViewModel        => new ReportsView         { DataContext = data },
             SubmissionLogViewModel => new SubmissionLogView { DataContext = data },
+            EmailLogViewModel       => new EmailLogView        { DataContext = data },
             AdministrationViewModel => new AdministrationView { DataContext = data },
             HelpViewModel           => new HelpView           { DataContext = data },
             _ => null

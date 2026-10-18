@@ -165,6 +165,37 @@ IAdminSectionViewModel
     private bool _formBlockClockInOnRestOrAbsentDay =
         true;
 
+    // Which events send an alert mail (see AlertEvent) and the clock-in tolerance.
+    [ObservableProperty] private bool _formAlertEvEarlyDeparture = true;
+    [ObservableProperty] private bool _formAlertEvErganiDown;
+    [ObservableProperty] private bool _formAlertEvInternetDown;
+    [ObservableProperty] private bool _formAlertEvEarlyClockIn;
+    [ObservableProperty] private bool _formAlertEvLateClockIn;
+    [ObservableProperty] private bool _formAlertEvNoSchedule;
+    [ObservableProperty] private bool _formAlertEvScanRejected;
+    [ObservableProperty] private int _formClockInAlertMinutes = 10;
+
+    private int ComposeAlertEvents() =>
+        (FormAlertEvEarlyDeparture ? (int)AlertEvent.EarlyDeparture : 0) |
+        (FormAlertEvErganiDown     ? (int)AlertEvent.ErganiDown : 0) |
+        (FormAlertEvInternetDown   ? (int)AlertEvent.InternetDown : 0) |
+        (FormAlertEvEarlyClockIn   ? (int)AlertEvent.EarlyClockIn : 0) |
+        (FormAlertEvLateClockIn    ? (int)AlertEvent.LateClockIn : 0) |
+        (FormAlertEvNoSchedule     ? (int)AlertEvent.NoScheduleClockIn : 0) |
+        (FormAlertEvScanRejected   ? (int)AlertEvent.ScanRejected : 0);
+
+    private void ApplyAlertEvents(int mask)
+    {
+        var events = (AlertEvent)mask;
+        FormAlertEvEarlyDeparture = events.HasFlag(AlertEvent.EarlyDeparture);
+        FormAlertEvErganiDown     = events.HasFlag(AlertEvent.ErganiDown);
+        FormAlertEvInternetDown   = events.HasFlag(AlertEvent.InternetDown);
+        FormAlertEvEarlyClockIn   = events.HasFlag(AlertEvent.EarlyClockIn);
+        FormAlertEvLateClockIn    = events.HasFlag(AlertEvent.LateClockIn);
+        FormAlertEvNoSchedule     = events.HasFlag(AlertEvent.NoScheduleClockIn);
+        FormAlertEvScanRejected   = events.HasFlag(AlertEvent.ScanRejected);
+    }
+
     // ---------------------------------------------------------------------
     // Email / SMTP
     // ---------------------------------------------------------------------
@@ -315,6 +346,9 @@ IAdminSectionViewModel
         FormEarlyDepartureAlertMinutes =
             10;
 
+        ApplyAlertEvents((int)AlertEvent.Default);
+        FormClockInAlertMinutes = 10;
+
         FormBlockClockInWithoutSchedule =
             true;
 
@@ -413,6 +447,9 @@ IAdminSectionViewModel
 
         FormEarlyDepartureAlertMinutes =
             company.EarlyDepartureAlertMinutes;
+
+        ApplyAlertEvents(company.AlertEvents);
+        FormClockInAlertMinutes = company.ClockInAlertMinutes;
 
         FormBlockClockInWithoutSchedule =
             company.BlockClockInWithoutSchedule;
@@ -541,6 +578,9 @@ IAdminSectionViewModel
 
                 EarlyDepartureAlertMinutes =
                     FormEarlyDepartureAlertMinutes,
+
+                AlertEvents = ComposeAlertEvents(),
+                ClockInAlertMinutes = FormClockInAlertMinutes,
 
                 BlockClockInWithoutSchedule =
                     FormBlockClockInWithoutSchedule,
