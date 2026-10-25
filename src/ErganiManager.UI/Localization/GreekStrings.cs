@@ -198,6 +198,7 @@ public static class GreekStrings
         [L.OvertimeJustification] = "Αιτιολογία υπερωρίας",
         [L.ScheduleOvertimeWillBePending] = "Η υπερωρία θα αποθηκευτεί σε αναμονή. Υποβάλετέ την από τη σελίδα Υπερωρίες όταν είστε έτοιμοι.",
         ["Vm.⏳ Pending — generated from schedule; submit from Overtime page"] = "Σε αναμονή — δημιουργήθηκε από το πρόγραμμα· υποβάλετέ την από τη σελίδα Υπερωρίες",
+        ["Vm.Overtime saved as pending: {0} record(s). Submit them from the Overtime page."] = "Οι υπερωρίες αποθηκεύτηκαν σε αναμονή: {0} εγγραφή/ές. Υποβάλετέ τις από τη σελίδα Υπερωρίες.",
         [L.AseeApproval] = "Έγκριση ΑΣΕΕ (προαιρετικό)",
         [L.Cancelled] = "Ακυρωμένη",
         [L.CancelOvertime] = "Ακύρωση ΥΠ",
