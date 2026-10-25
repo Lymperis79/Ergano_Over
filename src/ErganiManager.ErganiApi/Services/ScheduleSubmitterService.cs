@@ -52,7 +52,6 @@ public class ScheduleSubmitterService : IScheduleSubmitter
 
         var credentials = BuildCredentials(company);
         var stopped     = false;   // Ergani unreachable — no point trying the remaining dates
-        var overtimeQueue = new List<(int Id, ScheduleSubmitDayResult Day)>();
 
         foreach (var branchGroup in days.GroupBy(d => d.BranchId))
         {
@@ -164,8 +163,7 @@ public class ScheduleSubmitterService : IScheduleSubmitter
                 if (success && ScheduleHours.GetOvertimeRange(day.StartTime, day.EndTime) is { } range
                     && day.WorkType is AppWorkType.Office or AppWorkType.Home)
                 {
-                    if (await PrepareOvertimeAsync(db, day, range, dayResult, outcome, overtimeJustification) is int otId)
-                        overtimeQueue.Add((otId, dayResult));
+                    await PrepareOvertimeAsync(db, companyId, day, range, dayResult, outcome, overtimeJustification);
                 }
             }
 
@@ -176,9 +174,7 @@ public class ScheduleSubmitterService : IScheduleSubmitter
             }
         }
 
-        // Hours over 8 of all the days above: ONE overtime request per branch.
-        await SubmitOvertimeBatchAsync(companyId, overtimeQueue, outcome);
-
+        // Overtime is left pending and submitted explicitly from the Overtime page.
         return outcome;
     }
 
@@ -202,7 +198,7 @@ public class ScheduleSubmitterService : IScheduleSubmitter
     /// still has to be sent to Ergani, or null when it was already sent / could not be prepared
     /// (the day result and counters are updated in that case).</summary>
     private async Task<int?> PrepareOvertimeAsync(
-        AppDbContext db, ScheduleDayDto day,
+        AppDbContext db, int companyId, ScheduleDayDto day,
         (TimeOnly From, TimeOnly To) range, ScheduleSubmitDayResult dayResult, ScheduleSubmitResult outcome,
         string overtimeJustification)
     {
@@ -229,8 +225,9 @@ public class ScheduleSubmitterService : IScheduleSubmitter
 
             if (existing != null)
             {
-                // Apply the current selection to a previously generated but still-unsent record.
-                existing.Justification = justification;
+                // Preserve a reason selected in the schedule day popup.
+                var generatedBySchedule = existing.RequestPayloadJson?.Contains("\"source\":\"schedule\"") == true;
+                if (!generatedBySchedule) existing.Justification = justification;
                 await db.SaveChangesAsync();
             }
             else
@@ -252,9 +249,28 @@ public class ScheduleSubmitterService : IScheduleSubmitter
                     EndTime              = range.To,
                     Justification        = justification,
                     WeeklyWorkdaysNumber = employee.WeeklyWorkdays,
+                    RequestPayloadJson   = System.Text.Json.JsonSerializer.Serialize(new { source = "schedule", scheduleId = day.Id }),
                     CreatedAt            = DateTime.UtcNow
                 };
                 db.Overtimes.Add(existing);
+                await db.SaveChangesAsync();
+            }
+
+            var marker = "\"overtimeId\":" + existing.Id;
+            var pendingExists = await db.ApiSubmissionLogs.AnyAsync(l =>
+                l.CompanyId == companyId && l.SubmissionType == "Overtime" &&
+                l.ErrorMessage == "PENDING_OVERTIME" && l.RequestPayloadJson != null &&
+                l.RequestPayloadJson.Contains(marker));
+            if (!pendingExists)
+            {
+                db.ApiSubmissionLogs.Add(new ApiSubmissionLog
+                {
+                    CompanyId = companyId, EmployeeId = day.EmployeeId,
+                    EmployeeIdsJson = System.Text.Json.JsonSerializer.Serialize(new[] { day.EmployeeId }),
+                    SubmissionType = "Overtime", ScheduleDate = day.ScheduleDate,
+                    RequestPayloadJson = System.Text.Json.JsonSerializer.Serialize(new { overtimeId = existing.Id, source = "schedule" }),
+                    SubmissionDate = DateTime.UtcNow, Success = false, ErrorMessage = "PENDING_OVERTIME"
+                });
                 await db.SaveChangesAsync();
             }
 
@@ -330,7 +346,7 @@ public class ScheduleSubmitterService : IScheduleSubmitter
             };
             outcome.Days.Add(dayResult);
 
-            if (await PrepareOvertimeAsync(db, day, r, dayResult, outcome, overtimeJustification) is int otId)
+            if (await PrepareOvertimeAsync(db, companyId, day, r, dayResult, outcome, overtimeJustification) is int otId)
                 queue.Add((otId, dayResult));
         }
 
