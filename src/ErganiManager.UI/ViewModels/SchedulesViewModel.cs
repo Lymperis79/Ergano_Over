@@ -28,6 +28,8 @@ public partial class CalendarCellViewModel : ViewModelBase
     /// <summary>Second line of the cell: the overtime of the day ("⏱ 17:00–18:00"), shown apart from the work time.</summary>
     [ObservableProperty] private string _overtimeText = string.Empty;
     public bool HasOvertimeText => !string.IsNullOrWhiteSpace(OvertimeText);
+    [ObservableProperty] private string _overtimeStatusText = string.Empty;
+    public bool HasOvertimeStatusText => !string.IsNullOrWhiteSpace(OvertimeStatusText);
     [ObservableProperty] private bool _hasSchedule;
     [ObservableProperty] private bool _isToday;
     [ObservableProperty] private bool _isSelected;
@@ -519,6 +521,12 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
         return string.Empty;
     }
 
+    private static string BuildOvertimeStatusText(List<OvertimeDto>? records)
+    {
+        if (records is not { Count: > 0 }) return string.Empty;
+        return records.All(o => o.SubmittedToErgani) ? Loc["Sent"] : Loc["Pending"];
+    }
+
     /// <summary>The work line of a calendar cell: for a day longer than 8 hours only the normal part,
     /// the rest is the overtime line.</summary>
     private static string WorkRangeText(ScheduleDayDto? sched)
@@ -560,6 +568,7 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
             leavesByDate.TryGetValue(date, out var dayLeaves);
             overtimeByDate.TryGetValue(date, out var dayOvertime);
             var overtimeText = BuildOvertimeText(sched, dayOvertime);
+            var overtimeStatusText = BuildOvertimeStatusText(dayOvertime);
             official.TryGetValue(date, out var officialName);
             var userHolidayText = dayLeaves is null ? string.Empty : string.Join(" · ", dayLeaves.Select(l => LeaveTypes.Find(l.LeaveTypeCode)?.LocalizedDescription ?? l.LeaveTypeCode));
             var tooltip = string.Join("\n", new[]
@@ -587,6 +596,7 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
                 WorkType           = sched != null ? (AppWorkType?)sched.WorkType : null,
                 TimeRangeText      = WorkRangeText(sched),
                 OvertimeText  = overtimeText,
+                OvertimeStatusText = overtimeStatusText,
                 OfficialHolidayText = officialName ?? string.Empty,
                 UserHolidayText     = userHolidayText,
                 HolidayTooltip      = tooltip,
@@ -634,6 +644,7 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
             leavesByDate.TryGetValue(d, out var dayLeaves);
             overtimeByDate.TryGetValue(d, out var dayOvertime);
             var overtimeText = BuildOvertimeText(sched, dayOvertime);
+            var overtimeStatusText = BuildOvertimeStatusText(dayOvertime);
             officialByDate.TryGetValue(d, out var officialName);
             var userHolidayText = dayLeaves is null ? string.Empty : string.Join(" · ", dayLeaves.Select(l => LeaveTypes.Find(l.LeaveTypeCode)?.LocalizedDescription ?? l.LeaveTypeCode));
             var tooltip = string.Join("\n", new[]
@@ -661,6 +672,7 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
                 WorkType            = sched != null ? (AppWorkType?)sched.WorkType : null,
                 TimeRangeText       = WorkRangeText(sched),
                 OvertimeText   = overtimeText,
+                OvertimeStatusText = overtimeStatusText,
                 OfficialHolidayText = officialName ?? string.Empty,
                 UserHolidayText     = userHolidayText,
                 HolidayTooltip      = tooltip,
