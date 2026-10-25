@@ -121,6 +121,7 @@ public sealed class LeaveSubmitterService : ILeaveSubmitter
             {
                 CompanyId          = companyId,
                 EmployeeId         = employeeIds.Count == 1 ? employeeIds[0] : null,
+                EmployeeIdsJson    = System.Text.Json.JsonSerializer.Serialize(employeeIds),
                 SubmissionType     = "Leave",
                 ScheduleDate       = items[0].LeaveDate,
                 RequestPayloadJson = result.RequestPayloadJson,
