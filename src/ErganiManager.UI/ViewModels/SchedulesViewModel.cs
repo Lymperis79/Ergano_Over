@@ -41,7 +41,7 @@ public partial class CalendarCellViewModel : ViewModelBase
     /// <summary>Imported schedules are already submitted, but their old protocol must not be displayed as the current status.</summary>
     public bool ShowSubmissionProtocol => IsSubmitted && !IsErganiImported && HasSubmissionProtocol;
     /// <summary>Keep the submitted status concise; show the protocol on its own line below.</summary>
-    public string SubmittedStatusText => Loc["Sent"];
+    public string SubmittedStatusText => $"✅ {Loc["Sent"]}";
     public string ProtocolStatusText => HasSubmissionProtocol
         ? string.Format(Loc["Vm.Protocol: {0}"], Protocol)
         : string.Empty;
@@ -594,10 +594,12 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
                 IsInMonth          = true,
                 Date               = date,
                 HasSchedule        = sched != null,
-                // Annual leave supersedes the schedule's imported/submitted badge for this day.
-                IsSubmitted        = !hasAnnualLeave && sched is { SubmittedToErgani: true },
+                // Show a sent badge for annual leave only when Ergani has accepted the leave record.
+                IsSubmitted        = hasAnnualLeave
+                    ? dayLeaves!.Where(l => string.Equals(l.LeaveTypeCode, "ΑΔΚΑΝ", StringComparison.OrdinalIgnoreCase)).All(l => l.SubmittedToErgani)
+                    : sched is { SubmittedToErgani: true },
                 IsErganiImported  = !hasAnnualLeave && sched?.Source == ScheduleSource.ErganiImported,
-                Protocol           = sched?.Protocol,
+                Protocol           = hasAnnualLeave ? null : sched?.Protocol,
                 WorkType           = sched != null ? (AppWorkType?)sched.WorkType : null,
                 TimeRangeText      = WorkRangeText(sched),
                 OvertimeText  = overtimeText,
@@ -672,10 +674,12 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
                 IsInMonth           = true,
                 Date                = d,
                 HasSchedule         = sched != null,
-                // Annual leave supersedes the schedule's imported/submitted badge for this day.
-                IsSubmitted         = !hasAnnualLeave && sched is { SubmittedToErgani: true },
+                // Show a sent badge for annual leave only when Ergani has accepted the leave record.
+                IsSubmitted         = hasAnnualLeave
+                    ? dayLeaves!.Where(l => string.Equals(l.LeaveTypeCode, "ΑΔΚΑΝ", StringComparison.OrdinalIgnoreCase)).All(l => l.SubmittedToErgani)
+                    : sched is { SubmittedToErgani: true },
                 IsErganiImported   = !hasAnnualLeave && sched?.Source == ScheduleSource.ErganiImported,
-                Protocol            = sched?.Protocol,
+                Protocol            = hasAnnualLeave ? null : sched?.Protocol,
                 WorkType            = sched != null ? (AppWorkType?)sched.WorkType : null,
                 TimeRangeText       = WorkRangeText(sched),
                 OvertimeText   = overtimeText,
