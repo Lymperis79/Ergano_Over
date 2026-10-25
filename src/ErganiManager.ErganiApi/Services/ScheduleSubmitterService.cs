@@ -126,6 +126,7 @@ public class ScheduleSubmitterService : IScheduleSubmitter
             {
                 CompanyId          = companyId,
                 EmployeeId         = distinctEmployees.Count == 1 ? distinctEmployees[0] : null,
+                EmployeeIdsJson    = System.Text.Json.JsonSerializer.Serialize(distinctEmployees),
                 SubmissionType     = "DailySchedule",
                 ScheduleDate       = allDays.Min(d => d.ScheduleDate),
                 RequestPayloadJson = result.RequestPayloadJson,
