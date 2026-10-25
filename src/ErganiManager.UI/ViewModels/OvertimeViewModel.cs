@@ -51,7 +51,7 @@ public partial class OvertimeViewModel : ViewModelBase, IAdminSectionViewModel
     [ObservableProperty] private string _responseText = string.Empty;
 
     [ObservableProperty] private DateTimeOffset? _filterFrom = DateTimeOffset.Now.AddMonths(-1);
-    [ObservableProperty] private DateTimeOffset? _filterTo = DateTimeOffset.Now;
+    [ObservableProperty] private DateTimeOffset? _filterTo = DateTimeOffset.Now.AddMonths(1);
     [ObservableProperty] private BranchDto? _formBranch;
     [ObservableProperty] private DateTimeOffset? _formDate = DateTimeOffset.Now;
     [ObservableProperty] private TimeSpan? _formStartTime = new(17, 0, 0);
@@ -98,7 +98,7 @@ public partial class OvertimeViewModel : ViewModelBase, IAdminSectionViewModel
     private async Task LoadRecordsAsync()
     {
         if (_session?.CompanyId is not int companyId) return;
-        var list = await _overtimeService.GetByCompanyAsync(companyId, DateOnly.FromDateTime((FilterFrom ?? DateTimeOffset.Now.AddMonths(-1)).LocalDateTime), DateOnly.FromDateTime((FilterTo ?? DateTimeOffset.Now).LocalDateTime));
+        var list = await _overtimeService.GetByCompanyAsync(companyId, DateOnly.FromDateTime((FilterFrom ?? DateTimeOffset.Now.AddMonths(-1)).LocalDateTime), DateOnly.FromDateTime((FilterTo ?? DateTimeOffset.Now.AddMonths(1)).LocalDateTime));
         await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() => { Records.Clear(); _selectedIds.Clear(); foreach (var r in list) Records.Add(r); OnPropertyChanged(nameof(HasSelection)); });
         StatusMessage = string.Format(Loc["Vm.{0} record(s)."], Records.Count);
     }
