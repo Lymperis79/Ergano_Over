@@ -2139,6 +2139,7 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
                     result.SubmittedCount, result.FailedCount, result.ErrorMessage);
 
             await RefreshCalendarAsync();
+            await RefreshCloneStateAsync();
         }
         catch (Exception ex) { StatusMessage = $"❌ {ex.Message}"; }
         finally { IsBulkSubmitting = false; }
@@ -2248,6 +2249,7 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
 
             StatusMessage = (result.OvertimeFailed == 0 ? "✅ " : "⚠ ") + message;
             await RefreshCalendarAsync();
+            await RefreshCloneStateAsync();
         }
         catch (Exception ex) { StatusMessage = $"❌ {ex.Message}"; }
         finally { IsBulkSubmitting = false; }
@@ -2382,6 +2384,8 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
             StatusMessage = (failed == 0 && overtimeFailed == 0 ? "✅ " : "⚠ ") + resultMessage;
             _pendingBulkSubmit.Clear();
             await RefreshCalendarAsync();
+            await RefreshCloneStateAsync();
+            await RefreshCloneStateAsync();
         }
         finally
         {
@@ -2469,6 +2473,7 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
         }
 
         await RefreshCalendarAsync();
+        await RefreshCloneStateAsync();
     }
 
     // ── Submission log: Ergani responses + PDF ────────────────────────────────
@@ -2752,6 +2757,7 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
             }
 
             await RefreshCalendarAsync();
+            await RefreshCloneStateAsync();
         }
         catch (Exception ex) { StatusMessage = $"❌ {ex.Message}"; }
     }
@@ -2814,6 +2820,7 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
                 StatusMessage = string.Format(Loc["Vm.❌ {0} day(s) sent, {1} NOT sent — {2}"], result.SubmittedCount, result.FailedCount, result.ErrorMessage);
 
             await RefreshCalendarAsync();
+            await RefreshCloneStateAsync();
         }
         catch (Exception ex) { StatusMessage = $"❌ {ex.Message}"; }
     }
