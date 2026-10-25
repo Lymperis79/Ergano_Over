@@ -62,6 +62,12 @@
                                             <TextBlock Text="{Binding IsCancelled, Converter={x:Static vm:CancelledTextConverter.Instance}}"
                                                        FontSize="11" Foreground="White" />
                                         </Border>
+                                        <TextBlock Text="{Binding $parent[UserControl].DataContext.Loc[Pending]}"
+                                                   FontSize="11" Foreground="#FFB74D"
+                                                   IsVisible="{Binding !SubmittedToErgani}" />
+                                        <TextBlock Text="{Binding $parent[UserControl].DataContext.Loc[Sent]}"
+                                                   FontSize="11" Foreground="#81C784"
+                                                   IsVisible="{Binding SubmittedToErgani}" />
                                         <TextBlock Text="{Binding Protocol}" FontSize="10" Foreground="#888888"
                                                    IsVisible="{Binding Protocol, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
                                     </StackPanel>
