@@ -52,7 +52,6 @@ public partial class OvertimeViewModel : ViewModelBase, IAdminSectionViewModel
 
     [ObservableProperty] private DateTimeOffset? _filterFrom = DateTimeOffset.Now.AddMonths(-1);
     [ObservableProperty] private DateTimeOffset? _filterTo = DateTimeOffset.Now;
-    [ObservableProperty] private EmployeeDto? _formEmployee;
     [ObservableProperty] private BranchDto? _formBranch;
     [ObservableProperty] private DateTimeOffset? _formDate = DateTimeOffset.Now;
     [ObservableProperty] private TimeSpan? _formStartTime = new(17, 0, 0);
@@ -91,7 +90,7 @@ public partial class OvertimeViewModel : ViewModelBase, IAdminSectionViewModel
         });
         var branches = await _branchService.GetByCompanyAsync(companyId).ConfigureAwait(false);
         await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() => { AvailableBranches.Clear(); foreach (var b in branches) AvailableBranches.Add(b); });
-        FormEmployee = AvailableEmployees.FirstOrDefault(); FormBranch = AvailableBranches.FirstOrDefault();
+        FormBranch = AvailableBranches.FirstOrDefault();
         await LoadRecordsAsync();
     }
 
