@@ -47,6 +47,9 @@ public interface ILeaveService
     /// Returns false when it was already submitted (those stay as the record of what was sent).</summary>
     Task<bool> DeleteUnsentAsync(int id);
 
+    /// <summary>Updates an existing holiday that has not yet been accepted by Ergani.</summary>
+    Task<bool> UpdateUnsentAsync(int companyId, LeaveDto leave);
+
     /// <summary>Deletes a holiday record whether or not it was submitted. Used only when the user
     /// explicitly chose to replace existing data during an Ergani import.</summary>
     Task DeleteAsync(int id);
