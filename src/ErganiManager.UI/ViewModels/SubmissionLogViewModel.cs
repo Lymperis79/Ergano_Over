@@ -501,7 +501,7 @@ public partial class SubmissionLogViewModel
                 .ToListAsync();
 
             EmployeeOptions.Clear();
-            EmployeeOptions.Add(new EmployeeFilterOption { Id = 0, Name = Loc["Vm.All employees"], TaxId = string.Empty });
+            EmployeeOptions.Add(new EmployeeFilterOption { Id = 0, Name = Loc[L.AllEmployees], TaxId = string.Empty });
             foreach (var employee in employees) EmployeeOptions.Add(employee);
 
             var query = db.ApiSubmissionLogs
@@ -607,7 +607,7 @@ public partial class SubmissionLogViewModel
     {
         var row = SelectedRow;
         if (row == null || !row.HasPdf || _session?.CompanyId is not int companyId)
-            throw new InvalidOperationException(Loc["Vm.Select a successful submission with a protocol first."]);
+            throw new InvalidOperationException(Loc[L.DownloadPdf]);
 
         var documentCode = row.SubmissionType switch
         {
@@ -623,7 +623,7 @@ public partial class SubmissionLogViewModel
             companyId, documentCode, row.Protocol!,
             DateOnly.FromDateTime(row.SubmissionDate), ct);
         await File.WriteAllBytesAsync(filePath, bytes, ct);
-        StatusMessage = string.Format(Loc["Vm.PDF saved: {0}"], filePath);
+        StatusMessage = Loc[L.SuccessPrefix] + Loc[L.DownloadPdf] + ": " + filePath;
     }
 }
 
