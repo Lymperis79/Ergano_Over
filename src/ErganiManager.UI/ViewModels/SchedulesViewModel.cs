@@ -84,7 +84,8 @@ public class ScheduleLogRow
         _ => "Documents/WTODaily"
     };
 
-    public string StatusIcon => Success ? "✅" : "❌";
+    public bool IsPending => ErrorMessage == "PENDING_OVERTIME";
+    public string StatusIcon => IsPending ? "⏳" : Success ? "✅" : "❌";
     public string ScheduleDateText => (ScheduleDate ?? DateOnly.FromDateTime(SubmissionDate.ToLocalTime())).ToString("dd/MM/yyyy");
     public string SubmittedAtText => SubmissionDate.ToLocalTime().ToString("dd/MM/yyyy HH:mm:ss");
     public bool HasProtocol => !string.IsNullOrWhiteSpace(Protocol);
@@ -92,9 +93,11 @@ public class ScheduleLogRow
     {
         get
         {
-            var result = Success
-                ? (HasProtocol ? string.Format(Tr.Loc["Vm.Protocol: {0}"], Protocol) : Tr.Loc["Vm.Accepted by Ergani"])
-                : (string.IsNullOrWhiteSpace(ErrorMessage) ? Tr.Loc["Vm.Failed"] : ErrorMessage!);
+            var result = IsPending
+                ? Tr.Loc["Vm.⏳ Pending — generated from schedule; submit from Overtime page"]
+                : Success
+                    ? (HasProtocol ? string.Format(Tr.Loc["Vm.Protocol: {0}"], Protocol) : Tr.Loc["Vm.Accepted by Ergani"])
+                    : (string.IsNullOrWhiteSpace(ErrorMessage) ? Tr.Loc["Vm.Failed"] : ErrorMessage!);
             return IsBatch && !string.IsNullOrWhiteSpace(EmployeeNames)
                 ? $"{EmployeeNames} · {result}"
                 : result;
@@ -122,7 +125,7 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
     public ObservableCollection<EmployeeDto> AvailableEmployees { get; } = new();
     public ObservableCollection<ErganiManager.Data.Entities.OvertimeJustification> AvailableOvertimeJustifications { get; } =
         new(Enum.GetValues<ErganiManager.Data.Entities.OvertimeJustification>());
-    [ObservableProperty] private ErganiManager.Data.Entities.OvertimeJustification _selectedOvertimeJustification =
+    [ObservableProperty] private ErganiManager.Data.Entities.OvertimeJustification _editingOvertimeJustification =
         ErganiManager.Data.Entities.OvertimeJustification.ExceptionalWorkload;
     [ObservableProperty] private EmployeeDto? _selectedEmployee;
 
@@ -312,6 +315,9 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
     public bool IsEditingExisting  => EditingScheduleId != 0;
     /// <summary>Only Office/Home days that are not yet at Ergani can be submitted from the day dialog.</summary>
     public bool CanSubmitEditingDay => ShowTimeFields && !EditingSubmitted;
+    public bool HasEditingOvertime =>
+        ShowTimeFields && EditingStartTime.HasValue && EditingEndTime.HasValue &&
+        ScheduleHours.GetOvertimeRange(EditingStartTime, EditingEndTime).HasValue;
 
     /// <summary>Shown when the day is longer than 8 hours: how it will be split for Ergani.</summary>
     public string EditingOvertimeNote
@@ -738,6 +744,7 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
         EditingStartTime  = existing?.StartTime?.ToTimeSpan() ?? SelectedEditingShift?.StartTime ?? new TimeSpan(9, 0, 0);
         EditingEndTime    = existing?.EndTime?.ToTimeSpan()   ?? SelectedEditingShift?.EndTime ?? new TimeSpan(17, 0, 0);
         EditingComments   = existing?.Comments ?? string.Empty;
+        EditingOvertimeJustification = ErganiManager.Data.Entities.OvertimeJustification.ExceptionalWorkload;
         EditingSubmitted  = existing?.SubmittedToErgani ?? false;
         EditingBranch     = (existing != null
                                 ? AvailableBranches.FirstOrDefault(b => b.Id == existing.BranchId)
@@ -767,13 +774,20 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
         OnPropertyChanged(nameof(ShowTimeFields));
         OnPropertyChanged(nameof(CanSubmitEditingDay));
         OnPropertyChanged(nameof(EditingOvertimeNote));
+        OnPropertyChanged(nameof(HasEditingOvertime));
     }
 
-    partial void OnEditingStartTimeChanged(TimeSpan? value) =>
+    partial void OnEditingStartTimeChanged(TimeSpan? value)
+    {
         OnPropertyChanged(nameof(EditingOvertimeNote));
+        OnPropertyChanged(nameof(HasEditingOvertime));
+    }
 
-    partial void OnEditingEndTimeChanged(TimeSpan? value) =>
+    partial void OnEditingEndTimeChanged(TimeSpan? value)
+    {
         OnPropertyChanged(nameof(EditingOvertimeNote));
+        OnPropertyChanged(nameof(HasEditingOvertime));
+    }
 
     partial void OnEditingScheduleIdChanged(int value) =>
         OnPropertyChanged(nameof(IsEditingExisting));
@@ -800,10 +814,96 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
         try
         {
             await _scheduleService.UpsertDayAsync(BuildEditingDto());
+            var saved = await _scheduleService.GetByDateAsync(SelectedEmployee.Id, EditingDate);
+            if (saved is { Id: > 0 })
+                await EnsureScheduleOvertimePendingAsync(saved);
             IsDayDialogOpen = false;
             await RefreshCalendarAsync();
         }
         catch (Exception ex) { StatusMessage = $"❌ {ex.Message}"; }
+    }
+
+    private async Task EnsureScheduleOvertimePendingAsync(ScheduleDayDto schedule)
+    {
+        if (_session?.CompanyId is not int companyId) return;
+        await using var db = new AppDbContext(_connectionState.GetDbOptions());
+        var range = schedule.WorkType is AppWorkType.Office or AppWorkType.Home
+            ? ScheduleHours.GetOvertimeRange(schedule.StartTime, schedule.EndTime) : null;
+
+        if (range is null)
+        {
+            var generated = await db.Overtimes.Where(o =>
+                o.EmployeeId == schedule.EmployeeId && o.OvertimeDate == schedule.ScheduleDate &&
+                !o.SubmittedToErgani && !o.IsCancelled && o.RequestPayloadJson != null &&
+                o.RequestPayloadJson.Contains("\"source\":\"schedule\"")).ToListAsync();
+            if (generated.Count > 0)
+            {
+                var ids = generated.Select(o => o.Id).ToHashSet();
+                db.Overtimes.RemoveRange(generated);
+                var logs = await db.ApiSubmissionLogs.Where(l =>
+                    l.CompanyId == companyId && l.SubmissionType == "Overtime" && l.ErrorMessage == "PENDING_OVERTIME").ToListAsync();
+                foreach (var log in logs)
+                    if (TryGetPendingOvertimeId(log.RequestPayloadJson, out var id) && ids.Contains(id)) db.ApiSubmissionLogs.Remove(log);
+                await db.SaveChangesAsync();
+            }
+            return;
+        }
+
+        var existing = await db.Overtimes.FirstOrDefaultAsync(o =>
+            o.EmployeeId == schedule.EmployeeId && o.OvertimeDate == schedule.ScheduleDate &&
+            o.StartTime == range.Value.From && o.EndTime == range.Value.To && !o.IsCancelled);
+        if (existing?.SubmittedToErgani == true) return;
+        if (existing == null)
+        {
+            var employee = await db.Employees.FindAsync(schedule.EmployeeId);
+            if (employee == null) return;
+            existing = new ErganiManager.Data.Entities.Overtime
+            {
+                EmployeeId = schedule.EmployeeId, BranchId = schedule.BranchId,
+                OvertimeDate = schedule.ScheduleDate, StartTime = range.Value.From, EndTime = range.Value.To,
+                Justification = EditingOvertimeJustification, WeeklyWorkdaysNumber = employee.WeeklyWorkdays,
+                RequestPayloadJson = System.Text.Json.JsonSerializer.Serialize(new { source = "schedule", scheduleId = schedule.Id }),
+                CreatedAt = DateTime.UtcNow
+            };
+            db.Overtimes.Add(existing);
+            await db.SaveChangesAsync();
+        }
+        else
+        {
+            existing.Justification = EditingOvertimeJustification;
+            if (string.IsNullOrWhiteSpace(existing.RequestPayloadJson))
+                existing.RequestPayloadJson = System.Text.Json.JsonSerializer.Serialize(new { source = "schedule", scheduleId = schedule.Id });
+            await db.SaveChangesAsync();
+        }
+
+        var marker = "\"overtimeId\":" + existing.Id;
+        var pendingLogExists = await db.ApiSubmissionLogs.AnyAsync(l =>
+            l.CompanyId == companyId && l.SubmissionType == "Overtime" && l.ErrorMessage == "PENDING_OVERTIME" &&
+            l.RequestPayloadJson != null && l.RequestPayloadJson.Contains(marker));
+        if (!pendingLogExists)
+        {
+            db.ApiSubmissionLogs.Add(new ErganiManager.Data.Entities.ApiSubmissionLog
+            {
+                CompanyId = companyId, EmployeeId = schedule.EmployeeId,
+                EmployeeIdsJson = System.Text.Json.JsonSerializer.Serialize(new[] { schedule.EmployeeId }),
+                SubmissionType = "Overtime", ScheduleDate = schedule.ScheduleDate,
+                RequestPayloadJson = System.Text.Json.JsonSerializer.Serialize(new { overtimeId = existing.Id, source = "schedule" }),
+                SubmissionDate = DateTime.UtcNow, Success = false, ErrorMessage = "PENDING_OVERTIME"
+            });
+            await db.SaveChangesAsync();
+        }
+    }
+
+    private static bool TryGetPendingOvertimeId(string? payload, out int id)
+    {
+        id = 0;
+        if (string.IsNullOrWhiteSpace(payload)) return false;
+        try
+        {
+            using var doc = System.Text.Json.JsonDocument.Parse(payload);
+            return doc.RootElement.TryGetProperty("overtimeId", out var value) && value.TryGetInt32(out id);
+        }
+        catch (System.Text.Json.JsonException) { return false; }
     }
 
     /// <summary>Saves the day as shown in the dialog and submits just that one day to Ergani.</summary>
@@ -821,6 +921,7 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
             if (saved is not { Id: > 0 })
             { StatusMessage = Loc["Vm.❌ Could not reload the saved day."]; return; }
 
+            await EnsureScheduleOvertimePendingAsync(saved);
             await SubmitDaysAsync(companyId, new List<ScheduleDayDto> { saved }, 1);
         }
         catch (Exception ex) { StatusMessage = $"❌ {ex.Message}"; }
@@ -2074,7 +2175,7 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
         {
             StatusMessage = string.Format(
                 Loc["Vm.Sending the overtime of {0} day(s) to Ergani, all employees in one request per branch…"], days.Count);
-            var result = await _scheduleSubmitter.SubmitOvertimeFromScheduleAsync(companyId, days, SelectedOvertimeJustification.ToString());
+            var result = await _scheduleSubmitter.SubmitOvertimeFromScheduleAsync(companyId, days, ErganiManager.Data.Entities.OvertimeJustification.ExceptionalWorkload.ToString());
 
             var protocol = result.Days.Select(d => d.OvertimeProtocol).FirstOrDefault(p => !string.IsNullOrEmpty(p));
             var message = string.Format(
@@ -2175,7 +2276,7 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
 
                 try
                 {
-                    var result = await _scheduleSubmitter.SubmitScheduleDaysAsync(companyId, allDays, SelectedOvertimeJustification.ToString());
+                    var result = await _scheduleSubmitter.SubmitScheduleDaysAsync(companyId, allDays, ErganiManager.Data.Entities.OvertimeJustification.ExceptionalWorkload.ToString());
                     submitted += result.Submitted;
                     failed += result.Error != null ? allDays.Count : result.Failed;
                     overtimeSubmitted += result.OvertimeSubmitted;
@@ -2278,7 +2379,7 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
 
         StatusMessage = string.Format(Loc["Vm.Submitting {0} day(s) to Ergani…"], toSubmit.Count);
 
-        var result = await _scheduleSubmitter.SubmitScheduleDaysAsync(companyId, toSubmit, SelectedOvertimeJustification.ToString());
+        var result = await _scheduleSubmitter.SubmitScheduleDaysAsync(companyId, toSubmit, ErganiManager.Data.Entities.OvertimeJustification.ExceptionalWorkload.ToString());
 
         // Days over 8 hours also produce an overtime record for the extra hours.
         var overtime = string.Empty;
@@ -2482,6 +2583,7 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
                 LogRows.Add(new ScheduleLogRow
                 {
                     Id = -entry.Id,
+                    ScheduleDate = entry.ScheduleDate,
                     SubmissionDate = entry.SubmissionDate,
                     Success = entry.Success,
                     Protocol = entry.Protocol,
@@ -2512,7 +2614,9 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
     private void ShowResponse(ScheduleLogRow row)
     {
         // A failure with no HTTP response (e.g. no connection) has only the error text.
-        var text = !string.IsNullOrWhiteSpace(row.ResponseRawJson) ? row.ResponseRawJson : row.ErrorMessage;
+        var text = row.IsPending
+            ? Tr.Loc["Vm.⏳ Pending — generated from schedule; submit from Overtime page"]
+            : !string.IsNullOrWhiteSpace(row.ResponseRawJson) ? row.ResponseRawJson : row.ErrorMessage;
         if (string.IsNullOrWhiteSpace(text))
         { LogStatus = Loc["Vm.No stored Ergani response for this entry."]; return; }
 
@@ -2565,7 +2669,7 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
             var days   = await LoadScopeDaysAsync(SelectedEmployee.Id, picked);
 
             StatusMessage = Loc["Vm.Detecting overtime and submitting…"];
-            var result = await _scheduleSubmitter.SubmitOvertimeFromScheduleAsync(companyId, days, SelectedOvertimeJustification.ToString());
+            var result = await _scheduleSubmitter.SubmitOvertimeFromScheduleAsync(companyId, days, ErganiManager.Data.Entities.OvertimeJustification.ExceptionalWorkload.ToString());
 
             if (result.Days.Count == 0)
             {
