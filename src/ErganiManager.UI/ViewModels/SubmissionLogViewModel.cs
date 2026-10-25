@@ -456,43 +456,24 @@ public partial class SubmissionLogViewModel
             await using var db =
                 new AppDbContext(_connectionState.GetDbOptions());
 
-            /*
-             * DatePicker gives us DateTimeOffset?.
-             *
-             * We only want the calendar date selected by the user.
-             * Do NOT convert this to UTC.
-             */
-            var fromDate =
-                (FilterFromDate ?? DateTimeOffset.Now).Date;
+            // The date pickers represent local calendar dates, while SubmissionDate
+            // is stored in UTC. Convert each local midnight boundary to UTC before
+            // querying; comparing local midnight directly with UTC timestamps hides
+            // submissions around the start/end of the day.
+            var fromLocalDate = (FilterFromDate ?? DateTimeOffset.Now).Date;
+            var toLocalDate = (FilterToDate ?? DateTimeOffset.Now).Date;
 
-            var toDate =
-                (FilterToDate ?? DateTimeOffset.Now).Date;
+            if (toLocalDate < fromLocalDate)
+                toLocalDate = fromLocalDate;
 
-            /*
-             * If the dates are reversed, use the same day as a
-             * safe fallback rather than producing an empty result.
-             */
-            if (toDate < fromDate)
-            {
-                toDate = fromDate;
-            }
+            var fromDateUtc = new DateTimeOffset(
+                fromLocalDate,
+                TimeZoneInfo.Local.GetUtcOffset(fromLocalDate)).UtcDateTime;
 
-            /*
-             * End date is exclusive.
-             *
-             * Example:
-             *
-             * From = 01/10/2026
-             * To   = 01/10/2026
-             *
-             * SQL range:
-             *
-             * >= 01/10/2026 00:00:00
-             * <  02/10/2026 00:00:00
-             *
-             * This includes the complete selected day.
-             */
-            var toDateExclusive = toDate.AddDays(1);
+            var toLocalDateExclusive = toLocalDate.AddDays(1);
+            var toDateExclusiveUtc = new DateTimeOffset(
+                toLocalDateExclusive,
+                TimeZoneInfo.Local.GetUtcOffset(toLocalDateExclusive)).UtcDateTime;
 
             var employees = await db.Employees
                 .Where(e => e.CompanyId == companyId)
@@ -507,8 +488,8 @@ public partial class SubmissionLogViewModel
             var query = db.ApiSubmissionLogs
                 .Where(l =>
                     l.CompanyId == companyId &&
-                    l.SubmissionDate >= fromDate &&
-                    l.SubmissionDate < toDateExclusive);
+                    l.SubmissionDate >= fromDateUtc &&
+                    l.SubmissionDate < toDateExclusiveUtc);
 
             if (FilterFailuresOnly)
             {
@@ -517,6 +498,7 @@ public partial class SubmissionLogViewModel
 
             var results = await query
                 .OrderByDescending(l => l.SubmissionDate)
+                .ThenByDescending(l => l.Id)
                 .Take(500)
                 .ToListAsync();
 
