@@ -552,6 +552,8 @@ public static class L
     public const string Employee2 = nameof(Employee2);
     public const string Log = nameof(Log);
     public const string Holidays = nameof(Holidays);
+    public const string OvertimeLog = nameof(OvertimeLog);
+    public const string HolidaysLog = nameof(HolidaysLog);
     public const string CloneTo = nameof(CloneTo);
     public const string BulkApply = nameof(BulkApply);
     public const string ImportHistory = nameof(ImportHistory);
