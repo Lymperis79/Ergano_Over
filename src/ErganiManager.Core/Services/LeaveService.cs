@@ -125,6 +125,45 @@ public class LeaveService : ILeaveService
         await db.SaveChangesAsync();
     }
 
+    public async Task<bool> UpdateUnsentAsync(int companyId, LeaveDto dto)
+    {
+        await using var db = OpenDb();
+        var entity = await db.Leaves
+            .Include(l => l.Employee)
+            .FirstOrDefaultAsync(l => l.Id == dto.Id && l.Employee != null
+                                   && l.Employee.CompanyId == companyId);
+        if (entity == null || entity.SubmittedToErgani) return false;
+
+        var type = LeaveTypes.Find(dto.LeaveTypeCode)
+            ?? throw new InvalidOperationException(ErganiManager.Data.UiText.T("Select a holiday type."));
+        if (type.IsHourly)
+        {
+            if (!dto.StartTime.HasValue || !dto.EndTime.HasValue)
+                throw new InvalidOperationException(ErganiManager.Data.UiText.T("This holiday type is hourly — enter the start and end time."));
+            if (dto.EndTime <= dto.StartTime)
+                throw new InvalidOperationException(ErganiManager.Data.UiText.T("The end time must be after the start time."));
+        }
+
+        var duplicate = await db.Leaves.AnyAsync(l => l.Id != entity.Id
+            && l.EmployeeId == entity.EmployeeId && l.LeaveDate == dto.LeaveDate
+            && l.LeaveTypeCode == type.Code
+            && l.StartTime == (type.IsHourly ? dto.StartTime : null)
+            && l.EndTime == (type.IsHourly ? dto.EndTime : null));
+        if (duplicate)
+            throw new InvalidOperationException(ErganiManager.Data.UiText.T("Another holiday already exists for this employee and date."));
+
+        entity.BranchId = dto.BranchId;
+        entity.LeaveDate = dto.LeaveDate;
+        entity.LeaveTypeCode = type.Code;
+        entity.StartTime = type.IsHourly ? dto.StartTime : null;
+        entity.EndTime = type.IsHourly ? dto.EndTime : null;
+        entity.ReferenceYear = dto.ReferenceYear;
+        entity.EntitledDays = dto.EntitledDays;
+        entity.Comments = string.IsNullOrWhiteSpace(dto.Comments) ? null : dto.Comments.Trim();
+        await db.SaveChangesAsync();
+        return true;
+    }
+
     public async Task<bool> DeleteUnsentAsync(int id)
     {
         await using var db = OpenDb();
