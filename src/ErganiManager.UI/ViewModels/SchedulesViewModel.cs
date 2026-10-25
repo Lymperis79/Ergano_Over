@@ -2491,7 +2491,7 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
             }
 
             HasLogRows = LogRows.Count > 0;
-            LogTitle = string.Format(Loc["Vm.📜 {0} — {1}"], displayName, SelectedEmployee.FullName);
+            LogTitle = $"{displayName} — {SelectedEmployee.FullName}";
             LogEmptyText = Loc["Vm.No matching submission history for this employee."];
             LogStatus = HasLogRows
                 ? string.Format(Loc["Vm.{0} submission(s), newest first."], LogRows.Count)
@@ -2535,7 +2535,7 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
             // Keep batch filenames short even when many employees were included.
             var who      = row.IsBatch ? "batch" : SelectedEmployee?.FullName ?? "employee";
             var safeName = string.Join("_", who.Split(Path.GetInvalidFileNameChars(), StringSplitOptions.RemoveEmptyEntries));
-            var day      = row.ScheduleDate?.ToString("yyyyMMdd") ?? "batch";
+            var day      = (row.ScheduleDate ?? DateOnly.FromDateTime(row.SubmissionDate.ToLocalTime())).ToString("yyyyMMdd");
             var kind = row.SubmissionType switch
             {
                 "Overtime" => "Overtime",
