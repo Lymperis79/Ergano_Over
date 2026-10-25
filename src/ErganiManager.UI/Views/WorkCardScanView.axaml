@@ -188,7 +188,7 @@
 
         <!-- ── Retry dialog — shown when submission fails ── -->
         <Border IsVisible="{Binding IsRetryDialogOpen}"
-                Background="#BB000000" ZIndex="99">
+                Background="#BB000000" Panel.ZIndex="99">
             <Border Background="{DynamicResource PanelBrush}" CornerRadius="12" Padding="24"
                     Width="440" VerticalAlignment="Center" HorizontalAlignment="Center">
                 <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto">
