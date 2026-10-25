@@ -211,6 +211,8 @@ public static class GreekStrings
         [L.FailuresOnly] = "Μόνο αποτυχίες",
         [L.RequestPayload] = "Δεδομένα Αιτήματος",
         [L.Response] = "Απάντηση",
+        [L.AllEmployees] = "Όλοι οι εργαζόμενοι",
+        [L.DownloadPdf] = "Λήψη PDF",
 
         // ── Status ────────────────────────────────────────────
         [L.Submitted] = "✅ Υποβλήθηκε",
