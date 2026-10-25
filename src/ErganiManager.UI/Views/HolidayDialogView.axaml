@@ -80,6 +80,7 @@
                     </Grid>
 
                     <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8">
+                        <Button Content="{Binding Loc[CancelEdit]}" Command="{Binding CancelEditCommand}" IsVisible="{Binding IsEditingExisting}" />
                         <Button Content="{Binding Loc[Save2]}" Command="{Binding SaveCommand}" />
                         <Button Content="{Binding Loc[SaveSubmit]}" Command="{Binding SaveAndSubmitCommand}" Classes="accent" />
                     </StackPanel>
@@ -101,7 +102,7 @@
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate x:DataType="vm:HolidayRow">
                                         <Border Background="{DynamicResource HoverBrush}" CornerRadius="6" Padding="10,6" Margin="0,0,0,4">
-                                            <Grid ColumnDefinitions="Auto,92,*,100,230,Auto,Auto,Auto" ColumnSpacing="10">
+                                            <Grid ColumnDefinitions="Auto,92,*,100,230,Auto,Auto,Auto,Auto" ColumnSpacing="10">
                                                 <TextBlock Grid.Column="0" Text="{Binding StatusIcon}" VerticalAlignment="Center" />
                                                 <TextBlock Grid.Column="1" Text="{Binding DateText}" FontWeight="SemiBold"
                                                            VerticalAlignment="Center" />
@@ -118,7 +119,10 @@
                                                 <Button Grid.Column="6" Content="{Binding $parent[UserControl].((vm:HolidayDialogViewModel)DataContext).Loc[PdfLabel]}"
                                                         Tag="{Binding}" Click="OnPdfClick"
                                                         IsEnabled="{Binding HasProtocol}" />
-                                                <Button Grid.Column="7" Content="🗑"
+                                                <Button Grid.Column="7" Content="{Binding $parent[UserControl].((vm:HolidayDialogViewModel)DataContext).Loc[Edit]}"
+                                                        Tag="{Binding}" Click="OnEditClick"
+                                                        IsVisible="{Binding IsUnsent}" />
+                                                <Button Grid.Column="8" Content="🗑"
                                                         Tag="{Binding}" Click="OnDeleteClick"
                                                         IsVisible="{Binding IsUnsent}" Foreground="#EF9A9A" />
                                             </Grid>
