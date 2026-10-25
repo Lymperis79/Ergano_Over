@@ -197,7 +197,7 @@
             </StackPanel>
         </ScrollViewer>
 
-        <Border IsVisible="{Binding IsConfirmOpen}" Background="#CC000000" ZIndex="50">
+        <Border IsVisible="{Binding IsConfirmOpen}" Background="#CC000000" Panel.ZIndex="50">
             <Border Background="{DynamicResource PanelBrush}" CornerRadius="10" Padding="24" Width="460" HorizontalAlignment="Center" VerticalAlignment="Center">
                 <StackPanel Spacing="16">
                     <Button Content="✕" Command="{Binding CancelConfirmCommand}" ToolTip.Tip="Close"
