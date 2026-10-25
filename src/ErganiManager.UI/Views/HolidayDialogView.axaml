@@ -20,7 +20,7 @@
 
                     <!-- Form: scroll when the available popup height is limited -->
                     <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
-                    <Grid ColumnDefinitions="*,*,*" ColumnDefinitions="*,*,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto"
+                    <Grid ColumnDefinitions="*,*,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto"
                           ColumnSpacing="12" RowSpacing="8">
 
                         <StackPanel Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2" Spacing="4">
