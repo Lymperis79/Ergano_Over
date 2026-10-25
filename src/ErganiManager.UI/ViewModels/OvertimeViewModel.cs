@@ -205,8 +205,8 @@ public partial class OvertimeViewModel : ViewModelBase, IAdminSectionViewModel
             }
 
             IsCreating = false;
-            StatusMessage = string.Format(Loc["Vm.Created {0} overtime record(s)."], created);
             await LoadRecordsAsync();
+            StatusMessage = string.Format(Loc["Vm.Created {0} overtime record(s)."], created);
         }
         catch (Exception ex) { StatusMessage = $"❌ {ex.Message}"; }
     }
