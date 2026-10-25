@@ -253,6 +253,9 @@
                     Width="620" MaxHeight="620"
                     VerticalAlignment="Center" HorizontalAlignment="Center">
                 <Grid RowDefinitions="Auto,*,Auto" RowSpacing="12">
+                    <Button Content="✕" Command="{Binding CancelImportCommand}" ToolTip.Tip="Close"
+                            HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,-14,-14,0"
+                            Padding="8,4" ZIndex="20" />
                     <TextBlock Grid.Row="0"
                                Text="{Binding Loc[ImportDeclaredScheduleFromErgani]}"
                                FontSize="18" FontWeight="Bold" />
@@ -296,6 +299,9 @@
                     Width="680" MaxHeight="560"
                     VerticalAlignment="Center" HorizontalAlignment="Center">
                 <Grid RowDefinitions="Auto,*,Auto" RowSpacing="12">
+                    <Button Content="✕" Command="{Binding CloseImportHistoryCommand}" ToolTip.Tip="Close"
+                            HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,-14,-14,0"
+                            Padding="8,4" ZIndex="20" />
                     <TextBlock Grid.Row="0" Text="{Binding Loc[ErganiImportHistory]}"
                                FontSize="18" FontWeight="Bold" />
                     <ScrollViewer Grid.Row="1">
@@ -331,6 +337,9 @@
                     Width="620" MaxHeight="620"
                     VerticalAlignment="Center" HorizontalAlignment="Center">
                 <Grid RowDefinitions="Auto,*,Auto" RowSpacing="12">
+                    <Button Content="✕" Command="{Binding CancelImportCommand}" ToolTip.Tip="Close"
+                            HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,-14,-14,0"
+                            Padding="8,4" ZIndex="20" />
                     <TextBlock Grid.Row="0" Text="{Binding Loc[ExistingDataFound]}"
                                FontSize="18" FontWeight="Bold" Foreground="#FFB74D" />
                     <ScrollViewer Grid.Row="1">
@@ -356,6 +365,9 @@
                     Width="460"
                     VerticalAlignment="Center" HorizontalAlignment="Center">
                 <StackPanel Spacing="16">
+                    <Button Content="✕" Command="{Binding DismissPortalImportCommand}" ToolTip.Tip="Close"
+                            HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,-14,-14,0"
+                            Padding="8,4" ZIndex="20" />
                     <TextBlock Text="{Binding Loc[ImportFromErgani]}"
                                FontSize="18" FontWeight="Bold" />
                     <TextBlock Text="{Binding PortalImportPromptText}"
@@ -380,6 +392,9 @@
                     Width="500" MaxHeight="520"
                     VerticalAlignment="Center" HorizontalAlignment="Center">
                 <Grid RowDefinitions="*,Auto">
+                    <Button Content="✕" Command="{Binding CloseDayDialogCommand}" ToolTip.Tip="Close"
+                            HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,-14,-14,0"
+                            Padding="8,4" ZIndex="20" />
                     <ScrollViewer Grid.Row="0">
                         <StackPanel Spacing="10">
                             <TextBlock Text="{Binding EditingDate, StringFormat='Schedule for {0:dd/MM/yyyy}'}"
@@ -471,6 +486,9 @@
             <Border Background="{DynamicResource PanelBrush}" CornerRadius="12" Padding="24"
                     Width="420" VerticalAlignment="Center" HorizontalAlignment="Center">
                 <Grid RowDefinitions="*,Auto">
+                    <Button Content="✕" Command="{Binding CloseBulkDialogCommand}" ToolTip.Tip="Close"
+                            HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,-14,-14,0"
+                            Padding="8,4" ZIndex="20" />
                     <StackPanel Grid.Row="0" Spacing="10">
                         <TextBlock Text="{Binding Loc[BulkApplySchedule]}" FontSize="16" FontWeight="Bold" />
                         <TextBlock Text="{Binding SelectionLabel}" FontSize="12" Foreground="Gray" />
@@ -544,6 +562,9 @@
                     Width="460" Height="620"
                     VerticalAlignment="Center" HorizontalAlignment="Center">
                 <Grid RowDefinitions="Auto,Auto,Auto,*,Auto">
+                    <Button Content="✕" Command="{Binding CloseCloneDialogCommand}" ToolTip.Tip="Close"
+                            HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,-14,-14,0"
+                            Padding="8,4" ZIndex="20" />
                     <TextBlock Grid.Row="0" Text="{Binding Loc[CloneScheduleToEmployees]}"
                                FontSize="16" FontWeight="Bold" Margin="0,0,0,8" />
                     <StackPanel Grid.Row="1" Spacing="4" Margin="0,0,0,10">
@@ -601,6 +622,9 @@
                     Width="500" MaxHeight="620"
                     VerticalAlignment="Center" HorizontalAlignment="Center">
                 <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto" RowSpacing="10">
+                    <Button Content="✕" Command="{Binding CloseUndoCloneDialogCommand}" ToolTip.Tip="Close"
+                            HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,-14,-14,0"
+                            Padding="8,4" ZIndex="20" />
                     <TextBlock Grid.Row="0" Text="{Binding Loc[UndoLastClone]}"
                                FontSize="16" FontWeight="Bold" />
 
@@ -676,6 +700,9 @@
                     Width="900" Height="560"
                     VerticalAlignment="Center" HorizontalAlignment="Center">
                 <Grid RowDefinitions="Auto,*,Auto,Auto" RowSpacing="10">
+                    <Button Content="✕" Command="{Binding CloseLogCommand}" ToolTip.Tip="Close"
+                            HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,-14,-14,0"
+                            Padding="8,4" ZIndex="20" />
                     <TextBlock Grid.Row="0" Text="{Binding LogTitle}" FontSize="17" FontWeight="Bold" />
 
                     <Panel Grid.Row="1">
@@ -726,6 +753,9 @@
                     Width="800" Height="560"
                     VerticalAlignment="Center" HorizontalAlignment="Center">
                 <Grid RowDefinitions="Auto,*,Auto" RowSpacing="12">
+                    <Button Content="✕" Command="{Binding CloseResponseCommand}" ToolTip.Tip="Close"
+                            HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,-14,-14,0"
+                            Padding="8,4" ZIndex="20" />
                     <TextBlock Grid.Row="0" Text="{Binding ResponseTitle}" FontSize="17" FontWeight="Bold" />
                     <TextBox Grid.Row="1" Text="{Binding ResponseText}" IsReadOnly="True"
                              AcceptsReturn="True" TextWrapping="NoWrap" FontFamily="Consolas"
@@ -744,6 +774,9 @@
             <Border Background="{DynamicResource PanelBrush}" CornerRadius="12" Padding="24"
                     Width="520" VerticalAlignment="Center" HorizontalAlignment="Center">
                 <StackPanel Spacing="16">
+                    <Button Content="✕" Command="{Binding CancelBulkSubmitSchedulesCommand}" ToolTip.Tip="Close"
+                            HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,-14,-14,0"
+                            Padding="8,4" ZIndex="20" />
                     <TextBlock Text="{Binding Loc[ConfirmBulkScheduleSubmission]}" FontSize="16" FontWeight="Bold" />
                     <TextBlock Text="{Binding BulkSubmitSummary}" TextWrapping="Wrap" />
                     <TextBlock Text="{Binding Loc[BulkSubmissionSafetyNote]}" TextWrapping="Wrap" Foreground="Gray" FontSize="12" />
@@ -763,6 +796,9 @@
             <Border Background="{DynamicResource PanelBrush}" CornerRadius="12" Padding="24"
                     Width="440" VerticalAlignment="Center" HorizontalAlignment="Center">
                 <StackPanel Spacing="16">
+                    <Button Content="✕" Command="{Binding CancelDeleteCommand}" ToolTip.Tip="Close"
+                            HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,-14,-14,0"
+                            Padding="8,4" ZIndex="20" />
                     <TextBlock Text="{Binding Loc[DeleteSchedule]}" FontSize="16" FontWeight="Bold" />
                     <TextBlock Text="{Binding ConfirmDeleteMessage}" TextWrapping="Wrap" />
                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8">
