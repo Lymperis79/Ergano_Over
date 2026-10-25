@@ -4,10 +4,12 @@ using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using System.Text.Json;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using ErganiManager.Core.Interfaces;
 using ErganiManager.Core.Models;
+using ErganiManager.Data;
 using ErganiManager.UI.Services;
 
 namespace ErganiManager.UI.ViewModels;
@@ -71,14 +73,25 @@ public class ScheduleLogRow
     public string? ErrorMessage { get; init; }
     public int? HttpStatusCode { get; init; }
     public string? ResponseRawJson { get; init; }
+    public string EmployeeNames { get; init; } = string.Empty;
+    public bool IsBatch { get; init; }
 
     public string StatusIcon => Success ? "✅" : "❌";
     public string ScheduleDateText => ScheduleDate?.ToString("dd/MM/yyyy") ?? "—";
     public string SubmittedAtText => SubmissionDate.ToLocalTime().ToString("dd/MM/yyyy HH:mm:ss");
     public bool HasProtocol => !string.IsNullOrWhiteSpace(Protocol);
-    public string Summary => Success
-        ? (HasProtocol ? string.Format(Tr.Loc["Vm.Protocol: {0}"], Protocol) : Tr.Loc["Vm.Accepted by Ergani"])
-        : (string.IsNullOrWhiteSpace(ErrorMessage) ? Tr.Loc["Vm.Failed"] : ErrorMessage!);
+    public string Summary
+    {
+        get
+        {
+            var result = Success
+                ? (HasProtocol ? string.Format(Tr.Loc["Vm.Protocol: {0}"], Protocol) : Tr.Loc["Vm.Accepted by Ergani"])
+                : (string.IsNullOrWhiteSpace(ErrorMessage) ? Tr.Loc["Vm.Failed"] : ErrorMessage!);
+            return IsBatch && !string.IsNullOrWhiteSpace(EmployeeNames)
+                ? $"{EmployeeNames} · {result}"
+                : result;
+        }
+    }
 }
 
 public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
@@ -88,6 +101,7 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
     private readonly IBranchService     _branchService;
     private readonly IScheduleSubmitter _scheduleSubmitter;
     private readonly IErganiDocumentService _documentService;
+    private readonly IConnectionStateService _connectionState;
     private readonly IRoundingSettingsService _roundingSettings;
     private readonly ILeaveService _leaveService;
     private readonly IOvertimeService _overtimeService;
@@ -305,7 +319,8 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
         IScheduleSubmitter scheduleSubmitter, IErganiDocumentService documentService,
         ILeaveService leaveService, ILeaveSubmitter leaveSubmitter,
         IErganiPortalService portalService, IRoundingSettingsService roundingSettings,
-        IOvertimeService overtimeService, IImportLogService importLogService)
+        IOvertimeService overtimeService, IImportLogService importLogService,
+        IConnectionStateService connectionState)
     {
         _overtimeService = overtimeService;
         _importLogService = importLogService;
@@ -324,6 +339,7 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
         _branchService     = branchService;
         _scheduleSubmitter = scheduleSubmitter;
         _documentService   = documentService;
+        _connectionState   = connectionState;
         _roundingSettings  = roundingSettings;
         LoadAvailableShifts();
     }
@@ -2301,6 +2317,19 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
         catch (Exception ex) { StatusMessage = $"❌ {ex.Message}"; }
     }
 
+    private static List<int> ParseEmployeeIds(string? json)
+    {
+        if (string.IsNullOrWhiteSpace(json)) return new List<int>();
+        try
+        {
+            return JsonSerializer.Deserialize<List<int>>(json)?.Distinct().ToList() ?? new List<int>();
+        }
+        catch
+        {
+            return new List<int>();
+        }
+    }
+
     [RelayCommand]
     private async Task OpenLogAsync()
     {
@@ -2323,6 +2352,64 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
                     HttpStatusCode  = e.HttpStatusCode,
                     ResponseRawJson = e.ResponseRawJson
                 });
+
+            // Include company-wide DailySchedule API batches that contain the selected
+            // employee. These are not represented by the per-employee schedule history.
+            await using (var db = new AppDbContext(_connectionState.GetDbOptions()))
+            {
+                var batchLogs = await db.ApiSubmissionLogs
+                    .Where(l => l.CompanyId == companyId && l.SubmissionType == "DailySchedule")
+                    .OrderByDescending(l => l.SubmissionDate)
+                    .ThenByDescending(l => l.Id)
+                    .Take(500)
+                    .ToListAsync();
+
+                var employeeById = AvailableEmployees.ToDictionary(e => e.Id);
+                foreach (var log in batchLogs)
+                {
+                    var ids = ParseEmployeeIds(log.EmployeeIdsJson);
+                    if (ids.Count == 0 && !string.IsNullOrWhiteSpace(log.RequestPayloadJson))
+                    {
+                        ids = AvailableEmployees
+                            .Where(e => !string.IsNullOrWhiteSpace(e.TaxId) &&
+                                log.RequestPayloadJson.Contains(e.TaxId, StringComparison.Ordinal))
+                            .Select(e => e.Id)
+                            .Distinct()
+                            .ToList();
+                    }
+
+                    // This popup is already scoped to one employee. Show only multi-employee
+                    // submissions that included that employee, not ordinary single submissions.
+                    if (ids.Count < 2 || !ids.Contains(SelectedEmployee.Id))
+                        continue;
+
+                    var names = ids
+                        .Where(employeeById.ContainsKey)
+                        .Select(id => employeeById[id].FullName)
+                        .Distinct()
+                        .ToList();
+
+                    LogRows.Add(new ScheduleLogRow
+                    {
+                        Id = -log.Id,
+                        SubmissionDate = log.SubmissionDate,
+                        Success = log.Success,
+                        Protocol = log.Protocol,
+                        ErrorMessage = log.ErrorMessage,
+                        HttpStatusCode = log.HttpStatusCode,
+                        ResponseRawJson = log.ResponseRawJson,
+                        EmployeeNames = string.Join(", ", names),
+                        IsBatch = true
+                    });
+                }
+            }
+
+            // Merge per-employee history and batch history into one newest-first list.
+            var orderedRows = LogRows.OrderByDescending(r => r.SubmissionDate)
+                .ThenByDescending(r => r.Id).ToList();
+            LogRows.Clear();
+            foreach (var row in orderedRows)
+                LogRows.Add(row);
 
             HasLogRows = LogRows.Count > 0;
             LogTitle   = string.Format(Loc["Vm.📜 Schedule log — {0}"], SelectedEmployee.FullName);
@@ -2363,9 +2450,12 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
                 companyId, "Documents/WTODaily", row.Protocol!, submittedDate);
 
             var folder   = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
-            var who      = SelectedEmployee?.FullName ?? "employee";
+            var who      = row.IsBatch
+                ? "batch_" + string.Join("_", (row.EmployeeNames.Length > 0 ? row.EmployeeNames : "employees")
+                    .Split(Path.GetInvalidFileNameChars(), StringSplitOptions.RemoveEmptyEntries))
+                : SelectedEmployee?.FullName ?? "employee";
             var safeName = string.Join("_", who.Split(Path.GetInvalidFileNameChars(), StringSplitOptions.RemoveEmptyEntries));
-            var day      = row.ScheduleDate?.ToString("yyyyMMdd") ?? "schedule";
+            var day      = row.ScheduleDate?.ToString("yyyyMMdd") ?? "batch";
             var path     = Path.Combine(folder, $"Ergani_Schedule_{safeName}_{day}_{row.Protocol}.pdf");
 
             await File.WriteAllBytesAsync(path, bytes);
