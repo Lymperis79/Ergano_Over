@@ -771,6 +771,8 @@ public partial class AdminShellViewModel : ViewModelBase
         // Cached sections keep their view models; refresh overtime records on every revisit.
         if (wasCached && section == AdminSection.Overtime && vm is OvertimeViewModel overtimeVm)
             _ = overtimeVm.RefreshAsync();
+        else if (wasCached && section == AdminSection.Schedules && vm is SchedulesViewModel schedulesVm)
+            _ = schedulesVm.RefreshAsync();
     }
 }
 
