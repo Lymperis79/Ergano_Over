@@ -12,6 +12,12 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ErganiManager.ErganiApi", "
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ErganiManager.UI", "src\ErganiManager.UI\ErganiManager.UI.csproj", "{A1B2C3D4-0001-4000-8000-000000000005}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ErganiManager.Licensing", "src\ErganiManager.Licensing\ErganiManager.Licensing.csproj", "{A1B2C3D4-0001-4000-8000-000000000006}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ErganiManager.LicenseTool", "src\ErganiManager.LicenseTool\ErganiManager.LicenseTool.csproj", "{A1B2C3D4-0001-4000-8000-000000000007}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ErganiManager.LicenseGenerator", "src\ErganiManager.LicenseGenerator\ErganiManager.LicenseGenerator.csproj", "{A1B2C3D4-0001-4000-8000-000000000008}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -38,6 +44,18 @@ Global
 		{A1B2C3D4-0001-4000-8000-000000000005}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{A1B2C3D4-0001-4000-8000-000000000005}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{A1B2C3D4-0001-4000-8000-000000000005}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A1B2C3D4-0001-4000-8000-000000000006}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A1B2C3D4-0001-4000-8000-000000000006}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A1B2C3D4-0001-4000-8000-000000000006}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A1B2C3D4-0001-4000-8000-000000000006}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A1B2C3D4-0001-4000-8000-000000000007}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A1B2C3D4-0001-4000-8000-000000000007}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A1B2C3D4-0001-4000-8000-000000000007}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A1B2C3D4-0001-4000-8000-000000000007}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A1B2C3D4-0001-4000-8000-000000000008}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A1B2C3D4-0001-4000-8000-000000000008}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A1B2C3D4-0001-4000-8000-000000000008}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A1B2C3D4-0001-4000-8000-000000000008}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
