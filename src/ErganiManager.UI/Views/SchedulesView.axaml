@@ -51,7 +51,7 @@
 
             <!-- Overtime reason used when schedule submission generates overtime records -->
             <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                <TextBlock Text="{Binding Loc[Justification]}" VerticalAlignment="Center" FontWeight="SemiBold" />
+                <TextBlock Text="{Binding Loc[OvertimeJustification]}" VerticalAlignment="Center" FontWeight="SemiBold" />
                 <ComboBox ItemsSource="{Binding AvailableOvertimeJustifications}"
                           SelectedItem="{Binding SelectedOvertimeJustification, Mode=TwoWay}"
                           Width="260" />
