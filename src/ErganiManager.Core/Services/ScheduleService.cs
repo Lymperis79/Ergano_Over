@@ -437,8 +437,8 @@ public class ScheduleService : IScheduleService
         db.Schedules.RemoveRange(replaced);
 
         // Overtime (hours over 8) is derived from the end time. Unsent overtime records of the destination
-        // days would become stale after the copy, so they are removed (and saved for Undo); the overtime for
-        // the new end times is created again when the days are sent. Records already sent to Ergani stay.
+        // days are replaced (and saved for Undo); matching pending-log rows are replaced too. Records already
+        // sent to Ergani stay.
         var replacedOvertime = await db.Overtimes
             .Where(o => targetIds.Contains(o.EmployeeId) && dateSet.Contains(o.OvertimeDate)
                         && !o.IsCancelled && !o.SubmittedToErgani)
@@ -761,6 +761,23 @@ public class ScheduleService : IScheduleService
 
         db.Schedules.RemoveRange(current);
         db.Overtimes.RemoveRange(newOvertime);
+
+        if (newOvertime.Count > 0)
+        {
+            var newOvertimeIds = newOvertime.Select(o => o.Id).ToHashSet();
+            var pendingLogs = await db.ApiSubmissionLogs
+                .Where(l => l.CompanyId == batch.CompanyId &&
+                            l.SubmissionType == "Overtime" &&
+                            l.ErrorMessage == "PENDING_OVERTIME")
+                .ToListAsync();
+            foreach (var log in pendingLogs)
+            {
+                if (TryGetPendingOvertimeId(log.RequestPayloadJson, out var overtimeId) &&
+                    newOvertimeIds.Contains(overtimeId))
+                    db.ApiSubmissionLogs.Remove(log);
+            }
+        }
+
         db.Leaves.RemoveRange(newLeaves);
         foreach (var l in leaveSnapshot)
         {
