@@ -2429,7 +2429,7 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
             overtime += " " + string.Format(Loc["Vm. Overtime (hours over 8): {0} sent"], result.OvertimeSubmitted);
             if (result.OvertimeFailed > 0)
             {
-                var bad = result.Days.First(d => d.OvertimeFrom.HasValue && !d.OvertimeSubmitted && !d.Success);
+                var bad = result.Days.First(d => d.OvertimeFrom.HasValue && !d.OvertimeSubmitted && !string.IsNullOrWhiteSpace(d.OvertimeError));
                 overtime += string.Format(Loc["Vm., {0} NOT sent — {1}: {2} (saved on the Overtime page)"], result.OvertimeFailed, bad.Date.ToString("dd/MM"), bad.OvertimeError);
             }
             overtime += ".";
