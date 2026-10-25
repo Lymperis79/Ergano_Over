@@ -10,6 +10,7 @@ using CommunityToolkit.Mvvm.Input;
 using ErganiManager.Core.Interfaces;
 using ErganiManager.Core.Models;
 using ErganiManager.Data;
+using Microsoft.EntityFrameworkCore;
 using ErganiManager.UI.Services;
 
 namespace ErganiManager.UI.ViewModels;
