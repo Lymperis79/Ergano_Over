@@ -198,6 +198,7 @@ public static class EnglishStrings
         [L.OvertimeJustification] = "Overtime justification",
         [L.ScheduleOvertimeWillBePending] = "This overtime will be saved as pending. Submit it from the Overtime page when ready.",
         ["Vm.⏳ Pending — generated from schedule; submit from Overtime page"] = "Pending — generated from schedule; submit from the Overtime page",
+        ["Vm.Overtime saved as pending: {0} record(s). Submit them from the Overtime page."] = "Overtime saved as pending: {0} record(s). Submit them from the Overtime page.",
         [L.AseeApproval] = "ASEE Approval (optional)",
         [L.Cancelled] = "Cancelled",
         [L.CancelOvertime] = "Cancel OT",
