@@ -7,7 +7,11 @@ public class ApiSubmissionLog
     public int Id { get; set; }
 
     public int CompanyId { get; set; }
+    /// <summary>Single employee for legacy/single-employee entries; null for multi-employee batches.</summary>
     public int? EmployeeId { get; set; }
+
+    /// <summary>JSON array of every employee ID included in this submission batch.</summary>
+    public string? EmployeeIdsJson { get; set; }
 
     [Required, MaxLength(50)]
     public string SubmissionType { get; set; } = string.Empty; // WorkCard, DailySchedule, Overtime, etc.
