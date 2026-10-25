@@ -120,6 +120,10 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
 
     // ── Employee / navigation ─────────────────────────────────────────────────
     public ObservableCollection<EmployeeDto> AvailableEmployees { get; } = new();
+    public ObservableCollection<ErganiManager.Data.Entities.OvertimeJustification> AvailableOvertimeJustifications { get; } =
+        new(Enum.GetValues<ErganiManager.Data.Entities.OvertimeJustification>());
+    [ObservableProperty] private ErganiManager.Data.Entities.OvertimeJustification _selectedOvertimeJustification =
+        ErganiManager.Data.Entities.OvertimeJustification.ExceptionalWorkload;
     [ObservableProperty] private EmployeeDto? _selectedEmployee;
 
     [ObservableProperty] private int _year  = DateTime.Today.Year;
@@ -2070,7 +2074,7 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
         {
             StatusMessage = string.Format(
                 Loc["Vm.Sending the overtime of {0} day(s) to Ergani, all employees in one request per branch…"], days.Count);
-            var result = await _scheduleSubmitter.SubmitOvertimeFromScheduleAsync(companyId, days);
+            var result = await _scheduleSubmitter.SubmitOvertimeFromScheduleAsync(companyId, days, SelectedOvertimeJustification.ToString());
 
             var protocol = result.Days.Select(d => d.OvertimeProtocol).FirstOrDefault(p => !string.IsNullOrEmpty(p));
             var message = string.Format(
@@ -2171,7 +2175,7 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
 
                 try
                 {
-                    var result = await _scheduleSubmitter.SubmitScheduleDaysAsync(companyId, allDays);
+                    var result = await _scheduleSubmitter.SubmitScheduleDaysAsync(companyId, allDays, SelectedOvertimeJustification.ToString());
                     submitted += result.Submitted;
                     failed += result.Error != null ? allDays.Count : result.Failed;
                     overtimeSubmitted += result.OvertimeSubmitted;
@@ -2274,7 +2278,7 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
 
         StatusMessage = string.Format(Loc["Vm.Submitting {0} day(s) to Ergani…"], toSubmit.Count);
 
-        var result = await _scheduleSubmitter.SubmitScheduleDaysAsync(companyId, toSubmit);
+        var result = await _scheduleSubmitter.SubmitScheduleDaysAsync(companyId, toSubmit, SelectedOvertimeJustification.ToString());
 
         // Days over 8 hours also produce an overtime record for the extra hours.
         var overtime = string.Empty;
@@ -2561,7 +2565,7 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
             var days   = await LoadScopeDaysAsync(SelectedEmployee.Id, picked);
 
             StatusMessage = Loc["Vm.Detecting overtime and submitting…"];
-            var result = await _scheduleSubmitter.SubmitOvertimeFromScheduleAsync(companyId, days);
+            var result = await _scheduleSubmitter.SubmitOvertimeFromScheduleAsync(companyId, days, SelectedOvertimeJustification.ToString());
 
             if (result.Days.Count == 0)
             {
