@@ -37,7 +37,7 @@ public class ScheduleSubmitterService : IScheduleSubmitter
     private AppDbContext OpenDb() => new AppDbContext(_connectionState.GetDbOptions());
 
     public async Task<ScheduleSubmitResult> SubmitScheduleDaysAsync(
-        int companyId, IReadOnlyList<ScheduleDayDto> days)
+        int companyId, IReadOnlyList<ScheduleDayDto> days, string overtimeJustification = "ExceptionalWorkload")
     {
         var outcome = new ScheduleSubmitResult();
         if (days.Count == 0) return outcome;
@@ -164,7 +164,7 @@ public class ScheduleSubmitterService : IScheduleSubmitter
                 if (success && ScheduleHours.GetOvertimeRange(day.StartTime, day.EndTime) is { } range
                     && day.WorkType is AppWorkType.Office or AppWorkType.Home)
                 {
-                    if (await PrepareOvertimeAsync(db, day, range, dayResult, outcome) is int otId)
+                    if (await PrepareOvertimeAsync(db, day, range, dayResult, outcome, overtimeJustification) is int otId)
                         overtimeQueue.Add((otId, dayResult));
                 }
             }
@@ -203,7 +203,8 @@ public class ScheduleSubmitterService : IScheduleSubmitter
     /// (the day result and counters are updated in that case).</summary>
     private async Task<int?> PrepareOvertimeAsync(
         AppDbContext db, ScheduleDayDto day,
-        (TimeOnly From, TimeOnly To) range, ScheduleSubmitDayResult dayResult, ScheduleSubmitResult outcome)
+        (TimeOnly From, TimeOnly To) range, ScheduleSubmitDayResult dayResult, ScheduleSubmitResult outcome,
+        string overtimeJustification)
     {
         dayResult.OvertimeFrom = range.From;
         dayResult.OvertimeTo   = range.To;
@@ -239,7 +240,9 @@ public class ScheduleSubmitterService : IScheduleSubmitter
                     OvertimeDate         = day.ScheduleDate,
                     StartTime            = range.From,
                     EndTime              = range.To,
-                    Justification        = OvertimeJustification.ExceptionalWorkload,
+                    Justification        = Enum.TryParse<OvertimeJustification>(overtimeJustification, out var selectedJustification)
+                        ? selectedJustification
+                        : OvertimeJustification.ExceptionalWorkload,
                     WeeklyWorkdaysNumber = employee.WeeklyWorkdays,
                     CreatedAt            = DateTime.UtcNow
                 };
@@ -295,7 +298,7 @@ public class ScheduleSubmitterService : IScheduleSubmitter
     }
 
     public async Task<ScheduleSubmitResult> SubmitOvertimeFromScheduleAsync(
-        int companyId, IReadOnlyList<ScheduleDayDto> days)
+        int companyId, IReadOnlyList<ScheduleDayDto> days, string overtimeJustification = "ExceptionalWorkload")
     {
         var outcome = new ScheduleSubmitResult();
         if (days.Count == 0) return outcome;
