@@ -17,6 +17,7 @@ public static class L
     public const string Cancel          = nameof(Cancel);
     public const string Delete          = nameof(Delete);
     public const string Edit            = nameof(Edit);
+    public const string CancelEdit      = nameof(CancelEdit);
     public const string Close           = nameof(Close);
     public const string Load            = nameof(Load);
     public const string Export          = nameof(Export);
