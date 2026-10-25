@@ -484,13 +484,17 @@
                 IsVisible="{Binding IsBulkDialogOpen}"
                 Background="#BB000000" ZIndex="50">
             <Border Background="{DynamicResource PanelBrush}" CornerRadius="12" Padding="24"
-                    Width="420" VerticalAlignment="Center" HorizontalAlignment="Center">
-                <Grid RowDefinitions="*,Auto">
-                    <Button Content="✕" Command="{Binding CloseBulkDialogCommand}" ToolTip.Tip="Close"
-                            HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,-14,-14,0"
-                            Padding="8,4" />
-                    <StackPanel Grid.Row="0" Spacing="10">
-                        <TextBlock Text="{Binding Loc[BulkApplySchedule]}" FontSize="16" FontWeight="Bold" />
+                    Width="420" MaxHeight="620"
+                    VerticalAlignment="Center" HorizontalAlignment="Center">
+                <Grid RowDefinitions="Auto,*,Auto" RowSpacing="10">
+                    <Grid Grid.Row="0" ColumnDefinitions="*,Auto">
+                        <TextBlock Grid.Column="0" Text="{Binding Loc[BulkApplySchedule]}"
+                                   FontSize="16" FontWeight="Bold" VerticalAlignment="Center" />
+                        <Button Grid.Column="1" Content="✕" Command="{Binding CloseBulkDialogCommand}"
+                                ToolTip.Tip="Close" Padding="8,4" />
+                    </Grid>
+                    <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+                    <StackPanel Spacing="10">
                         <TextBlock Text="{Binding SelectionLabel}" FontSize="12" Foreground="Gray" />
 
                         <TextBlock Text="{Binding Loc[WorkType]}" FontWeight="SemiBold" />
@@ -541,8 +545,9 @@
                             </WrapPanel>
                         </StackPanel>
                     </StackPanel>
+                    </ScrollViewer>
 
-                    <Grid Grid.Row="1" ColumnDefinitions="*,*" Margin="0,12,0,0" ColumnSpacing="8">
+                    <Grid Grid.Row="2" ColumnDefinitions="*,*" Margin="0,12,0,0" ColumnSpacing="8">
                         <Button Grid.Column="0" Content="{Binding Loc[Cancel]}"
                                 Command="{Binding CloseBulkDialogCommand}"
                                 HorizontalAlignment="Stretch" />
@@ -637,16 +642,18 @@
                         </StackPanel>
                     </Border>
 
-                    <StackPanel Grid.Row="2" Spacing="6">
-                        <TextBlock Text="{Binding UndoCloneEffect}" TextWrapping="Wrap" FontSize="12"
-                                   IsVisible="{Binding !UndoCloneBlocked}" />
-                        <TextBlock Text="{Binding Loc[UndoCloneManualChangesNote]}" TextWrapping="Wrap"
-                                   FontSize="11" Foreground="Orange"
-                                   IsVisible="{Binding !UndoCloneBlocked}" />
-                        <TextBlock Text="{Binding UndoCloneBlockedText}" TextWrapping="Wrap"
-                                   FontSize="12" FontWeight="SemiBold" Foreground="OrangeRed"
-                                   IsVisible="{Binding UndoCloneBlocked}" />
-                    </StackPanel>
+                    <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto">
+                        <StackPanel Spacing="6">
+                            <TextBlock Text="{Binding UndoCloneEffect}" TextWrapping="Wrap" FontSize="12"
+                                       IsVisible="{Binding !UndoCloneBlocked}" />
+                            <TextBlock Text="{Binding Loc[UndoCloneManualChangesNote]}" TextWrapping="Wrap"
+                                       FontSize="11" Foreground="Orange"
+                                       IsVisible="{Binding !UndoCloneBlocked}" />
+                            <TextBlock Text="{Binding UndoCloneBlockedText}" TextWrapping="Wrap"
+                                       FontSize="12" FontWeight="SemiBold" Foreground="OrangeRed"
+                                       IsVisible="{Binding UndoCloneBlocked}" />
+                        </StackPanel>
+                    </ScrollViewer>
 
                     <StackPanel Grid.Row="3" Spacing="6">
                         <TextBlock Text="{Binding Loc[CloneHistory]}" FontWeight="SemiBold" />
