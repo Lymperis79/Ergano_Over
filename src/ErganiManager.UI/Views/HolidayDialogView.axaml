@@ -9,17 +9,18 @@
         <!-- ── Holidays form + list ── -->
         <Border Background="#BB000000">
             <Border Background="{DynamicResource PanelBrush}" CornerRadius="12" Padding="20"
-                    Width="920" Height="700"
+                    Width="920" MaxHeight="680"
                     VerticalAlignment="Center" HorizontalAlignment="Center">
-                <Grid RowDefinitions="Auto,Auto,Auto,Auto,*,Auto" RowSpacing="10">
+                <Grid RowDefinitions="Auto,*,Auto,Auto,*,Auto" RowSpacing="10">
                     <Button Content="✕" Command="{Binding CloseCommand}" ToolTip.Tip="Close"
                             HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,-14,-14,0"
                             Padding="8,4" />
 
                     <TextBlock Grid.Row="0" Text="{Binding Title}" FontSize="17" FontWeight="Bold" />
 
-                    <!-- Form -->
-                    <Grid Grid.Row="1" ColumnDefinitions="*,*,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto"
+                    <!-- Form: scroll when the available popup height is limited -->
+                    <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+                    <Grid ColumnDefinitions="*,*,*" ColumnDefinitions="*,*,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto"
                           ColumnSpacing="12" RowSpacing="8">
 
                         <StackPanel Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2" Spacing="4">
@@ -81,6 +82,7 @@
                             <TextBox Text="{Binding Comments}" MaxLength="200" />
                         </StackPanel>
                     </Grid>
+                    </ScrollViewer>
 
                     <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8">
                         <Button Content="{Binding Loc[CancelEdit]}" Command="{Binding CancelEditCommand}" IsVisible="{Binding IsEditingExisting}" />
