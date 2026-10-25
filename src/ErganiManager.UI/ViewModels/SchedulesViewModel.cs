@@ -515,7 +515,25 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
     private static string BuildOvertimeText(ScheduleDayDto? sched, List<OvertimeDto>? records)
     {
         if (records is { Count: > 0 })
-            return "⏱ " + string.Join(", ", records.Select(o => $"{o.StartTime:HH:mm}–{o.EndTime:HH:mm}"));
+        {
+            // Merge overlapping/adjacent overtime entries for the same day so extending
+            // 16:00–17:00 to 16:00–18:00 is displayed as one interval, not both.
+            var merged = new List<(TimeOnly From, TimeOnly To)>();
+            foreach (var record in records.OrderBy(o => o.StartTime).ThenBy(o => o.EndTime))
+            {
+                if (merged.Count == 0 || record.StartTime > merged[^1].To)
+                {
+                    merged.Add((record.StartTime, record.EndTime));
+                    continue;
+                }
+
+                var last = merged[^1];
+                if (record.EndTime > last.To)
+                    merged[^1] = (last.From, record.EndTime);
+            }
+
+            return "⏱ " + string.Join(", ", merged.Select(o => $"{o.From:HH:mm}–{o.To:HH:mm}"));
+        }
 
         if (sched is { WorkType: AppWorkType.Office or AppWorkType.Home } &&
             ScheduleHours.GetOvertimeRange(sched.StartTime, sched.EndTime) is { } ot)
