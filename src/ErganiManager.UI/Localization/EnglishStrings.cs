@@ -195,6 +195,7 @@ public static class EnglishStrings
         [L.Overtime] = "Overtime",
         [L.OvertimeDate] = "Date",
         [L.Justification] = "Justification",
+        [L.OvertimeJustification] = "Overtime justification for schedule-generated overtime",
         [L.AseeApproval] = "ASEE Approval (optional)",
         [L.Cancelled] = "Cancelled",
         [L.CancelOvertime] = "Cancel OT",
