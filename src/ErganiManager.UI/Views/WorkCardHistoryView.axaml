@@ -312,7 +312,7 @@
     </StackPanel>
     </ScrollViewer>
 
-    <Border IsVisible="{Binding IsResponseOpen}" Background="#AA000000" ZIndex="100">
+    <Border IsVisible="{Binding IsResponseOpen}" Background="#AA000000" Panel.ZIndex="100">
         <Border Background="{DynamicResource PanelBrush}" CornerRadius="12" Padding="20" Width="800" Height="600" VerticalAlignment="Center" HorizontalAlignment="Center">
             <Grid RowDefinitions="Auto,*,Auto" RowSpacing="12">
                     <Button Content="✕" Command="{Binding CloseResponseCommand}" ToolTip.Tip="Close"
