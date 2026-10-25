@@ -2,6 +2,9 @@ using System;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Linq;
+using System.IO;
+using System.Text.Json;
+using System.Threading;
 using System.Threading.Tasks;
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -36,6 +39,9 @@ public partial class SubmissionLogRow : ObservableObject
     public string? RequestPayloadJson { get; set; }
 
     public string? ResponseRawJson { get; set; }
+
+    public string EmployeeNames { get; set; } = string.Empty;
+    public bool HasPdf => Success && !string.IsNullOrWhiteSpace(Protocol);
 
     public int RetryCount { get; set; }
 
@@ -101,10 +107,12 @@ public partial class SubmissionLogViewModel
     private readonly IConnectionStateService _connectionState;
     private readonly ErganiRetryService _retryService;
     private readonly WorkCardLogRetryService _logRetryService;
+    private readonly IErganiDocumentService _documentService;
 
     private UserSession? _session;
 
     public ObservableCollection<SubmissionLogRow> Rows { get; } = new();
+    public ObservableCollection<EmployeeFilterOption> EmployeeOptions { get; } = new();
 
     public ObservableCollection<FailedSubmissionRow> FailedSubmissions { get; } = new();
 
@@ -161,16 +169,21 @@ public partial class SubmissionLogViewModel
     private bool _filterFailuresOnly;
 
     [ObservableProperty]
+    private int? _selectedEmployeeId;
+
+    [ObservableProperty]
     private SubmissionLogRow? _selectedRow;
 
     public SubmissionLogViewModel(
         IConnectionStateService connectionState,
         ErganiRetryService retryService,
-        WorkCardLogRetryService logRetryService)
+        WorkCardLogRetryService logRetryService,
+        IErganiDocumentService documentService)
     {
         _connectionState = connectionState;
         _retryService = retryService;
         _logRetryService = logRetryService;
+        _documentService = documentService;
         LateJustificationOptions = AitiologiaOptions.Create(Loc);
     }
 
@@ -481,6 +494,16 @@ public partial class SubmissionLogViewModel
              */
             var toDateExclusive = toDate.AddDays(1);
 
+            var employees = await db.Employees
+                .Where(e => e.CompanyId == companyId)
+                .OrderBy(e => e.LastName).ThenBy(e => e.FirstName)
+                .Select(e => new EmployeeFilterOption { Id = e.Id, Name = e.LastName + " " + e.FirstName, TaxId = e.TaxId })
+                .ToListAsync();
+
+            EmployeeOptions.Clear();
+            EmployeeOptions.Add(new EmployeeFilterOption { Id = 0, Name = Loc["Vm.All employees"], TaxId = string.Empty });
+            foreach (var employee in employees) EmployeeOptions.Add(employee);
+
             var query = db.ApiSubmissionLogs
                 .Where(l =>
                     l.CompanyId == companyId &&
@@ -496,6 +519,17 @@ public partial class SubmissionLogViewModel
                 .OrderByDescending(l => l.SubmissionDate)
                 .Take(500)
                 .ToListAsync();
+
+            if (SelectedEmployeeId is > 0)
+            {
+                var employee = employees.FirstOrDefault(e => e.Id == SelectedEmployeeId.Value);
+                results = results.Where(log =>
+                    log.EmployeeId == SelectedEmployeeId.Value ||
+                    (!string.IsNullOrWhiteSpace(employee?.TaxId) &&
+                     (log.RequestPayloadJson?.Contains(employee.TaxId, StringComparison.Ordinal) == true ||
+                      log.ResponseRawJson?.Contains(employee.TaxId, StringComparison.Ordinal) == true)))
+                    .ToList();
+            }
 
             Rows.Clear();
 
@@ -513,6 +547,7 @@ public partial class SubmissionLogViewModel
                     DurationMs = r.DurationMs,
                     RequestPayloadJson = r.RequestPayloadJson,
                     ResponseRawJson = r.ResponseRawJson,
+                    EmployeeNames = GetEmployeeNames(r.RequestPayloadJson, employees),
                     RetryCount = r.RetryCount,
                     LastRetryAt = r.LastRetryAt
                 };
@@ -538,5 +573,64 @@ public partial class SubmissionLogViewModel
             IsLoading = false;
         }
     }
+
+    private static string GetEmployeeNames(string? payload, System.Collections.Generic.List<EmployeeFilterOption> employees)
+    {
+        if (string.IsNullOrWhiteSpace(payload)) return string.Empty;
+        try
+        {
+            using var doc = JsonDocument.Parse(payload);
+            var afms = new System.Collections.Generic.HashSet<string>(StringComparer.Ordinal);
+            void Visit(JsonElement element)
+            {
+                if (element.ValueKind == JsonValueKind.Object)
+                {
+                    foreach (var property in element.EnumerateObject())
+                    {
+                        if (property.NameEquals("f_afm") && property.Value.ValueKind == JsonValueKind.String)
+                            afms.Add(property.Value.GetString() ?? string.Empty);
+                        else Visit(property.Value);
+                    }
+                }
+                else if (element.ValueKind == JsonValueKind.Array)
+                    foreach (var child in element.EnumerateArray()) Visit(child);
+            }
+            Visit(doc.RootElement);
+            var names = employees.Where(e => !string.IsNullOrWhiteSpace(e.TaxId) && afms.Contains(e.TaxId))
+                .Select(e => e.Name).Distinct().ToList();
+            return names.Count == 0 ? string.Empty : string.Join(", ", names);
+        }
+        catch { return string.Empty; }
+    }
+
+    public async Task SaveSelectedPdfAsync(string filePath, CancellationToken ct = default)
+    {
+        var row = SelectedRow;
+        if (row == null || !row.HasPdf || _session?.CompanyId is not int companyId)
+            throw new InvalidOperationException(Loc["Vm.Select a successful submission with a protocol first."]);
+
+        var documentCode = row.SubmissionType switch
+        {
+            "WorkCard" => "WRKCardSE",
+            "DailySchedule" => "WTODaily",
+            "WeeklySchedule" => "WTOWeek",
+            "Overtime" => "WTOOv",
+            "Leave" => "WTOLeave",
+            _ => throw new InvalidOperationException("PDF retrieval is not configured for submission type '" + row.SubmissionType + "'.")
+        };
+
+        var bytes = await _documentService.DownloadPdfAsync(
+            companyId, documentCode, row.Protocol!,
+            DateOnly.FromDateTime(row.SubmissionDate), ct);
+        await File.WriteAllBytesAsync(filePath, bytes, ct);
+        StatusMessage = string.Format(Loc["Vm.PDF saved: {0}"], filePath);
+    }
+}
+
+public sealed class EmployeeFilterOption
+{
+    public int Id { get; set; }
+    public string Name { get; set; } = string.Empty;
+    public string TaxId { get; set; } = string.Empty;
 }
 
