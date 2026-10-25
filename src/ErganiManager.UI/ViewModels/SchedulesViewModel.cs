@@ -41,7 +41,7 @@ public partial class CalendarCellViewModel : ViewModelBase
     /// <summary>Imported schedules are already submitted, but their old protocol must not be displayed as the current status.</summary>
     public bool ShowSubmissionProtocol => IsSubmitted && !IsErganiImported && HasSubmissionProtocol;
     /// <summary>Keep the submitted status concise; show the protocol on its own line below.</summary>
-    public string SubmittedStatusText => $"✅ {Loc["Sent"]}";
+    public string SubmittedStatusText => $"{Loc["Sent"]}";
     public string ProtocolStatusText => HasSubmissionProtocol
         ? string.Format(Loc["Vm.Protocol: {0}"], Protocol)
         : string.Empty;
