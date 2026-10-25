@@ -865,6 +865,23 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
             return;
         }
 
+        var staleGenerated = await db.Overtimes.Where(o =>
+            o.EmployeeId == schedule.EmployeeId && o.OvertimeDate == schedule.ScheduleDate &&
+            !o.SubmittedToErgani && !o.IsCancelled && o.RequestPayloadJson != null &&
+            o.RequestPayloadJson.Contains("\"source\":\"schedule\"") &&
+            (o.StartTime != range.Value.From || o.EndTime != range.Value.To)).ToListAsync();
+        if (staleGenerated.Count > 0)
+        {
+            var staleIds = staleGenerated.Select(o => o.Id).ToHashSet();
+            db.Overtimes.RemoveRange(staleGenerated);
+            var staleLogs = await db.ApiSubmissionLogs.Where(l =>
+                l.CompanyId == companyId && l.SubmissionType == "Overtime" && l.ErrorMessage == "PENDING_OVERTIME").ToListAsync();
+            foreach (var log in staleLogs)
+                if (TryGetPendingOvertimeId(log.RequestPayloadJson, out var staleId) && staleIds.Contains(staleId))
+                    db.ApiSubmissionLogs.Remove(log);
+            await db.SaveChangesAsync();
+        }
+
         var existing = await db.Overtimes.FirstOrDefaultAsync(o =>
             o.EmployeeId == schedule.EmployeeId && o.OvertimeDate == schedule.ScheduleDate &&
             o.StartTime == range.Value.From && o.EndTime == range.Value.To && !o.IsCancelled);
@@ -2243,6 +2260,7 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
         var failed = 0;
         var overtimeSubmitted = 0;
         var overtimeFailed = 0;
+        var overtimePending = 0;
         var employeesWithFailures = 0;
         var failureDetails = new List<string>();
 
@@ -2297,12 +2315,12 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
                     failed += result.Error != null ? allDays.Count : result.Failed;
                     overtimeSubmitted += result.OvertimeSubmitted;
                     overtimeFailed += result.OvertimeFailed;
+                    overtimePending += result.Days.Count(d => d.Success && d.OvertimeFrom.HasValue && !d.OvertimeSubmitted);
 
                     foreach (var (employee, _) in toSendByEmployee)
                     {
                         var mine = result.Days.Where(d => d.EmployeeId == employee.Id).ToList();
-                        var firstBad = mine.FirstOrDefault(d => !d.Success)
-                                       ?? mine.FirstOrDefault(d => d.OvertimeFrom.HasValue && !d.OvertimeSubmitted);
+                        var firstBad = mine.FirstOrDefault(d => !d.Success);
                         if (result.Error == null && firstBad == null) continue;
 
                         employeesWithFailures++;
@@ -2327,6 +2345,9 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
             if (overtimeSubmitted > 0 || overtimeFailed > 0)
                 resultMessage += " " + string.Format(
                     Loc["Vm.Overtime records: {0} submitted, {1} failed."], overtimeSubmitted, overtimeFailed);
+            if (overtimePending > 0)
+                resultMessage += " " + string.Format(
+                    Loc["Vm.Overtime saved as pending: {0} record(s). Submit them from the Overtime page."], overtimePending);
             if (employeesWithFailures > 0)
             {
                 var detail = string.Join(" | ", failureDetails.Take(5));
@@ -2397,14 +2418,18 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
 
         var result = await _scheduleSubmitter.SubmitScheduleDaysAsync(companyId, toSubmit, ErganiManager.Data.Entities.OvertimeJustification.ExceptionalWorkload.ToString());
 
-        // Days over 8 hours also produce an overtime record for the extra hours.
+        // Schedule-generated overtime remains pending for review/submission from the Overtime page.
         var overtime = string.Empty;
+        var pendingOvertime = result.Days.Count(d => d.Success && d.OvertimeFrom.HasValue && !d.OvertimeSubmitted);
+        if (pendingOvertime > 0)
+            overtime = " " + string.Format(
+                Loc["Vm.Overtime saved as pending: {0} record(s). Submit them from the Overtime page."], pendingOvertime);
         if (result.OvertimeSubmitted > 0 || result.OvertimeFailed > 0)
         {
-            overtime = string.Format(Loc["Vm. Overtime (hours over 8): {0} sent"], result.OvertimeSubmitted);
+            overtime += " " + string.Format(Loc["Vm. Overtime (hours over 8): {0} sent"], result.OvertimeSubmitted);
             if (result.OvertimeFailed > 0)
             {
-                var bad = result.Days.First(d => d.OvertimeFrom.HasValue && !d.OvertimeSubmitted);
+                var bad = result.Days.First(d => d.OvertimeFrom.HasValue && !d.OvertimeSubmitted && !d.Success);
                 overtime += string.Format(Loc["Vm., {0} NOT sent — {1}: {2} (saved on the Overtime page)"], result.OvertimeFailed, bad.Date.ToString("dd/MM"), bad.OvertimeError);
             }
             overtime += ".";
