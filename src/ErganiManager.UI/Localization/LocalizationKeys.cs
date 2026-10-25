@@ -185,6 +185,7 @@ public static class L
     public const string Overtime            = nameof(Overtime);
     public const string OvertimeDate        = nameof(OvertimeDate);
     public const string Justification       = nameof(Justification);
+    public const string OvertimeJustification = nameof(OvertimeJustification);
     public const string AseeApproval        = nameof(AseeApproval);
     public const string Cancelled           = nameof(Cancelled);
     public const string CancelOvertime      = nameof(CancelOvertime);
