@@ -513,7 +513,7 @@ public class ScheduleService : IScheduleService
         }
 
         int written = 0;
-        var pendingOvertimeLogs = new List<ApiSubmissionLog>();
+        var pendingOvertimeItems = new List<(Overtime Overtime, EmployeeSchedule Schedule, ApiSubmissionLog Log)>();
         foreach (var targetId in targetIds)
         {
             var targetEmployee = targets.FirstOrDefault(e => e.Id == targetId);
@@ -551,13 +551,12 @@ public class ScheduleService : IScheduleService
                     EndTime = range.To,
                     Justification = sourceOvertime?.Justification ?? OvertimeJustification.ExceptionalWorkload,
                     WeeklyWorkdaysNumber = targetEmployee.WeeklyWorkdays,
-                    RequestPayloadJson = JsonSerializer.Serialize(new { source = "schedule", scheduleId = copiedSchedule.Id }),
                     CreatedAt = cloneTime
                 };
                 db.Overtimes.Add(overtime);
 
-                // Add the pending log after SaveChanges assigns the overtime's primary key.
-                pendingOvertimeLogs.Add(new ApiSubmissionLog
+                // Link the schedule, overtime and log after SaveChanges assigns their primary keys.
+                pendingOvertimeItems.Add((overtime, copiedSchedule, new ApiSubmissionLog
                 {
                     CompanyId = source.CompanyId,
                     EmployeeId = targetId,
@@ -567,7 +566,7 @@ public class ScheduleService : IScheduleService
                     SubmissionDate = cloneTime,
                     Success = false,
                     ErrorMessage = "PENDING_OVERTIME"
-                });
+                }));
             }
         }
 
@@ -612,28 +611,21 @@ public class ScheduleService : IScheduleService
         // written together or not at all. Save once to assign overtime IDs, then attach their log rows.
         await db.SaveChangesAsync();
 
-        if (pendingOvertimeLogs.Count > 0)
+        if (pendingOvertimeItems.Count > 0)
         {
-            var logIndex = 0;
-            foreach (var targetId in targetIds)
+            foreach (var item in pendingOvertimeItems)
             {
-                foreach (var src in sourceDays)
+                item.Overtime.RequestPayloadJson = JsonSerializer.Serialize(new
                 {
-                    if (src.WorkType is not (WorkType.Office or WorkType.Home)) continue;
-                    var range = ScheduleHours.GetOvertimeRange(src.StartTime, src.EndTime);
-                    if (range is not { } overtimeRange) continue;
-
-                    var overtime = await db.Overtimes.FirstOrDefaultAsync(o =>
-                        o.EmployeeId == targetId && o.OvertimeDate == src.ScheduleDate &&
-                        o.StartTime == overtimeRange.From && o.EndTime == overtimeRange.To &&
-                        !o.IsCancelled && o.CreatedAt == cloneTime &&
-                        o.RequestPayloadJson != null && o.RequestPayloadJson.Contains("\"source\":\"schedule\""));
-                    if (overtime == null) continue;
-
-                    var log = pendingOvertimeLogs[logIndex++];
-                    log.RequestPayloadJson = JsonSerializer.Serialize(new { overtimeId = overtime.Id, source = "schedule" });
-                    db.ApiSubmissionLogs.Add(log);
-                }
+                    source = "schedule",
+                    scheduleId = item.Schedule.Id
+                });
+                item.Log.RequestPayloadJson = JsonSerializer.Serialize(new
+                {
+                    overtimeId = item.Overtime.Id,
+                    source = "schedule"
+                });
+                db.ApiSubmissionLogs.Add(item.Log);
             }
             await db.SaveChangesAsync();
         }
