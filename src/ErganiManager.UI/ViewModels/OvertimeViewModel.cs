@@ -150,8 +150,20 @@ public partial class OvertimeViewModel : ViewModelBase, IAdminSectionViewModel
         catch (Exception ex) { StatusMessage = string.Format(Loc["Vm.❌ PDF download failed: {0}"], ex.Message); }
     }
 
-    [RelayCommand] private void StartCreate()
-    { FormEmployee=AvailableEmployees.FirstOrDefault(); FormBranch=AvailableBranches.FirstOrDefault(); FormDate=DateTimeOffset.Now; FormStartTime=new(17,0,0); FormEndTime=new(20,0,0); FormJustification=AppOvertimeJustification.ExceptionalWorkload; FormWeeklyWorkdays=5; FormAseeApproval=string.Empty; StatusMessage=string.Empty; IsCreating=true; }
+    [RelayCommand]
+    private void StartCreate()
+    {
+        foreach (var option in FormEmployeeOptions) option.IsSelected = false;
+        FormBranch = AvailableBranches.FirstOrDefault();
+        FormDate = DateTimeOffset.Now;
+        FormStartTime = new(17, 0, 0);
+        FormEndTime = new(20, 0, 0);
+        FormJustification = AppOvertimeJustification.ExceptionalWorkload;
+        FormWeeklyWorkdays = 5;
+        FormAseeApproval = string.Empty;
+        StatusMessage = string.Empty;
+        IsCreating = true;
+    }
     [RelayCommand] private void CancelCreate() => IsCreating=false;
 
     [RelayCommand]
