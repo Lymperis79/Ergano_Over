@@ -46,6 +46,14 @@ public sealed class OvertimeSubmitterService : IOvertimeSubmitter
         // many employees and dates under one branch header; the justification is not part of it).
         foreach (var group in eligible.GroupBy(x => x.BranchId))
         {
+            var groupIds = group.Select(x => x.Id).ToHashSet();
+            var pendingLogs = await db.ApiSubmissionLogs
+                .Where(l => l.CompanyId == companyId && l.SubmissionType == "Overtime" && l.ErrorMessage == "PENDING_OVERTIME")
+                .ToListAsync(ct);
+            foreach (var pendingLog in pendingLogs)
+                if (TryGetPendingOvertimeId(pendingLog.RequestPayloadJson, out var pendingId) && groupIds.Contains(pendingId))
+                    db.ApiSubmissionLogs.Remove(pendingLog);
+
             var branch = group.First().Branch;
             if (branch == null)
             {
@@ -91,6 +99,18 @@ public sealed class OvertimeSubmitterService : IOvertimeSubmitter
             Protocol = lastProtocol, SubmissionId = lastSubmissionId, ResponseRawJson = lastResponse,
             ErrorMessage = errors.Count == 0 ? null : string.Join(" | ", errors.Values.Distinct())
         };
+    }
+
+    private static bool TryGetPendingOvertimeId(string? payload, out int id)
+    {
+        id = 0;
+        if (string.IsNullOrWhiteSpace(payload)) return false;
+        try
+        {
+            using var doc = System.Text.Json.JsonDocument.Parse(payload);
+            return doc.RootElement.TryGetProperty("overtimeId", out var value) && value.TryGetInt32(out id);
+        }
+        catch (System.Text.Json.JsonException) { return false; }
     }
 
     private static ApiOvertimeJustification MapJustification(OvertimeJustification value) => value switch
