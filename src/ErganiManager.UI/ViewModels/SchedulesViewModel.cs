@@ -2451,10 +2451,8 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
                 companyId, "Documents/WTODaily", row.Protocol!, submittedDate);
 
             var folder   = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
-            var who      = row.IsBatch
-                ? "batch_" + string.Join("_", (row.EmployeeNames.Length > 0 ? row.EmployeeNames : "employees")
-                    .Split(Path.GetInvalidFileNameChars(), StringSplitOptions.RemoveEmptyEntries))
-                : SelectedEmployee?.FullName ?? "employee";
+            // Keep batch filenames short even when many employees were included.
+            var who      = row.IsBatch ? "batch" : SelectedEmployee?.FullName ?? "employee";
             var safeName = string.Join("_", who.Split(Path.GetInvalidFileNameChars(), StringSplitOptions.RemoveEmptyEntries));
             var day      = row.ScheduleDate?.ToString("yyyyMMdd") ?? "batch";
             var path     = Path.Combine(folder, $"Ergani_Schedule_{safeName}_{day}_{row.Protocol}.pdf");
