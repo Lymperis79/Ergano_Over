@@ -76,9 +76,16 @@ public class ScheduleLogRow
     public string? ResponseRawJson { get; init; }
     public string EmployeeNames { get; init; } = string.Empty;
     public bool IsBatch { get; init; }
+    public string SubmissionType { get; init; } = "DailySchedule";
+    public string DocumentCode => SubmissionType switch
+    {
+        "Overtime" => "Documents/WTOOv",
+        "Leave" => "Documents/WTOLeave",
+        _ => "Documents/WTODaily"
+    };
 
     public string StatusIcon => Success ? "✅" : "❌";
-    public string ScheduleDateText => ScheduleDate?.ToString("dd/MM/yyyy") ?? "—";
+    public string ScheduleDateText => (ScheduleDate ?? DateOnly.FromDateTime(SubmissionDate.ToLocalTime())).ToString("dd/MM/yyyy");
     public string SubmittedAtText => SubmissionDate.ToLocalTime().ToString("dd/MM/yyyy HH:mm:ss");
     public bool HasProtocol => !string.IsNullOrWhiteSpace(Protocol);
     public string Summary
@@ -240,6 +247,7 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
     [ObservableProperty] private bool _hasLogRows;
     [ObservableProperty] private string _logTitle = string.Empty;
     [ObservableProperty] private string _logStatus = string.Empty;
+    [ObservableProperty] private string _logEmptyText = string.Empty;
     [ObservableProperty] private bool _isResponseOpen;
     [ObservableProperty] private string _responseTitle = string.Empty;
     [ObservableProperty] private string _responseText = string.Empty;
@@ -2351,7 +2359,8 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
                     Protocol        = e.Protocol,
                     ErrorMessage    = e.ErrorMessage,
                     HttpStatusCode  = e.HttpStatusCode,
-                    ResponseRawJson = e.ResponseRawJson
+                    ResponseRawJson = e.ResponseRawJson,
+                    SubmissionType = "DailySchedule"
                 });
 
             // Include company-wide DailySchedule API batches that contain the selected
@@ -2400,7 +2409,8 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
                         HttpStatusCode = log.HttpStatusCode,
                         ResponseRawJson = log.ResponseRawJson,
                         EmployeeNames = string.Join(", ", names),
-                        IsBatch = true
+                        IsBatch = true,
+                        SubmissionType = "DailySchedule"
                     });
                 }
             }
@@ -2414,8 +2424,79 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
 
             HasLogRows = LogRows.Count > 0;
             LogTitle   = string.Format(Loc["Vm.📜 Schedule log — {0}"], SelectedEmployee.FullName);
+            LogEmptyText = Loc["Vm.No schedule submission history for this employee."];
             LogStatus  = HasLogRows ? string.Format(Loc["Vm.{0} submission(s), newest first."], LogRows.Count) : string.Empty;
             IsLogOpen  = true;
+        }
+        catch (Exception ex) { StatusMessage = $"❌ {ex.Message}"; }
+    }
+
+    [RelayCommand]
+    private async Task OpenOvertimeLogAsync() => await OpenApiSubmissionLogAsync("Overtime", Loc[L.OvertimeLog]);
+
+    [RelayCommand]
+    private async Task OpenHolidaysLogAsync() => await OpenApiSubmissionLogAsync("Leave", Loc[L.HolidaysLog]);
+
+    private async Task OpenApiSubmissionLogAsync(string submissionType, string displayName)
+    {
+        if (SelectedEmployee == null || _session?.CompanyId is not int companyId)
+        { StatusMessage = Loc["Vm.Select an employee first."]; return; }
+
+        try
+        {
+            await using var db = new AppDbContext(_connectionState.GetDbOptions());
+            var entries = await db.ApiSubmissionLogs
+                .Where(l => l.CompanyId == companyId && l.SubmissionType == submissionType)
+                .OrderByDescending(l => l.SubmissionDate)
+                .ThenByDescending(l => l.Id)
+                .Take(1000)
+                .ToListAsync();
+
+            var employeeById = AvailableEmployees.ToDictionary(e => e.Id);
+            LogRows.Clear();
+            foreach (var entry in entries)
+            {
+                var ids = ParseEmployeeIds(entry.EmployeeIdsJson);
+                if (ids.Count == 0 && entry.EmployeeId.HasValue)
+                    ids.Add(entry.EmployeeId.Value);
+                if (ids.Count == 0 && !string.IsNullOrWhiteSpace(entry.RequestPayloadJson))
+                {
+                    ids = AvailableEmployees
+                        .Where(e => !string.IsNullOrWhiteSpace(e.TaxId) &&
+                            entry.RequestPayloadJson.Contains(e.TaxId, StringComparison.Ordinal))
+                        .Select(e => e.Id).Distinct().ToList();
+                }
+
+                if (!ids.Contains(SelectedEmployee.Id) && entry.EmployeeId != SelectedEmployee.Id)
+                    continue;
+
+                var names = ids.Where(employeeById.ContainsKey)
+                    .Select(id => employeeById[id].FullName).Distinct().ToList();
+                if (names.Count == 0 && entry.EmployeeId == SelectedEmployee.Id)
+                    names.Add(SelectedEmployee.FullName);
+
+                LogRows.Add(new ScheduleLogRow
+                {
+                    Id = -entry.Id,
+                    SubmissionDate = entry.SubmissionDate,
+                    Success = entry.Success,
+                    Protocol = entry.Protocol,
+                    ErrorMessage = entry.ErrorMessage,
+                    HttpStatusCode = entry.HttpStatusCode,
+                    ResponseRawJson = entry.ResponseRawJson,
+                    EmployeeNames = string.Join(", ", names),
+                    IsBatch = ids.Distinct().Count() > 1,
+                    SubmissionType = submissionType
+                });
+            }
+
+            HasLogRows = LogRows.Count > 0;
+            LogTitle = string.Format(Loc["Vm.📜 {0} log — {1}"], displayName, SelectedEmployee.FullName);
+            LogEmptyText = string.Format(Loc["Vm.No {0} submission history for this employee."], displayName.ToLowerInvariant());
+            LogStatus = HasLogRows
+                ? string.Format(Loc["Vm.{0} submission(s), newest first."], LogRows.Count)
+                : string.Empty;
+            IsLogOpen = true;
         }
         catch (Exception ex) { StatusMessage = $"❌ {ex.Message}"; }
     }
@@ -2448,14 +2529,20 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
         {
             var submittedDate = DateOnly.FromDateTime(row.SubmissionDate.ToLocalTime());
             var bytes = await _documentService.DownloadPdfAsync(
-                companyId, "Documents/WTODaily", row.Protocol!, submittedDate);
+                companyId, row.DocumentCode, row.Protocol!, submittedDate);
 
             var folder   = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
             // Keep batch filenames short even when many employees were included.
             var who      = row.IsBatch ? "batch" : SelectedEmployee?.FullName ?? "employee";
             var safeName = string.Join("_", who.Split(Path.GetInvalidFileNameChars(), StringSplitOptions.RemoveEmptyEntries));
             var day      = row.ScheduleDate?.ToString("yyyyMMdd") ?? "batch";
-            var path     = Path.Combine(folder, $"Ergani_Schedule_{safeName}_{day}_{row.Protocol}.pdf");
+            var kind = row.SubmissionType switch
+            {
+                "Overtime" => "Overtime",
+                "Leave" => "Holiday",
+                _ => "Schedule"
+            };
+            var path     = Path.Combine(folder, $"Ergani_{kind}_{safeName}_{day}_{row.Protocol}.pdf");
 
             await File.WriteAllBytesAsync(path, bytes);
             LogStatus = string.Format(Loc["Vm.✅ PDF saved to Desktop: {0}"], Path.GetFileName(path));
