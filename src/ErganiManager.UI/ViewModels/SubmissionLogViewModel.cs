@@ -525,6 +525,7 @@ public partial class SubmissionLogViewModel
                 var employee = employees.FirstOrDefault(e => e.Id == SelectedEmployeeId.Value);
                 results = results.Where(log =>
                     log.EmployeeId == SelectedEmployeeId.Value ||
+                    ContainsEmployeeId(log.EmployeeIdsJson, SelectedEmployeeId.Value) ||
                     (!string.IsNullOrWhiteSpace(employee?.TaxId) &&
                      (log.RequestPayloadJson?.Contains(employee.TaxId, StringComparison.Ordinal) == true ||
                       log.ResponseRawJson?.Contains(employee.TaxId, StringComparison.Ordinal) == true)))
@@ -571,6 +572,25 @@ public partial class SubmissionLogViewModel
         finally
         {
             IsLoading = false;
+        }
+    }
+
+    private static bool ContainsEmployeeId(string? employeeIdsJson, int employeeId)
+    {
+        if (string.IsNullOrWhiteSpace(employeeIdsJson))
+            return false;
+
+        try
+        {
+            using var document = JsonDocument.Parse(employeeIdsJson);
+            return document.RootElement.ValueKind == JsonValueKind.Array &&
+                   document.RootElement.EnumerateArray().Any(value =>
+                       value.ValueKind == JsonValueKind.Number &&
+                       value.TryGetInt32(out var id) && id == employeeId);
+        }
+        catch (JsonException)
+        {
+            return false;
         }
     }
 
