@@ -636,13 +636,15 @@ public partial class SubmissionLogViewModel
         if (row == null || !row.HasPdf || _session?.CompanyId is not int companyId)
             throw new InvalidOperationException(Loc[L.DownloadPdf]);
 
+        // Ergani's document endpoint expects the full Documents/<code> path.
+        // The Schedules page already uses this format successfully.
         var documentCode = row.SubmissionType switch
         {
-            "WorkCard" => "WRKCardSE",
-            "DailySchedule" => "WTODaily",
-            "WeeklySchedule" => "WTOWeek",
-            "Overtime" => "WTOOv",
-            "Leave" => "WTOLeave",
+            "WorkCard" => "Documents/WRKCardSE",
+            "DailySchedule" => "Documents/WTODaily",
+            "WeeklySchedule" => "Documents/WTOWeek",
+            "Overtime" => "Documents/WTOOv",
+            "Leave" => "Documents/WTOLeave",
             _ => throw new InvalidOperationException("PDF retrieval is not configured for submission type '" + row.SubmissionType + "'.")
         };
 
