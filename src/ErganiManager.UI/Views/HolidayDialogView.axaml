@@ -14,7 +14,7 @@
                 <Grid RowDefinitions="Auto,Auto,Auto,Auto,*,Auto" RowSpacing="10">
                     <Button Content="✕" Command="{Binding CloseCommand}" ToolTip.Tip="Close"
                             HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,-14,-14,0"
-                            Padding="8,4" Panel.ZIndex="20" />
+                            Padding="8,4" />
 
                     <TextBlock Grid.Row="0" Text="{Binding Title}" FontSize="17" FontWeight="Bold" />
 
@@ -153,7 +153,7 @@
                 <Grid RowDefinitions="Auto,*,Auto" RowSpacing="12">
                     <Button Content="✕" Command="{Binding CloseResponseCommand}" ToolTip.Tip="Close"
                             HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,-14,-14,0"
-                            Padding="8,4" Panel.ZIndex="20" />
+                            Padding="8,4" />
                     <TextBlock Grid.Row="0" Text="{Binding ResponseTitle}" FontSize="17" FontWeight="Bold" />
                     <TextBox Grid.Row="1" Text="{Binding ResponseText}" IsReadOnly="True"
                              AcceptsReturn="True" TextWrapping="NoWrap" FontFamily="Consolas"
