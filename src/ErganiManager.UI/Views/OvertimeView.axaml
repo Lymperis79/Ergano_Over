@@ -98,19 +98,27 @@
 
         <!-- New overtime form overlay -->
         <Border IsVisible="{Binding IsCreating}" Background="#AA000000">
-            <Border Background="{DynamicResource PanelBrush}" CornerRadius="12" Padding="28"
-                    Width="620" MaxWidth="720" VerticalAlignment="Center" HorizontalAlignment="Center"
+            <Border Background="{DynamicResource PanelBrush}" CornerRadius="12" Padding="24"
+                    Width="760" MaxWidth="900" MaxHeight="900" VerticalAlignment="Center" HorizontalAlignment="Center"
                     BorderBrush="{DynamicResource LineBrush}" BorderThickness="1">
+                <ScrollViewer MaxHeight="850" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
                 <StackPanel Spacing="12">
-                    <TextBlock Text="{Binding Loc[NewOvertimeEntry]}" FontSize="17" FontWeight="Bold" />
+                    <TextBlock Text="{Binding Loc[NewOvertimeEntry]}" FontSize="18" FontWeight="Bold" />
 
-                    <TextBlock Text="{Binding Loc[Employee]}" FontWeight="SemiBold" />
-                    <ComboBox ItemsSource="{Binding AvailableEmployees}" SelectedItem="{Binding FormEmployee}"
-                              HorizontalAlignment="Stretch">
-                        <ComboBox.ItemTemplate>
-                            <DataTemplate><TextBlock Text="{Binding FullName}" /></DataTemplate>
-                        </ComboBox.ItemTemplate>
-                    </ComboBox>
+                    <TextBlock Text="{Binding Loc[Employees]}" FontWeight="SemiBold" />
+                    <Border Background="{DynamicResource CardBrush}" BorderBrush="{DynamicResource LineBrush}"
+                            BorderThickness="1" CornerRadius="6" Padding="10" MaxHeight="170">
+                        <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                            <ItemsControl ItemsSource="{Binding FormEmployeeOptions}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <CheckBox Content="{Binding FullName}" IsChecked="{Binding IsSelected, Mode=TwoWay}"
+                                                  Margin="2,4" />
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </ScrollViewer>
+                    </Border>
 
                     <TextBlock Text="{Binding Loc[Branch]}" FontWeight="SemiBold" />
                     <ComboBox ItemsSource="{Binding AvailableBranches}" SelectedItem="{Binding FormBranch}"
@@ -158,6 +166,7 @@
                                 Classes="accent" HorizontalAlignment="Stretch" Margin="6,0,0,0" />
                     </Grid>
                 </StackPanel>
+                </ScrollViewer>
             </Border>
         </Border>
     </Grid>
