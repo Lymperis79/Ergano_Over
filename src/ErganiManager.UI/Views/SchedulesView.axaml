@@ -248,7 +248,7 @@
         <!-- ── Ergani Excel import confirmation ── -->
         <Border Grid.Row="0" Grid.RowSpan="4"
                 IsVisible="{Binding IsImportDialogOpen}"
-                Background="#BB000000" ZIndex="80">
+                Background="#BB000000" Panel.ZIndex="80">
             <Border Background="{DynamicResource PanelBrush}" CornerRadius="12" Padding="24"
                     Width="620" MaxHeight="620"
                     VerticalAlignment="Center" HorizontalAlignment="Center">
@@ -294,7 +294,7 @@
         <!-- ── Import history ── -->
         <Border Grid.Row="0" Grid.RowSpan="4"
                 IsVisible="{Binding IsImportHistoryOpen}"
-                Background="#BB000000" ZIndex="85">
+                Background="#BB000000" Panel.ZIndex="85">
             <Border Background="{DynamicResource PanelBrush}" CornerRadius="12" Padding="24"
                     Width="680" MaxHeight="560"
                     VerticalAlignment="Center" HorizontalAlignment="Center">
@@ -332,7 +332,7 @@
         <!-- ── Existing data on the imported dates: replace or keep? ── -->
         <Border Grid.Row="0" Grid.RowSpan="4"
                 IsVisible="{Binding IsConflictDialogOpen}"
-                Background="#BB000000" ZIndex="95">
+                Background="#BB000000" Panel.ZIndex="95">
             <Border Background="{DynamicResource PanelBrush}" CornerRadius="12" Padding="24"
                     Width="620" MaxHeight="620"
                     VerticalAlignment="Center" HorizontalAlignment="Center">
@@ -360,7 +360,7 @@
         <!-- ── Portal download finished: import it now? ── -->
         <Border Grid.Row="0" Grid.RowSpan="4"
                 IsVisible="{Binding IsPortalImportPromptOpen}"
-                Background="#BB000000" ZIndex="90">
+                Background="#BB000000" Panel.ZIndex="90">
             <Border Background="{DynamicResource PanelBrush}" CornerRadius="12" Padding="24"
                     Width="460"
                     VerticalAlignment="Center" HorizontalAlignment="Center">
@@ -387,7 +387,7 @@
         <!-- ── Day dialog overlay ── -->
         <Border Grid.Row="0" Grid.RowSpan="4"
                 IsVisible="{Binding IsDayDialogOpen}"
-                Background="#BB000000" ZIndex="50">
+                Background="#BB000000" Panel.ZIndex="50">
             <Border Background="{DynamicResource PanelBrush}" CornerRadius="12" Padding="24"
                     Width="500" MaxHeight="520"
                     VerticalAlignment="Center" HorizontalAlignment="Center">
@@ -482,7 +482,7 @@
         <!-- ── Bulk apply dialog overlay ── -->
         <Border Grid.Row="0" Grid.RowSpan="4"
                 IsVisible="{Binding IsBulkDialogOpen}"
-                Background="#BB000000" ZIndex="50">
+                Background="#BB000000" Panel.ZIndex="50">
             <Border Background="{DynamicResource PanelBrush}" CornerRadius="12" Padding="24"
                     Width="420" VerticalAlignment="Center" HorizontalAlignment="Center">
                 <Grid RowDefinitions="*,Auto">
@@ -557,7 +557,7 @@
         <!-- ── Clone dialog overlay ── -->
         <Border Grid.Row="0" Grid.RowSpan="4"
                 IsVisible="{Binding IsCloneDialogOpen}"
-                Background="#BB000000" ZIndex="50">
+                Background="#BB000000" Panel.ZIndex="50">
             <Border Background="{DynamicResource PanelBrush}" CornerRadius="12" Padding="24"
                     Width="460" Height="620"
                     VerticalAlignment="Center" HorizontalAlignment="Center">
@@ -617,7 +617,7 @@
         <!-- ── Undo last clone dialog overlay ── -->
         <Border Grid.Row="0" Grid.RowSpan="4"
                 IsVisible="{Binding IsUndoCloneDialogOpen}"
-                Background="#BB000000" ZIndex="50">
+                Background="#BB000000" Panel.ZIndex="50">
             <Border Background="{DynamicResource PanelBrush}" CornerRadius="12" Padding="24"
                     Width="500" MaxHeight="620"
                     VerticalAlignment="Center" HorizontalAlignment="Center">
@@ -688,14 +688,14 @@
         </Border>
 
         <!-- ── Holidays form ── -->
-        <Panel Grid.Row="0" Grid.RowSpan="4" ZIndex="45" IsVisible="{Binding Holidays.IsOpen}">
+        <Panel Grid.Row="0" Grid.RowSpan="4" Panel.ZIndex="45" IsVisible="{Binding Holidays.IsOpen}">
             <views:HolidayDialogView DataContext="{Binding Holidays}" />
         </Panel>
 
         <!-- ── Submission log dialog (Ergani responses + PDF) ── -->
         <Border Grid.Row="0" Grid.RowSpan="4"
                 IsVisible="{Binding IsLogOpen}"
-                Background="#BB000000" ZIndex="50">
+                Background="#BB000000" Panel.ZIndex="50">
             <Border Background="{DynamicResource PanelBrush}" CornerRadius="12" Padding="20"
                     Width="900" Height="560"
                     VerticalAlignment="Center" HorizontalAlignment="Center">
@@ -748,7 +748,7 @@
         <!-- ── Raw Ergani response ── -->
         <Border Grid.Row="0" Grid.RowSpan="4"
                 IsVisible="{Binding IsResponseOpen}"
-                Background="#AA000000" ZIndex="60">
+                Background="#AA000000" Panel.ZIndex="60">
             <Border Background="{DynamicResource PanelBrush}" CornerRadius="12" Padding="20"
                     Width="800" Height="560"
                     VerticalAlignment="Center" HorizontalAlignment="Center">
@@ -770,7 +770,7 @@
         <!-- ── Confirm company-wide pending schedule submission ── -->
         <Border Grid.Row="0" Grid.RowSpan="4"
                 IsVisible="{Binding IsBulkSubmitDialogOpen}"
-                Background="#BB000000" ZIndex="65">
+                Background="#BB000000" Panel.ZIndex="65">
             <Border Background="{DynamicResource PanelBrush}" CornerRadius="12" Padding="24"
                     Width="520" VerticalAlignment="Center" HorizontalAlignment="Center">
                 <StackPanel Spacing="16">
@@ -792,7 +792,7 @@
         <!-- ── Delete confirmation ── -->
         <Border Grid.Row="0" Grid.RowSpan="4"
                 IsVisible="{Binding IsConfirmDeleteOpen}"
-                Background="#BB000000" ZIndex="70">
+                Background="#BB000000" Panel.ZIndex="70">
             <Border Background="{DynamicResource PanelBrush}" CornerRadius="12" Padding="24"
                     Width="440" VerticalAlignment="Center" HorizontalAlignment="Center">
                 <StackPanel Spacing="16">
