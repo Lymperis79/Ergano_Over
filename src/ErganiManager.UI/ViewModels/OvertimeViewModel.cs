@@ -23,6 +23,22 @@ public partial class OvertimeViewModel : ViewModelBase, IAdminSectionViewModel
 
     public ObservableCollection<OvertimeDto> Records { get; } = new();
     public ObservableCollection<EmployeeDto> AvailableEmployees { get; } = new();
+    public ObservableCollection<EmployeeSelectionOption> FormEmployeeOptions { get; } = new();
+
+    public sealed class EmployeeSelectionOption : ObservableObject
+    {
+        public EmployeeDto Employee { get; }
+        public string FullName => Employee.FullName;
+
+        private bool _isSelected;
+        public bool IsSelected
+        {
+            get => _isSelected;
+            set => SetProperty(ref _isSelected, value);
+        }
+
+        public EmployeeSelectionOption(EmployeeDto employee) => Employee = employee;
+    }
     public ObservableCollection<BranchDto> AvailableBranches { get; } = new();
     public ObservableCollection<AppOvertimeJustification> Justifications { get; } = new(Enum.GetValues<AppOvertimeJustification>());
 
@@ -63,7 +79,16 @@ public partial class OvertimeViewModel : ViewModelBase, IAdminSectionViewModel
     {
         if (_session?.CompanyId is not int companyId) return;
         var employees = await _employeeService.GetByCompanyAsync(companyId, activeOnly: true).ConfigureAwait(false);
-        await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() => { AvailableEmployees.Clear(); foreach (var e in employees) AvailableEmployees.Add(e); });
+        await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() =>
+        {
+            AvailableEmployees.Clear();
+            FormEmployeeOptions.Clear();
+            foreach (var e in employees)
+            {
+                AvailableEmployees.Add(e);
+                FormEmployeeOptions.Add(new EmployeeSelectionOption(e));
+            }
+        });
         var branches = await _branchService.GetByCompanyAsync(companyId).ConfigureAwait(false);
         await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() => { AvailableBranches.Clear(); foreach (var b in branches) AvailableBranches.Add(b); });
         FormEmployee = AvailableEmployees.FirstOrDefault(); FormBranch = AvailableBranches.FirstOrDefault();
@@ -134,14 +159,57 @@ public partial class OvertimeViewModel : ViewModelBase, IAdminSectionViewModel
     private async Task SaveAsync()
     {
         if (_session?.CompanyId is not int companyId) return;
-        if (FormEmployee == null || FormBranch == null) { StatusMessage=Loc["Vm.Employee and branch are required."]; return; }
-        if (!FormStartTime.HasValue || !FormEndTime.HasValue) { StatusMessage=Loc["Vm.Start and end time are required."]; return; }
+        var selectedEmployees = FormEmployeeOptions.Where(x => x.IsSelected).Select(x => x.Employee).ToList();
+        if (selectedEmployees.Count == 0 || FormBranch == null)
+        {
+            StatusMessage = Loc["Vm.Select at least one employee and a branch."];
+            return;
+        }
+        if (!FormStartTime.HasValue || !FormEndTime.HasValue)
+        {
+            StatusMessage = Loc["Vm.Start and end time are required."];
+            return;
+        }
+        if (FormEndTime.Value <= FormStartTime.Value)
+        {
+            StatusMessage = Loc["Vm.End time must be later than start time."];
+            return;
+        }
+        if (FormWeeklyWorkdays is < 5 or > 6)
+        {
+            StatusMessage = Loc["Vm.Weekly workdays must be 5 or 6."];
+            return;
+        }
+
         try
         {
-            await _overtimeService.CreateAsync(new OvertimeDto { EmployeeId=FormEmployee.Id, BranchId=FormBranch.Id, OvertimeDate=DateOnly.FromDateTime((FormDate ?? DateTimeOffset.Now).LocalDateTime), StartTime=TimeOnly.FromTimeSpan(FormStartTime.Value), EndTime=TimeOnly.FromTimeSpan(FormEndTime.Value), Justification=FormJustification, WeeklyWorkdaysNumber=FormWeeklyWorkdays, AseeApproval=string.IsNullOrWhiteSpace(FormAseeApproval)?null:FormAseeApproval }, companyId);
-            IsCreating=false; await LoadRecordsAsync();
+            var date = DateOnly.FromDateTime((FormDate ?? DateTimeOffset.Now).LocalDateTime);
+            var start = TimeOnly.FromTimeSpan(FormStartTime.Value);
+            var end = TimeOnly.FromTimeSpan(FormEndTime.Value);
+            var approval = string.IsNullOrWhiteSpace(FormAseeApproval) ? null : FormAseeApproval.Trim();
+            var created = 0;
+
+            foreach (var employee in selectedEmployees)
+            {
+                await _overtimeService.CreateAsync(new OvertimeDto
+                {
+                    EmployeeId = employee.Id,
+                    BranchId = FormBranch.Id,
+                    OvertimeDate = date,
+                    StartTime = start,
+                    EndTime = end,
+                    Justification = FormJustification,
+                    WeeklyWorkdaysNumber = FormWeeklyWorkdays,
+                    AseeApproval = approval
+                }, companyId);
+                created++;
+            }
+
+            IsCreating = false;
+            StatusMessage = string.Format(Loc["Vm.Created {0} overtime record(s)."], created);
+            await LoadRecordsAsync();
         }
-        catch (Exception ex) { StatusMessage=$"❌ {ex.Message}"; }
+        catch (Exception ex) { StatusMessage = $"❌ {ex.Message}"; }
     }
 
     [RelayCommand] private async Task CancelOvertimeAsync(OvertimeDto record) { try { await _overtimeService.CancelAsync(record.Id); await LoadRecordsAsync(); } catch(Exception ex){ StatusMessage=$"❌ {ex.Message}"; } }
