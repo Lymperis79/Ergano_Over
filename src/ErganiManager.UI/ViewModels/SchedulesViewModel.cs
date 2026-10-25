@@ -574,14 +574,16 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
             var overtimeStatusText = BuildOvertimeStatusText(dayOvertime);
             official.TryGetValue(date, out var officialName);
             var userHolidayText = dayLeaves is null ? string.Empty : string.Join(" · ", dayLeaves.Select(l => LeaveTypes.Find(l.LeaveTypeCode)?.LocalizedDescription ?? l.LeaveTypeCode));
+            // Annual leave takes precedence over the imported work-schedule status in the calendar.
+            var hasAnnualLeave = dayLeaves?.Any(l => string.Equals(l.LeaveTypeCode, "ΑΔΚΑΝ", StringComparison.OrdinalIgnoreCase)) == true;
             var tooltip = string.Join("\n", new[]
             {
                 string.IsNullOrWhiteSpace(officialName) ? null : $"🇬🇷 {officialName}",
                 string.IsNullOrWhiteSpace(userHolidayText) ? null : $"🏖 {userHolidayText}",
                 string.IsNullOrWhiteSpace(overtimeText) ? null : string.Format(Loc["Vm.{0} overtime"], overtimeText),
-                sched?.Source == ScheduleSource.ErganiImported
+                !hasAnnualLeave && sched?.Source == ScheduleSource.ErganiImported
                     ? Loc["Vm.🇬🇷 Ergani imported"]
-                    : sched is { SubmittedToErgani: true }
+                    : !hasAnnualLeave && sched is { SubmittedToErgani: true }
                         ? (string.IsNullOrWhiteSpace(sched.Protocol)
                             ? Loc["Sent"]
                             : string.Format(Loc["Vm.Protocol: {0}"], sched.Protocol))
@@ -592,9 +594,9 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
                 IsInMonth          = true,
                 Date               = date,
                 HasSchedule        = sched != null,
-                // Show only the latest/current source status: imported takes precedence for imported rows.
-                IsSubmitted        = sched is { SubmittedToErgani: true },
-                IsErganiImported  = sched?.Source == ScheduleSource.ErganiImported,
+                // Annual leave supersedes the schedule's imported/submitted badge for this day.
+                IsSubmitted        = !hasAnnualLeave && sched is { SubmittedToErgani: true },
+                IsErganiImported  = !hasAnnualLeave && sched?.Source == ScheduleSource.ErganiImported,
                 Protocol           = sched?.Protocol,
                 WorkType           = sched != null ? (AppWorkType?)sched.WorkType : null,
                 TimeRangeText      = WorkRangeText(sched),
@@ -650,14 +652,16 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
             var overtimeStatusText = BuildOvertimeStatusText(dayOvertime);
             officialByDate.TryGetValue(d, out var officialName);
             var userHolidayText = dayLeaves is null ? string.Empty : string.Join(" · ", dayLeaves.Select(l => LeaveTypes.Find(l.LeaveTypeCode)?.LocalizedDescription ?? l.LeaveTypeCode));
+            // Annual leave takes precedence over the imported work-schedule status in the calendar.
+            var hasAnnualLeave = dayLeaves?.Any(l => string.Equals(l.LeaveTypeCode, "ΑΔΚΑΝ", StringComparison.OrdinalIgnoreCase)) == true;
             var tooltip = string.Join("\n", new[]
             {
                 string.IsNullOrWhiteSpace(officialName) ? null : $"🇬🇷 {officialName}",
                 string.IsNullOrWhiteSpace(userHolidayText) ? null : $"🏖 {userHolidayText}",
                 string.IsNullOrWhiteSpace(overtimeText) ? null : string.Format(Loc["Vm.{0} overtime"], overtimeText),
-                sched?.Source == ScheduleSource.ErganiImported
+                !hasAnnualLeave && sched?.Source == ScheduleSource.ErganiImported
                     ? Loc["Vm.🇬🇷 Ergani imported"]
-                    : sched is { SubmittedToErgani: true }
+                    : !hasAnnualLeave && sched is { SubmittedToErgani: true }
                         ? (string.IsNullOrWhiteSpace(sched.Protocol)
                             ? Loc["Sent"]
                             : string.Format(Loc["Vm.Protocol: {0}"], sched.Protocol))
@@ -668,9 +672,9 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
                 IsInMonth           = true,
                 Date                = d,
                 HasSchedule         = sched != null,
-                // Show only the latest/current source status: imported takes precedence for imported rows.
-                IsSubmitted         = sched is { SubmittedToErgani: true },
-                IsErganiImported   = sched?.Source == ScheduleSource.ErganiImported,
+                // Annual leave supersedes the schedule's imported/submitted badge for this day.
+                IsSubmitted         = !hasAnnualLeave && sched is { SubmittedToErgani: true },
+                IsErganiImported   = !hasAnnualLeave && sched?.Source == ScheduleSource.ErganiImported,
                 Protocol            = sched?.Protocol,
                 WorkType            = sched != null ? (AppWorkType?)sched.WorkType : null,
                 TimeRangeText       = WorkRangeText(sched),
