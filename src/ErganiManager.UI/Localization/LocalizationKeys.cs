@@ -196,6 +196,8 @@ public static class L
     public const string FailuresOnly        = nameof(FailuresOnly);
     public const string RequestPayload      = nameof(RequestPayload);
     public const string Response            = nameof(Response);
+    public const string AllEmployees        = nameof(AllEmployees);
+    public const string DownloadPdf         = nameof(DownloadPdf);
 
     // Status
     public const string Submitted           = nameof(Submitted);
