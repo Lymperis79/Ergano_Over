@@ -626,7 +626,7 @@
             <Border Background="{DynamicResource PanelBrush}" CornerRadius="12" Padding="24"
                     Width="500" MaxHeight="620"
                     VerticalAlignment="Center" HorizontalAlignment="Center">
-                <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto" RowSpacing="10">
+                <Grid RowDefinitions="Auto,Auto,*,Auto,Auto" RowSpacing="10">
                     <Button Content="✕" Command="{Binding CloseUndoCloneDialogCommand}" ToolTip.Tip="Close"
                             HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,-14,-14,0"
                             Padding="8,4" />
