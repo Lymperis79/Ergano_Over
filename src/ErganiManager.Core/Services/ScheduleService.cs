@@ -696,6 +696,11 @@ public class ScheduleService : IScheduleService
 
         var info = ToInfo(batch);
         info.SubmittedEntries = await CountSentInScopeAsync(db, batch);
+
+        // Once any entry created by this clone has reached Ergani, the clone is no longer
+        // an available undo action. Keep its history record, but don't expose it as undoable.
+        if (info.SubmittedEntries > 0) return null;
+
         return info;
     }
 
