@@ -169,7 +169,7 @@ public partial class SubmissionLogViewModel
     private bool _filterFailuresOnly;
 
     [ObservableProperty]
-    private int? _selectedEmployeeId;
+    private int? _selectedEmployeeId = 0;
 
     [ObservableProperty]
     private SubmissionLogRow? _selectedRow;
@@ -621,7 +621,7 @@ public partial class SubmissionLogViewModel
 
         var bytes = await _documentService.DownloadPdfAsync(
             companyId, documentCode, row.Protocol!,
-            DateOnly.FromDateTime(row.SubmissionDate), ct);
+            DateOnly.FromDateTime(row.SubmissionDate.ToLocalTime()), ct);
         await File.WriteAllBytesAsync(filePath, bytes, ct);
         StatusMessage = Loc[L.SuccessPrefix] + Loc[L.DownloadPdf] + ": " + filePath;
     }
