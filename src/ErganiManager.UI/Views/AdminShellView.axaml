@@ -127,10 +127,13 @@
                 Padding="16,10" ZIndex="100"
                 Background="{Binding IsNotificationError,
                     Converter={x:Static vm:BoolToBackgroundConverter.Instance}}">
-            <Grid ColumnDefinitions="*,Auto">
+            <Grid ColumnDefinitions="*,Auto,Auto">
                 <TextBlock Grid.Column="0" Text="{Binding NotificationMessage}"
                            Foreground="White" TextWrapping="Wrap" VerticalAlignment="Center" />
-                <Button Grid.Column="1" Content="✕" Foreground="White"
+                <Button Grid.Column="1" Content="📂 Open file" Margin="8,0"
+                        IsVisible="{Binding HasNotificationFile}"
+                        Command="{Binding OpenNotificationFileCommand}" />
+                <Button Grid.Column="2" Content="✕" Foreground="White"
                         Background="Transparent" BorderThickness="0"
                         Command="{Binding DismissNotificationCommand}" />
             </Grid>
