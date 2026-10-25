@@ -589,7 +589,10 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
             leavesByDate.TryGetValue(date, out var dayLeaves);
             overtimeByDate.TryGetValue(date, out var dayOvertime);
             var overtimeText = BuildOvertimeText(sched, dayOvertime);
-            var overtimeStatusText = BuildOvertimeStatusText(dayOvertime);
+            // The calendar already displays the schedule/leave "Sent" badge below. Avoid a second identical badge when overtime is also submitted.
+            var overtimeStatusText = sched is { SubmittedToErgani: true }
+                ? string.Empty
+                : BuildOvertimeStatusText(dayOvertime);
             official.TryGetValue(date, out var officialName);
             var userHolidayText = dayLeaves is null ? string.Empty : string.Join(" · ", dayLeaves.Select(l => LeaveTypes.Find(l.LeaveTypeCode)?.LocalizedDescription ?? l.LeaveTypeCode));
             // Annual leave takes precedence over the imported work-schedule status in the calendar.
