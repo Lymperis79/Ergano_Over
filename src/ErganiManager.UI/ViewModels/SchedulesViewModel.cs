@@ -2491,8 +2491,8 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
             }
 
             HasLogRows = LogRows.Count > 0;
-            LogTitle = string.Format(Loc["Vm.📜 {0} log — {1}"], displayName, SelectedEmployee.FullName);
-            LogEmptyText = string.Format(Loc["Vm.No {0} submission history for this employee."], displayName.ToLowerInvariant());
+            LogTitle = string.Format(Loc["Vm.📜 {0} — {1}"], displayName, SelectedEmployee.FullName);
+            LogEmptyText = Loc["Vm.No matching submission history for this employee."];
             LogStatus = HasLogRows
                 ? string.Format(Loc["Vm.{0} submission(s), newest first."], LogRows.Count)
                 : string.Empty;
