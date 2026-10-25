@@ -7,6 +7,8 @@ using Avalonia.Input;
 using Avalonia.Controls.Primitives;
 using Avalonia;
 using System.Linq;
+using System.IO;
+using System.Text.RegularExpressions;
 using Avalonia.Controls;
 using Avalonia.Controls.Templates;
 using Avalonia.Threading;
@@ -179,7 +181,16 @@ public partial class AdminShellView : Window
                 if (!string.IsNullOrEmpty(msg) && msg.StartsWith("❌"))
                     shell.ShowError(msg);
                 else if (!string.IsNullOrEmpty(msg) && msg.StartsWith("✅"))
-                    shell.ShowNotification(msg, isError: false);
+                {
+                    // Export status messages include the saved path. Attach an Open file action
+                    // only when the path points to an existing PDF/Excel/CSV file.
+                    string? filePath = null;
+                    var match = Regex.Match(msg, @"([A-Za-z]:\\.*?\.(?:pdf|xlsx|xls|csv))", RegexOptions.IgnoreCase);
+                    if (match.Success && File.Exists(match.Groups[1].Value))
+                        filePath = match.Groups[1].Value;
+
+                    shell.ShowNotification(msg, isError: false, filePath: filePath);
+                }
             };
         };
     }
