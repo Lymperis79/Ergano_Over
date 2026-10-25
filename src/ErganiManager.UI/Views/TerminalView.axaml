@@ -140,7 +140,7 @@
                 <StackPanel Spacing="20">
                     <Button Content="✕" Command="{Binding CancelExitCommand}" ToolTip.Tip="Close"
                             HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,-14,-14,0"
-                            Padding="8,4" Panel.ZIndex="20" />
+                            Padding="8,4" />
                     <TextBlock Text="{Binding Loc[CloseAppQuestion]}" FontSize="20" FontWeight="SemiBold"
                                Foreground="White" TextWrapping="Wrap" HorizontalAlignment="Center" />
                     <StackPanel Orientation="Horizontal" Spacing="12" HorizontalAlignment="Center">
