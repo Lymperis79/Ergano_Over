@@ -23,6 +23,12 @@ public partial class HolidayDialogView : UserControl
             _ = vm.DownloadPdfCommand.ExecuteAsync(row);
     }
 
+    private void OnEditClick(object? sender, RoutedEventArgs e)
+    {
+        if (sender is Button { Tag: HolidayRow row } && DataContext is HolidayDialogViewModel vm)
+            vm.EditRowCommand.Execute(row);
+    }
+
     private void OnDeleteClick(object? sender, RoutedEventArgs e)
     {
         if (sender is Button { Tag: HolidayRow row } && DataContext is HolidayDialogViewModel vm)
