@@ -190,6 +190,22 @@
 
             </StackPanel>
 
+            <!-- Employee filter includes batch submissions containing the selected employee -->
+
+            <StackPanel Margin="0,0,18,0" Spacing="5">
+                <TextBlock Text="{Binding Loc[Employee]}" FontSize="12" Foreground="Gray" />
+                <ComboBox ItemsSource="{Binding EmployeeOptions}"
+                          SelectedValueBinding="{Binding Id}"
+                          SelectedValue="{Binding SelectedEmployeeId, Mode=TwoWay}"
+                          MinWidth="220">
+                    <ComboBox.ItemTemplate>
+                        <DataTemplate x:DataType="vm:EmployeeFilterOption">
+                            <TextBlock Text="{Binding Name}" />
+                        </DataTemplate>
+                    </ComboBox.ItemTemplate>
+                </ComboBox>
+            </StackPanel>
+
             <!-- Failures only -->
 
             <CheckBox Content="{Binding Loc[FailuresOnly]}"
@@ -345,6 +361,13 @@
                                                    Foreground="Gray"
                                                    FontFamily="Consolas,Menlo,monospace" />
 
+                                        <TextBlock Text="{Binding EmployeeNames}"
+                                                   FontSize="11"
+                                                   Foreground="{DynamicResource AccentBrush}"
+                                                   TextWrapping="Wrap"
+                                                   IsVisible="{Binding EmployeeNames,
+                                                       Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+
                                     </StackPanel>
 
                                     <!-- HTTP status -->
@@ -419,6 +442,11 @@
                                Foreground="#F2C94C"
                                FontSize="12"
                                IsVisible="{Binding SelectedRow.HasRetries}" />
+
+                    <Button Content="{Binding Loc[DownloadPdf]}"
+                            Click="OnDownloadPdfClick"
+                            HorizontalAlignment="Left"
+                            IsVisible="{Binding SelectedRow.HasPdf}" />
 
                     <TextBlock Text="{Binding Loc[RequestPayload]}"
                                FontWeight="SemiBold"
