@@ -27,6 +27,7 @@ public class HolidayRow
     public string? LastError { get; init; }
     public int? ReferenceYear { get; init; }
     public int? EntitledDays { get; init; }
+    public string? Comments { get; init; }
 
     public string StatusIcon => SubmittedToErgani ? "✅" : (string.IsNullOrWhiteSpace(LastError) ? "🕓" : "❌");
     public string DateText => LeaveDate.ToString("dd/MM/yyyy");
@@ -165,7 +166,8 @@ public partial class HolidayDialogViewModel : ViewModelBase
                 ResponseRawJson   = l.ResponseRawJson,
                 LastError         = l.LastError,
                 ReferenceYear     = l.ReferenceYear,
-                EntitledDays      = l.EntitledDays
+                EntitledDays      = l.EntitledDays,
+                Comments          = l.Comments
             });
 
         HasRows = Rows.Count > 0;
@@ -318,7 +320,7 @@ public partial class HolidayDialogViewModel : ViewModelBase
         EndTime = row.EndTime?.ToTimeSpan() ?? new TimeSpan(13, 0, 0);
         ReferenceYear = row.ReferenceYear?.ToString() ?? string.Empty;
         EntitledDays = row.EntitledDays?.ToString() ?? string.Empty;
-        Comments = string.Empty;
+        Comments = row.Comments ?? string.Empty;
         StatusMessage = Loc["Vm.Editing holiday — update the required values and save."];
     }
 
