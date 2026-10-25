@@ -664,6 +664,7 @@ public partial class AdminShellViewModel : ViewModelBase
         if (_session != null && !_session.CanSee(sectionName))
             return;
 
+        var wasCached = _sectionCache.ContainsKey(section);
         ActiveSection = section;
 
         if (!_sectionCache.TryGetValue(
@@ -766,6 +767,10 @@ public partial class AdminShellViewModel : ViewModelBase
         }
 
         CurrentSectionViewModel = vm;
+
+        // Cached sections keep their view models; refresh overtime records on every revisit.
+        if (wasCached && section == AdminSection.Overtime && vm is OvertimeViewModel overtimeVm)
+            _ = overtimeVm.RefreshAsync();
     }
 }
 
