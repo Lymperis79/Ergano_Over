@@ -1,8 +1,0 @@
-{
-  "profiles": {
-    "ErganiManager.UI": {
-      "commandName": "Project",
-      "launchBrowser": false
-    }
-  }
-}
