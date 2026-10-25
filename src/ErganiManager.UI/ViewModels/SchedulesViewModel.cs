@@ -2315,7 +2315,7 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
                     failed += result.Error != null ? allDays.Count : result.Failed;
                     overtimeSubmitted += result.OvertimeSubmitted;
                     overtimeFailed += result.OvertimeFailed;
-                    overtimePending += result.Days.Count(d => d.Success && d.OvertimeFrom.HasValue && !d.OvertimeSubmitted);
+                    overtimePending += result.Days.Count(d => d.Success && d.OvertimeFrom.HasValue && !d.OvertimeSubmitted && string.IsNullOrWhiteSpace(d.OvertimeError));
 
                     foreach (var (employee, _) in toSendByEmployee)
                     {
@@ -2420,7 +2420,7 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
 
         // Schedule-generated overtime remains pending for review/submission from the Overtime page.
         var overtime = string.Empty;
-        var pendingOvertime = result.Days.Count(d => d.Success && d.OvertimeFrom.HasValue && !d.OvertimeSubmitted);
+        var pendingOvertime = result.Days.Count(d => d.Success && d.OvertimeFrom.HasValue && !d.OvertimeSubmitted && string.IsNullOrWhiteSpace(d.OvertimeError));
         if (pendingOvertime > 0)
             overtime = " " + string.Format(
                 Loc["Vm.Overtime saved as pending: {0} record(s). Submit them from the Overtime page."], pendingOvertime);
