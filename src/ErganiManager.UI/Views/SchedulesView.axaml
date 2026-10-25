@@ -49,6 +49,14 @@
                         Margin="0,0,6,6" IsEnabled="{Binding HasActiveCompany}" />
             </WrapPanel>
 
+            <!-- Overtime reason used when schedule submission generates overtime records -->
+            <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                <TextBlock Text="{Binding Loc[Justification]}" VerticalAlignment="Center" FontWeight="SemiBold" />
+                <ComboBox ItemsSource="{Binding AvailableOvertimeJustifications}"
+                          SelectedItem="{Binding SelectedOvertimeJustification, Mode=TwoWay}"
+                          Width="260" />
+            </StackPanel>
+
             <!-- Line 2: sending to Ergani -->
             <WrapPanel Orientation="Horizontal">
                 <Button Content="{Binding SubmitScheduleButtonText}"
