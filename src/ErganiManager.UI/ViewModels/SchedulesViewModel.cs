@@ -411,6 +411,9 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
         }
     }
 
+    /// <summary>Refreshes the visible calendar when returning to the Schedules section.</summary>
+    public Task RefreshAsync() => RefreshCalendarAsync();
+
     private async Task LoadFiltersAsync()
     {
         if (_session?.CompanyId is not int companyId) return;
