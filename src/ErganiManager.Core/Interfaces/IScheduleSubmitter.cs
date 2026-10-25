@@ -44,14 +44,14 @@ public interface IScheduleSubmitter
     /// <summary>Submits exactly the days passed in. Each date is one Ergani submission and
     /// is written to the API submission log (request, response, protocol, errors).</summary>
     Task<ScheduleSubmitResult> SubmitScheduleDaysAsync(
-        int companyId, IReadOnlyList<ScheduleDayDto> days);
+        int companyId, IReadOnlyList<ScheduleDayDto> days, string overtimeJustification = "ExceptionalWorkload");
 
     /// <summary>Submits only the overtime (hours over 8) of the given days, without touching the
     /// normal schedule. The overtime comes from the schedule hours; days with no scheduled overtime
     /// fall back to the clocked-in hours. Unsent records from earlier attempts are retried and
     /// already-sent ones are not sent twice.</summary>
     Task<ScheduleSubmitResult> SubmitOvertimeFromScheduleAsync(
-        int companyId, IReadOnlyList<ScheduleDayDto> days);
+        int companyId, IReadOnlyList<ScheduleDayDto> days, string overtimeJustification = "ExceptionalWorkload");
 
     Task<(int Submitted, string? Error)> SubmitOvertimeDaysAsync(
         int companyId, IReadOnlyList<ScheduleDayDto> overtimeDays);
