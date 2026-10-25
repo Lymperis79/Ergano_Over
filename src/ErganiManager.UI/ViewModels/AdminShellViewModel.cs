@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
+using System.Diagnostics;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -94,17 +95,46 @@ public partial class AdminShellViewModel : ViewModelBase
     [ObservableProperty]
     private bool _hasNotification;
 
+    [ObservableProperty]
+    private string? _notificationFilePath;
+
+    public bool HasNotificationFile => !string.IsNullOrWhiteSpace(NotificationFilePath);
+
     public void ShowNotification(
         string message,
-        bool isError = false)
+        bool isError = false,
+        string? filePath = null)
     {
         NotificationMessage = message;
         IsNotificationError = isError;
+        NotificationFilePath = !string.IsNullOrWhiteSpace(filePath) && System.IO.File.Exists(filePath)
+            ? filePath : null;
+        OnPropertyChanged(nameof(HasNotificationFile));
         HasNotification = true;
 
-        _ = Task.Delay(6000).ContinueWith(_ =>
+        _ = Task.Delay(10000).ContinueWith(_ =>
             Avalonia.Threading.Dispatcher.UIThread.Post(() =>
-                HasNotification = false));
+            {
+                HasNotification = false;
+                NotificationFilePath = null;
+                OnPropertyChanged(nameof(HasNotificationFile));
+            }));
+    }
+
+    [RelayCommand]
+    private void OpenNotificationFile()
+    {
+        if (string.IsNullOrWhiteSpace(NotificationFilePath) || !System.IO.File.Exists(NotificationFilePath))
+            return;
+
+        try
+        {
+            Process.Start(new ProcessStartInfo(NotificationFilePath) { UseShellExecute = true });
+        }
+        catch (Exception ex)
+        {
+            ShowNotification($"❌ Could not open file: {ex.Message}", isError: true);
+        }
     }
 
     public void ShowError(string message) =>
