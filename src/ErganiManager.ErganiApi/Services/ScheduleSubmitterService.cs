@@ -223,7 +223,17 @@ public class ScheduleSubmitterService : IScheduleSubmitter
                 return null;
             }
 
-            if (existing == null)
+            var justification = Enum.TryParse<OvertimeJustification>(overtimeJustification, out var selectedJustification)
+                ? selectedJustification
+                : OvertimeJustification.ExceptionalWorkload;
+
+            if (existing != null)
+            {
+                // Apply the current selection to a previously generated but still-unsent record.
+                existing.Justification = justification;
+                await db.SaveChangesAsync();
+            }
+            else
             {
                 var employee = await db.Employees.FindAsync(day.EmployeeId);
                 if (employee == null)
@@ -240,9 +250,7 @@ public class ScheduleSubmitterService : IScheduleSubmitter
                     OvertimeDate         = day.ScheduleDate,
                     StartTime            = range.From,
                     EndTime              = range.To,
-                    Justification        = Enum.TryParse<OvertimeJustification>(overtimeJustification, out var selectedJustification)
-                        ? selectedJustification
-                        : OvertimeJustification.ExceptionalWorkload,
+                    Justification        = justification,
                     WeeklyWorkdaysNumber = employee.WeeklyWorkdays,
                     CreatedAt            = DateTime.UtcNow
                 };
@@ -322,7 +330,7 @@ public class ScheduleSubmitterService : IScheduleSubmitter
             };
             outcome.Days.Add(dayResult);
 
-            if (await PrepareOvertimeAsync(db, day, r, dayResult, outcome) is int otId)
+            if (await PrepareOvertimeAsync(db, day, r, dayResult, outcome, overtimeJustification) is int otId)
                 queue.Add((otId, dayResult));
         }
 
