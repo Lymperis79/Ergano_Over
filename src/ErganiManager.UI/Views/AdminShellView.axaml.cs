@@ -1,4 +1,5 @@
 using System;
+using System.ComponentModel;
 using ErganiManager.UI.Localization;
 using ErganiManager.UI.Services;
 using Avalonia.Media;
@@ -20,6 +21,8 @@ namespace ErganiManager.UI.Views;
 
 public partial class AdminShellView : Window
 {
+    private ObservableObject? _statusMessageViewModel;
+    private PropertyChangedEventHandler? _statusMessageHandler;
     public AdminShellView()
     {
         InitializeComponent();
@@ -172,9 +175,18 @@ public partial class AdminShellView : Window
         shell.PropertyChanged += (_, args) =>
         {
             if (args.PropertyName != nameof(AdminShellViewModel.CurrentSectionViewModel)) return;
-            if (shell.CurrentSectionViewModel is not ObservableObject vm) return;
 
-            vm.PropertyChanged += (_, vmArgs) =>
+            // Detach the previous section handler before subscribing to the new section.
+            // Otherwise revisiting a section can register duplicate handlers and show the
+            // same success notification more than once.
+            if (_statusMessageViewModel != null && _statusMessageHandler != null)
+                _statusMessageViewModel.PropertyChanged -= _statusMessageHandler;
+
+            _statusMessageViewModel = shell.CurrentSectionViewModel as ObservableObject;
+            _statusMessageHandler = null;
+            if (_statusMessageViewModel is not ObservableObject vm) return;
+
+            _statusMessageHandler = (_, vmArgs) =>
             {
                 if (vmArgs.PropertyName != "StatusMessage") return;
                 var msg = vm.GetType().GetProperty("StatusMessage")?.GetValue(vm) as string;
@@ -182,8 +194,6 @@ public partial class AdminShellView : Window
                     shell.ShowError(msg);
                 else if (!string.IsNullOrEmpty(msg) && msg.StartsWith("✅"))
                 {
-                    // Export status messages include the saved path. Attach an Open file action
-                    // only when the path points to an existing PDF/Excel/CSV file.
                     string? filePath = null;
                     var match = Regex.Match(msg, @"([A-Za-z]:\\.*?\.(?:pdf|xlsx|xls|csv))", RegexOptions.IgnoreCase);
                     if (match.Success && File.Exists(match.Groups[1].Value))
@@ -192,6 +202,7 @@ public partial class AdminShellView : Window
                     shell.ShowNotification(msg, isError: false, filePath: filePath);
                 }
             };
+            vm.PropertyChanged += _statusMessageHandler;
         };
     }
 }
