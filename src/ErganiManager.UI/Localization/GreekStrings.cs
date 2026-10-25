@@ -195,6 +195,7 @@ public static class GreekStrings
         [L.Overtime] = "Υπερωρίες",
         [L.OvertimeDate] = "Ημερομηνία",
         [L.Justification] = "Αιτιολογία",
+        [L.OvertimeJustification] = "Αιτιολογία υπερωρίας που δημιουργείται από το πρόγραμμα",
         [L.AseeApproval] = "Έγκριση ΑΣΕΕ (προαιρετικό)",
         [L.Cancelled] = "Ακυρωμένη",
         [L.CancelOvertime] = "Ακύρωση ΥΠ",
