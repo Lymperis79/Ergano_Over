@@ -212,6 +212,8 @@ public static class EnglishStrings
         [L.FailuresOnly] = "Failures only",
         [L.RequestPayload] = "Request Payload",
         [L.Response] = "Response",
+        [L.AllEmployees] = "All employees",
+        [L.DownloadPdf] = "Download PDF",
 
         // ── Status ────────────────────────────────────────────
         [L.Submitted] = "✅ Submitted",
