@@ -15,6 +15,7 @@ namespace ErganiManager.UI.ViewModels;
 public class HolidayRow
 {
     public int Id { get; init; }
+    public int BranchId { get; init; }
     public DateOnly LeaveDate { get; init; }
     public string LeaveTypeCode { get; init; } = string.Empty;
     public TimeOnly? StartTime { get; init; }
@@ -24,6 +25,8 @@ public class HolidayRow
     public DateOnly? SubmittedDate { get; init; }
     public string? ResponseRawJson { get; init; }
     public string? LastError { get; init; }
+    public int? ReferenceYear { get; init; }
+    public int? EntitledDays { get; init; }
 
     public string StatusIcon => SubmittedToErgani ? "✅" : (string.IsNullOrWhiteSpace(LastError) ? "🕓" : "❌");
     public string DateText => LeaveDate.ToString("dd/MM/yyyy");
@@ -51,6 +54,7 @@ public partial class HolidayDialogViewModel : ViewModelBase
 
     private int _companyId;
     private EmployeeDto? _employee;
+    private int? _editingLeaveId;
 
     public HolidayDialogViewModel(
         ILeaveService leaveService, ILeaveSubmitter leaveSubmitter, IErganiDocumentService documentService)
@@ -77,6 +81,7 @@ public partial class HolidayDialogViewModel : ViewModelBase
     [ObservableProperty] private TimeSpan? _endTime = new TimeSpan(13, 0, 0);
     [ObservableProperty] private string _referenceYear = string.Empty;
     [ObservableProperty] private string _entitledDays = string.Empty;
+    [ObservableProperty] private bool _isEditingExisting;
     [ObservableProperty] private string _comments = string.Empty;
 
     [ObservableProperty] private string _statusMessage = string.Empty;
@@ -107,6 +112,8 @@ public partial class HolidayDialogViewModel : ViewModelBase
 
         Title          = string.Format(Loc["Vm.🏖 Holidays — {0}"], employee.FullName);
         SelectedType   = null;
+        _editingLeaveId = null;
+        IsEditingExisting = false;
         ReferenceYear  = string.Empty;
         EntitledDays   = string.Empty;
         Comments       = string.Empty;
@@ -147,6 +154,7 @@ public partial class HolidayDialogViewModel : ViewModelBase
             Rows.Add(new HolidayRow
             {
                 Id                = l.Id,
+                BranchId          = l.BranchId,
                 LeaveDate         = l.LeaveDate,
                 LeaveTypeCode     = l.LeaveTypeCode,
                 StartTime         = l.StartTime,
@@ -155,7 +163,9 @@ public partial class HolidayDialogViewModel : ViewModelBase
                 Protocol          = l.Protocol,
                 SubmittedDate     = l.SubmittedDate,
                 ResponseRawJson   = l.ResponseRawJson,
-                LastError         = l.LastError
+                LastError         = l.LastError,
+                ReferenceYear     = l.ReferenceYear,
+                EntitledDays      = l.EntitledDays
             });
 
         HasRows = Rows.Count > 0;
@@ -179,30 +189,29 @@ public partial class HolidayDialogViewModel : ViewModelBase
         if (SelectedBranch == null) { StatusMessage = Loc["Vm.❌ Select the branch."]; return; }
         if (FromDate == null || ToDate == null) { StatusMessage = Loc["Vm.❌ Enter the from and to dates (dd/mm/yyyy)."]; return; }
 
-        int? year = null;
-        if (!string.IsNullOrWhiteSpace(ReferenceYear))
-        {
-            if (!int.TryParse(ReferenceYear.Trim(), out var y) || y < 1900 || y > 2100)
-            { StatusMessage = Loc["Vm.❌ The reference year must be a 4-digit year."]; return; }
-            year = y;
-        }
+        if (string.IsNullOrWhiteSpace(ReferenceYear) ||
+            !int.TryParse(ReferenceYear.Trim(), out var y) || y < 1900 || y > 2100)
+        { StatusMessage = Loc["Vm.❌ The reference year is required and must be a 4-digit year."]; return; }
+        int? year = y;
 
-        int? entitled = null;
-        if (!string.IsNullOrWhiteSpace(EntitledDays))
-        {
-            if (!int.TryParse(EntitledDays.Trim(), out var d) || d < 0 || d > 999)
-            { StatusMessage = Loc["Vm.❌ Entitled days must be a number from 0 to 999."]; return; }
-            entitled = d;
-        }
+        if (string.IsNullOrWhiteSpace(EntitledDays) ||
+            !int.TryParse(EntitledDays.Trim(), out var d) || d < 0 || d > 999)
+        { StatusMessage = Loc["Vm.❌ Entitled leave days are required and must be a number from 0 to 999."]; return; }
+        int? entitled = d;
 
         if (Comments.Length > 200) { StatusMessage = Loc["Vm.❌ Comments can be at most 200 characters."]; return; }
 
         try
         {
+            var from = DateOnly.FromDateTime(FromDate.Value.LocalDateTime);
+            var to   = DateOnly.FromDateTime(ToDate.Value.LocalDateTime);
+
             var template = new LeaveDto
             {
+                Id            = _editingLeaveId ?? 0,
                 EmployeeId    = _employee.Id,
                 BranchId      = SelectedBranch.Id,
+                LeaveDate     = from,
                 LeaveTypeCode = SelectedType.Code,
                 StartTime     = SelectedType.IsHourly && StartTime.HasValue ? TimeOnly.FromTimeSpan(StartTime.Value) : null,
                 EndTime       = SelectedType.IsHourly && EndTime.HasValue   ? TimeOnly.FromTimeSpan(EndTime.Value)   : null,
@@ -211,8 +220,30 @@ public partial class HolidayDialogViewModel : ViewModelBase
                 Comments      = Comments
             };
 
-            var from = DateOnly.FromDateTime(FromDate.Value.LocalDateTime);
-            var to   = DateOnly.FromDateTime(ToDate.Value.LocalDateTime);
+            if (_editingLeaveId.HasValue)
+            {
+                if (from != to)
+                { StatusMessage = Loc["Vm.When editing a holiday, the from and to dates must be the same day."]; return; }
+
+                var editedId = _editingLeaveId.Value;
+                var updated = await _leaveService.UpdateUnsentAsync(_companyId, template);
+                if (!updated)
+                { StatusMessage = Loc["Vm.❌ Only holidays not yet submitted to Ergani can be edited."]; return; }
+
+                _editingLeaveId = null;
+                IsEditingExisting = false;
+                await ReloadAsync();
+                HolidaysChanged?.Invoke(this, EventArgs.Empty);
+
+                if (!submit)
+                {
+                    StatusMessage = Loc["Vm.✅ Holiday updated. You can now submit it to Ergani."];
+                    return;
+                }
+
+                await SubmitIdsAsync(new[] { editedId });
+                return;
+            }
 
             var created = await _leaveService.CreateRangeAsync(template, from, to, SkipWeekends);
             await ReloadAsync();
@@ -266,6 +297,41 @@ public partial class HolidayDialogViewModel : ViewModelBase
     }
 
     // ── List actions ──────────────────────────────────────────────────────────
+
+    [RelayCommand]
+    private void EditRow(HolidayRow row)
+    {
+        if (_employee == null || !row.IsUnsent)
+        {
+            StatusMessage = Loc["Vm.Only holidays not yet submitted to Ergani can be edited."];
+            return;
+        }
+
+        _editingLeaveId = row.Id;
+        IsEditingExisting = true;
+        SelectedType = LeaveTypes.Find(row.LeaveTypeCode);
+        SelectedBranch = Branches.FirstOrDefault(b => b.Id == row.BranchId);
+        FromDate = new DateTimeOffset(row.LeaveDate.ToDateTime(TimeOnly.MinValue));
+        ToDate = FromDate;
+        SkipWeekends = false;
+        StartTime = row.StartTime?.ToTimeSpan() ?? new TimeSpan(9, 0, 0);
+        EndTime = row.EndTime?.ToTimeSpan() ?? new TimeSpan(13, 0, 0);
+        ReferenceYear = row.ReferenceYear?.ToString() ?? string.Empty;
+        EntitledDays = row.EntitledDays?.ToString() ?? string.Empty;
+        Comments = string.Empty;
+        StatusMessage = Loc["Vm.Editing holiday — update the required values and save."];
+    }
+
+    [RelayCommand]
+    private void CancelEdit()
+    {
+        _editingLeaveId = null;
+        IsEditingExisting = false;
+        ReferenceYear = string.Empty;
+        EntitledDays = string.Empty;
+        Comments = string.Empty;
+        StatusMessage = Loc["Vm.Edit cancelled."];
+    }
 
     [RelayCommand]
     private async Task DeleteRowAsync(HolidayRow row)
