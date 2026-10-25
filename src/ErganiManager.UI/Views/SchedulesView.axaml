@@ -41,6 +41,12 @@
                 <Button Content="{Binding Loc[Log]}"
                         Command="{Binding OpenLogCommand}"
                         Margin="0,0,6,6" IsEnabled="{Binding HasActiveCompany}" />
+                <Button Content="{Binding Loc[OvertimeLog]}"
+                        Command="{Binding OpenOvertimeLogCommand}"
+                        Margin="0,0,6,6" IsEnabled="{Binding HasActiveCompany}" />
+                <Button Content="{Binding Loc[HolidaysLog]}"
+                        Command="{Binding OpenHolidaysLogCommand}"
+                        Margin="0,0,6,6" IsEnabled="{Binding HasActiveCompany}" />
             </WrapPanel>
 
             <!-- Line 2: sending to Ergani -->
@@ -661,7 +667,7 @@
                     <TextBlock Grid.Row="0" Text="{Binding LogTitle}" FontSize="17" FontWeight="Bold" />
 
                     <Panel Grid.Row="1">
-                        <TextBlock Text="{Binding Loc[NoScheduleHasBeenSubmittedTo]}"
+                        <TextBlock Text="{Binding LogEmptyText}"
                                    Foreground="Gray" IsVisible="{Binding !HasLogRows}" />
                         <ScrollViewer IsVisible="{Binding HasLogRows}">
                             <ItemsControl ItemsSource="{Binding LogRows}">
