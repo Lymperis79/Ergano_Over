@@ -1,0 +1,55 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:ErganiManager.UI.ViewModels"
+        x:Class="ErganiManager.UI.Views.LoginView"
+        Icon="avares://ErganiManager.UI/Assets/icon.png"
+        x:DataType="vm:LoginViewModel"
+        Title="{Binding Loc[AppTitle]}"
+        Width="420" Height="560"
+        WindowStartupLocation="CenterScreen"
+        CanResize="False"
+        Background="{DynamicResource WindowBrush}">
+
+    <Grid>
+        <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Width="320" Spacing="14">
+
+            <Image Source="{Binding Logo.Current}" IsVisible="{Binding Logo.HasLogo}"
+                   MaxHeight="90" MaxWidth="260" Stretch="Uniform"
+                   HorizontalAlignment="Center" />
+            <TextBlock Text="{Binding Loc[AppTitle]}" FontSize="26" FontWeight="Bold"
+                       HorizontalAlignment="Center" />
+            <TextBlock Text="{Binding Loc[SignIn]}" Foreground="Gray"
+                       HorizontalAlignment="Center" Margin="0,0,0,8" />
+
+            <Border IsVisible="{Binding IsDegradedMode}"
+                    Background="{DynamicResource AccentSoftBrush}" CornerRadius="6" Padding="10" Margin="0,0,0,8">
+                <TextBlock Text="{Binding Loc[OfflineBanner]}" TextWrapping="Wrap" FontSize="12" />
+            </Border>
+
+            <TextBlock Text="{Binding Loc[Username]}" FontWeight="SemiBold" />
+            <TextBox x:Name="UsernameBox" Text="{Binding Username}" PlaceholderText="{Binding Loc[Username]}" />      
+
+            <TextBlock Text="{Binding Loc[Password]}" FontWeight="SemiBold" />
+            <TextBox Text="{Binding Password}" PasswordChar="•"
+                     PlaceholderText="{Binding Loc[Password]}" />
+
+            <TextBlock Text="{Binding ErrorMessage}" Foreground="Red" TextWrapping="Wrap"
+                       IsVisible="{Binding ErrorMessage,
+                           Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+
+            <TextBlock Text="{Binding UpgradeWarning}" Foreground="#FFB74D" TextWrapping="Wrap" FontSize="12"
+                       IsVisible="{Binding UpgradeWarning,
+                           Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+
+            <Button Content="{Binding Loc[SignIn]}"
+                    Command="{Binding LoginCommand}"
+                    IsEnabled="{Binding !IsBusy}"
+                    Classes="accent"
+                    HorizontalAlignment="Stretch"
+                    HorizontalContentAlignment="Center"
+                    Margin="0,8,0,0" />          
+
+        </StackPanel>
+    </Grid>
+
+</Window>

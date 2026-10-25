@@ -1,0 +1,464 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:ErganiManager.UI.ViewModels"
+             x:Class="ErganiManager.UI.Views.SubmissionLogView"
+             x:DataType="vm:SubmissionLogViewModel">
+
+    <Grid RowDefinitions="Auto,*">
+
+        <StackPanel Grid.Row="0"
+                    Spacing="12">
+
+            <Border IsVisible="{Binding !HasActiveCompany}"
+                    Background="{DynamicResource AccentSoftBrush}"
+                    CornerRadius="6"
+                    Padding="14">
+
+                <TextBlock Text="{Binding NoCompanyMessage}"
+                           TextWrapping="Wrap" />
+
+            </Border>
+
+            <StackPanel IsVisible="{Binding HasActiveCompany}"
+                        Spacing="12">
+
+                <TextBlock Text="{Binding Loc[ApiLog]}"
+                           FontSize="22"
+                           FontWeight="Bold" />
+
+                <!-- Failed Submissions — Pending Retry -->
+
+                <Border Background="{DynamicResource CardBrush}"
+                        CornerRadius="8"
+                        Padding="16"
+                        Margin="0,0,0,8">
+
+                    <StackPanel Spacing="10">
+
+                        <Grid ColumnDefinitions="*,Auto,Auto">
+
+                            <StackPanel Grid.Column="0">
+
+                                <TextBlock Text="{Binding Loc[FailedSubmissions]}"
+                                           FontSize="15"
+                                           FontWeight="SemiBold" />
+
+                                <TextBlock Text="{Binding FailedCountText}"
+                                           FontSize="12"
+                                           Foreground="Gray" />
+
+                            </StackPanel>
+
+                            <Button Grid.Column="1"
+                                    Content="{Binding Loc[Refresh]}"
+                                    Command="{Binding LoadFailedSubmissionsCommand}"
+                                    Margin="0,0,8,0"
+                                    VerticalAlignment="Center" />
+
+                            <Button Grid.Column="2"
+                                    Content="{Binding Loc[RetryNow]}"
+                                    Command="{Binding ManualRetryNowCommand}"
+                                    IsEnabled="{Binding !IsRetrying}"
+                                    Classes="accent"
+                                    VerticalAlignment="Center" />
+
+                        </Grid>
+
+                        <ItemsControl ItemsSource="{Binding FailedSubmissions}"
+                                      IsVisible="{Binding FailedSubmissions.Count}">
+
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <StackPanel Spacing="4" />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+
+                            <ItemsControl.ItemTemplate>
+
+                                <DataTemplate x:DataType="vm:FailedSubmissionRow">
+
+                                    <Border Background="{DynamicResource HoverBrush}"
+                                            CornerRadius="6"
+                                            Padding="12,8">
+
+                                        <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto">
+
+                                            <TextBlock Grid.Column="0"
+                                                       Text="{Binding MovementIcon}"
+                                                       FontSize="14"
+                                                       VerticalAlignment="Center"
+                                                       Margin="0,0,8,0" />
+
+                                            <StackPanel Grid.Column="1"
+                                                        VerticalAlignment="Center">
+
+                                                <TextBlock Text="{Binding ScanTimeText}"
+                                                           FontFamily="Consolas,Menlo,monospace"
+                                                           FontSize="12" />
+
+                                                <TextBlock Text="{Binding ErrorDescription}"
+                                                           FontSize="11"
+                                                           Foreground="#EF9A9A"
+                                                           TextWrapping="Wrap"
+                                                           IsVisible="{Binding ErrorDescription,
+                                                               Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+
+                                            </StackPanel>
+
+                                            <StackPanel Grid.Column="2"
+                                                        VerticalAlignment="Center"
+                                                        Margin="8,0">
+                                                <TextBlock Text="{Binding StatusText}"
+                                                           FontSize="11"
+                                                           FontWeight="SemiBold" />
+                                                <TextBlock Text="{Binding Protocol, StringFormat='Protocol: {0}'}"
+                                                           FontSize="10"
+                                                           Foreground="#8BC34A"
+                                                           IsVisible="{Binding Protocol, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                                            </StackPanel>
+
+                                            <TextBlock Grid.Column="3"
+                                                       Text="{Binding RetryCount,
+                                                              StringFormat='Attempts: {0}'}"
+                                                       FontSize="11"
+                                                       Foreground="#666666"
+                                                       VerticalAlignment="Center"
+                                                       Margin="0,0,8,0" />
+
+                                            <TextBlock Grid.Column="4"
+                                                       Text="{Binding LastRetryText,
+                                                              StringFormat='Last: {0}'}"
+                                                       FontSize="11"
+                                                       Foreground="#666666"
+                                                       VerticalAlignment="Center" />
+
+                                        </Grid>
+
+                                    </Border>
+
+                                </DataTemplate>
+
+                            </ItemsControl.ItemTemplate>
+
+                        </ItemsControl>
+
+                    </StackPanel>
+
+                </Border>
+
+
+<!-- Filters -->
+
+<Border Background="{DynamicResource CardBrush}"
+        CornerRadius="8"
+        Padding="14">
+
+    <StackPanel Spacing="12">
+
+        <!-- Date filters -->
+
+        <WrapPanel Orientation="Horizontal"
+                   HorizontalAlignment="Left">
+
+            <!-- From -->
+
+            <StackPanel Margin="0,0,18,0"
+                        Spacing="5">
+
+                <TextBlock Text="{Binding Loc[From2]}"
+                           FontSize="12"
+                           Foreground="Gray" />
+
+                <DatePicker SelectedDate="{Binding FilterFromDate, Mode=TwoWay}"
+                            HorizontalAlignment="Left"
+                            MinWidth="180" />
+
+            </StackPanel>
+
+            <!-- To -->
+
+            <StackPanel Margin="0,0,18,0"
+                        Spacing="5">
+
+                <TextBlock Text="{Binding Loc[To2]}"
+                           FontSize="12"
+                           Foreground="Gray" />
+
+                <DatePicker SelectedDate="{Binding FilterToDate, Mode=TwoWay}"
+                            HorizontalAlignment="Left"
+                            MinWidth="180" />
+
+            </StackPanel>
+
+            <!-- Failures only -->
+
+            <CheckBox Content="{Binding Loc[FailuresOnly]}"
+                      IsChecked="{Binding FilterFailuresOnly}"
+                      VerticalAlignment="Bottom"
+                      Margin="0,0,18,8" />
+
+            <!-- Load -->
+
+            <Button Content="{Binding Loc[Load]}"
+                    Command="{Binding LoadCommand}"
+                    IsEnabled="{Binding !IsLoading}"
+                    Classes="accent"
+                    VerticalAlignment="Bottom"
+                    Margin="0,0,0,5" />
+
+            <!-- Select all failed -->
+
+            <Button Content="{Binding Loc[SelectAllFailed]}"
+                    Command="{Binding SelectAllFailedCommand}"
+                    VerticalAlignment="Bottom"
+                    Margin="18,0,0,5" />
+
+            <!-- f_aitiologia used when the first attempt was more than 10 min ago -->
+
+            <StackPanel Margin="18,0,0,0"
+                        Spacing="5"
+                        ToolTip.Tip="{Binding Loc[SentAsFAitiologiaWhenThe]}">
+
+                <TextBlock Text="{Binding Loc[LateReason10Min]}"
+                           FontSize="12"
+                           Foreground="Gray" />
+
+                <ComboBox ItemsSource="{Binding LateJustificationOptions}"
+                          SelectedValueBinding="{Binding Code}"
+                          SelectedValue="{Binding SelectedLateJustification, Mode=TwoWay}"
+                          MinWidth="320">
+                    <ComboBox.ItemTemplate>
+                        <DataTemplate x:DataType="vm:LocalizedCodeOption">
+                            <TextBlock Text="{Binding Display}" TextWrapping="Wrap" />
+                        </DataTemplate>
+                    </ComboBox.ItemTemplate>
+                </ComboBox>
+
+            </StackPanel>
+
+            <!-- Retry selected -->
+
+            <Button Content="{Binding RetrySelectedText}"
+                    Command="{Binding RetrySelectedCommand}"
+                    Classes="accent"
+                    VerticalAlignment="Bottom"
+                    Margin="8,0,0,5" />
+
+        </WrapPanel>
+
+        <!-- Status -->
+
+        <TextBlock Text="{Binding StatusMessage}"
+                   Foreground="Gray"
+                   FontSize="12"
+                   TextWrapping="Wrap" />
+
+    </StackPanel>
+
+</Border>
+
+
+
+                <TextBlock Text="{Binding StatusMessage}"
+                           Foreground="Gray"
+                           FontSize="12" />
+
+            </StackPanel>
+
+        </StackPanel>
+
+        <!-- Split pane: list on left, JSON detail on right -->
+
+        <Grid Grid.Row="1"
+              IsVisible="{Binding HasActiveCompany}"
+              ColumnDefinitions="*,4,400"
+              Margin="0,8,0,0">
+
+            <!-- Log list -->
+
+            <ScrollViewer Grid.Column="0">
+
+                <ItemsControl ItemsSource="{Binding Rows}">
+
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <StackPanel Spacing="3" />
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+
+                    <ItemsControl.ItemTemplate>
+
+                        <DataTemplate x:DataType="vm:SubmissionLogRow">
+
+                            <Border CornerRadius="6"
+                                    Padding="12,8"
+                                    Tag="{Binding}"
+                                    PointerPressed="OnRowPressed"
+                                    Background="{DynamicResource CardBrush}"
+                                    Cursor="Hand">
+
+                                <Grid ColumnDefinitions="Auto,Auto,*,Auto,Auto,Auto,Auto">
+
+                                    <!-- Retry tick box (failed work cards only) -->
+
+                                    <Border Grid.Column="0"
+                                            Width="32"
+                                            VerticalAlignment="Center">
+
+                                        <CheckBox IsChecked="{Binding IsSelected, Mode=TwoWay}"
+                                                  IsVisible="{Binding CanRetry}" />
+
+                                    </Border>
+
+                                    <!-- Retry counter -->
+
+                                    <TextBlock Grid.Column="3"
+                                               Text="{Binding RetryText}"
+                                               IsVisible="{Binding HasRetries}"
+                                               VerticalAlignment="Center"
+                                               Margin="8,0"
+                                               Foreground="#F2C94C"
+                                               FontSize="12"
+                                               ToolTip.Tip="{Binding LastRetryText}" />
+
+                                    <!-- Status icon -->
+
+                                    <TextBlock Grid.Column="1"
+                                               Width="24"
+                                               FontSize="15"
+                                               VerticalAlignment="Center"
+                                               Text="{Binding StatusIcon}" />
+
+                                    <!-- Type + date -->
+
+                                    <StackPanel Grid.Column="2"
+                                                VerticalAlignment="Center"
+                                                Margin="8,0">
+
+                                        <TextBlock Text="{Binding SubmissionType}"
+                                                   FontWeight="SemiBold"
+                                                   FontSize="13" />
+
+                                        <TextBlock Text="{Binding SubmissionDate,
+                                                               StringFormat='{}{0:dd/MM/yyyy HH:mm:ss}'}"
+                                                   FontSize="11"
+                                                   Foreground="Gray"
+                                                   FontFamily="Consolas,Menlo,monospace" />
+
+                                    </StackPanel>
+
+                                    <!-- HTTP status -->
+
+                                    <TextBlock Grid.Column="4"
+                                               Text="{Binding HttpStatusCode}"
+                                               VerticalAlignment="Center"
+                                               Margin="8,0"
+                                               Foreground="#888888"
+                                               FontSize="12" />
+
+                                    <!-- Duration -->
+
+                                    <TextBlock Grid.Column="5"
+                                               Text="{Binding DurationMs,
+                                                              StringFormat='{}{0} ms'}"
+                                               VerticalAlignment="Center"
+                                               Margin="8,0"
+                                               Foreground="#888888"
+                                               FontSize="12" />
+
+                                    <!-- Protocol -->
+
+                                    <TextBlock Grid.Column="6"
+                                               Text="{Binding Protocol}"
+                                               VerticalAlignment="Center"
+                                               Foreground="{DynamicResource AccentBrush}"
+                                               FontSize="11"
+                                               FontFamily="Consolas,Menlo,monospace"
+                                               IsVisible="{Binding Protocol,
+                                                   Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+
+                                </Grid>
+
+                            </Border>
+
+                        </DataTemplate>
+
+                    </ItemsControl.ItemTemplate>
+
+                </ItemsControl>
+
+            </ScrollViewer>
+
+            <!-- Divider -->
+
+            <Border Grid.Column="1"
+                    Background="#2A2D35" />
+
+            <!-- JSON detail panel -->
+
+            <ScrollViewer Grid.Column="2">
+
+                <StackPanel Spacing="12"
+                            Margin="12,0,0,0"
+                            IsVisible="{Binding SelectedRow,
+                                Converter={x:Static ObjectConverters.IsNotNull}}">
+
+                    <TextBlock Text="{Binding SelectedRow.SubmissionType,
+                                               StringFormat='📋 {0}'}"
+                               FontSize="15"
+                               FontWeight="SemiBold" />
+
+                    <TextBlock Text="{Binding SelectedRow.ErrorMessage}"
+                               Foreground="#EF9A9A"
+                               TextWrapping="Wrap"
+                               FontSize="12"
+                               IsVisible="{Binding SelectedRow.ErrorMessage,
+                                   Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+
+                    <TextBlock Text="{Binding SelectedRow.RetrySummary}"
+                               Foreground="#F2C94C"
+                               FontSize="12"
+                               IsVisible="{Binding SelectedRow.HasRetries}" />
+
+                    <TextBlock Text="{Binding Loc[RequestPayload]}"
+                               FontWeight="SemiBold"
+                               FontSize="12"
+                               Foreground="Gray" />
+
+                    <Border Background="#12141A"
+                            CornerRadius="6"
+                            Padding="10">
+
+                        <TextBlock Text="{Binding SelectedRow.RequestPayloadJson}"
+                                   FontFamily="Consolas,Menlo,monospace"
+                                   FontSize="11"
+                                   TextWrapping="Wrap" />
+
+                    </Border>
+
+                    <TextBlock Text="{Binding Loc[ResponseBody]}"
+                               FontWeight="SemiBold"
+                               FontSize="12"
+                               Foreground="Gray" />
+
+                    <Border Background="#12141A"
+                            CornerRadius="6"
+                            Padding="10">
+
+                        <TextBlock Text="{Binding SelectedRow.ResponseRawJson}"
+                                   FontFamily="Consolas,Menlo,monospace"
+                                   FontSize="11"
+                                   TextWrapping="Wrap" />
+
+                    </Border>
+
+                </StackPanel>
+
+            </ScrollViewer>
+
+        </Grid>
+
+    </Grid>
+
+</UserControl>
+

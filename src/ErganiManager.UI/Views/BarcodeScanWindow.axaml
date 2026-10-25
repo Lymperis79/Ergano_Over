@@ -1,0 +1,343 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:ErganiManager.UI.ViewModels"
+        x:Class="ErganiManager.UI.Views.BarcodeScanWindow"
+        Icon="avares://ErganiManager.UI/Assets/icon.png"
+        x:DataType="vm:WorkCardScanViewModel"
+        Title="{Binding Loc[ErganiManagerBarcodeScan]}"
+        Width="520"
+        Height="680"
+        Topmost="True"
+        CanResize="True"
+        WindowStartupLocation="CenterScreen">
+
+    <Grid RowDefinitions="Auto,Auto,Auto,Auto,*"
+          Margin="20">
+
+        <!-- Header -->
+        <StackPanel Grid.Row="0"
+                    Margin="0,0,0,12">
+
+            <TextBlock Text="{Binding Loc[BarcodeAFMScan]}"
+                       FontSize="20"
+                       FontWeight="Bold" />
+
+            <TextBlock Text="{Binding Loc[ScanAFMErganiEmployeeStringOr]}"
+                       Foreground="Gray"
+                       FontSize="12" />
+
+        </StackPanel>
+
+
+        <!-- Company -->
+        <Border Grid.Row="1"
+                Background="{DynamicResource CardBrush}"
+                CornerRadius="8"
+                Padding="12"
+                Margin="0,0,0,10">
+
+            <StackPanel Spacing="6">
+
+                <TextBlock Text="{Binding Loc[SelectedCompany]}"
+                           FontWeight="SemiBold"
+                           FontSize="12"
+                           Foreground="#AAAAAA" />
+
+                <ComboBox ItemsSource="{Binding AvailableCompanies}"
+                          SelectedItem="{Binding SelectedCompany, Mode=TwoWay}"
+                          DisplayMemberBinding="{Binding Name}"
+                          IsEnabled="{Binding CanChangeCompany}"
+                          HorizontalAlignment="Stretch" />
+
+                <TextBlock Text="{Binding NoCompanyMessage}"
+                           IsVisible="{Binding !HasActiveCompany}"
+                           Foreground="#EF5350"
+                           FontSize="11"
+                           TextWrapping="Wrap" />
+
+            </StackPanel>
+
+        </Border>
+
+
+        <!-- Notification bar -->
+        <Border Grid.Row="2"
+                IsVisible="{Binding HasResponse}"
+                CornerRadius="6"
+                Padding="12,8"
+                Margin="0,0,0,8"
+                Background="{Binding ResponseSuccess,
+                    Converter={x:Static vm:BoolToBackgroundConverter.Instance}}">
+
+            <Grid ColumnDefinitions="*,Auto">
+
+                <StackPanel Grid.Column="0">
+
+                    <TextBlock Text="{Binding ResponseTitle}"
+                               FontSize="13"
+                               FontWeight="Bold"
+                               Foreground="White"
+                               TextWrapping="Wrap" />
+
+                    <TextBlock Text="{Binding ResponseDetail}"
+                               Foreground="White"
+                               TextWrapping="Wrap"
+                               FontFamily="Consolas,Menlo,monospace"
+                               FontSize="11" />
+
+                </StackPanel>
+
+                <Button Grid.Column="1"
+                        Content="✕"
+                        Foreground="White"
+                        Background="Transparent"
+                        BorderThickness="0"
+                        Command="{Binding ClearResponseCommand}"
+                        VerticalAlignment="Top" />
+
+            </Grid>
+
+        </Border>
+
+
+        <!-- Scan input -->
+        <Border Grid.Row="3"
+                Background="{DynamicResource CardBrush}"
+                CornerRadius="8"
+                Padding="16"
+                Margin="0,0,0,12">
+
+            <StackPanel Spacing="10">
+
+                <TextBox Name="ScanInputBox"
+                         Text="{Binding BarcodeInput}"
+                         PlaceholderText="{Binding Loc[ScanAFMErganiStringOrBarcode]}"
+                         FontSize="20"
+                         FontFamily="Consolas,Menlo,monospace"
+                         IsEnabled="{Binding !IsProcessing}">
+
+                    <TextBox.KeyBindings>
+
+                        <KeyBinding Gesture="Enter"
+                                    Command="{Binding SubmitScanCommand}" />
+
+                    </TextBox.KeyBindings>
+
+                </TextBox>
+
+
+                <TextBlock Text="{Binding Loc[Examples]}"
+                           Foreground="#888888"
+                           FontSize="11" />
+
+                <TextBlock Text="AFMNO"
+                           Foreground="#AAAAAA"
+                           FontFamily="Consolas,Menlo,monospace"
+                           FontSize="11" />
+
+                <TextBlock Text="ergInm:NAME;In:SURNAMEΗΣ;afm:AFMNO;id:NO"
+                           Foreground="#AAAAAA"
+                           FontFamily="Consolas,Menlo,monospace"
+                           FontSize="11"
+                           TextWrapping="Wrap" />
+
+                <CheckBox Content="{Binding Loc[AutoDetectArrivalDeparture]}"
+                          IsChecked="{Binding AutoDetect}" />
+
+
+                <StackPanel IsVisible="{Binding !AutoDetect}"
+                            Orientation="Horizontal"
+                            Spacing="20">
+
+                    <RadioButton Content="{Binding Loc[Arrival2]}"
+                                 IsChecked="{Binding IsArrival}" />
+
+                    <RadioButton Content="{Binding Loc[Departure2]}"
+                                 IsChecked="{Binding !IsArrival}" />
+
+                </StackPanel>
+
+
+                <Button Content="{Binding Loc[SubmitSelected]}"
+                        Command="{Binding SubmitScanCommand}"
+                        IsEnabled="{Binding !IsProcessing}"
+                        Classes="accent"
+                        HorizontalAlignment="Stretch"
+                        HorizontalContentAlignment="Center"
+                        Height="42"
+                        FontSize="15" />
+
+            </StackPanel>
+
+        </Border>
+
+
+        <!-- History -->
+        <Grid Grid.Row="4"
+              RowDefinitions="Auto,*">
+
+            <!-- History header -->
+            <Grid Grid.Row="0"
+                  ColumnDefinitions="*,Auto"
+                  Margin="0,0,0,6">
+
+                <TextBlock Grid.Column="0"
+                           Text="{Binding Loc[RecentScans2]}"
+                           FontWeight="SemiBold"
+                           VerticalAlignment="Center" />
+
+                <Button Grid.Column="1"
+                        Content="{Binding Loc[Clear]}"
+                        Command="{Binding ClearHistoryCommand}"
+                        IsVisible="{Binding RecentScans.Count}" />
+
+            </Grid>
+
+
+            <!-- History list -->
+            <ScrollViewer Grid.Row="1">
+
+                <ItemsControl ItemsSource="{Binding RecentScans}">
+
+                    <ItemsControl.ItemsPanel>
+
+                        <ItemsPanelTemplate>
+                            <StackPanel Spacing="4" />
+                        </ItemsPanelTemplate>
+
+                    </ItemsControl.ItemsPanel>
+
+
+                    <ItemsControl.ItemTemplate>
+
+                        <DataTemplate x:DataType="vm:ScanResultRow">
+
+                            <Border Background="{DynamicResource CardBrush}"
+                                    CornerRadius="6"
+                                    Padding="10,7">
+
+                                <Grid ColumnDefinitions="Auto,Auto,*,Auto">
+
+                                    <TextBlock Grid.Column="0"
+                                               Text="{Binding MovementIcon}"
+                                               FontSize="15"
+                                               VerticalAlignment="Center"
+                                               Margin="0,0,8,0" />
+
+                                    <TextBlock Grid.Column="1"
+                                               Text="{Binding TimeText}"
+                                               FontFamily="Consolas,Menlo,monospace"
+                                               FontSize="12"
+                                               VerticalAlignment="Center"
+                                               Foreground="#AAAAAA"
+                                               Margin="0,0,10,0" />
+
+                                    <StackPanel Grid.Column="2">
+
+                                        <TextBlock Text="{Binding EmployeeName}"
+                                                   FontWeight="SemiBold"
+                                                   FontSize="13" />
+
+                                        <TextBlock Text="{Binding StatusText}"
+                                                   FontSize="11"
+                                                   Foreground="#888"
+                                                   TextWrapping="Wrap" />
+
+                                    </StackPanel>
+
+                                    <TextBlock Grid.Column="3"
+                                               Text="{Binding StatusIcon}"
+                                               FontSize="15"
+                                               VerticalAlignment="Center"
+                                               Margin="6,0,0,0" />
+
+                                </Grid>
+
+                            </Border>
+
+                        </DataTemplate>
+
+                    </ItemsControl.ItemTemplate>
+
+                </ItemsControl>
+
+            </ScrollViewer>
+
+        </Grid>
+
+
+        <!-- Retry dialog -->
+        <Border IsVisible="{Binding IsRetryDialogOpen}"
+                Background="#BB000000"
+                ZIndex="99">
+
+            <Border Background="{DynamicResource PanelBrush}"
+                    CornerRadius="12"
+                    Padding="24"
+                    Width="440"
+                    VerticalAlignment="Center"
+                    HorizontalAlignment="Center">
+
+                <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto">
+
+                    <TextBlock Grid.Row="0"
+                               Text="{Binding Loc[SubmissionFailedResubmitWithJustification]}"
+                               FontSize="15"
+                               FontWeight="Bold"
+                               Margin="0,0,0,8" />
+
+                    <StackPanel Grid.Row="1"
+                                Spacing="4"
+                                Margin="0,0,0,12">
+
+                        <TextBlock Text="{Binding RetryEmployeeName}"
+                                   FontWeight="SemiBold" />
+
+                        <TextBlock Text="{Binding RetryMovementType}"
+                                   Foreground="Gray"
+                                   FontSize="12" />
+
+                        <TextBlock Text="{Binding RetryDateTime,
+                                            StringFormat=&#39;{}{0:dd/MM/yyyy HH:mm:ss}&#39;}"
+                                   Foreground="Gray"
+                                   FontSize="12" />
+
+                    </StackPanel>
+
+                    <TextBlock Grid.Row="2"
+                               Text="{Binding Loc[SelectReasonForLateSubmissionF]}"
+                               FontWeight="SemiBold"
+                               Margin="0,0,0,6" />
+
+                    <ComboBox Grid.Row="3"
+                              ItemsSource="{Binding AvailableAitiologiai}"
+                              SelectedItem="{Binding RetryAitiologia}"
+                              HorizontalAlignment="Stretch"
+                              Margin="0,0,0,16" />
+
+                    <Grid Grid.Row="4"
+                          ColumnDefinitions="*,*"
+                          ColumnSpacing="8">
+
+                        <Button Grid.Column="0"
+                                Content="{Binding Loc[Cancel]}"
+                                Command="{Binding CloseRetryDialogCommand}"
+                                HorizontalAlignment="Stretch" />
+
+                        <Button Grid.Column="1"
+                                Content="{Binding Loc[RetrySubmission]}"
+                                Command="{Binding SubmitRetryCommand}"
+                                Classes="accent"
+                                HorizontalAlignment="Stretch" />
+
+                    </Grid>
+
+                </Grid>
+
+            </Border>
+
+        </Border>
+
+    </Grid>
+
+</Window>

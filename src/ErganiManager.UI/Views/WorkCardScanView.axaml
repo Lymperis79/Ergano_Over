@@ -1,0 +1,228 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:ErganiManager.UI.ViewModels"
+             x:Class="ErganiManager.UI.Views.WorkCardScanView"
+             x:DataType="vm:WorkCardScanViewModel">
+
+    <Grid RowDefinitions="Auto,*">
+
+        <TextBlock Grid.Row="0" Text="{Binding Loc[ManualWorkCardScan]}"
+                   FontSize="22" FontWeight="Bold" Margin="0,0,0,16" />
+
+        <Border Grid.Row="1"
+                IsVisible="{Binding !HasActiveCompany}"
+                Background="{DynamicResource AccentSoftBrush}" CornerRadius="6" Padding="14">
+            <TextBlock Text="{Binding NoCompanyMessage}" TextWrapping="Wrap" />
+        </Border>
+
+        <Grid Grid.Row="1" IsVisible="{Binding HasActiveCompany}"
+              ColumnDefinitions="420,*" ColumnSpacing="20">
+
+            <!-- Left: Scan form -->
+            <StackPanel Grid.Column="0" Spacing="16">
+
+                <!-- Input panel -->
+                <Border Background="{DynamicResource CardBrush}" CornerRadius="8" Padding="20">
+                    <StackPanel Spacing="12">
+                        <TextBlock Text="{Binding Loc[BarcodeEmployeeID]}"
+                                   FontWeight="SemiBold" FontSize="14" />
+
+                        <TextBox Text="{Binding BarcodeInput}"
+                                 PlaceholderText="{Binding Loc[ScanBadgeOrTypeBarcodeAnd]}"
+                                 FontSize="18"
+                                 FontFamily="Consolas,Menlo,monospace"
+                                 IsEnabled="{Binding !IsProcessing}">
+                            <TextBox.KeyBindings>
+                                <KeyBinding Gesture="Enter"
+                                            Command="{Binding SubmitScanCommand}" />
+                            </TextBox.KeyBindings>
+                        </TextBox>
+
+                        <CheckBox Content="{Binding Loc[AutoDetectArrivalDeparture]}"
+                                  IsChecked="{Binding AutoDetect}" />
+
+                        <!-- Manual override -->
+                        <StackPanel IsVisible="{Binding !AutoDetect}" Spacing="10">
+                            <TextBlock Text="{Binding Loc[ManualCardTitle]}" FontWeight="Bold" TextWrapping="Wrap" />
+                            <TextBlock Text="{Binding Loc[MovementType]}" FontWeight="SemiBold" />
+                            <StackPanel Orientation="Horizontal" Spacing="24">
+                                <RadioButton Content="{Binding Loc[Arrival2]}"
+                                             IsChecked="{Binding IsArrival}" />
+                                <RadioButton Content="{Binding Loc[Departure2]}"
+                                             IsChecked="{Binding !IsArrival}" />
+                            </StackPanel>
+
+                            <TextBlock Text="{Binding Loc[Date]}" FontWeight="SemiBold" />
+                            <DatePicker SelectedDate="{Binding MovementDate, Mode=TwoWay}" HorizontalAlignment="Stretch" MinWidth="150" />
+
+                            <TextBlock Text="{Binding Loc[Time]}" FontWeight="SemiBold" />
+                            <StackPanel Orientation="Horizontal" Spacing="10">
+                                <TimePicker SelectedTime="{Binding MovementTime}"
+                                            ClockIdentifier="24HourClock" />
+                                <Button Content="{Binding Loc[SetToNow]}"
+                                        Command="{Binding SetManualTimeToNowCommand}"
+                                        VerticalAlignment="Bottom" />
+                            </StackPanel>
+
+                            <TextBlock Text="{Binding Loc[ManualLateReasonLabel]}" FontWeight="SemiBold"
+                                       TextWrapping="Wrap" />
+                            <ComboBox ItemsSource="{Binding AvailableAitiologiai}"
+                                      SelectedValueBinding="{Binding Code}"
+                                      SelectedValue="{Binding ManualLateReason}"
+                                      HorizontalAlignment="Stretch">
+                                <ComboBox.ItemTemplate>
+                                    <DataTemplate x:DataType="vm:LocalizedCodeOption">
+                                        <TextBlock Text="{Binding Display}" TextWrapping="Wrap" />
+                                    </DataTemplate>
+                                </ComboBox.ItemTemplate>
+                            </ComboBox>
+                            <TextBlock Text="{Binding Loc[ManualCardSentHint]}" Foreground="Gray" FontSize="11"
+                                       TextWrapping="Wrap" />
+                        </StackPanel>
+
+                        <Button Content="{Binding Loc[SubmitSelected]}"
+                                Command="{Binding SubmitScanCommand}"
+                                IsEnabled="{Binding !IsProcessing}"
+                                Classes="accent"
+                                HorizontalAlignment="Stretch"
+                                HorizontalContentAlignment="Center"
+                                Height="44" FontSize="15" />
+                    </StackPanel>
+                </Border>
+
+                <!-- Response panel -->
+                <Border IsVisible="{Binding HasResponse}"
+                        CornerRadius="8" Padding="20"
+                        Background="{Binding ResponseSuccess,
+                            Converter={x:Static vm:BoolToBackgroundConverter.Instance}}">
+                    <StackPanel Spacing="8">
+                        <TextBlock Text="{Binding ResponseTitle}"
+                                   FontSize="15" FontWeight="Bold"
+                                   Foreground="White" TextWrapping="Wrap" />
+                        <TextBlock Text="{Binding ResponseDetail}"
+                                   Foreground="White" TextWrapping="Wrap"
+                                   FontFamily="Consolas,Menlo,monospace"
+                                   FontSize="12" />
+                        <Button Content="{Binding Loc[OKNextScan]}"
+                                Command="{Binding ClearResponseCommand}"
+                                Margin="0,4,0,0" />
+                    </StackPanel>
+                </Border>
+
+                <!-- Tips -->
+                <Border Background="{DynamicResource CardBrush}" CornerRadius="8" Padding="16">
+                    <StackPanel Spacing="6">
+                        <TextBlock Text="{Binding Loc[Tips]}" FontWeight="SemiBold" Foreground="#AAAAAA" />
+                        <TextBlock TextWrapping="Wrap" Foreground="#666666" FontSize="12"
+                                   Text="{Binding Loc[PressEnterAfterTypingTheBarcode]}" />
+                    </StackPanel>
+                </Border>
+
+            </StackPanel>
+
+            <!-- Right: Recent history -->
+            <Grid Grid.Column="1" RowDefinitions="Auto,*">
+
+                <Grid Grid.Row="0" ColumnDefinitions="*,Auto" Margin="0,0,0,8">
+                    <TextBlock Grid.Column="0" Text="{Binding Loc[RecentScansThisSession]}"
+                               FontSize="15" FontWeight="SemiBold"
+                               VerticalAlignment="Center" />
+                    <Button Grid.Column="1" Content="{Binding Loc[Clear]}"
+                            Command="{Binding ClearHistoryCommand}"
+                            IsVisible="{Binding RecentScans.Count}" />
+                </Grid>
+
+                <ScrollViewer Grid.Row="1">
+                    <StackPanel Spacing="4">
+                        <TextBlock Text="{Binding Loc[NoScansYet]}"
+                                   Foreground="Gray" FontSize="13"
+                                   IsVisible="{Binding !RecentScans.Count}" />
+
+                        <ItemsControl ItemsSource="{Binding RecentScans}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <StackPanel Spacing="4" />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="vm:ScanResultRow">
+                                    <Border Background="{DynamicResource CardBrush}" CornerRadius="6" Padding="12,8">
+                                        <Grid ColumnDefinitions="Auto,Auto,*,Auto">
+                                            <TextBlock Grid.Column="0"
+                                                       Text="{Binding MovementIcon}"
+                                                       FontSize="16"
+                                                       VerticalAlignment="Center"
+                                                       Margin="0,0,8,0" />
+                                            <TextBlock Grid.Column="1"
+                                                       Text="{Binding TimeText}"
+                                                       FontFamily="Consolas,Menlo,monospace"
+                                                       FontSize="13"
+                                                       VerticalAlignment="Center"
+                                                       Foreground="#AAAAAA"
+                                                       Margin="0,0,12,0" />
+                                            <StackPanel Grid.Column="2">
+                                                <TextBlock Text="{Binding EmployeeName}"
+                                                           FontWeight="SemiBold"
+                                                           FontSize="13" />
+                                                <TextBlock Text="{Binding StatusText}"
+                                                           FontSize="11"
+                                                           Foreground="#888888"
+                                                           TextWrapping="Wrap" />
+                                            </StackPanel>
+                                            <TextBlock Grid.Column="3"
+                                                       Text="{Binding StatusIcon}"
+                                                       FontSize="16"
+                                                       VerticalAlignment="Center"
+                                                       Margin="8,0,0,0" />
+                                        </Grid>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                </ScrollViewer>
+
+            </Grid>
+        </Grid>
+
+
+        <!-- ── Retry dialog — shown when submission fails ── -->
+        <Border IsVisible="{Binding IsRetryDialogOpen}"
+                Background="#BB000000" ZIndex="99">
+            <Border Background="{DynamicResource PanelBrush}" CornerRadius="12" Padding="24"
+                    Width="440" VerticalAlignment="Center" HorizontalAlignment="Center">
+                <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto">
+                    <TextBlock Grid.Row="0" Text="{Binding Loc[SubmissionFailedResubmitWithJustification]}"
+                               FontSize="15" FontWeight="Bold" Margin="0,0,0,8" />
+                    <StackPanel Grid.Row="1" Spacing="4" Margin="0,0,0,12">
+                        <TextBlock Text="{Binding RetryEmployeeName}" FontWeight="SemiBold" />
+                        <TextBlock Text="{Binding RetryMovementType}" Foreground="Gray" FontSize="12" />
+                        <TextBlock Text="{Binding RetryDateTime, StringFormat=&#39;{}{0:dd/MM/yyyy HH:mm:ss}&#39;}"
+                                   Foreground="Gray" FontSize="12" />
+                    </StackPanel>
+                    <TextBlock Grid.Row="2" Text="{Binding Loc[SelectReasonForLateSubmissionF]}"
+                               FontWeight="SemiBold" Margin="0,0,0,6" />
+                    <ComboBox Grid.Row="3" ItemsSource="{Binding AvailableAitiologiai}"
+                              SelectedValueBinding="{Binding Code}"
+                              SelectedValue="{Binding RetryAitiologia}"
+                              HorizontalAlignment="Stretch" Margin="0,0,0,16">
+                        <ComboBox.ItemTemplate>
+                            <DataTemplate x:DataType="vm:LocalizedCodeOption">
+                                <TextBlock Text="{Binding Display}" TextWrapping="Wrap" />
+                            </DataTemplate>
+                        </ComboBox.ItemTemplate>
+                    </ComboBox>
+                    <Grid Grid.Row="4" ColumnDefinitions="*,*" ColumnSpacing="8">
+                        <Button Grid.Column="0" Content="{Binding Loc[Cancel]}"
+                                Command="{Binding CloseRetryDialogCommand}"
+                                HorizontalAlignment="Stretch" />
+                        <Button Grid.Column="1" Content="{Binding Loc[RetrySubmission]}"
+                                Command="{Binding SubmitRetryCommand}"
+                                Classes="accent" HorizontalAlignment="Stretch" />
+                    </Grid>
+                </Grid>
+            </Border>
+        </Border>
+    </Grid>
+
+</UserControl>

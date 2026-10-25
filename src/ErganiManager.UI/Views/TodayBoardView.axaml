@@ -1,0 +1,130 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:ErganiManager.UI.ViewModels"
+             x:Class="ErganiManager.UI.Views.TodayBoardView"
+             x:DataType="vm:TodayBoardViewModel">
+
+    <UserControl.Styles>
+        <Style Selector="Border.row">
+            <Setter Property="Background" Value="#242832" />
+        </Style>
+        <Style Selector="Border.row.err">
+            <Setter Property="Background" Value="#4A2226" />
+        </Style>
+        <Style Selector="Border.row.warn">
+            <Setter Property="Background" Value="#4A3B1F" />
+        </Style>
+        <Style Selector="Border.chip">
+            <Setter Property="Background" Value="#2B303B" />
+            <Setter Property="CornerRadius" Value="6" />
+            <Setter Property="Padding" Value="10,4" />
+            <Setter Property="Margin" Value="0,0,8,6" />
+        </Style>
+    </UserControl.Styles>
+
+    <Grid RowDefinitions="Auto,Auto,Auto,*,Auto" RowSpacing="10">
+
+        <!-- No company -->
+        <Border Grid.Row="0" IsVisible="{Binding !HasActiveCompany}"
+                Background="{DynamicResource AccentSoftBrush}" CornerRadius="6" Padding="14">
+            <TextBlock Text="{Binding Loc[TodayNoCompany]}" TextWrapping="Wrap" />
+        </Border>
+
+        <!-- Toolbar (wraps when the window is narrow) -->
+        <WrapPanel Grid.Row="1" IsVisible="{Binding HasActiveCompany}">
+            <TextBlock Text="{Binding Loc[TodayTitle]}" FontSize="18" FontWeight="Bold"
+                       VerticalAlignment="Center" Margin="0,0,12,6" />
+            <DatePicker SelectedDate="{Binding SelectedDate, Mode=TwoWay}" Margin="0,0,8,6" />
+            <Button Content="{Binding Loc[TodayGoToday]}" Command="{Binding GoTodayCommand}" Margin="0,0,8,6" />
+            <Button Content="{Binding Loc[TodayRefresh]}" Command="{Binding RefreshCommand}" Margin="0,0,12,6" />
+            <TextBlock Text="{Binding Loc[TodayLateAfter]}" VerticalAlignment="Center" Margin="0,0,6,6" />
+            <ComboBox ItemsSource="{Binding GraceOptions}" SelectedItem="{Binding GraceMinutes}" Margin="0,0,12,6" />
+            <CheckBox Content="{Binding Loc[TodayOnlyProblems]}" IsChecked="{Binding OnlyProblems}" Margin="0,0,8,6" />
+            <CheckBox Content="{Binding Loc[TodayAutoRefresh]}" IsChecked="{Binding AutoRefresh}" Margin="0,0,12,6" />
+            <TextBlock Text="{Binding LastUpdatedText}" Foreground="#9E9E9E"
+                       VerticalAlignment="Center" Margin="0,0,12,6" />
+            <TextBlock Text="{Binding StatusMessage}" Foreground="#FF8A80"
+                       VerticalAlignment="Center" Margin="0,0,0,6" />
+        </WrapPanel>
+
+        <!-- Summary -->
+        <WrapPanel Grid.Row="2" IsVisible="{Binding HasActiveCompany}">
+            <Border Classes="chip"><TextBlock>
+                <Run Text="{Binding Loc[TodayExpected]}" /><Run Text=" " /><Run Text="{Binding TotalCount}" FontWeight="Bold" /></TextBlock></Border>
+            <Border Classes="chip"><TextBlock>
+                <Run Text="{Binding Loc[TodayWorking]}" /><Run Text=" " /><Run Text="{Binding WorkingCount}" FontWeight="Bold" /></TextBlock></Border>
+            <Border Classes="chip"><TextBlock>
+                <Run Text="{Binding Loc[TodayLeft]}" /><Run Text=" " /><Run Text="{Binding LeftCount}" FontWeight="Bold" /></TextBlock></Border>
+            <Border Classes="chip"><TextBlock>
+                <Run Text="{Binding Loc[TodayNotArrived]}" /><Run Text=" " /><Run Text="{Binding NotArrivedCount}" FontWeight="Bold" /></TextBlock></Border>
+            <Border Classes="chip"><TextBlock Foreground="#FF8A80">
+                <Run Text="{Binding Loc[TodayErrors]}" /><Run Text=" " /><Run Text="{Binding ErrorCount}" FontWeight="Bold" /></TextBlock></Border>
+            <Border Classes="chip"><TextBlock Foreground="#FFB74D">
+                <Run Text="{Binding Loc[TodayWarnings]}" /><Run Text=" " /><Run Text="{Binding WarningCount}" FontWeight="Bold" /></TextBlock></Border>
+        </WrapPanel>
+
+        <!-- Table: one scroll viewer with a vertical AND a horizontal scroll bar, always visible
+             (no auto-hide), so they are at the edges of the visible area on any window size. -->
+        <ScrollViewer Grid.Row="3" IsVisible="{Binding HasActiveCompany}"
+                      HorizontalScrollBarVisibility="Visible"
+                      VerticalScrollBarVisibility="Visible"
+                      AllowAutoHide="False">
+            <Grid MinWidth="1180" RowDefinitions="Auto,Auto">
+                <Grid Grid.Row="0" ColumnDefinitions="220,150,170,170,170,*" Margin="10,0,24,4">
+                    <TextBlock Grid.Column="0" Text="{Binding Loc[TodayColEmployee]}" FontWeight="SemiBold" />
+                    <TextBlock Grid.Column="1" Text="{Binding Loc[TodayColPlanned]}" FontWeight="SemiBold" />
+                    <TextBlock Grid.Column="2" Text="{Binding Loc[TodayColIn]}" FontWeight="SemiBold" />
+                    <TextBlock Grid.Column="3" Text="{Binding Loc[TodayColOut]}" FontWeight="SemiBold" />
+                    <TextBlock Grid.Column="4" Text="{Binding Loc[TodayColNow]}" FontWeight="SemiBold" />
+                    <TextBlock Grid.Column="5" Text="{Binding Loc[TodayColProblems]}" FontWeight="SemiBold" />
+                </Grid>
+
+                <ListBox Grid.Row="1" ItemsSource="{Binding Rows}"
+                         SelectedItem="{Binding SelectedRow}"
+                         ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                         ScrollViewer.VerticalScrollBarVisibility="Disabled">
+                    <ListBox.ItemTemplate>
+                        <DataTemplate x:DataType="vm:TodayRowViewModel">
+                            <Border Classes="row" Classes.err="{Binding IsError}" Classes.warn="{Binding IsWarning}"
+                                    CornerRadius="6" Padding="10,8"
+                                    ToolTip.Tip="{Binding DetailsText}">
+                                <Grid ColumnDefinitions="220,150,170,170,170,*">
+                                    <StackPanel Grid.Column="0">
+                                        <TextBlock Text="{Binding FullName}" FontWeight="SemiBold" />
+                                        <TextBlock Text="{Binding BranchName}" FontSize="11" Foreground="#9E9E9E" />
+                                    </StackPanel>
+                                    <TextBlock Grid.Column="1" Text="{Binding ScheduleText}" VerticalAlignment="Center" TextWrapping="Wrap" />
+                                    <StackPanel Grid.Column="2" VerticalAlignment="Center">
+                                        <TextBlock Text="{Binding ArrivalText}" FontWeight="SemiBold" />
+                                        <TextBlock Text="{Binding ArrivalErgani}" FontSize="11" TextWrapping="Wrap" />
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="3" VerticalAlignment="Center">
+                                        <TextBlock Text="{Binding DepartureText}" FontWeight="SemiBold" />
+                                        <TextBlock Text="{Binding DepartureErgani}" FontSize="11" TextWrapping="Wrap" />
+                                    </StackPanel>
+                                    <TextBlock Grid.Column="4" Text="{Binding PresenceText}"
+                                               VerticalAlignment="Center" TextWrapping="Wrap" />
+                                    <TextBlock Grid.Column="5" Text="{Binding IssuesText}"
+                                               VerticalAlignment="Center" TextWrapping="Wrap" />
+                                </Grid>
+                            </Border>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+            </Grid>
+        </ScrollViewer>
+
+        <!-- Details of the selected employee (scrolls when long) -->
+        <Border Grid.Row="4" Background="{DynamicResource PanelBrush}" CornerRadius="6" Padding="12" MaxHeight="190"
+                IsVisible="{Binding SelectedRow, Converter={x:Static ObjectConverters.IsNotNull}}">
+            <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto"
+                          AllowAutoHide="False">
+                <StackPanel Spacing="4">
+                    <TextBlock Text="{Binding SelectedRow.FullName}" FontWeight="Bold" />
+                    <TextBlock Text="{Binding SelectedRow.DetailsText}" TextWrapping="NoWrap"
+                               FontFamily="Consolas, Menlo, monospace" />
+                </StackPanel>
+            </ScrollViewer>
+        </Border>
+    </Grid>
+</UserControl>

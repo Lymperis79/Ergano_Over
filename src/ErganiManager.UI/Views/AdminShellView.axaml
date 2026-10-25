@@ -1,0 +1,275 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:ErganiManager.UI.ViewModels"
+        xmlns:views="using:ErganiManager.UI.Views"
+        x:Class="ErganiManager.UI.Views.AdminShellView"
+        Icon="avares://ErganiManager.UI/Assets/icon.png"
+        x:DataType="vm:AdminShellViewModel"
+        Title="{Binding Loc[ErganiManagerAdmin]}"
+        Width="1200" Height="760"
+        Background="{DynamicResource WindowBrush}"
+        WindowStartupLocation="CenterScreen">
+
+    <Window.Resources>
+        <views:SectionViewModelTemplateSelector x:Key="SectionTemplateSelector" />
+    </Window.Resources>
+
+    <Grid ColumnDefinitions="220,*" RowDefinitions="Auto,Auto,*">
+
+        <!-- Header -->
+        <Border Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2" Background="{DynamicResource PanelBrush}" Padding="20,14">
+            <Grid RowDefinitions="Auto,Auto">
+
+                <!-- Line 1: company logo (or name) on the left, welcome next to it,
+                     Ergani status and Logout on the right -->
+                <Grid Grid.Row="0" ColumnDefinitions="Auto,*,Auto">
+
+                    <Panel Grid.Column="0" VerticalAlignment="Center">
+                        <!-- With a company picture the picture replaces the company name -->
+                        <Image Source="{Binding Logo.Current}" IsVisible="{Binding ShowCompanyLogo}"
+                               MaxHeight="32" MaxWidth="220" Stretch="Uniform"
+                               HorizontalAlignment="Left"
+                               ToolTip.Tip="{Binding CompanyDisplayText}" />
+                        <TextBlock Text="{Binding CompanyDisplayText}" FontSize="13" FontWeight="SemiBold"
+                                   Foreground="#CCCCCC" IsVisible="{Binding ShowCompanyText}"
+                                   TextTrimming="CharacterEllipsis" />
+                    </Panel>
+
+                    <TextBlock Grid.Column="1" Text="{Binding WelcomeText}" FontSize="12" Foreground="#AAAAAA"
+                               Margin="16,0,16,0" VerticalAlignment="Center"
+                               TextTrimming="CharacterEllipsis" />
+
+                    <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
+
+                        <!-- Colours of the interface: background style and accent colour -->
+                        <Button Content="🎨" Click="OnAppearanceClick" VerticalAlignment="Center"
+                                ToolTip.Tip="{Binding Loc[AppearanceTitle]}" />
+
+                        <!-- License: details and renewal (only when the program is license protected) -->
+                        <Button x:Name="LicenseButton" Content="🔑" Click="OnLicenseClick" VerticalAlignment="Center"
+                                IsVisible="False" />
+
+                        <!-- Ergani API status indicator -->
+                        <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+                            <TextBlock Text="{Binding ErganiStatusIcon}" FontSize="14" VerticalAlignment="Center" />
+                            <TextBlock Text="{Binding ErganiStatusText}" FontSize="12"
+                                       Foreground="{Binding ErganiStatusColor}"
+                                       VerticalAlignment="Center" />
+                            <Button Content="⟳" FontSize="12" Padding="4,2"
+                                    Command="{Binding CheckErganiNowCommand}"
+                                    ToolTip.Tip="{Binding Loc[CheckErganiAPIStatusNow]}"
+                                    VerticalAlignment="Center" />
+                        </StackPanel>
+
+                        <!-- Sign out and return to the login screen -->
+                        <Button Command="{Binding LogoutCommand}" VerticalAlignment="Center">
+                            <StackPanel Orientation="Horizontal" Spacing="6">
+                                <TextBlock Text="🚪" />
+                                <TextBlock Text="{Binding Loc[Logout]}" />
+                            </StackPanel>
+                        </Button>
+                    </StackPanel>
+                </Grid>
+
+                <!-- Line 2: the other buttons and drop-downs, aligned to the right (wraps on small windows) -->
+                <WrapPanel Grid.Row="1" Orientation="Horizontal" ItemSpacing="16" LineSpacing="8"
+                           HorizontalAlignment="Right" Margin="0,10,0,0">
+
+                    <!-- Always-on-top scan window launcher -->
+                    <Button Content="{Binding Loc[ScanWindow]}"
+                            Command="{Binding OpenScanWindowCommand}"
+                            IsVisible="{Binding ShowScanWindowButton}"
+                            VerticalAlignment="Center" />
+
+                    <!-- Sync offline cache -->
+                    <Button Content="{Binding Loc[SyncCache]}"
+                            Command="{Binding RefreshCacheCommand}"
+                            VerticalAlignment="Center" />
+
+                    <!-- Language picker (always visible) -->
+                    <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                        <TextBlock Text="{Binding Loc[Language]}" Foreground="#AAAAAA"
+                                   VerticalAlignment="Center" FontSize="12" />
+                        <ComboBox ItemsSource="{Binding LanguageSelector.AvailableLanguages}"
+                                  SelectedItem="{Binding LanguageSelector.SelectedLanguage}"
+                                  Width="100">
+                            <ComboBox.ItemTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding Converter={x:Static vm:AppLanguageConverter.Instance}}" />
+                                </DataTemplate>
+                            </ComboBox.ItemTemplate>
+                        </ComboBox>
+                    </StackPanel>
+
+                    <!-- Company switcher (super-admin only) -->
+                    <StackPanel IsVisible="{Binding IsSuperAdmin}"
+                                Orientation="Horizontal" VerticalAlignment="Center" Spacing="8">
+                        <TextBlock Text="{Binding Loc[Company]}" Foreground="#AAAAAA"
+                                   VerticalAlignment="Center" FontSize="13" />
+                        <ComboBox ItemsSource="{Binding SwitchableCompanies}"
+                                  SelectedItem="{Binding SelectedSwitchCompany}"
+                                  Width="220">
+                            <ComboBox.ItemTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding Name}" />
+                                </DataTemplate>
+                            </ComboBox.ItemTemplate>
+                        </ComboBox>
+                    </StackPanel>
+
+                </WrapPanel>
+            </Grid>
+        </Border>
+
+        <!-- Global notification bar -->
+        <Border Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2"
+                IsVisible="{Binding HasNotification}"
+                Padding="16,10" ZIndex="100"
+                Background="{Binding IsNotificationError,
+                    Converter={x:Static vm:BoolToBackgroundConverter.Instance}}">
+            <Grid ColumnDefinitions="*,Auto">
+                <TextBlock Grid.Column="0" Text="{Binding NotificationMessage}"
+                           Foreground="White" TextWrapping="Wrap" VerticalAlignment="Center" />
+                <Button Grid.Column="1" Content="✕" Foreground="White"
+                        Background="Transparent" BorderThickness="0"
+                        Command="{Binding DismissNotificationCommand}" />
+            </Grid>
+        </Border>
+
+        <!-- Sidebar: master data and administration are groups; every menu can be hidden per user -->
+        <ScrollViewer Grid.Row="2" Grid.Column="0" Background="{DynamicResource SidebarBrush}"
+                      VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+        <StackPanel Spacing="2">
+
+            <!-- Master data -->
+            <StackPanel IsVisible="{Binding ShowMasterData}" Spacing="2">
+                <Button Content="{Binding MasterDataHeader}" Classes="navGroup"
+                        Command="{Binding ToggleMasterDataCommand}"
+                        HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" />
+                <StackPanel IsVisible="{Binding IsMasterDataExpanded}" Spacing="2">
+                    <Button Content="{Binding Loc[NavCompanies]}" Classes="navItem navChild"
+                        IsVisible="{Binding ShowCompanies}"
+                        Command="{Binding NavigateToCommand}" CommandParameter="Companies"
+                        HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" />
+                    <Button Content="{Binding Loc[NavBranches]}" Classes="navItem navChild"
+                        IsVisible="{Binding ShowBranches}"
+                        Command="{Binding NavigateToCommand}" CommandParameter="Branches"
+                        HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" />
+                    <Button Content="{Binding Loc[NavEmployees]}" Classes="navItem navChild"
+                        IsVisible="{Binding ShowEmployees}"
+                        Command="{Binding NavigateToCommand}" CommandParameter="Employees"
+                        HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" />
+                </StackPanel>
+            </StackPanel>
+
+            <Button Content="{Binding Loc[NavSchedules]}" Classes="navItem"
+                    IsVisible="{Binding ShowSchedules}"
+                    Command="{Binding NavigateToCommand}" CommandParameter="Schedules"
+                    HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" />
+            <Button Content="{Binding Loc[NavWorkCards]}" Classes="navItem"
+                    IsVisible="{Binding ShowWorkCards}"
+                    Command="{Binding NavigateToCommand}" CommandParameter="WorkCards"
+                    HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" />
+            <Button Content="{Binding Loc[NavScan]}" Classes="navItem"
+                    IsVisible="{Binding ShowScan}"
+                    Command="{Binding NavigateToCommand}" CommandParameter="WorkCardScan"
+                    HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" />
+            <Button Content="{Binding Loc[NavToday]}" Classes="navItem"
+                    IsVisible="{Binding ShowToday}"
+                    Command="{Binding NavigateToCommand}" CommandParameter="Today"
+                    HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" />
+            <Button Content="{Binding Loc[NavOvertime]}" Classes="navItem"
+                    IsVisible="{Binding ShowOvertime}"
+                    Command="{Binding NavigateToCommand}" CommandParameter="Overtime"
+                    HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" />
+            <Button Content="{Binding Loc[NavReports]}" Classes="navItem"
+                    IsVisible="{Binding ShowReports}"
+                    Command="{Binding NavigateToCommand}" CommandParameter="Reports"
+                    HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" />
+            <Button Content="{Binding Loc[NavApiLog]}" Classes="navItem"
+                    IsVisible="{Binding ShowApiLog}"
+                    Command="{Binding NavigateToCommand}" CommandParameter="SubmissionLog"
+                    HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" />
+            <Button Content="{Binding Loc[NavEmailLog]}" Classes="navItem"
+                    IsVisible="{Binding ShowEmailLog}"
+                    Command="{Binding NavigateToCommand}" CommandParameter="EmailLog"
+                    HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" />
+           
+
+            <!-- Administration: users, and (super administrator only) the database tools -->
+            <StackPanel IsVisible="{Binding ShowAdminGroup}" Spacing="2">
+                <Button Content="{Binding AdminGroupHeader}" Classes="navGroup"
+                        Command="{Binding ToggleAdminGroupCommand}"
+                        HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" />
+                <StackPanel IsVisible="{Binding IsAdminGroupExpanded}" Spacing="2">
+                    <Button Content="{Binding Loc[NavUsers]}" Classes="navItem navChild"
+                        IsVisible="{Binding ShowUsers}"
+                        Command="{Binding NavigateToCommand}" CommandParameter="Users"
+                        HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" />
+                    <Button Content="{Binding Loc[NavDatabaseTools]}" Classes="navItem navChild"
+                        IsVisible="{Binding ShowAdministration}"
+                        Command="{Binding NavigateToCommand}" CommandParameter="Administration"
+                        HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" />
+                </StackPanel>
+            </StackPanel>
+
+             <Button Content="{Binding Loc[NavHelp]}" Classes="navItem"
+                    IsVisible="{Binding ShowHelp}"
+                    Command="{Binding NavigateToCommand}" CommandParameter="Help"
+                    HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" />
+        </StackPanel>
+        </ScrollViewer>
+
+        <!-- Content area — each section manages its own scrolling internally -->
+        <Border Grid.Row="2" Grid.Column="1" Padding="24">
+            <ContentControl Content="{Binding CurrentSectionViewModel}"
+                            ContentTemplate="{StaticResource SectionTemplateSelector}"
+                            HorizontalContentAlignment="Stretch"
+                            VerticalContentAlignment="Stretch" />
+        </Border>
+
+    </Grid>
+
+    <Window.Styles>
+        <Style Selector="Button.navItem">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="Foreground" Value="#CCCCCC" />
+            <Setter Property="Padding" Value="20,12" />
+            <Setter Property="CornerRadius" Value="0" />
+            <Setter Property="FontSize" Value="14" />
+        </Style>
+        <Style Selector="Button.navGroup">
+            <Setter Property="Background" Value="{DynamicResource PanelBrush}" />
+            <Setter Property="Foreground" Value="#FFFFFF" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Padding" Value="20,12" />
+            <Setter Property="CornerRadius" Value="0" />
+            <Setter Property="FontSize" Value="14" />
+        </Style>
+        <Style Selector="Button.navGroup:pointerover /template/ ContentPresenter">
+            <Setter Property="Background" Value="{DynamicResource HoverBrush}" />
+        </Style>
+        <Style Selector="Button.navChild">
+            <Setter Property="Padding" Value="38,10,20,10" />
+            <Setter Property="FontSize" Value="13" />
+        </Style>
+        <Style Selector="Button.navItem:pointerover /template/ ContentPresenter">
+            <Setter Property="Background" Value="{DynamicResource HoverBrush}" />
+        </Style>
+
+        <!-- The section that is open: highlighted background, blue marker on the left, bold white text. -->
+        <Style Selector="Button.navItem.active">
+            <Setter Property="Foreground" Value="#FFFFFF" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+        </Style>
+        <Style Selector="Button.navItem.active /template/ ContentPresenter">
+            <Setter Property="Background" Value="{DynamicResource NavActiveBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource AccentLightBrush}" />
+            <Setter Property="BorderThickness" Value="4,0,0,0" />
+        </Style>
+        <Style Selector="Button.navItem.active:pointerover /template/ ContentPresenter">
+            <Setter Property="Background" Value="{DynamicResource NavActiveHoverBrush}" />
+        </Style>
+    </Window.Styles>
+
+</Window>

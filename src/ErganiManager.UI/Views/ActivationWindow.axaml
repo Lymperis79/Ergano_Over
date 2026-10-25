@@ -1,0 +1,37 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="ErganiManager.UI.Views.ActivationWindow"
+        Title="Ergani Manager"
+        Width="700" SizeToContent="Height" CanResize="False"
+        WindowStartupLocation="CenterScreen"
+        Background="{DynamicResource WindowBrush}">
+
+    <StackPanel Margin="28" Spacing="14">
+
+        <TextBlock x:Name="TitleText" FontSize="22" FontWeight="Bold" />
+        <TextBlock x:Name="IntroText" TextWrapping="Wrap" Opacity="0.8" />
+
+        <!-- The license that is active now (shown when the window is opened from the header) -->
+        <Border x:Name="InfoBorder" IsVisible="False" Background="{DynamicResource CardBrush}" CornerRadius="8" Padding="14">
+            <TextBlock x:Name="InfoText" TextWrapping="Wrap" />
+        </Border>
+
+        <TextBlock x:Name="PcCodeLabel" FontSize="12" Opacity="0.7" />
+        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+            <TextBox x:Name="PcCodeBox" IsReadOnly="True" FontFamily="Consolas, Menlo, monospace" FontSize="18" />
+            <Button x:Name="CopyButton" Grid.Column="1" Click="OnCopyClick" VerticalAlignment="Stretch" />
+        </Grid>
+
+        <TextBlock x:Name="KeyLabel" FontSize="12" Opacity="0.7" />
+        <TextBox x:Name="KeyBox" AcceptsReturn="True" TextWrapping="Wrap" Height="120"
+                 FontFamily="Consolas, Menlo, monospace" FontSize="12" />
+
+        <TextBlock x:Name="StatusText" TextWrapping="Wrap" />
+
+        <StackPanel Orientation="Horizontal" Spacing="10" HorizontalAlignment="Right">
+            <Button x:Name="LoadButton" Click="OnLoadClick" />
+            <Button x:Name="ActivateButton" Classes="accent" Click="OnActivateClick" />
+            <Button x:Name="ExitButton" Click="OnExitClick" />
+        </StackPanel>
+    </StackPanel>
+</Window>
