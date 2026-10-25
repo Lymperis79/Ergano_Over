@@ -248,14 +248,14 @@
         <!-- ── Ergani Excel import confirmation ── -->
         <Border Grid.Row="0" Grid.RowSpan="4"
                 IsVisible="{Binding IsImportDialogOpen}"
-                Background="#BB000000" Panel.ZIndex="80">
+                Background="#BB000000" ZIndex="80">
             <Border Background="{DynamicResource PanelBrush}" CornerRadius="12" Padding="24"
                     Width="620" MaxHeight="620"
                     VerticalAlignment="Center" HorizontalAlignment="Center">
                 <Grid RowDefinitions="Auto,*,Auto" RowSpacing="12">
                     <Button Content="✕" Command="{Binding CancelImportCommand}" ToolTip.Tip="Close"
                             HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,-14,-14,0"
-                            Padding="8,4" Panel.ZIndex="20" />
+                            Padding="8,4" />
                     <TextBlock Grid.Row="0"
                                Text="{Binding Loc[ImportDeclaredScheduleFromErgani]}"
                                FontSize="18" FontWeight="Bold" />
@@ -294,14 +294,14 @@
         <!-- ── Import history ── -->
         <Border Grid.Row="0" Grid.RowSpan="4"
                 IsVisible="{Binding IsImportHistoryOpen}"
-                Background="#BB000000" Panel.ZIndex="85">
+                Background="#BB000000" ZIndex="85">
             <Border Background="{DynamicResource PanelBrush}" CornerRadius="12" Padding="24"
                     Width="680" MaxHeight="560"
                     VerticalAlignment="Center" HorizontalAlignment="Center">
                 <Grid RowDefinitions="Auto,*,Auto" RowSpacing="12">
                     <Button Content="✕" Command="{Binding CloseImportHistoryCommand}" ToolTip.Tip="Close"
                             HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,-14,-14,0"
-                            Padding="8,4" Panel.ZIndex="20" />
+                            Padding="8,4" />
                     <TextBlock Grid.Row="0" Text="{Binding Loc[ErganiImportHistory]}"
                                FontSize="18" FontWeight="Bold" />
                     <ScrollViewer Grid.Row="1">
@@ -332,14 +332,14 @@
         <!-- ── Existing data on the imported dates: replace or keep? ── -->
         <Border Grid.Row="0" Grid.RowSpan="4"
                 IsVisible="{Binding IsConflictDialogOpen}"
-                Background="#BB000000" Panel.ZIndex="95">
+                Background="#BB000000" ZIndex="95">
             <Border Background="{DynamicResource PanelBrush}" CornerRadius="12" Padding="24"
                     Width="620" MaxHeight="620"
                     VerticalAlignment="Center" HorizontalAlignment="Center">
                 <Grid RowDefinitions="Auto,*,Auto" RowSpacing="12">
                     <Button Content="✕" Command="{Binding CancelImportCommand}" ToolTip.Tip="Close"
                             HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,-14,-14,0"
-                            Padding="8,4" Panel.ZIndex="20" />
+                            Padding="8,4" />
                     <TextBlock Grid.Row="0" Text="{Binding Loc[ExistingDataFound]}"
                                FontSize="18" FontWeight="Bold" Foreground="#FFB74D" />
                     <ScrollViewer Grid.Row="1">
@@ -360,14 +360,14 @@
         <!-- ── Portal download finished: import it now? ── -->
         <Border Grid.Row="0" Grid.RowSpan="4"
                 IsVisible="{Binding IsPortalImportPromptOpen}"
-                Background="#BB000000" Panel.ZIndex="90">
+                Background="#BB000000" ZIndex="90">
             <Border Background="{DynamicResource PanelBrush}" CornerRadius="12" Padding="24"
                     Width="460"
                     VerticalAlignment="Center" HorizontalAlignment="Center">
                 <StackPanel Spacing="16">
                     <Button Content="✕" Command="{Binding DismissPortalImportCommand}" ToolTip.Tip="Close"
                             HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,-14,-14,0"
-                            Padding="8,4" Panel.ZIndex="20" />
+                            Padding="8,4" />
                     <TextBlock Text="{Binding Loc[ImportFromErgani]}"
                                FontSize="18" FontWeight="Bold" />
                     <TextBlock Text="{Binding PortalImportPromptText}"
@@ -387,14 +387,14 @@
         <!-- ── Day dialog overlay ── -->
         <Border Grid.Row="0" Grid.RowSpan="4"
                 IsVisible="{Binding IsDayDialogOpen}"
-                Background="#BB000000" Panel.ZIndex="50">
+                Background="#BB000000" ZIndex="50">
             <Border Background="{DynamicResource PanelBrush}" CornerRadius="12" Padding="24"
                     Width="500" MaxHeight="520"
                     VerticalAlignment="Center" HorizontalAlignment="Center">
                 <Grid RowDefinitions="*,Auto">
                     <Button Content="✕" Command="{Binding CloseDayDialogCommand}" ToolTip.Tip="Close"
                             HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,-14,-14,0"
-                            Padding="8,4" Panel.ZIndex="20" />
+                            Padding="8,4" />
                     <ScrollViewer Grid.Row="0">
                         <StackPanel Spacing="10">
                             <TextBlock Text="{Binding EditingDate, StringFormat='Schedule for {0:dd/MM/yyyy}'}"
@@ -482,13 +482,13 @@
         <!-- ── Bulk apply dialog overlay ── -->
         <Border Grid.Row="0" Grid.RowSpan="4"
                 IsVisible="{Binding IsBulkDialogOpen}"
-                Background="#BB000000" Panel.ZIndex="50">
+                Background="#BB000000" ZIndex="50">
             <Border Background="{DynamicResource PanelBrush}" CornerRadius="12" Padding="24"
                     Width="420" VerticalAlignment="Center" HorizontalAlignment="Center">
                 <Grid RowDefinitions="*,Auto">
                     <Button Content="✕" Command="{Binding CloseBulkDialogCommand}" ToolTip.Tip="Close"
                             HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,-14,-14,0"
-                            Padding="8,4" Panel.ZIndex="20" />
+                            Padding="8,4" />
                     <StackPanel Grid.Row="0" Spacing="10">
                         <TextBlock Text="{Binding Loc[BulkApplySchedule]}" FontSize="16" FontWeight="Bold" />
                         <TextBlock Text="{Binding SelectionLabel}" FontSize="12" Foreground="Gray" />
@@ -557,14 +557,14 @@
         <!-- ── Clone dialog overlay ── -->
         <Border Grid.Row="0" Grid.RowSpan="4"
                 IsVisible="{Binding IsCloneDialogOpen}"
-                Background="#BB000000" Panel.ZIndex="50">
+                Background="#BB000000" ZIndex="50">
             <Border Background="{DynamicResource PanelBrush}" CornerRadius="12" Padding="24"
                     Width="460" Height="620"
                     VerticalAlignment="Center" HorizontalAlignment="Center">
                 <Grid RowDefinitions="Auto,Auto,Auto,*,Auto">
                     <Button Content="✕" Command="{Binding CloseCloneDialogCommand}" ToolTip.Tip="Close"
                             HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,-14,-14,0"
-                            Padding="8,4" Panel.ZIndex="20" />
+                            Padding="8,4" />
                     <TextBlock Grid.Row="0" Text="{Binding Loc[CloneScheduleToEmployees]}"
                                FontSize="16" FontWeight="Bold" Margin="0,0,0,8" />
                     <StackPanel Grid.Row="1" Spacing="4" Margin="0,0,0,10">
@@ -617,14 +617,14 @@
         <!-- ── Undo last clone dialog overlay ── -->
         <Border Grid.Row="0" Grid.RowSpan="4"
                 IsVisible="{Binding IsUndoCloneDialogOpen}"
-                Background="#BB000000" Panel.ZIndex="50">
+                Background="#BB000000" ZIndex="50">
             <Border Background="{DynamicResource PanelBrush}" CornerRadius="12" Padding="24"
                     Width="500" MaxHeight="620"
                     VerticalAlignment="Center" HorizontalAlignment="Center">
                 <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto" RowSpacing="10">
                     <Button Content="✕" Command="{Binding CloseUndoCloneDialogCommand}" ToolTip.Tip="Close"
                             HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,-14,-14,0"
-                            Padding="8,4" Panel.ZIndex="20" />
+                            Padding="8,4" />
                     <TextBlock Grid.Row="0" Text="{Binding Loc[UndoLastClone]}"
                                FontSize="16" FontWeight="Bold" />
 
@@ -688,21 +688,21 @@
         </Border>
 
         <!-- ── Holidays form ── -->
-        <Panel Grid.Row="0" Grid.RowSpan="4" Panel.ZIndex="45" IsVisible="{Binding Holidays.IsOpen}">
+        <Panel Grid.Row="0" Grid.RowSpan="4" ZIndex="45" IsVisible="{Binding Holidays.IsOpen}">
             <views:HolidayDialogView DataContext="{Binding Holidays}" />
         </Panel>
 
         <!-- ── Submission log dialog (Ergani responses + PDF) ── -->
         <Border Grid.Row="0" Grid.RowSpan="4"
                 IsVisible="{Binding IsLogOpen}"
-                Background="#BB000000" Panel.ZIndex="50">
+                Background="#BB000000" ZIndex="50">
             <Border Background="{DynamicResource PanelBrush}" CornerRadius="12" Padding="20"
                     Width="900" Height="560"
                     VerticalAlignment="Center" HorizontalAlignment="Center">
                 <Grid RowDefinitions="Auto,*,Auto,Auto" RowSpacing="10">
                     <Button Content="✕" Command="{Binding CloseLogCommand}" ToolTip.Tip="Close"
                             HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,-14,-14,0"
-                            Padding="8,4" Panel.ZIndex="20" />
+                            Padding="8,4" />
                     <TextBlock Grid.Row="0" Text="{Binding LogTitle}" FontSize="17" FontWeight="Bold" />
 
                     <Panel Grid.Row="1">
@@ -748,14 +748,14 @@
         <!-- ── Raw Ergani response ── -->
         <Border Grid.Row="0" Grid.RowSpan="4"
                 IsVisible="{Binding IsResponseOpen}"
-                Background="#AA000000" Panel.ZIndex="60">
+                Background="#AA000000" ZIndex="60">
             <Border Background="{DynamicResource PanelBrush}" CornerRadius="12" Padding="20"
                     Width="800" Height="560"
                     VerticalAlignment="Center" HorizontalAlignment="Center">
                 <Grid RowDefinitions="Auto,*,Auto" RowSpacing="12">
                     <Button Content="✕" Command="{Binding CloseResponseCommand}" ToolTip.Tip="Close"
                             HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,-14,-14,0"
-                            Padding="8,4" Panel.ZIndex="20" />
+                            Padding="8,4" />
                     <TextBlock Grid.Row="0" Text="{Binding ResponseTitle}" FontSize="17" FontWeight="Bold" />
                     <TextBox Grid.Row="1" Text="{Binding ResponseText}" IsReadOnly="True"
                              AcceptsReturn="True" TextWrapping="NoWrap" FontFamily="Consolas"
@@ -770,13 +770,13 @@
         <!-- ── Confirm company-wide pending schedule submission ── -->
         <Border Grid.Row="0" Grid.RowSpan="4"
                 IsVisible="{Binding IsBulkSubmitDialogOpen}"
-                Background="#BB000000" Panel.ZIndex="65">
+                Background="#BB000000" ZIndex="65">
             <Border Background="{DynamicResource PanelBrush}" CornerRadius="12" Padding="24"
                     Width="520" VerticalAlignment="Center" HorizontalAlignment="Center">
                 <StackPanel Spacing="16">
                     <Button Content="✕" Command="{Binding CancelBulkSubmitSchedulesCommand}" ToolTip.Tip="Close"
                             HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,-14,-14,0"
-                            Padding="8,4" Panel.ZIndex="20" />
+                            Padding="8,4" />
                     <TextBlock Text="{Binding Loc[ConfirmBulkScheduleSubmission]}" FontSize="16" FontWeight="Bold" />
                     <TextBlock Text="{Binding BulkSubmitSummary}" TextWrapping="Wrap" />
                     <TextBlock Text="{Binding Loc[BulkSubmissionSafetyNote]}" TextWrapping="Wrap" Foreground="Gray" FontSize="12" />
@@ -792,13 +792,13 @@
         <!-- ── Delete confirmation ── -->
         <Border Grid.Row="0" Grid.RowSpan="4"
                 IsVisible="{Binding IsConfirmDeleteOpen}"
-                Background="#BB000000" Panel.ZIndex="70">
+                Background="#BB000000" ZIndex="70">
             <Border Background="{DynamicResource PanelBrush}" CornerRadius="12" Padding="24"
                     Width="440" VerticalAlignment="Center" HorizontalAlignment="Center">
                 <StackPanel Spacing="16">
                     <Button Content="✕" Command="{Binding CancelDeleteCommand}" ToolTip.Tip="Close"
                             HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,-14,-14,0"
-                            Padding="8,4" Panel.ZIndex="20" />
+                            Padding="8,4" />
                     <TextBlock Text="{Binding Loc[DeleteSchedule]}" FontSize="16" FontWeight="Bold" />
                     <TextBlock Text="{Binding ConfirmDeleteMessage}" TextWrapping="Wrap" />
                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8">
