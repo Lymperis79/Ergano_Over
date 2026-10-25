@@ -2385,7 +2385,6 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
             _pendingBulkSubmit.Clear();
             await RefreshCalendarAsync();
             await RefreshCloneStateAsync();
-            await RefreshCloneStateAsync();
         }
         finally
         {
