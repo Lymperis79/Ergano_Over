@@ -149,7 +149,7 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
         {
             var today = DateOnly.FromDateTime(DateTime.Today);
             var monday = today.AddDays(-(int)today.DayOfWeek == 0 ? 6 : (int)today.DayOfWeek - 1);
-            monday = monday.AddDays(_weekOffset * 7);
+            monday = monday.AddDays(WeekOffset * 7);
             return (monday, monday.AddDays(6));
         }
     }
@@ -457,7 +457,7 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
     [RelayCommand]
     private async Task PreviousWeekAsync()
     {
-        _weekOffset--;
+        WeekOffset--;
         OnPropertyChanged(nameof(WeekLabel));
         await RefreshCalendarAsync();
     }
@@ -465,7 +465,7 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
     [RelayCommand]
     private async Task NextWeekAsync()
     {
-        _weekOffset++;
+        WeekOffset++;
         OnPropertyChanged(nameof(WeekLabel));
         await RefreshCalendarAsync();
     }
@@ -524,7 +524,7 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
         return string.Empty;
     }
 
-    private static string BuildOvertimeStatusText(List<OvertimeDto>? records)
+    private string BuildOvertimeStatusText(List<OvertimeDto>? records)
     {
         if (records is not { Count: > 0 }) return string.Empty;
         return records.All(o => o.SubmittedToErgani) ? Loc["Sent"] : Loc["Pending"];
