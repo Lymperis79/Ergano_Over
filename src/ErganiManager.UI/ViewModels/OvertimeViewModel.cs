@@ -74,6 +74,9 @@ public partial class OvertimeViewModel : ViewModelBase, IAdminSectionViewModel
         if (HasActiveCompany) _ = LoadDataAsync();
     }
 
+    /// <summary>Refreshes employees, branches and overtime records whenever this section is revisited.</summary>
+    public Task RefreshAsync() => HasActiveCompany ? LoadDataAsync() : Task.CompletedTask;
+
     private async Task LoadDataAsync()
     {
         if (_session?.CompanyId is not int companyId) return;
