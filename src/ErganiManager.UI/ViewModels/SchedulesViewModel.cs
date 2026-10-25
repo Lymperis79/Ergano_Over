@@ -317,7 +317,9 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
     public bool CanSubmitEditingDay => ShowTimeFields && !EditingSubmitted;
     public bool HasEditingOvertime =>
         ShowTimeFields && EditingStartTime.HasValue && EditingEndTime.HasValue &&
-        ScheduleHours.GetOvertimeRange(EditingStartTime, EditingEndTime).HasValue;
+        ScheduleHours.GetOvertimeRange(
+            EditingStartTime.HasValue ? TimeOnly.FromTimeSpan(EditingStartTime.Value) : null,
+            EditingEndTime.HasValue ? TimeOnly.FromTimeSpan(EditingEndTime.Value) : null).HasValue;
 
     /// <summary>Shown when the day is longer than 8 hours: how it will be split for Ergani.</summary>
     public string EditingOvertimeNote
@@ -745,6 +747,20 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
         EditingEndTime    = existing?.EndTime?.ToTimeSpan()   ?? SelectedEditingShift?.EndTime ?? new TimeSpan(17, 0, 0);
         EditingComments   = existing?.Comments ?? string.Empty;
         EditingOvertimeJustification = ErganiManager.Data.Entities.OvertimeJustification.ExceptionalWorkload;
+        if (_session?.CompanyId is int companyIdForOvertime)
+        {
+            var overtimeRecords = await _overtimeService.GetByCompanyAsync(companyIdForOvertime, date, date);
+            var overtimeRange = ScheduleHours.GetOvertimeRange(
+                EditingStartTime.HasValue ? TimeOnly.FromTimeSpan(EditingStartTime.Value) : null,
+                EditingEndTime.HasValue ? TimeOnly.FromTimeSpan(EditingEndTime.Value) : null);
+            var savedOvertime = overtimeRange.HasValue
+                ? overtimeRecords.FirstOrDefault(o => o.EmployeeId == SelectedEmployee.Id &&
+                    o.StartTime == overtimeRange.Value.From && o.EndTime == overtimeRange.Value.To && !o.IsCancelled)
+                : null;
+            if (savedOvertime != null &&
+                Enum.TryParse<ErganiManager.Data.Entities.OvertimeJustification>(savedOvertime.Justification.ToString(), out var savedJustification))
+                EditingOvertimeJustification = savedJustification;
+        }
         EditingSubmitted  = existing?.SubmittedToErgani ?? false;
         EditingBranch     = (existing != null
                                 ? AvailableBranches.FirstOrDefault(b => b.Id == existing.BranchId)
