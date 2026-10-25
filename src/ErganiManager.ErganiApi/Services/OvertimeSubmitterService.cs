@@ -79,7 +79,7 @@ public sealed class OvertimeSubmitterService : IOvertimeSubmitter
             }
             var employeeIds = group.Select(x => x.EmployeeId).Distinct().ToList();
             db.ApiSubmissionLogs.Add(new ApiSubmissionLog
-            { CompanyId = companyId, EmployeeId = employeeIds.Count == 1 ? employeeIds[0] : null, SubmissionType = "Overtime", RequestPayloadJson = result.RequestPayloadJson, ResponseRawJson = result.ResponseRawJson, SubmissionId = submissionId, Protocol = protocol, SubmissionDate = DateTime.UtcNow, HttpStatusCode = result.HttpStatusCode, Success = success, ErrorMessage = error, DurationMs = result.DurationMs });
+            { CompanyId = companyId, EmployeeId = employeeIds.Count == 1 ? employeeIds[0] : null, EmployeeIdsJson = System.Text.Json.JsonSerializer.Serialize(employeeIds), SubmissionType = "Overtime", RequestPayloadJson = result.RequestPayloadJson, ResponseRawJson = result.ResponseRawJson, SubmissionId = submissionId, Protocol = protocol, SubmissionDate = DateTime.UtcNow, HttpStatusCode = result.HttpStatusCode, Success = success, ErrorMessage = error, DurationMs = result.DurationMs });
             await db.SaveChangesAsync(ct);
             lastProtocol = protocol; lastSubmissionId = submissionId; lastResponse = result.ResponseRawJson;
         }
