@@ -1,5 +1,6 @@
 using System.Text.Json;
 using ErganiManager.Core.Interfaces;
+using ErganiManager.Core.Models;
 using ErganiManager.Data;
 using ErganiManager.Data.Entities;
 using Microsoft.EntityFrameworkCore;
@@ -453,6 +454,23 @@ public class ScheduleService : IScheduleService
         }).ToList();
         db.Overtimes.RemoveRange(replacedOvertime);
 
+        // Remove the pending-log rows belonging to overtime records replaced by this clone.
+        if (replacedOvertime.Count > 0)
+        {
+            var replacedOvertimeIds = replacedOvertime.Select(o => o.Id).ToHashSet();
+            var oldPendingLogs = await db.ApiSubmissionLogs
+                .Where(l => l.CompanyId == source.CompanyId &&
+                            l.SubmissionType == "Overtime" &&
+                            l.ErrorMessage == "PENDING_OVERTIME")
+                .ToListAsync();
+            foreach (var log in oldPendingLogs)
+            {
+                if (TryGetPendingOvertimeId(log.RequestPayloadJson, out var overtimeId) &&
+                    replacedOvertimeIds.Contains(overtimeId))
+                    db.ApiSubmissionLogs.Remove(log);
+            }
+        }
+
         // Holidays: the destination's unsent holiday days on these dates are replaced by the source's.
         // Days already sent to Ergani stay (they cannot be withdrawn here) and those dates are skipped.
         var leaveSnapshot = new List<LeaveSnapshotRow>();
@@ -495,18 +513,61 @@ public class ScheduleService : IScheduleService
         }
 
         int written = 0;
+        var pendingOvertimeLogs = new List<ApiSubmissionLog>();
         foreach (var targetId in targetIds)
         {
+            var targetEmployee = targets.FirstOrDefault(e => e.Id == targetId);
             foreach (var src in sourceDays)
             {
-                db.Schedules.Add(new EmployeeSchedule
+                var copiedSchedule = new EmployeeSchedule
                 {
                     EmployeeId = targetId, BranchId = src.BranchId, ScheduleDate = src.ScheduleDate,
                     WorkType = src.WorkType, Source = Data.Entities.ScheduleSource.Manual,
                     StartTime = src.StartTime, EndTime = src.EndTime, Comments = src.Comments,
                     SubmittedToErgani = false, CreatedAt = cloneTime
-                });
+                };
+                db.Schedules.Add(copiedSchedule);
                 written++;
+
+                if (targetEmployee == null ||
+                    src.WorkType is not (WorkType.Office or WorkType.Home))
+                    continue;
+
+                var overtimeRange = ScheduleHours.GetOvertimeRange(src.StartTime, src.EndTime);
+                if (overtimeRange is not { } range)
+                    continue;
+
+                // Carry over the source day's reason when a matching source overtime exists;
+                // otherwise use the normal default. Weekly workdays belong to the destination employee.
+                var sourceOvertime = await db.Overtimes.AsNoTracking().FirstOrDefaultAsync(o =>
+                    o.EmployeeId == sourceEmployeeId && o.OvertimeDate == src.ScheduleDate &&
+                    o.StartTime == range.From && o.EndTime == range.To && !o.IsCancelled);
+                var overtime = new Overtime
+                {
+                    EmployeeId = targetId,
+                    BranchId = src.BranchId,
+                    OvertimeDate = src.ScheduleDate,
+                    StartTime = range.From,
+                    EndTime = range.To,
+                    Justification = sourceOvertime?.Justification ?? OvertimeJustification.ExceptionalWorkload,
+                    WeeklyWorkdaysNumber = targetEmployee.WeeklyWorkdays,
+                    RequestPayloadJson = JsonSerializer.Serialize(new { source = "schedule", scheduleId = copiedSchedule.Id }),
+                    CreatedAt = cloneTime
+                };
+                db.Overtimes.Add(overtime);
+
+                // Add the pending log after SaveChanges assigns the overtime's primary key.
+                pendingOvertimeLogs.Add(new ApiSubmissionLog
+                {
+                    CompanyId = source.CompanyId,
+                    EmployeeId = targetId,
+                    EmployeeIdsJson = JsonSerializer.Serialize(new[] { targetId }),
+                    SubmissionType = "Overtime",
+                    ScheduleDate = src.ScheduleDate,
+                    SubmissionDate = cloneTime,
+                    Success = false,
+                    ErrorMessage = "PENDING_OVERTIME"
+                });
             }
         }
 
@@ -547,9 +608,49 @@ public class ScheduleService : IScheduleService
             LeaveSnapshotJson = JsonSerializer.Serialize(leaveSnapshot)
         });
 
-        // One SaveChanges = the schedules and the history entry are written together or not at all.
+        // One SaveChanges = the schedules, overtime records, pending logs and history entry are
+        // written together or not at all. Save once to assign overtime IDs, then attach their log rows.
         await db.SaveChangesAsync();
+
+        if (pendingOvertimeLogs.Count > 0)
+        {
+            var logIndex = 0;
+            foreach (var targetId in targetIds)
+            {
+                foreach (var src in sourceDays)
+                {
+                    if (src.WorkType is not (WorkType.Office or WorkType.Home)) continue;
+                    var range = ScheduleHours.GetOvertimeRange(src.StartTime, src.EndTime);
+                    if (range is not { } overtimeRange) continue;
+
+                    var overtime = await db.Overtimes.FirstOrDefaultAsync(o =>
+                        o.EmployeeId == targetId && o.OvertimeDate == src.ScheduleDate &&
+                        o.StartTime == overtimeRange.From && o.EndTime == overtimeRange.To &&
+                        !o.IsCancelled && o.CreatedAt == cloneTime &&
+                        o.RequestPayloadJson != null && o.RequestPayloadJson.Contains("\"source\":\"schedule\""));
+                    if (overtime == null) continue;
+
+                    var log = pendingOvertimeLogs[logIndex++];
+                    log.RequestPayloadJson = JsonSerializer.Serialize(new { overtimeId = overtime.Id, source = "schedule" });
+                    db.ApiSubmissionLogs.Add(log);
+                }
+            }
+            await db.SaveChangesAsync();
+        }
+
         return written + copiedLeaves;
+    }
+
+    private static bool TryGetPendingOvertimeId(string? payload, out int id)
+    {
+        id = 0;
+        if (string.IsNullOrWhiteSpace(payload)) return false;
+        try
+        {
+            using var doc = JsonDocument.Parse(payload);
+            return doc.RootElement.TryGetProperty("overtimeId", out var value) && value.TryGetInt32(out id);
+        }
+        catch (JsonException) { return false; }
     }
 
     public async Task<List<CloneImpactDto>> GetCloneImpactAsync(
