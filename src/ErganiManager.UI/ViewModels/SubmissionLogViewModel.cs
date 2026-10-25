@@ -520,6 +520,31 @@ public partial class SubmissionLogViewModel
                 .Take(500)
                 .ToListAsync();
 
+            // Backfill older batch rows once: derive employee IDs from their saved AFMs,
+            // then persist the multi-employee list so it is available directly in the database.
+            var backfilledAny = false;
+            foreach (var log in results.Where(l => string.IsNullOrWhiteSpace(l.EmployeeIdsJson)))
+            {
+                var employeeIds = employees
+                    .Where(e => !string.IsNullOrWhiteSpace(e.TaxId) &&
+                        (log.RequestPayloadJson?.Contains(e.TaxId, StringComparison.Ordinal) == true ||
+                         log.ResponseRawJson?.Contains(e.TaxId, StringComparison.Ordinal) == true))
+                    .Select(e => e.Id)
+                    .Distinct()
+                    .ToList();
+
+                if (employeeIds.Count == 0)
+                    continue;
+
+                log.EmployeeIdsJson = JsonSerializer.Serialize(employeeIds);
+                if (employeeIds.Count == 1 && log.EmployeeId is null)
+                    log.EmployeeId = employeeIds[0];
+                backfilledAny = true;
+            }
+
+            if (backfilledAny)
+                await db.SaveChangesAsync();
+
             if (SelectedEmployeeId is > 0)
             {
                 var employee = employees.FirstOrDefault(e => e.Id == SelectedEmployeeId.Value);
