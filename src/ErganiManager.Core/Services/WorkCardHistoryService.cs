@@ -123,12 +123,18 @@ public class WorkCardHistoryService : IWorkCardHistoryService
                 if (!Matches(p.EmployeeId, p.BranchId, p.MovementType))
                     continue;
 
-                // Avoid a duplicate if a WorkCard was created between the cache
-                // query and this query. The main WorkCard is the authoritative row.
-                if (records.Any(r => r.EmployeeId == p.EmployeeId &&
-                                     r.MovementType == p.MovementType &&
-                                     Math.Abs((r.MovementDateTime - p.ScannedAt).TotalSeconds) <= 1))
+                // Avoid a duplicate if a WorkCard placeholder was created for the API log.
+                // While the scan is queued, copy its outage/late reason onto that visible row.
+                var existingRecord = records.FirstOrDefault(r =>
+                    r.EmployeeId == p.EmployeeId &&
+                    r.MovementType == p.MovementType &&
+                    Math.Abs((r.MovementDateTime - p.ScannedAt).TotalSeconds) <= 1);
+                if (existingRecord != null)
+                {
+                    if (string.IsNullOrWhiteSpace(existingRecord.LateJustification))
+                        existingRecord.LateJustification = p.LateJustification;
                     continue;
+                }
 
                 records.Add(new WorkCardHistoryDto
                 {
