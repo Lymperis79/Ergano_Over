@@ -807,8 +807,8 @@ public partial class AdminShellViewModel : ViewModelBase
 
         // Automatically load saved work-card results whenever the Work Cards form is selected.
         // This loads the application's history; it does not open the external Ergani portal.
-        if (section == AdminSection.WorkCards && vm is WorkCardHistoryViewModel workCardsVm)
-            _ = workCardsVm.LoadOnFormSelectedAsync();
+        if (section == AdminSection.WorkCards && vm is WorkCardHistoryViewModel workCardsHistoryVm)
+            _ = workCardsHistoryVm.LoadOnFormSelectedAsync();
 
         // Cached sections keep their view models; refresh overtime records on every revisit.
         if (wasCached && section == AdminSection.Overtime && vm is OvertimeViewModel overtimeVm)
