@@ -47,13 +47,6 @@ public sealed class OvertimeSubmitterService : IOvertimeSubmitter
         foreach (var group in eligible.GroupBy(x => x.BranchId))
         {
             var groupIds = group.Select(x => x.Id).ToHashSet();
-            var pendingLogs = await db.ApiSubmissionLogs
-                .Where(l => l.CompanyId == companyId && l.SubmissionType == "Overtime" && l.ErrorMessage == "PENDING_OVERTIME")
-                .ToListAsync(ct);
-            foreach (var pendingLog in pendingLogs)
-                if (TryGetPendingOvertimeId(pendingLog.RequestPayloadJson, out var pendingId) && groupIds.Contains(pendingId))
-                    db.ApiSubmissionLogs.Remove(pendingLog);
-
             var branch = group.First().Branch;
             if (branch == null)
             {
@@ -78,6 +71,26 @@ public sealed class OvertimeSubmitterService : IOvertimeSubmitter
             var success = result.Success && response?.IsBusinessError != true && !string.IsNullOrWhiteSpace(response?.Protocol);
             var protocol = response?.Protocol; var submissionId = response?.SubmissionId;
             var error = success ? null : (result.ErrorMessage ?? response?.Description ?? ErganiManager.Data.UiText.T("Ergani overtime submission failed."));
+
+            // Replace the generated pending rows only after Ergani has returned a result.
+            // Pending-row removal and insertion of the final batch log are saved together below,
+            // so a crash/exception before this point leaves the pending rows available for retry.
+            // Match by the structured overtimeId field, not by substring, to avoid deleting a
+            // different overtime row whose ID merely contains the same digits.
+            var pendingLogs = await db.ApiSubmissionLogs
+                .Where(l => l.CompanyId == companyId &&
+                            l.SubmissionType == "Overtime" &&
+                            l.ErrorMessage == "PENDING_OVERTIME")
+                .ToListAsync(ct);
+            foreach (var pendingLog in pendingLogs)
+            {
+                if (TryGetPendingOvertimeId(pendingLog.RequestPayloadJson, out var pendingId) &&
+                    groupIds.Contains(pendingId))
+                {
+                    db.ApiSubmissionLogs.Remove(pendingLog);
+                }
+            }
+
             var submittedDate = DateOnly.FromDateTime(DateTime.Today);
             foreach (var entity in group)
             {
