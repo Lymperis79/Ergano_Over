@@ -25,6 +25,7 @@ public partial class WorkCardHistoryViewModel : ViewModelBase, IAdminSectionView
     private readonly IErganiPortalService _portalService;
     private readonly IConnectionStateService _connectionState;
     private UserSession? _session;
+    private Task _filtersLoadTask = Task.CompletedTask;
 
     public ObservableCollection<WorkCardHistoryDto> Records { get; } = new();
 
@@ -107,12 +108,23 @@ public partial class WorkCardHistoryViewModel : ViewModelBase, IAdminSectionView
             ? string.Empty
             : Loc["Vm.Select a company first (Super Admin: pick a company from the Companies tab)."];
 
-        if (HasActiveCompany)
-            _ = LoadFiltersAsync();
+        _filtersLoadTask = HasActiveCompany
+            ? LoadFiltersAsync()
+            : Task.CompletedTask;
     }
 
-    /// <summary>Called by the shell whenever the Work Cards form becomes active.</summary>
-    public Task OpenPortalOnFormSelectedAsync() => OpenErganiWorkCardsPortalAsync();
+    /// <summary>
+    /// Called by the shell whenever the Work Cards form becomes active.
+    /// Waits for employee/branch filters to initialize before loading the results.
+    /// </summary>
+    public async Task LoadOnFormSelectedAsync()
+    {
+        if (!HasActiveCompany)
+            return;
+
+        await _filtersLoadTask;
+        await LoadAsync();
+    }
 
     /// <summary>Opens the Ergani Work Cards page, logs in, fills today's date in both fields and searches.</summary>
     [RelayCommand]
