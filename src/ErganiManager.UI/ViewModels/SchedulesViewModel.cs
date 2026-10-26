@@ -54,6 +54,11 @@ public partial class CalendarCellViewModel : ViewModelBase
     public bool HasHoliday => HasOfficialHoliday || HasUserHoliday;
 
     public string DayNumberText => Date?.Day.ToString() ?? string.Empty;
+    // ISO-8601 week number, shown on Mondays to label each calendar row.
+    public string WeekNumberText => Date is DateOnly date && date.DayOfWeek == DayOfWeek.Monday
+        ? $"W{System.Globalization.ISOWeek.GetWeekOfYear(date.ToDateTime(TimeOnly.MinValue)):00}"
+        : string.Empty;
+    public bool HasWeekNumber => !string.IsNullOrEmpty(WeekNumberText);
     public string WorkTypeIcon => WorkType switch
     {
         AppWorkType.Office => "🏢",
