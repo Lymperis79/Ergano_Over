@@ -213,7 +213,7 @@
                                 CornerRadius="6"
                                 Padding="14,10">
 
-                            <Grid MinWidth="1180" ColumnDefinitions="Auto,Auto,*,Auto,Auto,Auto,Auto,Auto,Auto">
+                            <Grid MinWidth="1320" ColumnDefinitions="Auto,Auto,*,Auto,Auto,Auto,Auto,Auto,Auto,Auto">
 
                                 <!-- Retry selection -->
 
@@ -290,11 +290,19 @@
 
                                 </Border>
 
-                                <!-- Protocol -->
+                                <!-- Late declaration reason: show the Ergani code on the card itself. -->
+                                <TextBlock Grid.Column="6"
+                                           Text="{Binding LateJustification, StringFormat='Late reason: {0}'}"
+                                           FontSize="11"
+                                           Foreground="#D7B56D"
+                                           VerticalAlignment="Center"
+                                           Margin="6,0"
+                                           IsVisible="{Binding LateJustification, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
 
-                                <TextBlock Grid.Column="6" Text="{Binding Protocol}" FontSize="11" Foreground="#888888" VerticalAlignment="Center" IsVisible="{Binding Protocol, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
-                                <Button Grid.Column="7" Content="{Binding $parent[UserControl].((vm:WorkCardHistoryViewModel)DataContext).Loc[ResponseLabel]}" Tag="{Binding}" Click="OnResponseClick" IsEnabled="{Binding SubmittedToErgani}" Margin="6,0" />
-                                <Button Grid.Column="8" Content="{Binding $parent[UserControl].((vm:WorkCardHistoryViewModel)DataContext).Loc[PdfLabel]}" Tag="{Binding}" Click="OnPdfClick" IsEnabled="{Binding SubmittedToErgani}" />
+                                <!-- Protocol -->
+                                <TextBlock Grid.Column="7" Text="{Binding Protocol}" FontSize="11" Foreground="#888888" VerticalAlignment="Center" IsVisible="{Binding Protocol, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                                <Button Grid.Column="8" Content="{Binding $parent[UserControl].((vm:WorkCardHistoryViewModel)DataContext).Loc[ResponseLabel]}" Tag="{Binding}" Click="OnResponseClick" IsEnabled="{Binding SubmittedToErgani}" Margin="6,0" />
+                                <Button Grid.Column="9" Content="{Binding $parent[UserControl].((vm:WorkCardHistoryViewModel)DataContext).Loc[PdfLabel]}" Tag="{Binding}" Click="OnPdfClick" IsEnabled="{Binding SubmittedToErgani}" />
 
                             </Grid>
 
