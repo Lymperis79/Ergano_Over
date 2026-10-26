@@ -116,17 +116,15 @@
 
                     <TextBlock Text="{Binding Loc[Employees]}" FontWeight="SemiBold" />
                     <Border Background="{DynamicResource CardBrush}" BorderBrush="{DynamicResource LineBrush}"
-                            BorderThickness="1" CornerRadius="6" Padding="10" MaxHeight="170">
-                        <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
-                            <ItemsControl ItemsSource="{Binding FormEmployeeOptions}">
-                                <ItemsControl.ItemTemplate>
-                                    <DataTemplate>
-                                        <CheckBox Content="{Binding FullName}" IsChecked="{Binding IsSelected, Mode=TwoWay}"
-                                                  Margin="2,4" />
-                                    </DataTemplate>
-                                </ItemsControl.ItemTemplate>
-                            </ItemsControl>
-                        </ScrollViewer>
+                            BorderThickness="1" CornerRadius="6" Padding="10">
+                        <ItemsControl ItemsSource="{Binding FormEmployeeOptions}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <CheckBox Content="{Binding FullName}" IsChecked="{Binding IsSelected, Mode=TwoWay}"
+                                              Margin="2,4" />
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
                     </Border>
 
                     <TextBlock Text="{Binding Loc[Branch]}" FontWeight="SemiBold" />
