@@ -107,7 +107,16 @@ public partial class OvertimeViewModel : ViewModelBase, IAdminSectionViewModel
     }
 
     public void SetSelected(OvertimeDto record, bool selected)
-    { if (selected) _selectedIds.Add(record.Id); else _selectedIds.Remove(record.Id); OnPropertyChanged(nameof(HasSelection)); }
+    {
+        // Sent records must never enter the submission selection, even if selection is triggered programmatically.
+        if (record.SubmittedToErgani)
+            selected = false;
+
+        if (selected) _selectedIds.Add(record.Id);
+        else _selectedIds.Remove(record.Id);
+
+        OnPropertyChanged(nameof(HasSelection));
+    }
 
     [RelayCommand]
     private async Task SubmitSelectedAsync()
