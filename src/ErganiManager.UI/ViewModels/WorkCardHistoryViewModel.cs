@@ -30,9 +30,6 @@ public partial class WorkCardHistoryViewModel : ViewModelBase, IAdminSectionView
     /// <summary>Raised when a PDF or Excel file has been saved successfully.</summary>
     public event Action<string, string>? FileSaved;
 
-    /// <summary>Raised when a PDF or Excel file has been saved successfully.</summary>
-    public event Action<string, string>? FileSaved;
-
     public ObservableCollection<WorkCardHistoryDto> Records { get; } = new();
 
     public ObservableCollection<EmployeeDto> AvailableEmployees { get; } = new();
