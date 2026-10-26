@@ -93,7 +93,6 @@
                         <TextBlock Text="{Binding Loc[Employee]}" FontSize="12" Foreground="Gray" />
                         <ComboBox ItemsSource="{Binding AvailableEmployees}"
                                   SelectedItem="{Binding SelectedEmployee}" MinWidth="220"
-                                  IsTextSearchEnabled="True" TextSearch.TextPath="FullName"
                                   ToolTip.Tip="Type an employee name to find them quickly">
                             <ComboBox.ItemTemplate>
                                 <DataTemplate x:DataType="core:EmployeeDto"><TextBlock Text="{Binding FullName}" /></DataTemplate>
