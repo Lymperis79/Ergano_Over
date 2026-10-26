@@ -781,6 +781,13 @@ public partial class AdminShellViewModel : ViewModelBase
 
             _sectionCache[section] = vm;
 
+            if (vm is WorkCardHistoryViewModel workCardsVm)
+            {
+                workCardsVm.FileSaved += (message, filePath) =>
+                    Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+                        ShowNotification(message, filePath: filePath));
+            }
+
             if (vm is CompaniesViewModel companiesVm)
             {
                 companiesVm.CompaniesChanged +=
