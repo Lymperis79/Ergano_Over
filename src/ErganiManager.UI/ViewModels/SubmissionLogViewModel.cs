@@ -52,7 +52,13 @@ public partial class SubmissionLogRow : ObservableObject
     private bool _isSelected;
 
     /// <summary>Only failed work card uploads can be retried.</summary>
-    public bool CanRetry => !Success && SubmissionType == "WorkCard";
+    public bool CanRetry =>
+        !Success &&
+        SubmissionType == "WorkCard" &&
+        !string.Equals(
+            ErrorMessage,
+            "Waiting for internet connection; saved locally and queued for automatic submission.",
+            StringComparison.Ordinal);
 
     public bool HasRetries => RetryCount > 0;
 
