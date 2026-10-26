@@ -83,7 +83,6 @@
                 <TextBlock Grid.Column="0" Text="{Binding Loc[Employee2]}" VerticalAlignment="Center" Margin="0,0,8,0" />
                 <ComboBox Grid.Column="1" ItemsSource="{Binding AvailableEmployees}"
                           SelectedItem="{Binding SelectedEmployee}" Width="200"
-                          IsTextSearchEnabled="True" TextSearch.TextPath="FullName"
                           ToolTip.Tip="Type an employee name to find them quickly">
                     <ComboBox.ItemTemplate>
                         <DataTemplate><TextBlock Text="{Binding FullName}" /></DataTemplate>
@@ -595,7 +594,7 @@
 
                     <Grid Grid.Row="3" RowDefinitions="Auto,*" RowSpacing="8">
                         <TextBox Grid.Row="0" Text="{Binding CloneTargetSearch, Mode=TwoWay}"
-                                 Watermark="Type an employee name to search"
+                                 PlaceholderText="Type an employee name to search"
                                  HorizontalAlignment="Stretch" />
                         <ScrollViewer Grid.Row="1">
                         <ItemsControl ItemsSource="{Binding FilteredCloneTargets}">
