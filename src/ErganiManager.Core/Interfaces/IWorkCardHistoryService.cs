@@ -14,6 +14,13 @@ public class WorkCardHistoryDto : INotifyPropertyChanged
     public DateTime MovementDateTime { get; set; }
     /// <summary>Ergani late-declaration justification code (001/002/003), if applicable.</summary>
     public string? LateJustification { get; set; }
+    public string? LateJustificationDisplay => LateJustification switch
+    {
+        "001" => "001 — Power / telecommunications outage",
+        "002" => "002 — Employer systems problem",
+        "003" => "003 — Problem connecting to ERGANI",
+        _ => LateJustification
+    };
     private bool _submittedToErgani;
     private string? _protocol;
     private bool _isLocalPending;
