@@ -57,7 +57,7 @@ public partial class SubmissionLogRow : ObservableObject
         SubmissionType == "WorkCard" &&
         !string.Equals(
             ErrorMessage,
-            "Waiting for internet connection; saved locally and queued for automatic submission.",
+            "Saved locally; queued and awaiting automatic submission.",
             StringComparison.Ordinal);
 
     public bool HasRetries => RetryCount > 0;
