@@ -2,6 +2,8 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using ErganiManager.Core.Interfaces;
 using ErganiManager.Core.Models;
+using ErganiManager.Data;
+using ErganiManager.Data.Entities;
 using ErganiManager.ErganiApi.Services;
 using ErganiManager.LocalCache;
 using ErganiManager.LocalCache.Entities;
@@ -875,6 +877,12 @@ public partial class WorkCardScanViewModel :
 
             await cache.SaveChangesAsync();
 
+            // Write a visible API-log row immediately, even if the PC has no internet.
+            // The actual sender reuses this WorkCard and updates the linked log with Ergani's
+            // final response, instead of making the offline attempt invisible.
+            await TryCreateQueuedWorkCardLogAsync(
+                employee.Id, companyId.Value, employee.BranchId, movement, scanTime);
+
             _retryService.TriggerNow();
 
             ShowResponse(
@@ -924,6 +932,84 @@ public partial class WorkCardScanViewModel :
     // ────────────────────────────────────────────────────────────────────────
     // RETRY
     // ────────────────────────────────────────────────────────────────────────
+
+    private async Task TryCreateQueuedWorkCardLogAsync(
+        int employeeId, int companyId, int branchId, string movement, DateTime scanTime)
+    {
+        try
+        {
+            await using var db = new AppDbContext(_connectionState.GetDbOptions());
+            var movementType = movement == "Arrival"
+                ? ErganiManager.Data.Entities.MovementType.Arrival
+                : ErganiManager.Data.Entities.MovementType.Departure;
+            var from = scanTime.AddSeconds(-1);
+            var to = scanTime.AddSeconds(1);
+
+            var card = await db.WorkCards.FirstOrDefaultAsync(w =>
+                w.EmployeeId == employeeId &&
+                w.MovementType == movementType &&
+                w.MovementDateTime >= from &&
+                w.MovementDateTime <= to);
+
+            if (card == null)
+            {
+                card = new WorkCard
+                {
+                    EmployeeId = employeeId,
+                    BranchId = branchId,
+                    MovementType = movementType,
+                    MovementDateTime = scanTime,
+                    SubmissionDate = DateOnly.FromDateTime(scanTime.Date),
+                    SubmittedToErgani = false,
+                    CreatedAt = DateTime.UtcNow
+                };
+                db.WorkCards.Add(card);
+                await db.SaveChangesAsync();
+            }
+
+            var log = await db.ApiSubmissionLogs.FirstOrDefaultAsync(l =>
+                l.WorkCardId == card.Id && l.SubmissionType == "WorkCard");
+
+            if (log == null)
+            {
+                log = new ApiSubmissionLog
+                {
+                    CompanyId = companyId,
+                    EmployeeId = employeeId,
+                    SubmissionType = "WorkCard",
+                    WorkCardId = card.Id,
+                    SubmissionDate = DateTime.UtcNow
+                };
+                db.ApiSubmissionLogs.Add(log);
+            }
+
+            if (log.Success)
+                return;
+
+            log.RequestPayloadJson = System.Text.Json.JsonSerializer.Serialize(new
+            {
+                queuedOffline = true,
+                employeeId,
+                companyId,
+                branchId,
+                movement,
+                movementDateTime = scanTime
+            });
+            log.Success = false;
+            log.ErrorMessage = "Waiting for internet connection; saved locally and queued for automatic submission.";
+            log.HttpStatusCode = null;
+            log.Protocol = null;
+            log.SubmissionId = null;
+            await db.SaveChangesAsync();
+        }
+        catch (Exception ex)
+        {
+            // The local cache remains authoritative if the main database is unavailable too.
+            Serilog.Log.Warning(ex,
+                "Could not create the initial API log for queued work card. EmployeeId={EmployeeId}, ScanTime={ScanTime}",
+                employeeId, scanTime);
+        }
+    }
 
     private async Task SubmitManualCardAsync(
         WorkCardSubmissionRequest request, string name, string movement, DateTime scanTime)
