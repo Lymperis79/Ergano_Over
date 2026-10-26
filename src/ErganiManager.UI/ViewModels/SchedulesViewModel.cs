@@ -285,6 +285,22 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
         ? string.Format(Loc[L.CloneSelectedDaysConfirmation], _cloneDates.Count, string.Join(", ", _cloneDates.OrderBy(d => d).Select(d => d.ToString("dd/MM/yyyy"))))
         : string.Format(Loc[L.CloneWholePeriodConfirmation], CloneFrom?.ToString("dd/MM/yyyy"), CloneTo?.ToString("dd/MM/yyyy"));
     public ObservableCollection<CloneTargetEmployee> CloneTargets { get; } = new();
+    public ObservableCollection<CloneTargetEmployee> FilteredCloneTargets { get; } = new();
+    [ObservableProperty] private string _cloneTargetSearch = string.Empty;
+
+    partial void OnCloneTargetSearchChanged(string value) => RefreshFilteredCloneTargets();
+
+    private void RefreshFilteredCloneTargets()
+    {
+        var query = CloneTargetSearch.Trim();
+        var matches = string.IsNullOrEmpty(query)
+            ? CloneTargets.ToList()
+            : CloneTargets.Where(t => t.Name.Contains(query, StringComparison.CurrentCultureIgnoreCase)).ToList();
+
+        FilteredCloneTargets.Clear();
+        foreach (var target in matches)
+            FilteredCloneTargets.Add(target);
+    }
 
     // What the copy would replace for the employees ticked in the dialog (filled from the database).
     private Dictionary<int, CloneImpactDto> _cloneImpact = new();
@@ -1216,6 +1232,8 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
                 t.SelectionChanged += (_, _) => UpdateCloneImpactText();
                 CloneTargets.Add(t);
             }
+            CloneTargetSearch = string.Empty;
+            RefreshFilteredCloneTargets();
             UpdateCloneImpactText();
         });
 
