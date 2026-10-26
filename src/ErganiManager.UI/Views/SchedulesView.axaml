@@ -140,24 +140,21 @@
                    IsVisible="{Binding StatusMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
 
         <!-- Row 3: Calendar -->
-        <ScrollViewer Grid.Row="3">
-            <StackPanel>
-
-                <!-- Tip -->
-                <TextBlock Text="{Binding Loc[ClickADayToOpenIt]}"
-                           FontSize="11" Foreground="#666" Margin="0,0,0,8" />
-
-                <!-- Day-of-week headers -->
-                <Grid ColumnDefinitions="*,*,*,*,*,*,*" Margin="0,0,0,4">
-                    <TextBlock Grid.Column="0" Text="{Binding Loc[DayMonShort]}" HorizontalAlignment="Center" Foreground="#888" FontSize="12"/>
-                    <TextBlock Grid.Column="1" Text="{Binding Loc[DayTueShort]}" HorizontalAlignment="Center" Foreground="#888" FontSize="12"/>
-                    <TextBlock Grid.Column="2" Text="{Binding Loc[DayWedShort]}" HorizontalAlignment="Center" Foreground="#888" FontSize="12"/>
-                    <TextBlock Grid.Column="3" Text="{Binding Loc[DayThuShort]}" HorizontalAlignment="Center" Foreground="#888" FontSize="12"/>
-                    <TextBlock Grid.Column="4" Text="{Binding Loc[DayFriShort]}" HorizontalAlignment="Center" Foreground="#888" FontSize="12"/>
-                    <TextBlock Grid.Column="5" Text="{Binding Loc[DaySatShort]}" HorizontalAlignment="Center" Foreground="#777" FontSize="12"/>
-                    <TextBlock Grid.Column="6" Text="{Binding Loc[DaySunShort]}" HorizontalAlignment="Center" Foreground="#777" FontSize="12"/>
-                </Grid>
-
+        <StackPanel Grid.Row="3" Spacing="0">
+            <!-- Tip and weekday headers remain visible while the calendar rows scroll. -->
+            <TextBlock Text="{Binding Loc[ClickADayToOpenIt]}"
+                       FontSize="11" Foreground="#666" Margin="0,0,0,8" />
+            <Grid ColumnDefinitions="*,*,*,*,*,*,*" Margin="0,0,0,4">
+                <TextBlock Grid.Column="0" Text="{Binding Loc[DayMonShort]}" HorizontalAlignment="Center" Foreground="#888" FontSize="12"/>
+                <TextBlock Grid.Column="1" Text="{Binding Loc[DayTueShort]}" HorizontalAlignment="Center" Foreground="#888" FontSize="12"/>
+                <TextBlock Grid.Column="2" Text="{Binding Loc[DayWedShort]}" HorizontalAlignment="Center" Foreground="#888" FontSize="12"/>
+                <TextBlock Grid.Column="3" Text="{Binding Loc[DayThuShort]}" HorizontalAlignment="Center" Foreground="#888" FontSize="12"/>
+                <TextBlock Grid.Column="4" Text="{Binding Loc[DayFriShort]}" HorizontalAlignment="Center" Foreground="#888" FontSize="12"/>
+                <TextBlock Grid.Column="5" Text="{Binding Loc[DaySatShort]}" HorizontalAlignment="Center" Foreground="#777" FontSize="12"/>
+                <TextBlock Grid.Column="6" Text="{Binding Loc[DaySunShort]}" HorizontalAlignment="Center" Foreground="#777" FontSize="12"/>
+            </Grid>
+            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                <StackPanel>
                 <!-- Calendar cells -->
                 <!-- Keep exactly seven equal columns so the cells always align with the weekday header. -->
                 <ItemsControl ItemsSource="{Binding Cells}">
@@ -193,12 +190,16 @@
                                     </Border.BorderBrush>
 
                                     <StackPanel ToolTip.Tip="{Binding HolidayTooltip}">
-                                        <Grid ColumnDefinitions="*,Auto">
-                                            <TextBlock Grid.Column="0" Text="{Binding DayNumberText}"
+                                        <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="4">
+                                            <TextBlock Grid.Column="0" Text="{Binding WeekNumberText}"
+                                                       IsVisible="{Binding HasWeekNumber}"
+                                                       FontSize="9" Foreground="#90CAF9"
+                                                       VerticalAlignment="Center" />
+                                            <TextBlock Grid.Column="1" Text="{Binding DayNumberText}"
                                                        FontSize="13" FontWeight="SemiBold"
                                                        Foreground="{Binding IsToday,
                                                            Converter={x:Static vm:BoolToBackgroundConverter.Instance}}" />
-                                            <TextBlock Grid.Column="1" Text="{Binding WorkTypeIcon}"
+                                            <TextBlock Grid.Column="2" Text="{Binding WorkTypeIcon}"
                                                        FontSize="13" />
                                         </Grid>
                                         <TextBlock Text="{Binding TimeRangeText}" FontSize="10"
@@ -242,9 +243,9 @@
                         </DataTemplate>
                     </ItemsControl.ItemTemplate>
                 </ItemsControl>
-
-            </StackPanel>
-        </ScrollViewer>
+                </StackPanel>
+            </ScrollViewer>
+        </StackPanel>
 
         <!-- ── Ergani Excel import confirmation ── -->
         <Border Grid.Row="0" Grid.RowSpan="4"
