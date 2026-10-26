@@ -593,8 +593,12 @@
                     <TextBlock Grid.Row="2" Text="{Binding Loc[SelectEmployeesToCopyTo]}"
                                FontWeight="SemiBold" Margin="0,0,0,8" />
 
-                    <ScrollViewer Grid.Row="3">
-                        <ItemsControl ItemsSource="{Binding CloneTargets}">
+                    <Grid Grid.Row="3" RowDefinitions="Auto,*" RowSpacing="8">
+                        <TextBox Grid.Row="0" Text="{Binding CloneTargetSearch, Mode=TwoWay}"
+                                 Watermark="Type an employee name to search"
+                                 HorizontalAlignment="Stretch" />
+                        <ScrollViewer Grid.Row="1">
+                        <ItemsControl ItemsSource="{Binding FilteredCloneTargets}">
                             <ItemsControl.ItemsPanel>
                                 <ItemsPanelTemplate><StackPanel Spacing="4" /></ItemsPanelTemplate>
                             </ItemsControl.ItemsPanel>
@@ -607,7 +611,8 @@
                                 </DataTemplate>
                             </ItemsControl.ItemTemplate>
                         </ItemsControl>
-                    </ScrollViewer>
+                        </ScrollViewer>
+                    </Grid>
 
                     <Grid Grid.Row="4" ColumnDefinitions="*,*" Margin="0,12,0,0" ColumnSpacing="8">
                         <Button Grid.Column="0" Content="{Binding Loc[Cancel]}"
