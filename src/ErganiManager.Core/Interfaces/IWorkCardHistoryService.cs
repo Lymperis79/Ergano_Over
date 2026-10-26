@@ -12,6 +12,8 @@ public class WorkCardHistoryDto : INotifyPropertyChanged
     public string BranchName { get; set; } = string.Empty;
     public string MovementType { get; set; } = string.Empty; // "Arrival" / "Departure"
     public DateTime MovementDateTime { get; set; }
+    /// <summary>Ergani late-declaration justification code (001/002/003), if applicable.</summary>
+    public string? LateJustification { get; set; }
     private bool _submittedToErgani;
     private string? _protocol;
     private bool _isLocalPending;
