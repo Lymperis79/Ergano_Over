@@ -39,7 +39,7 @@
                         <DataTemplate x:CompileBindings="False">
                             <Border Background="{DynamicResource CardBrush}" CornerRadius="8" Padding="14,10">
                                 <Grid MinWidth="1100" ColumnDefinitions="Auto,*,Auto,Auto,Auto,Auto,Auto,Auto,Auto">
-                                    <CheckBox Grid.Column="0" Tag="{Binding}" Click="OnSelectionClick" IsEnabled="{Binding !SubmittedToErgani}" VerticalAlignment="Center" Margin="0,0,10,0" />
+                                    <CheckBox Grid.Column="0" Tag="{Binding}" Click="OnSelectionClick" IsVisible="{Binding !SubmittedToErgani}" VerticalAlignment="Center" Margin="0,0,10,0" />
                                     <StackPanel Grid.Column="1">
                                         <TextBlock Text="{Binding EmployeeFullName}" FontWeight="SemiBold" FontSize="14" />
                                         <TextBlock Text="{Binding BranchName}" FontSize="11" Foreground="Gray" />
