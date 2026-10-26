@@ -27,6 +27,9 @@ public partial class WorkCardHistoryViewModel : ViewModelBase, IAdminSectionView
     private UserSession? _session;
     private Task _filtersLoadTask = Task.CompletedTask;
 
+    /// <summary>Raised when a PDF or Excel file has been saved successfully.</summary>
+    public event Action<string, string>? FileSaved;
+
     public ObservableCollection<WorkCardHistoryDto> Records { get; } = new();
 
     public ObservableCollection<EmployeeDto> AvailableEmployees { get; } = new();
@@ -219,8 +222,9 @@ public partial class WorkCardHistoryViewModel : ViewModelBase, IAdminSectionView
                     Records.ToList(),
                     folder);
 
-            StatusMessage =
-                string.Format(Loc["Vm.✅ Exported to Desktop: {0}"], Path.GetFileName(filePath));
+            var message = string.Format(Loc["Vm.✅ Exported to Desktop: {0}"], Path.GetFileName(filePath));
+            StatusMessage = message;
+            FileSaved?.Invoke(message, filePath);
         }
         catch (Exception ex)
         {
@@ -248,7 +252,10 @@ public partial class WorkCardHistoryViewModel : ViewModelBase, IAdminSectionView
             var folder = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
             var safeName = string.Join("_", record.EmployeeFullName.Split(Path.GetInvalidFileNameChars(), StringSplitOptions.RemoveEmptyEntries));
             var path = Path.Combine(folder, $"Ergani_WorkCard_{safeName}_{record.MovementDateTime:yyyyMMdd_HHmmss}_{record.Protocol}.pdf");
-            await File.WriteAllBytesAsync(path, bytes); StatusMessage = string.Format(Loc["Vm.✅ PDF saved to Desktop: {0}"], Path.GetFileName(path));
+            await File.WriteAllBytesAsync(path, bytes);
+            var message = string.Format(Loc["Vm.✅ PDF saved to Desktop: {0}"], Path.GetFileName(path));
+            StatusMessage = message;
+            FileSaved?.Invoke(message, path);
         }
         catch (Exception ex) { StatusMessage = string.Format(Loc["Vm.❌ PDF download failed: {0}"], ex.Message); }
     }
