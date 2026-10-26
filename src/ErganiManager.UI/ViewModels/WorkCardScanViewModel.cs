@@ -996,7 +996,7 @@ public partial class WorkCardScanViewModel :
                 movementDateTime = scanTime
             });
             log.Success = false;
-            log.ErrorMessage = "Waiting for internet connection; saved locally and queued for automatic submission.";
+            log.ErrorMessage = "Saved locally; queued and awaiting automatic submission.";
             log.HttpStatusCode = null;
             log.Protocol = null;
             log.SubmissionId = null;
