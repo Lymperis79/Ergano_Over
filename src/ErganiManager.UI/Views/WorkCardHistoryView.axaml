@@ -292,7 +292,7 @@
 
                                 <!-- Late declaration reason: show the Ergani code on the card itself. -->
                                 <TextBlock Grid.Column="6"
-                                           Text="{Binding LateJustification, StringFormat='Late reason: {0}'}"
+                                           Text="{Binding LateJustificationDisplay, StringFormat='Late reason: {0}'}"
                                            FontSize="11"
                                            Foreground="#D7B56D"
                                            VerticalAlignment="Center"
