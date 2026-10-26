@@ -113,6 +113,9 @@ public partial class WorkCardHistoryViewModel : ViewModelBase, IAdminSectionView
 
     /// <summary>Opens the Ergani Work Cards page, logs in, fills today's date in both fields and searches.</summary>
     [RelayCommand]
+    /// <summary>Called by the shell whenever the Work Cards form becomes active.</summary>
+    public Task OpenPortalOnFormSelectedAsync() => OpenErganiWorkCardsPortalAsync();
+
     private async Task OpenErganiWorkCardsPortalAsync()
     {
         if (_session?.CompanyId is not int companyId)
