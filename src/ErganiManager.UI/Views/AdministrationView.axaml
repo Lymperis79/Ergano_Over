@@ -186,11 +186,11 @@
                     <TabItem Header="{Binding Loc[AdminLeaveTypes]}">
                         <StackPanel Spacing="12" Margin="0,12,0,0">
                             <TextBlock Text="{Binding Loc[AdminLeaveTypesDescription]}" TextWrapping="Wrap" Foreground="Gray"/>
-                            <Grid ColumnDefinitions="110,*,120,120,40" ColumnSpacing="16">
+                            <Grid ColumnDefinitions="110,*,100,180,40" ColumnSpacing="16">
                                 <TextBlock Grid.Column="0" Text="{Binding Loc[LeaveTypeCode]}" FontWeight="SemiBold"/>
                                 <TextBlock Grid.Column="1" Text="{Binding Loc[LeaveTypeDescription]}" FontWeight="SemiBold"/>
                                 <TextBlock Grid.Column="2" Text="{Binding Loc[LeaveTypeHourly]}" FontWeight="SemiBold" TextAlignment="Center"/>
-                                <TextBlock Grid.Column="3" Text="{Binding Loc[LeaveTypePaid]}" FontWeight="SemiBold" TextAlignment="Center"/>
+                                <TextBlock Grid.Column="3" Text="{Binding Loc[LeaveTypePaymentCategory]}" FontWeight="SemiBold" TextAlignment="Center"/>
                             </Grid>
                             <ItemsControl ItemsSource="{Binding EditableLeaveTypes}">
                                 <ItemsControl.ItemsPanel><ItemsPanelTemplate><StackPanel Spacing="8"/></ItemsPanelTemplate></ItemsControl.ItemsPanel>
@@ -200,7 +200,7 @@
                                             <TextBox Grid.Column="0" Text="{Binding Code}" MaxLength="10"/>
                                             <TextBox Grid.Column="1" Text="{Binding Description}"/>
                                             <CheckBox Grid.Column="2" IsChecked="{Binding IsHourly}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                            <CheckBox Grid.Column="3" IsChecked="{Binding IsPaid}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                            <ComboBox Grid.Column="3" ItemsSource="{Binding $parent[UserControl].((vm:AdministrationViewModel)DataContext).LeavePaymentOptions}" SelectedValuePath="Key" SelectedValue="{Binding PaymentCategory}" HorizontalAlignment="Stretch" MinWidth="0"/>
                                             <Button Grid.Column="4" Content="✕" Background="#D32F2F" Foreground="#FFFFFF"
                                                     BorderBrush="#B71C1C" BorderThickness="1" CornerRadius="4"
                                                     FontWeight="Bold" FontSize="16" Width="32" Height="30"
