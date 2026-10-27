@@ -28,7 +28,7 @@ public static class AttendanceWorkbookExporter
             T("Vm.Scheduled start"), T("Vm.Scheduled end"), T("Vm.Scheduled hours"),
             T("Vm.First arrival"), T("Vm.Last departure"), T("Vm.Actual hours"),
             T("Vm.Late minutes"), T("Vm.Early departure minutes"), T("Vm.Attendance status"),
-            T("Vm.Scan pairs")
+            T("Vm.Scan pairs"), T("Vm.Declared holiday"), T("Vm.Holiday type")
         };
         for (var c = 0; c < headers.Length; c++) detail.Cell(HeaderRow, c + 1).Value = headers[c];
         StyleHeader(detail.Range(HeaderRow, 1, HeaderRow, headers.Length));
@@ -55,6 +55,14 @@ public static class AttendanceWorkbookExporter
             if (item.EarlyDepartureMinutes > 0) detail.Cell(row, 12).Value = item.EarlyDepartureMinutes;
             detail.Cell(row, 13).Value = item.Status;
             detail.Cell(row, 14).Value = item.ScanPairs;
+            detail.Cell(row, 15).Value = item.IsDeclaredHoliday ? T("Yes") : string.Empty;
+            detail.Cell(row, 16).Value = item.HolidayType;
+            if (item.IsDeclaredHoliday)
+            {
+                detail.Cell(row, 15).Style.Font.Bold = true;
+                detail.Cell(row, 15).Style.Font.FontColor = XLColor.DarkGreen;
+                detail.Cell(row, 16).Style.Alignment.WrapText = true;
+            }
             if (item.Status == ErganiManager.Data.UiText.T("No show") ||
                 item.Status == ErganiManager.Data.UiText.T("Missing clock-in") ||
                 item.Status == ErganiManager.Data.UiText.T("Missing clock-out"))
@@ -73,6 +81,8 @@ public static class AttendanceWorkbookExporter
         detail.Column(1).Width = Math.Max(detail.Column(1).Width, 22);
         detail.Column(13).Width = Math.Max(detail.Column(13).Width, 25);
         detail.Column(14).Width = Math.Max(detail.Column(14).Width, 32);
+        detail.Column(15).Width = Math.Max(detail.Column(15).Width, 18);
+        detail.Column(16).Width = Math.Max(detail.Column(16).Width, 32);
 
         var summary = workbook.Worksheets.Add(T("Vm.Attendance summary sheet"));
         summary.Cell(1, 1).Value = $"{T("Vm.Attendance employee summary")} — {period}";
