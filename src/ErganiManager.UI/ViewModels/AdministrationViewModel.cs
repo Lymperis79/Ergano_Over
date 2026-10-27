@@ -118,11 +118,20 @@ public partial class AdministrationViewModel : ViewModelBase, IAdminSectionViewM
     {
         EditableLeaveTypes.Clear();
         foreach (var type in LeaveTypes.All)
-            EditableLeaveTypes.Add(new LeaveTypeEdit(type.Code, type.Description, type.IsHourly, type.IsPaid, type.EffectivePaymentCategory));
+        {
+            var edit = new LeaveTypeEdit(type.Code, type.Description, type.IsHourly, type.IsPaid, type.EffectivePaymentCategory);
+            edit.SelectedPaymentOption = LeavePaymentOptions.FirstOrDefault(option => option.Key == type.EffectivePaymentCategory);
+            EditableLeaveTypes.Add(edit);
+        }
     }
 
     [RelayCommand]
-    private void AddLeaveType() => EditableLeaveTypes.Add(new LeaveTypeEdit(string.Empty, string.Empty, false, true, "EmployerPaid"));
+    private void AddLeaveType()
+    {
+        var edit = new LeaveTypeEdit(string.Empty, string.Empty, false, true, "EmployerPaid");
+        edit.SelectedPaymentOption = LeavePaymentOptions.FirstOrDefault(option => option.Key == "EmployerPaid");
+        EditableLeaveTypes.Add(edit);
+    }
 
     [RelayCommand]
     private void RemoveLeaveType(LeaveTypeEdit? type)
@@ -135,7 +144,7 @@ public partial class AdministrationViewModel : ViewModelBase, IAdminSectionViewM
     {
         try
         {
-            LeaveTypes.Save(EditableLeaveTypes.Select(t => new LeaveTypeInfo(t.Code, t.Description, t.IsHourly, t.IsPaid, t.PaymentCategory)));
+            LeaveTypes.Save(EditableLeaveTypes.Select(t => new LeaveTypeInfo(t.Code, t.Description, t.IsHourly, t.IsPaid, t.SelectedPaymentOption?.Key ?? t.PaymentCategory)));
             LeaveTypesStatus = Loc["Vm.✅ Leave types saved. Changes apply to new and existing holiday display."];
             LoadLeaveTypes();
         }
@@ -474,4 +483,10 @@ public partial class LeaveTypeEdit : ObservableObject
     [ObservableProperty] private bool _isHourly;
     [ObservableProperty] private bool _isPaid;
     [ObservableProperty] private string _paymentCategory;
+    [ObservableProperty] private LeavePaymentOption? _selectedPaymentOption;
+
+    partial void OnSelectedPaymentOptionChanged(LeavePaymentOption? value)
+    {
+        if (value is not null) PaymentCategory = value.Key;
+    }
 }
