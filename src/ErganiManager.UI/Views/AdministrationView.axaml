@@ -204,7 +204,7 @@
                                             <Button Grid.Column="4" Content="✕" Foreground="#E53935" FontWeight="Bold" FontSize="16"
                                                     HorizontalAlignment="Center" VerticalAlignment="Center"
                                                     Command="{Binding $parent[UserControl].((vm:AdministrationViewModel)DataContext).RemoveLeaveTypeCommand}"
-                                                    CommandParameter="{Binding}" ToolTip.Tip="{Binding Loc[LeaveTypeRemove]}"/>
+                                                    CommandParameter="{Binding}" ToolTip.Tip="{Binding $parent[UserControl].((vm:AdministrationViewModel)DataContext).Loc[LeaveTypeRemove]}"/>
                                         </Grid>
                                     </DataTemplate>
                                 </ItemsControl.ItemTemplate>
