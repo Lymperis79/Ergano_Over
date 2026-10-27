@@ -1,7 +1,12 @@
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+
 namespace ErganiManager.Core.Models;
 
 /// <summary>One Ergani leave type (f_type of Documents/WTOLeave).</summary>
-public sealed record LeaveTypeInfo(string Code, string Description, bool IsHourly)
+public sealed record LeaveTypeInfo(string Code, string Description, bool IsHourly, bool IsPaid = true)
 {
     /// <summary>Text shown in the type list.</summary>
     public string Label => $"{Code} — {LocalizedDescription}";
@@ -15,13 +20,38 @@ public sealed record LeaveTypeInfo(string Code, string Description, bool IsHourl
 /// are hourly and need a start/end time.</summary>
 public static class LeaveTypes
 {
-    public static readonly IReadOnlyList<LeaveTypeInfo> All = new List<LeaveTypeInfo>
+    private static readonly object Gate = new();
+    private static IReadOnlyList<LeaveTypeInfo>? _configured;
+    private static string ConfigPath => Path.Combine(ErganiManager.LocalCache.AppPaths.GetAppDataFolder(), "leave-types.json");
+
+    public static IReadOnlyList<LeaveTypeInfo> All
+    {
+        get
+        {
+            lock (Gate)
+            {
+                if (_configured != null) return _configured;
+                try
+                {
+                    if (File.Exists(ConfigPath))
+                    {
+                        var loaded = System.Text.Json.JsonSerializer.Deserialize<List<LeaveTypeInfo>>(File.ReadAllText(ConfigPath));
+                        if (loaded is { Count: > 0 }) return _configured = loaded;
+                    }
+                }
+                catch { /* use the built-in defaults if the settings file is unreadable */ }
+                return _configured = Defaults();
+            }
+        }
+    }
+
+    private static List<LeaveTypeInfo> Defaults() => new List<LeaveTypeInfo>
     {
         // ── Άδεια (whole day) ──
         new("ΑΔΚΑΝ",   "Κανονική άδεια", false),
         new("ΑΔΑΙΜ",   "Αιμοδοτική άδεια", false),
         new("ΑΔΕΞ",    "Άδεια εξετάσεων", false),
-        new("ΑΔΑΑ",    "Άδεια άνευ αποδοχών", false),
+        new("ΑΔΑΑ",    "Άδεια άνευ αποδοχών", false, false),
         new("ΑΔΜΗ",    "Άδεια μητρότητας", false),
         new("ΑΔΠΠΜ",   "Ειδική παροχή προστασίας της μητρότητας", false),
         new("ΑΔΠΑ",    "Άδεια πατρότητας", false),
@@ -57,6 +87,23 @@ public static class LeaveTypes
         new("ΩΑΠΣΕΤ",  "Άδεια παρακολούθησης σχολικής επίδοσης τέκνου (ΩΡΕΣ)", true),
         new("ΩΑΑΛ",    "Άδεια Άλλη (ΩΡΕΣ)", true),
     };
+
+    public static void Save(IEnumerable<LeaveTypeInfo> types)
+    {
+        var list = types.ToList();
+        if (list.Count == 0) throw new InvalidOperationException(ErganiManager.Data.UiText.T("At least one leave type is required."));
+        if (list.Any(t => string.IsNullOrWhiteSpace(t.Code) || t.Code.Trim().Length > 10 || string.IsNullOrWhiteSpace(t.Description)))
+            throw new InvalidOperationException(ErganiManager.Data.UiText.T("Every leave type needs a code (up to 10 characters) and a description."));
+        if (list.GroupBy(t => t.Code.Trim(), StringComparer.OrdinalIgnoreCase).Any(g => g.Count() > 1))
+            throw new InvalidOperationException(ErganiManager.Data.UiText.T("Leave type codes must be unique."));
+        list = list.Select(t => t with { Code = t.Code.Trim(), Description = t.Description.Trim() }).ToList();
+        lock (Gate)
+        {
+            Directory.CreateDirectory(Path.GetDirectoryName(ConfigPath)!);
+            File.WriteAllText(ConfigPath, System.Text.Json.JsonSerializer.Serialize(list, new System.Text.Json.JsonSerializerOptions { WriteIndented = true }));
+            _configured = list;
+        }
+    }
 
     public static LeaveTypeInfo? Find(string? code) =>
         All.FirstOrDefault(t => string.Equals(t.Code, code, StringComparison.OrdinalIgnoreCase));
