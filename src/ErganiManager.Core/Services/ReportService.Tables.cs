@@ -714,7 +714,7 @@ public partial class ReportService
         var leaves = await db.Leaves
             .Where(l => l.Employee!.CompanyId == companyId && l.LeaveDate >= from && l.LeaveDate <= to
                         && (employeeId == null || l.EmployeeId == employeeId))
-            .Select(l => new HolidayDay(l.EmployeeId, l.LeaveDate, l.LeaveTypeCode, l.StartTime, l.EndTime,
+            .Select(l => new HolidayDay(l.EmployeeId, l.LeaveDate, l.LeaveTypeCode, l.StartTime, l.EndTime, l.DeclaredStartTime, l.DeclaredEndTime,
                                         l.Comments, l.SubmittedToErgani, l.Protocol))
             .ToListAsync();
 
@@ -738,7 +738,7 @@ public partial class ReportService
         // Details: one group per category, consecutive days of the same holiday merged into one row.
         var details = report.AddSection(UiText.T("Holidays in detail"),
             (UiText.T("Employee"), 220), (UiText.T("From"), 100), (UiText.T("To"), 100), (UiText.T("Days"), 60),
-            (UiText.T("Hours"), 120), (UiText.T("Comment"), 300), (UiText.T("Submitted to Ergani"), 150), (UiText.T("Protocol"), 200));
+            (UiText.T("Leave hours"), 120), (UiText.T("Declared shift"), 130), (UiText.T("Comment"), 300), (UiText.T("Submitted to Ergani"), 150), (UiText.T("Protocol"), 200));
         foreach (var g in byCategory)
         {
             details.Add(RowStyle.Group, UiText.F("{0} — {1} day(s), {2} employee(s)", ErganiManager.Core.Models.LeaveTypes.Label(g.Key), g.Count(),
@@ -759,6 +759,7 @@ public partial class ReportService
                 details.Add(Emp(first.EmployeeId), first.Date.ToString("dd/MM/yyyy", Inv), r[^1].Date.ToString("dd/MM/yyyy", Inv),
                     r.Count.ToString(Inv),
                     first.Start is { } s && first.End is { } e ? $"{Clock(s)} - {Clock(e)}" : string.Empty,
+                    first.DeclaredStart is { } ds && first.DeclaredEnd is { } de ? $"{Clock(ds)} - {Clock(de)}" : string.Empty,
                     first.Comments ?? string.Empty,
                     sent == r.Count ? UiText.T("Yes") : sent == 0 ? UiText.T("No") : $"{UiText.T("Partial")} ({sent}/{r.Count})",
                     string.Join(", ", r.Select(x => x.Protocol).Where(p => !string.IsNullOrWhiteSpace(p)).Distinct()));
@@ -784,7 +785,7 @@ public partial class ReportService
     }
 
     private sealed record HolidayDay(int EmployeeId, DateOnly Date, string TypeCode, TimeOnly? Start, TimeOnly? End,
-        string? Comments, bool Submitted, string? Protocol);
+        TimeOnly? DeclaredStart, TimeOnly? DeclaredEnd, string? Comments, bool Submitted, string? Protocol);
 
     /// <summary>Same employee, type, hours and comment, with only weekend days between the two dates.</summary>
     private static bool ContinuesHoliday(HolidayDay previous, HolidayDay next)
