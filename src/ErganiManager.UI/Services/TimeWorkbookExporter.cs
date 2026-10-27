@@ -19,7 +19,7 @@ public static class TimeWorkbookExporter
 {
     private const string Duration = "[h]:mm";
     private const string SignedMinutes = "+0;-0;0";
-    private const int ColumnCount = 10;
+    private const int ColumnCount = 12;
     private const double HalfMinute = 1.0 / 120;
     private const int HeaderRow = 3;
     private const string WeekendGreen = "#C6E0B4";
@@ -78,7 +78,8 @@ public static class TimeWorkbookExporter
         {
             T("Vm.Excel Employee"), T("Vm.Excel Date"), T("Vm.Excel Day"), T("Vm.Excel Scheduled"),
             T("Vm.Excel Scheduled hours"), T("Vm.Excel Actual in/out"), T("Vm.Excel Actual hours"),
-            T("Vm.Excel Rounded hours"), T("Vm.Excel Difference"), T("Vm.Excel Difference rounded")
+            T("Vm.Excel Rounded hours"), T("Vm.Excel Difference"), T("Vm.Excel Difference rounded"),
+            T("Vm.Declared holiday"), T("Vm.Holiday type")
         };
         for (var c = 0; c < headers.Length; c++) ws.Cell(HeaderRow, c + 1).Value = headers[c];
         StyleHeader(ws.Range(HeaderRow, 1, HeaderRow, ColumnCount));
@@ -112,6 +113,14 @@ public static class TimeWorkbookExporter
                 {
                     SetMinutes(ws.Cell(row, 10), roundedDiff);
                     if (roundedDiff < -HalfMinute) ws.Cell(row, 10).Style.Font.FontColor = XLColor.Red;
+                }
+                ws.Cell(row, 11).Value = d.IsDeclaredHoliday ? T("Yes") : string.Empty;
+                ws.Cell(row, 12).Value = d.HolidayType;
+                if (d.IsDeclaredHoliday)
+                {
+                    ws.Cell(row, 11).Style.Font.Bold = true;
+                    ws.Cell(row, 11).Style.Font.FontColor = XLColor.DarkGreen;
+                    ws.Cell(row, 12).Style.Alignment.WrapText = true;
                 }
                 row++;
             }
