@@ -581,6 +581,12 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
         return $"{sched.StartTime:HH:mm}–{end:HH:mm}";
     }
 
+    private static string DeclaredLeaveRangeText(List<LeaveDto>? leaves)
+    {
+        var leave = leaves?.FirstOrDefault(l => l.DeclaredStartTime.HasValue && l.DeclaredEndTime.HasValue);
+        return leave is null ? string.Empty : $"{leave.DeclaredStartTime:HH:mm}–{leave.DeclaredEndTime:HH:mm}";
+    }
+
     private async Task BuildMonthCalendarAsync()
     {
         var first = new DateOnly(Year, Month, 1);
@@ -643,7 +649,7 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
                 IsErganiImported  = !hasAnnualLeave && sched?.Source == ScheduleSource.ErganiImported,
                 Protocol           = hasAnnualLeave ? null : sched?.Protocol,
                 WorkType           = sched != null ? (AppWorkType?)sched.WorkType : null,
-                TimeRangeText      = WorkRangeText(sched),
+                TimeRangeText      = WorkRangeText(sched) is { Length: > 0 } workRange ? workRange : DeclaredLeaveRangeText(dayLeaves),
                 OvertimeText  = overtimeText,
                 OvertimeStatusText = overtimeStatusText,
                 OfficialHolidayText = officialName ?? string.Empty,
@@ -723,7 +729,7 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
                 IsErganiImported   = !hasAnnualLeave && sched?.Source == ScheduleSource.ErganiImported,
                 Protocol            = hasAnnualLeave ? null : sched?.Protocol,
                 WorkType            = sched != null ? (AppWorkType?)sched.WorkType : null,
-                TimeRangeText       = WorkRangeText(sched),
+                TimeRangeText       = WorkRangeText(sched) is { Length: > 0 } workRange ? workRange : DeclaredLeaveRangeText(dayLeaves),
                 OvertimeText   = overtimeText,
                 OvertimeStatusText = overtimeStatusText,
                 OfficialHolidayText = officialName ?? string.Empty,
