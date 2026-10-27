@@ -9,7 +9,7 @@ namespace ErganiManager.Core.Models;
 public sealed record LeaveTypeInfo(string Code, string Description, bool IsHourly, bool IsPaid = true)
 {
     /// <summary>Text shown in the type list.</summary>
-    public string Label => $"{Code} — {LocalizedDescription}";
+    public string Label => $"{Code} — {LocalizedDescription} [{ErganiManager.Data.UiText.T(IsPaid ? "Paid" : "Unpaid")}]";
 
     /// <summary>The official Greek name, or its English translation when the app language is English.</summary>
     public string LocalizedDescription => ErganiManager.Data.UiText.T(Description);
