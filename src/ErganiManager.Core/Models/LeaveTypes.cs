@@ -17,9 +17,9 @@ public sealed record LeaveTypeInfo(string Code, string Description, bool IsHourl
 
     public string LocalizedPaymentCategory => ErganiManager.Data.UiText.T(EffectivePaymentCategory switch
     {
-        "Subsidized" => "LeavePaymentSubsidized",
-        "Unpaid" => "LeavePaymentUnpaid",
-        _ => "LeavePaymentEmployerPaid"
+        "Subsidized" => "Subsidized (DYPA / e-EFKA)"
+        "Unpaid" => "Unpaid",
+        _ => "Employer-paid"
     });
 
     /// <summary>Text shown in the type list.</summary>
