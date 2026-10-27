@@ -996,6 +996,7 @@ public static class EnglishStrings
         ["Core.Protocol"] = "Protocol",
         ["Core.Submitted to Ergani"] = "Submitted to Ergani",
         ["Core.Yes"] = "Yes",
+        ["Core.Declared holiday"] = "Declared holiday",
         ["Core.No"] = "No",
         ["Core.Partial"] = "Partial",
         ["Core.Day"] = "Day",
