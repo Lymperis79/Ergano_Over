@@ -84,8 +84,9 @@ public class TodayStatusService : ITodayStatusService
         void Add(TodayIssueDto issue) => issues.Add(issue);
 
         var wholeDayLeave = leaves.FirstOrDefault(l => l.StartTime == null);
+        var leaveType = wholeDayLeave == null ? null : LeaveTypes.Find(wholeDayLeave.LeaveTypeCode);
         var leaveName = wholeDayLeave == null ? null
-            : LeaveTypes.All.FirstOrDefault(t => t.Code == wholeDayLeave.LeaveTypeCode)?.LocalizedDescription ?? wholeDayLeave.LeaveTypeCode;
+            : (leaveType?.LocalizedDescription ?? wholeDayLeave.LeaveTypeCode) + (leaveType?.IsPaid == false ? " (Unpaid)" : string.Empty);
 
         var isWorkDay = wholeDayLeave == null && sched != null
             && (sched.WorkType == Entities.WorkType.Office || sched.WorkType == Entities.WorkType.Home)
