@@ -55,7 +55,7 @@ public static class AttendanceWorkbookExporter
             if (item.EarlyDepartureMinutes > 0) detail.Cell(row, 12).Value = item.EarlyDepartureMinutes;
             detail.Cell(row, 13).Value = item.Status;
             detail.Cell(row, 14).Value = item.ScanPairs;
-            detail.Cell(row, 15).Value = item.IsDeclaredHoliday ? T("Yes") : string.Empty;
+            detail.Cell(row, 15).Value = item.IsDeclaredHoliday ? T("Vm.Yes") : string.Empty;
             detail.Cell(row, 16).Value = item.HolidayType;
             if (item.IsDeclaredHoliday)
             {
