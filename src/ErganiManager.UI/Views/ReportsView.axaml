@@ -228,39 +228,41 @@
                                             <TextBlock Text="{Binding Header}" FontWeight="SemiBold" FontSize="14" />
                                             <TextBlock Grid.Column="1" Text="{Binding TotalsText}" FontWeight="Bold" Foreground="{DynamicResource AccentLightBrush}" />
                                         </Grid>
-                                        <Grid ColumnDefinitions="120,130,70,200,80,100,90,120,80,100" ColumnSpacing="8">
+                                        <Grid ColumnDefinitions="120,130,180,70,200,80,100,90,120,80,100" ColumnSpacing="8">
                                             <TextBlock Text="{Binding $parent[UserControl].DataContext.Loc[Date]}" Foreground="Gray" FontSize="11" />
                                             <TextBlock Grid.Column="1" Text="{Binding $parent[UserControl].DataContext.Loc[Declared]}" Foreground="Gray" FontSize="11" />
-                                            <TextBlock Grid.Column="2" Text="{Binding $parent[UserControl].DataContext.Loc[Hours]}" Foreground="Gray" FontSize="11" />
-                                            <TextBlock Grid.Column="3" Text="{Binding $parent[UserControl].DataContext.Loc[Actual]}" Foreground="Gray" FontSize="11" />
-                                            <TextBlock Grid.Column="4" Text="{Binding $parent[UserControl].DataContext.Loc[ActualHours]}" Foreground="Gray" FontSize="11" />
-                                            <TextBlock Grid.Column="5" Text="{Binding $parent[UserControl].DataContext.Loc[ReportNightHours]}" Foreground="Gray" FontSize="11" />
-                                            <TextBlock Grid.Column="6" Text="{Binding $parent[UserControl].DataContext.Loc[Rounded]}" Foreground="Gray" FontSize="11" />
-                                            <TextBlock Grid.Column="7" Text="{Binding $parent[UserControl].DataContext.Loc[RoundedInOut]}" Foreground="Gray" FontSize="11" />
-                                            <TextBlock Grid.Column="8" Text="{Binding $parent[UserControl].DataContext.Loc[Difference]}" Foreground="Gray" FontSize="11" />
-                                            <TextBlock Grid.Column="9" Text="{Binding $parent[UserControl].DataContext.Loc[OvertimeTotal]}" Foreground="Gray" FontSize="11" />
+                                            <TextBlock Grid.Column="2" Text="{Binding $parent[UserControl].DataContext.Loc[Vm.Holiday type]}" Foreground="Gray" FontSize="11" />
+                                            <TextBlock Grid.Column="3" Text="{Binding $parent[UserControl].DataContext.Loc[Hours]}" Foreground="Gray" FontSize="11" />
+                                            <TextBlock Grid.Column="4" Text="{Binding $parent[UserControl].DataContext.Loc[Actual]}" Foreground="Gray" FontSize="11" />
+                                            <TextBlock Grid.Column="5" Text="{Binding $parent[UserControl].DataContext.Loc[ActualHours]}" Foreground="Gray" FontSize="11" />
+                                            <TextBlock Grid.Column="6" Text="{Binding $parent[UserControl].DataContext.Loc[ReportNightHours]}" Foreground="Gray" FontSize="11" />
+                                            <TextBlock Grid.Column="7" Text="{Binding $parent[UserControl].DataContext.Loc[Rounded]}" Foreground="Gray" FontSize="11" />
+                                            <TextBlock Grid.Column="8" Text="{Binding $parent[UserControl].DataContext.Loc[RoundedInOut]}" Foreground="Gray" FontSize="11" />
+                                            <TextBlock Grid.Column="9" Text="{Binding $parent[UserControl].DataContext.Loc[Difference]}" Foreground="Gray" FontSize="11" />
+                                            <TextBlock Grid.Column="10" Text="{Binding $parent[UserControl].DataContext.Loc[OvertimeTotal]}" Foreground="Gray" FontSize="11" />
                                         </Grid>
                                         <ItemsControl ItemsSource="{Binding Days}">
                                             <ItemsControl.ItemTemplate>
                                                 <DataTemplate x:DataType="core:DayTimeRow">
-                                                    <Grid ColumnDefinitions="120,130,70,200,80,100,90,120,80,100" ColumnSpacing="8" Margin="0,2">
+                                                    <Grid ColumnDefinitions="120,130,180,70,200,80,100,90,120,80,100" ColumnSpacing="8" Margin="0,2">
                                                         <TextBlock Text="{Binding DateText}" />
                                                         <TextBlock Grid.Column="1" Text="{Binding DeclaredText}" />
-                                                        <TextBlock Grid.Column="2" Text="{Binding DeclaredHoursText}" />
-                                                        <ItemsControl Grid.Column="3" ItemsSource="{Binding Pairs}">
+                                                        <TextBlock Grid.Column="2" Text="{Binding HolidayType}" TextWrapping="Wrap" />
+                                                        <TextBlock Grid.Column="3" Text="{Binding DeclaredHoursText}" />
+                                                        <ItemsControl Grid.Column="4" ItemsSource="{Binding Pairs}">
                                                             <ItemsControl.ItemTemplate>
                                                                 <DataTemplate x:DataType="core:ScanPair">
                                                                     <TextBlock Text="{Binding Line}" />
                                                                 </DataTemplate>
                                                             </ItemsControl.ItemTemplate>
                                                         </ItemsControl>
-                                                        <TextBlock Grid.Column="4" Text="{Binding ActualHoursText}"
+                                                        <TextBlock Grid.Column="5" Text="{Binding ActualHoursText}"
                                                                    FontWeight="SemiBold" />
-                                                        <TextBlock Grid.Column="5" Text="{Binding NightHoursText}" FontWeight="SemiBold" Foreground="#81D4FA" />
-                                                        <TextBlock Grid.Column="6" Text="{Binding RoundedHoursText}" FontWeight="SemiBold" Foreground="#CE93D8" />
-                                                        <TextBlock Grid.Column="7" Text="{Binding RoundedInOutText}" Foreground="#CE93D8" />
-                                                        <TextBlock Grid.Column="8" Text="{Binding DiffText}" Foreground="#9CCC65" />
-                                                        <TextBlock Grid.Column="9" Text="{Binding OvertimeText}" Foreground="#FFB74D" />
+                                                        <TextBlock Grid.Column="6" Text="{Binding NightHoursText}" FontWeight="SemiBold" Foreground="#81D4FA" />
+                                                        <TextBlock Grid.Column="7" Text="{Binding RoundedHoursText}" FontWeight="SemiBold" Foreground="#CE93D8" />
+                                                        <TextBlock Grid.Column="8" Text="{Binding RoundedInOutText}" Foreground="#CE93D8" />
+                                                        <TextBlock Grid.Column="9" Text="{Binding DiffText}" Foreground="#9CCC65" />
+                                                        <TextBlock Grid.Column="10" Text="{Binding OvertimeText}" Foreground="#FFB74D" />
                                                     </Grid>
                                                 </DataTemplate>
                                             </ItemsControl.ItemTemplate>
