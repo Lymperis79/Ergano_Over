@@ -15,6 +15,7 @@ public class AppDbContext : DbContext
     public DbSet<WorkCard> WorkCards => Set<WorkCard>();
     public DbSet<Overtime> Overtimes => Set<Overtime>();
     public DbSet<Leave> Leaves => Set<Leave>();
+    public DbSet<LeaveTypeConfiguration> LeaveTypeConfigurations => Set<LeaveTypeConfiguration>();
     public DbSet<ApiSubmissionLog> ApiSubmissionLogs => Set<ApiSubmissionLog>();
     public DbSet<AppLog> AppLogs => Set<AppLog>();
     public DbSet<EmailLog> EmailLogs => Set<EmailLog>();
