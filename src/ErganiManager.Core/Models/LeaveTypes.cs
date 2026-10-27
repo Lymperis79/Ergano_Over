@@ -2,6 +2,9 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using Microsoft.EntityFrameworkCore;
+using ErganiManager.Data;
+using ErganiManager.Data.Entities;
 
 namespace ErganiManager.Core.Models;
 
@@ -22,7 +25,20 @@ public static class LeaveTypes
 {
     private static readonly object Gate = new();
     private static IReadOnlyList<LeaveTypeInfo>? _configured;
+    private static DateTime _lastRefreshUtc = DateTime.MinValue;
+    private static Func<DbContextOptions<AppDbContext>>? _dbOptionsFactory;
+    private static readonly TimeSpan RefreshInterval = TimeSpan.FromSeconds(30);
     private static string ConfigPath => Path.Combine(ErganiManager.LocalCache.AppPaths.GetAppDataFolder(), "leave-types.json");
+
+    /// <summary>Connects leave types to the configured main database. The JSON file is only an offline cache.</summary>
+    public static void ConfigureDatabase(Func<DbContextOptions<AppDbContext>> dbOptionsFactory)
+    {
+        lock (Gate)
+        {
+            _dbOptionsFactory = dbOptionsFactory;
+            _lastRefreshUtc = DateTime.MinValue;
+        }
+    }
 
     public static IReadOnlyList<LeaveTypeInfo> All
     {
@@ -30,19 +46,68 @@ public static class LeaveTypes
         {
             lock (Gate)
             {
-                if (_configured != null) return _configured;
-                try
-                {
-                    if (File.Exists(ConfigPath))
-                    {
-                        var loaded = System.Text.Json.JsonSerializer.Deserialize<List<LeaveTypeInfo>>(File.ReadAllText(ConfigPath));
-                        if (loaded is { Count: > 0 }) return _configured = loaded;
-                    }
-                }
-                catch { /* use the built-in defaults if the settings file is unreadable */ }
-                return _configured = Defaults();
+                if (_configured == null || DateTime.UtcNow - _lastRefreshUtc >= RefreshInterval)
+                    RefreshFromDatabase();
+                return _configured ??= ReadLocalCacheOrDefaults();
             }
         }
+    }
+
+    private static void RefreshFromDatabase()
+    {
+        if (_dbOptionsFactory == null) return;
+        try
+        {
+            using var db = new AppDbContext(_dbOptionsFactory());
+            var rows = db.LeaveTypeConfigurations.AsNoTracking().OrderBy(t => t.Code).ToList();
+            if (rows.Count == 0)
+            {
+                // One-time migration: preserve any existing local JSON configuration when the
+                // central table is first created; otherwise seed the official defaults.
+                var seed = ReadLocalCacheOrDefaults();
+                db.LeaveTypeConfigurations.AddRange(seed.Select(t => new LeaveTypeConfiguration
+                {
+                    Code = t.Code,
+                    Description = t.Description,
+                    IsHourly = t.IsHourly,
+                    IsPaid = t.IsPaid,
+                    UpdatedAtUtc = DateTime.UtcNow
+                }));
+                db.SaveChanges();
+                rows = db.LeaveTypeConfigurations.AsNoTracking().OrderBy(t => t.Code).ToList();
+            }
+
+            _configured = rows.Select(t => new LeaveTypeInfo(t.Code, t.Description, t.IsHourly, t.IsPaid)).ToList();
+            _lastRefreshUtc = DateTime.UtcNow;
+            WriteLocalCache(_configured);
+        }
+        catch
+        {
+            // Keep the last known cache for offline mode. A failed refresh must never
+            // replace valid central settings with local defaults.
+            _lastRefreshUtc = DateTime.UtcNow;
+            _configured ??= ReadLocalCacheOrDefaults();
+        }
+    }
+
+    private static IReadOnlyList<LeaveTypeInfo> ReadLocalCacheOrDefaults()
+    {
+        try
+        {
+            if (File.Exists(ConfigPath))
+            {
+                var loaded = System.Text.Json.JsonSerializer.Deserialize<List<LeaveTypeInfo>>(File.ReadAllText(ConfigPath));
+                if (loaded is { Count: > 0 }) return loaded;
+            }
+        }
+        catch { /* use built-in defaults if the offline cache is unreadable */ }
+        return Defaults();
+    }
+
+    private static void WriteLocalCache(IEnumerable<LeaveTypeInfo> types)
+    {
+        Directory.CreateDirectory(Path.GetDirectoryName(ConfigPath)!);
+        File.WriteAllText(ConfigPath, System.Text.Json.JsonSerializer.Serialize(types, new System.Text.Json.JsonSerializerOptions { WriteIndented = true }));
     }
 
     private static List<LeaveTypeInfo> Defaults() => new List<LeaveTypeInfo>
@@ -92,16 +157,36 @@ public static class LeaveTypes
     {
         var list = types.ToList();
         if (list.Count == 0) throw new InvalidOperationException(ErganiManager.Data.UiText.T("At least one leave type is required."));
-        if (list.Any(t => string.IsNullOrWhiteSpace(t.Code) || t.Code.Trim().Length > 10 || string.IsNullOrWhiteSpace(t.Description)))
-            throw new InvalidOperationException(ErganiManager.Data.UiText.T("Every leave type needs a code (up to 10 characters) and a description."));
+        if (list.Any(t => string.IsNullOrWhiteSpace(t.Code) || t.Code.Trim().Length > 10 || string.IsNullOrWhiteSpace(t.Description) || t.Description.Trim().Length > 200))
+            throw new InvalidOperationException(ErganiManager.Data.UiText.T("Every leave type needs a code (up to 10 characters) and a description (up to 200 characters)."));
         if (list.GroupBy(t => t.Code.Trim(), StringComparer.OrdinalIgnoreCase).Any(g => g.Count() > 1))
             throw new InvalidOperationException(ErganiManager.Data.UiText.T("Leave type codes must be unique."));
+
         list = list.Select(t => t with { Code = t.Code.Trim(), Description = t.Description.Trim() }).ToList();
         lock (Gate)
         {
-            Directory.CreateDirectory(Path.GetDirectoryName(ConfigPath)!);
-            File.WriteAllText(ConfigPath, System.Text.Json.JsonSerializer.Serialize(list, new System.Text.Json.JsonSerializerOptions { WriteIndented = true }));
+            if (_dbOptionsFactory == null)
+                throw new InvalidOperationException(ErganiManager.Data.UiText.T("The central database is not configured. Leave types cannot be saved yet."));
+
+            // Central database is authoritative. Do not report a successful save if only
+            // this PC's cache could be written.
+            using var db = new AppDbContext(_dbOptionsFactory());
+            using var transaction = db.Database.BeginTransaction();
+            db.LeaveTypeConfigurations.RemoveRange(db.LeaveTypeConfigurations);
+            db.LeaveTypeConfigurations.AddRange(list.Select(t => new LeaveTypeConfiguration
+            {
+                Code = t.Code,
+                Description = t.Description,
+                IsHourly = t.IsHourly,
+                IsPaid = t.IsPaid,
+                UpdatedAtUtc = DateTime.UtcNow
+            }));
+            db.SaveChanges();
+            transaction.Commit();
+
             _configured = list;
+            _lastRefreshUtc = DateTime.UtcNow;
+            WriteLocalCache(list);
         }
     }
 
