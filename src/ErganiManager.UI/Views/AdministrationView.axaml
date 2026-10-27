@@ -196,7 +196,7 @@
                                 <ItemsControl.ItemsPanel><ItemsPanelTemplate><StackPanel Spacing="8"/></ItemsPanelTemplate></ItemsControl.ItemsPanel>
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate x:DataType="vm:LeaveTypeEdit">
-                                        <Grid ColumnDefinitions="110,*,120,120,40" ColumnSpacing="16">
+                                        <Grid ColumnDefinitions="110,*,100,180,40" ColumnSpacing="16">
                                             <TextBox Grid.Column="0" Text="{Binding Code}" MaxLength="10"/>
                                             <TextBox Grid.Column="1" Text="{Binding Description}"/>
                                             <CheckBox Grid.Column="2" IsChecked="{Binding IsHourly}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
