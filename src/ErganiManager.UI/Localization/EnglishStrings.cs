@@ -706,6 +706,8 @@ public static class EnglishStrings
         ["Vm.Excel Submitted"] = "Submitted to Ergani",
         ["Vm.Excel Protocol"] = "Protocol",
         ["Vm.Excel Yes"] = "Yes",
+        ["Vm.Declared holiday"] = "Declared holiday",
+        ["Vm.Holiday type"] = "Holiday type",
         ["Vm.Excel No"] = "No",
         ["Vm.Excel Partial"] = "Partial",
         ["Vm.Excel Holiday"] = "Holiday",
