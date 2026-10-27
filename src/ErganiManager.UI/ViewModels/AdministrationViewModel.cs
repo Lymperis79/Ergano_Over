@@ -56,6 +56,9 @@ public partial class AdministrationViewModel : ViewModelBase, IAdminSectionViewM
     [ObservableProperty] private string _workCardsPortalStatus = string.Empty;
 
     /// <summary>Editable rounding bands used by the "Rounded" column of the Declared vs actual report.</summary>
+    public ObservableCollection<LeaveTypeEdit> EditableLeaveTypes { get; } = new();
+    [ObservableProperty] private string _leaveTypesStatus = string.Empty;
+
     public ObservableCollection<RoundingBandEdit> RoundingBands { get; } = new();
     public ObservableCollection<ShiftEdit> Shifts { get; } = new();
     [ObservableProperty] private string _roundingStatus = string.Empty;
@@ -100,6 +103,35 @@ public partial class AdministrationViewModel : ViewModelBase, IAdminSectionViewM
         NightStartTime = TimeSpan.FromMinutes(Math.Clamp(rules.NightStartMinuteOfDay, 0, 1439));
         NightEndTime = TimeSpan.FromMinutes(Math.Clamp(rules.NightEndMinuteOfDay, 0, 1439));
         OnTimeWindowMinutes = rules.OnTimeWindowMinutes;
+        LoadLeaveTypes();
+    }
+
+    private void LoadLeaveTypes()
+    {
+        EditableLeaveTypes.Clear();
+        foreach (var type in LeaveTypes.All)
+            EditableLeaveTypes.Add(new LeaveTypeEdit(type.Code, type.Description, type.IsHourly, type.IsPaid));
+    }
+
+    [RelayCommand]
+    private void AddLeaveType() => EditableLeaveTypes.Add(new LeaveTypeEdit(string.Empty, string.Empty, false, true));
+
+    [RelayCommand]
+    private void RemoveLeaveType(LeaveTypeEdit? type)
+    {
+        if (type != null) EditableLeaveTypes.Remove(type);
+    }
+
+    [RelayCommand]
+    private void SaveLeaveTypes()
+    {
+        try
+        {
+            LeaveTypes.Save(EditableLeaveTypes.Select(t => new LeaveTypeInfo(t.Code, t.Description, t.IsHourly, t.IsPaid)));
+            LeaveTypesStatus = Loc["Vm.✅ Leave types saved. Changes apply to new and existing holiday display."];
+            LoadLeaveTypes();
+        }
+        catch (Exception ex) { LeaveTypesStatus = $"❌ {ex.Message}"; }
     }
 
     private void LoadRounding(System.Collections.Generic.IEnumerable<RoundingBand> bands)
@@ -417,4 +449,18 @@ public partial class AdministrationViewModel : ViewModelBase, IAdminSectionViewM
         catch (Exception ex) { StatusMessage = $"❌ {ex.Message}"; }
         finally { IsBusy = false; Refresh(); }
     }
+}
+
+
+/// <summary>Editable administrator row for an Ergani leave category.</summary>
+public partial class LeaveTypeEdit : ObservableObject
+{
+    public LeaveTypeEdit(string code, string description, bool isHourly, bool isPaid)
+    {
+        _code = code; _description = description; _isHourly = isHourly; _isPaid = isPaid;
+    }
+    [ObservableProperty] private string _code;
+    [ObservableProperty] private string _description;
+    [ObservableProperty] private bool _isHourly;
+    [ObservableProperty] private bool _isPaid;
 }
