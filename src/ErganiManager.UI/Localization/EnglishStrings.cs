@@ -708,6 +708,8 @@ public static class EnglishStrings
         ["Vm.Excel Yes"] = "Yes",
         ["Vm.Declared holiday"] = "Declared holiday",
         ["Vm.Holiday type"] = "Holiday type",
+        ["Vm.Declared holiday days"] = "Declared holiday days",
+        ["Vm.Holiday types"] = "Holiday types",
         ["Vm.Excel No"] = "No",
         ["Vm.Excel Partial"] = "Partial",
         ["Vm.Excel Holiday"] = "Holiday",
