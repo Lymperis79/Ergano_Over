@@ -57,6 +57,13 @@ public partial class AdministrationViewModel : ViewModelBase, IAdminSectionViewM
 
     /// <summary>Editable rounding bands used by the "Rounded" column of the Declared vs actual report.</summary>
     public ObservableCollection<LeaveTypeEdit> EditableLeaveTypes { get; } = new();
+
+    public IReadOnlyList<LeavePaymentOption> LeavePaymentOptions => new[]
+    {
+        new LeavePaymentOption("EmployerPaid", Loc["LeavePaymentEmployerPaid"]),
+        new LeavePaymentOption("Subsidized", Loc["LeavePaymentSubsidized"]),
+        new LeavePaymentOption("Unpaid", Loc["LeavePaymentUnpaid"])
+    };
     [ObservableProperty] private string _leaveTypesStatus = string.Empty;
 
     public ObservableCollection<RoundingBandEdit> RoundingBands { get; } = new();
@@ -111,11 +118,11 @@ public partial class AdministrationViewModel : ViewModelBase, IAdminSectionViewM
     {
         EditableLeaveTypes.Clear();
         foreach (var type in LeaveTypes.All)
-            EditableLeaveTypes.Add(new LeaveTypeEdit(type.Code, type.Description, type.IsHourly, type.IsPaid));
+            EditableLeaveTypes.Add(new LeaveTypeEdit(type.Code, type.Description, type.IsHourly, type.IsPaid, type.EffectivePaymentCategory));
     }
 
     [RelayCommand]
-    private void AddLeaveType() => EditableLeaveTypes.Add(new LeaveTypeEdit(string.Empty, string.Empty, false, true));
+    private void AddLeaveType() => EditableLeaveTypes.Add(new LeaveTypeEdit(string.Empty, string.Empty, false, true, "EmployerPaid"));
 
     [RelayCommand]
     private void RemoveLeaveType(LeaveTypeEdit? type)
@@ -128,7 +135,7 @@ public partial class AdministrationViewModel : ViewModelBase, IAdminSectionViewM
     {
         try
         {
-            LeaveTypes.Save(EditableLeaveTypes.Select(t => new LeaveTypeInfo(t.Code, t.Description, t.IsHourly, t.IsPaid)));
+            LeaveTypes.Save(EditableLeaveTypes.Select(t => new LeaveTypeInfo(t.Code, t.Description, t.IsHourly, t.IsPaid, t.PaymentCategory)));
             LeaveTypesStatus = Loc["Vm.✅ Leave types saved. Changes apply to new and existing holiday display."];
             LoadLeaveTypes();
         }
@@ -454,14 +461,17 @@ public partial class AdministrationViewModel : ViewModelBase, IAdminSectionViewM
 
 
 /// <summary>Editable administrator row for an Ergani leave category.</summary>
+public sealed record LeavePaymentOption(string Key, string Label);
+
 public partial class LeaveTypeEdit : ObservableObject
 {
-    public LeaveTypeEdit(string code, string description, bool isHourly, bool isPaid)
+    public LeaveTypeEdit(string code, string description, bool isHourly, bool isPaid, string paymentCategory)
     {
-        _code = code; _description = description; _isHourly = isHourly; _isPaid = isPaid;
+        _code = code; _description = description; _isHourly = isHourly; _isPaid = isPaid; _paymentCategory = paymentCategory;
     }
     [ObservableProperty] private string _code;
     [ObservableProperty] private string _description;
     [ObservableProperty] private bool _isHourly;
     [ObservableProperty] private bool _isPaid;
+    [ObservableProperty] private string _paymentCategory;
 }
