@@ -97,6 +97,8 @@ public class LeaveService : ILeaveService
                 LeaveTypeCode = type.Code,
                 StartTime     = start,
                 EndTime       = end,
+                DeclaredStartTime = template.DeclaredStartTime,
+                DeclaredEndTime = template.DeclaredEndTime,
                 ReferenceYear = template.ReferenceYear,
                 EntitledDays  = template.EntitledDays,
                 Comments      = string.IsNullOrWhiteSpace(template.Comments) ? null : template.Comments.Trim(),
@@ -157,6 +159,8 @@ public class LeaveService : ILeaveService
         entity.LeaveTypeCode = type.Code;
         entity.StartTime = type.IsHourly ? dto.StartTime : null;
         entity.EndTime = type.IsHourly ? dto.EndTime : null;
+        entity.DeclaredStartTime = dto.DeclaredStartTime;
+        entity.DeclaredEndTime = dto.DeclaredEndTime;
         entity.ReferenceYear = dto.ReferenceYear;
         entity.EntitledDays = dto.EntitledDays;
         entity.Comments = string.IsNullOrWhiteSpace(dto.Comments) ? null : dto.Comments.Trim();
@@ -185,6 +189,8 @@ public class LeaveService : ILeaveService
         LeaveTypeCode     = l.LeaveTypeCode,
         StartTime         = l.StartTime,
         EndTime           = l.EndTime,
+        DeclaredStartTime  = l.DeclaredStartTime,
+        DeclaredEndTime    = l.DeclaredEndTime,
         ReferenceYear     = l.ReferenceYear,
         EntitledDays      = l.EntitledDays,
         Comments          = l.Comments,
