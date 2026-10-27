@@ -16,5 +16,8 @@ public sealed class LeaveTypeConfiguration
 
     public bool IsHourly { get; set; }
     public bool IsPaid { get; set; } = true;
+
+    [MaxLength(20)]
+    public string PaymentCategory { get; set; } = string.Empty;
     public DateTime UpdatedAtUtc { get; set; } = DateTime.UtcNow;
 }
