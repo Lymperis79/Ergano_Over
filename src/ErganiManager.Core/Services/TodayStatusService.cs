@@ -86,7 +86,7 @@ public class TodayStatusService : ITodayStatusService
         var wholeDayLeave = leaves.FirstOrDefault(l => l.StartTime == null);
         var leaveType = wholeDayLeave == null ? null : LeaveTypes.Find(wholeDayLeave.LeaveTypeCode);
         var leaveName = wholeDayLeave == null ? null
-            : (leaveType?.LocalizedDescription ?? wholeDayLeave.LeaveTypeCode) + (leaveType?.IsPaid == false ? " (Unpaid)" : string.Empty);
+            : (leaveType?.LocalizedDescription ?? wholeDayLeave.LeaveTypeCode) + (leaveType?.IsPaid == false ? $" ({ErganiManager.Data.UiText.T("Unpaid")})" : string.Empty);
 
         var isWorkDay = wholeDayLeave == null && sched != null
             && (sched.WorkType == Entities.WorkType.Office || sched.WorkType == Entities.WorkType.Home)
