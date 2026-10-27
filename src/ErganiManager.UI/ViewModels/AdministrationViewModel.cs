@@ -103,6 +103,7 @@ public partial class AdministrationViewModel : ViewModelBase, IAdminSectionViewM
         NightStartTime = TimeSpan.FromMinutes(Math.Clamp(rules.NightStartMinuteOfDay, 0, 1439));
         NightEndTime = TimeSpan.FromMinutes(Math.Clamp(rules.NightEndMinuteOfDay, 0, 1439));
         OnTimeWindowMinutes = rules.OnTimeWindowMinutes;
+        LeaveTypes.Refresh();
         LoadLeaveTypes();
     }
 
