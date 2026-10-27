@@ -91,7 +91,7 @@ public partial class ReportService : IReportService
             {
                 EmployeeId = g.Key.EmployeeId,
                 EmployeeName = g.Key.EmployeeName,
-                ScheduledDays = g.Count(r => !r.IsDeclaredHoliday && (r.ScheduleKind is nameof(WorkType.Office) or nameof(WorkType.Home)),
+                ScheduledDays = g.Count(r => !r.IsDeclaredHoliday && (r.ScheduleKind is nameof(WorkType.Office) or nameof(WorkType.Home))),
                 PresentDays = g.Count(r => (r.ScheduleKind is nameof(WorkType.Office) or nameof(WorkType.Home))
                     && r.FirstArrival.HasValue && r.LastDeparture.HasValue),
                 NoShowDays = g.Count(r => (r.ScheduleKind is nameof(WorkType.Office) or nameof(WorkType.Home))
