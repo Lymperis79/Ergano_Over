@@ -9,6 +9,8 @@ public class LeaveDto
     public string LeaveTypeCode { get; set; } = string.Empty;
     public TimeOnly? StartTime { get; set; }
     public TimeOnly? EndTime { get; set; }
+    public TimeOnly? DeclaredStartTime { get; set; }
+    public TimeOnly? DeclaredEndTime { get; set; }
     public int? ReferenceYear { get; set; }
     public int? EntitledDays { get; set; }
     public string? Comments { get; set; }
