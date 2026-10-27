@@ -201,7 +201,9 @@
                                             <TextBox Grid.Column="1" Text="{Binding Description}"/>
                                             <CheckBox Grid.Column="2" IsChecked="{Binding IsHourly}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                             <CheckBox Grid.Column="3" IsChecked="{Binding IsPaid}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                            <Button Grid.Column="4" Content="✕" Foreground="#E53935" FontWeight="Bold" FontSize="16"
+                                            <Button Grid.Column="4" Content="✕" Background="#D32F2F" Foreground="#FFFFFF"
+                                                    BorderBrush="#B71C1C" BorderThickness="1" CornerRadius="4"
+                                                    FontWeight="Bold" FontSize="16" Width="32" Height="30"
                                                     HorizontalAlignment="Center" VerticalAlignment="Center"
                                                     Command="{Binding $parent[UserControl].((vm:AdministrationViewModel)DataContext).RemoveLeaveTypeCommand}"
                                                     CommandParameter="{Binding}" ToolTip.Tip="{Binding $parent[UserControl].((vm:AdministrationViewModel)DataContext).Loc[LeaveTypeRemove]}"/>
