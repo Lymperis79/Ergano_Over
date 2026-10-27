@@ -20,6 +20,8 @@ public class HolidayRow
     public string LeaveTypeCode { get; init; } = string.Empty;
     public TimeOnly? StartTime { get; init; }
     public TimeOnly? EndTime { get; init; }
+    public TimeOnly? DeclaredStartTime { get; init; }
+    public TimeOnly? DeclaredEndTime { get; init; }
     public bool SubmittedToErgani { get; init; }
     public string? Protocol { get; init; }
     public DateOnly? SubmittedDate { get; init; }
@@ -80,6 +82,8 @@ public partial class HolidayDialogViewModel : ViewModelBase
     [ObservableProperty] private bool _skipWeekends = true;
     [ObservableProperty] private TimeSpan? _startTime = new TimeSpan(9, 0, 0);
     [ObservableProperty] private TimeSpan? _endTime = new TimeSpan(13, 0, 0);
+    [ObservableProperty] private TimeSpan? _declaredStartTime = new TimeSpan(9, 0, 0);
+    [ObservableProperty] private TimeSpan? _declaredEndTime = new TimeSpan(17, 0, 0);
     [ObservableProperty] private string _referenceYear = string.Empty;
     [ObservableProperty] private string _entitledDays = string.Empty;
     [ObservableProperty] private bool _isEditingExisting;
@@ -160,6 +164,8 @@ public partial class HolidayDialogViewModel : ViewModelBase
                 LeaveTypeCode     = l.LeaveTypeCode,
                 StartTime         = l.StartTime,
                 EndTime           = l.EndTime,
+                DeclaredStartTime  = l.DeclaredStartTime,
+                DeclaredEndTime    = l.DeclaredEndTime,
                 SubmittedToErgani = l.SubmittedToErgani,
                 Protocol          = l.Protocol,
                 SubmittedDate     = l.SubmittedDate,
@@ -217,6 +223,8 @@ public partial class HolidayDialogViewModel : ViewModelBase
                 LeaveTypeCode = SelectedType.Code,
                 StartTime     = SelectedType.IsHourly && StartTime.HasValue ? TimeOnly.FromTimeSpan(StartTime.Value) : null,
                 EndTime       = SelectedType.IsHourly && EndTime.HasValue   ? TimeOnly.FromTimeSpan(EndTime.Value)   : null,
+                DeclaredStartTime = DeclaredStartTime.HasValue ? TimeOnly.FromTimeSpan(DeclaredStartTime.Value) : null,
+                DeclaredEndTime = DeclaredEndTime.HasValue ? TimeOnly.FromTimeSpan(DeclaredEndTime.Value) : null,
                 ReferenceYear = year,
                 EntitledDays  = entitled,
                 Comments      = Comments
@@ -318,6 +326,8 @@ public partial class HolidayDialogViewModel : ViewModelBase
         SkipWeekends = false;
         StartTime = row.StartTime?.ToTimeSpan() ?? new TimeSpan(9, 0, 0);
         EndTime = row.EndTime?.ToTimeSpan() ?? new TimeSpan(13, 0, 0);
+        DeclaredStartTime = row.DeclaredStartTime?.ToTimeSpan() ?? new TimeSpan(9, 0, 0);
+        DeclaredEndTime = row.DeclaredEndTime?.ToTimeSpan() ?? new TimeSpan(17, 0, 0);
         ReferenceYear = row.ReferenceYear?.ToString() ?? string.Empty;
         EntitledDays = row.EntitledDays?.ToString() ?? string.Empty;
         Comments = row.Comments ?? string.Empty;
