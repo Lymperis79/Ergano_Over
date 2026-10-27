@@ -114,7 +114,7 @@ public static class TimeWorkbookExporter
                     SetMinutes(ws.Cell(row, 10), roundedDiff);
                     if (roundedDiff < -HalfMinute) ws.Cell(row, 10).Style.Font.FontColor = XLColor.Red;
                 }
-                ws.Cell(row, 11).Value = d.IsDeclaredHoliday ? T("Yes") : string.Empty;
+                ws.Cell(row, 11).Value = d.IsDeclaredHoliday ? T("Vm.Yes") : string.Empty;
                 ws.Cell(row, 12).Value = d.HolidayType;
                 if (d.IsDeclaredHoliday)
                 {
