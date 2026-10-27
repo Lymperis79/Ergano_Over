@@ -9,7 +9,7 @@ using ErganiManager.Data.Entities;
 namespace ErganiManager.Core.Models;
 
 /// <summary>One Ergani leave type (f_type of Documents/WTOLeave).</summary>
-public sealed record LeaveTypeInfo(string Code, string Description, bool IsHourly, bool IsPaid = true, string PaymentCategory = "EmployerPaid")
+public sealed record LeaveTypeInfo(string Code, string Description, bool IsHourly, bool IsPaid = true, string PaymentCategory = "")
 {
     public string EffectivePaymentCategory => string.IsNullOrWhiteSpace(PaymentCategory)
         ? LeaveTypes.DefaultPaymentCategory(Code, IsPaid)
@@ -112,7 +112,8 @@ public static class LeaveTypes
                     Code = t.Code,
                     Description = t.Description,
                     IsHourly = t.IsHourly,
-                    IsPaid = t.IsPaid,
+                    IsPaid = t.EffectivePaymentCategory != "Unpaid",
+                    PaymentCategory = t.EffectivePaymentCategory,
                     UpdatedAtUtc = DateTime.UtcNow
                 }));
                 db.SaveChanges();
