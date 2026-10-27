@@ -85,13 +85,13 @@ public partial class ReportService : IReportService
         rows = rows.OrderBy(r => r.EmployeeName, StringComparer.CurrentCultureIgnoreCase)
             .ThenBy(r => r.Date).ToList();
 
-        var scheduledRows = rows.Where(r => r.ScheduleKind is nameof(WorkType.Office) or nameof(WorkType.Home)).ToList();
+        var scheduledRows = rows.Where(r => !r.IsDeclaredHoliday && (r.ScheduleKind is nameof(WorkType.Office) or nameof(WorkType.Home))).ToList();
         var summaries = rows.GroupBy(r => (r.EmployeeId, r.EmployeeName))
             .Select(g => new AttendanceEmployeeSummary
             {
                 EmployeeId = g.Key.EmployeeId,
                 EmployeeName = g.Key.EmployeeName,
-                ScheduledDays = g.Count(r => r.ScheduleKind is nameof(WorkType.Office) or nameof(WorkType.Home)),
+                ScheduledDays = g.Count(r => !r.IsDeclaredHoliday && (r.ScheduleKind is nameof(WorkType.Office) or nameof(WorkType.Home)),
                 PresentDays = g.Count(r => (r.ScheduleKind is nameof(WorkType.Office) or nameof(WorkType.Home))
                     && r.FirstArrival.HasValue && r.LastDeparture.HasValue),
                 NoShowDays = g.Count(r => (r.ScheduleKind is nameof(WorkType.Office) or nameof(WorkType.Home))
