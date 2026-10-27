@@ -36,7 +36,7 @@ public static class PayrollWorkbookExporter
         var headers = new[]
         {
             T("Vm.Employee"), T("Vm.Month"), T("Vm.Scheduled hours"), T("Vm.Actual hours"),
-            T("Vm.Difference (hours)"), T("Vm.Night hours"), T("Vm.Overtime hours"), T("Vm.Recorded overtime")
+            T("Vm.Difference (hours)"), T("Vm.Night hours"), T("Vm.Overtime hours"), T("Vm.Recorded overtime"), T("Vm.Declared holiday days"), T("Vm.Holiday types")
         };
         for (var c = 0; c < headers.Length; c++) summary.Cell(HeaderRow, c + 1).Value = headers[c];
         StyleHeader(summary.Range(HeaderRow, 1, HeaderRow, headers.Length));
@@ -55,6 +55,15 @@ public static class PayrollWorkbookExporter
             SetDuration(summary.Cell(row, 7), month.OvertimeHours);
             var recorded = overtimeByEmployeeMonth.TryGetValue((month.EmployeeId, month.Year, month.Month), out var h) ? h : 0;
             SetDuration(summary.Cell(row, 8), recorded);
+            var holidayDays = month.Days.Where(day => day.IsDeclaredHoliday).ToList();
+            summary.Cell(row, 9).Value = holidayDays.Count;
+            summary.Cell(row, 10).Value = string.Join("; ", holidayDays.Select(day => day.HolidayType).Where(value => !string.IsNullOrWhiteSpace(value)).Distinct(StringComparer.CurrentCultureIgnoreCase));
+            summary.Cell(row, 10).Style.Alignment.WrapText = true;
+            if (holidayDays.Count > 0)
+            {
+                summary.Cell(row, 9).Style.Font.Bold = true;
+                summary.Cell(row, 9).Style.Font.FontColor = XLColor.DarkGreen;
+            }
             if (month.DiffHours < -0.0833) summary.Cell(row, 5).Style.Font.FontColor = XLColor.Red;
             row++;
         }
