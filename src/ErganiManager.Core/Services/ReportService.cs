@@ -1,4 +1,5 @@
 using ErganiManager.Core.Interfaces;
+using ErganiManager.Core.Models;
 using ErganiManager.Data;
 using ErganiManager.Data.Entities;
 using Microsoft.EntityFrameworkCore;
@@ -33,7 +34,7 @@ public partial class ReportService : IReportService
         foreach (var day in month.Days.Where(d => d.Date >= from && d.Date <= to))
         {
             // Overtime-only dates are not attendance rows unless there is also a schedule or a scan.
-            if (string.IsNullOrEmpty(day.DeclaredKind) && day.Pairs.Count == 0) continue;
+            if (string.IsNullOrEmpty(day.DeclaredKind) && day.Pairs.Count == 0 && !day.IsDeclaredHoliday) continue;
 
             var firstArrival = day.ActualArrival;
             var lastDeparture = day.ActualDeparture;
@@ -65,6 +66,8 @@ public partial class ReportService : IReportService
                 EmployeeName = month.EmployeeName,
                 Date = day.Date,
                 ScheduleKind = day.DeclaredKind,
+                HolidayTypeCode = day.HolidayTypeCode,
+                HolidayType = day.HolidayType,
                 ScheduledStart = scheduledStart,
                 ScheduledEnd = scheduledEnd,
                 ScheduledHours = day.DeclaredHours,
@@ -253,6 +256,14 @@ public partial class ReportService : IReportService
             .Where(o => !o.IsCancelled && (employeeId == null || o.EmployeeId == employeeId))
             .ToList();
 
+        var leaveQuery = db.Leaves.Include(l => l.Employee)
+            .Where(l => l.Employee != null && l.Employee.CompanyId == companyId
+                        && l.LeaveDate >= from && l.LeaveDate <= to);
+        if (employeeId != null) leaveQuery = leaveQuery.Where(l => l.EmployeeId == employeeId);
+        var leaves = await leaveQuery.AsNoTracking().ToListAsync();
+        var leaveTypes = LeaveTypes.All.ToDictionary(t => t.Code, StringComparer.OrdinalIgnoreCase);
+        var leavesByKey = leaves.ToLookup(l => (EmployeeId: l.EmployeeId, Date: l.LeaveDate));
+
         var rules = _rounding.Current;
 
         // Build clock-in/out pairs by the date of the clock-in. This is important for
@@ -296,6 +307,7 @@ public partial class ReportService : IReportService
         var keys = schedules.Select(s => (EmployeeId: s.EmployeeId, Date: s.ScheduleDate))
             .Concat(cardPairsByKey.Keys)
             .Concat(overtime.Select(o => (EmployeeId: o.EmployeeId, Date: o.OvertimeDate)))
+            .Concat(leaves.Select(l => (EmployeeId: l.EmployeeId, Date: l.LeaveDate)))
             .Where(k => k.Date >= from && k.Date <= to)
             .Distinct().ToList();
 
@@ -303,6 +315,8 @@ public partial class ReportService : IReportService
         foreach (var s in schedules) names[s.EmployeeId] = s.Employee!.FullName;
         foreach (var c in cards) names.TryAdd(c.EmployeeId, c.Employee!.FullName);
         foreach (var o in overtime) names.TryAdd(o.EmployeeId, o.EmployeeFullName);
+        foreach (var l in leaves)
+            if (l.Employee != null) names.TryAdd(l.EmployeeId, l.Employee.FullName);
 
         var scheduleByKey = schedules.ToLookup(s => (EmployeeId: s.EmployeeId, Date: s.ScheduleDate));
         var overtimeByKey = overtime.ToLookup(o => (EmployeeId: o.EmployeeId, Date: o.OvertimeDate));
@@ -315,6 +329,12 @@ public partial class ReportService : IReportService
                 ? pairsForDay.OrderBy(p => p.In ?? p.Out ?? DateTime.MinValue).ToList()
                 : new List<ScanPair>();
             var dayOt = overtimeByKey[key].OrderBy(o => o.StartTime).ToList();
+            var dayLeaves = leavesByKey[key].ToList();
+            var holidayLabels = dayLeaves.Select(l =>
+            {
+                var code = l.LeaveTypeCode ?? string.Empty;
+                return leaveTypes.TryGetValue(code, out var type) ? $"{type.Code} — {type.LocalizedDescription}" : code;
+            }).Where(x => !string.IsNullOrWhiteSpace(x)).Distinct(StringComparer.CurrentCultureIgnoreCase).ToList();
 
             double? declared = null;
             if (sch is { StartTime: { } st, EndTime: { } et } && sch.WorkType is WorkType.Office or WorkType.Home)
@@ -331,6 +351,8 @@ public partial class ReportService : IReportService
             {
                 Date            = key.Item2,
                 DeclaredKind    = sch == null ? string.Empty : sch.WorkType.ToString(),
+                HolidayTypeCode = string.Join(", ", dayLeaves.Select(l => l.LeaveTypeCode).Where(x => !string.IsNullOrWhiteSpace(x)).Distinct(StringComparer.OrdinalIgnoreCase)),
+                HolidayType     = string.Join("; ", holidayLabels),
                 DeclaredFrom    = declared != null ? sch!.StartTime : null,
                 DeclaredTo      = declared != null ? sch!.EndTime : null,
                 DeclaredHours   = declared,
