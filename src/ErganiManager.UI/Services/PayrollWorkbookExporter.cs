@@ -95,6 +95,14 @@ public static class PayrollWorkbookExporter
             SetDuration(detail.Cell(row, 9), day.RoundedHours);
             detail.Cell(row, 10).Value = day.RoundedInOutCsvText;
             detail.Cell(row, 11).Value = string.Join(" | ", day.Pairs.Select(p => p.Text));
+            detail.Cell(row, 12).Value = day.IsDeclaredHoliday ? T("Vm.Yes") : string.Empty;
+            detail.Cell(row, 13).Value = day.HolidayType;
+            if (day.IsDeclaredHoliday)
+            {
+                detail.Cell(row, 12).Style.Font.Bold = true;
+                detail.Cell(row, 12).Style.Font.FontColor = XLColor.DarkGreen;
+                detail.Cell(row, 13).Style.Alignment.WrapText = true;
+            }
             if (day.DiffHours is { } dayDiff && dayDiff < -0.0833) detail.Cell(row, 6).Style.Font.FontColor = XLColor.Red;
             row++;
         }
