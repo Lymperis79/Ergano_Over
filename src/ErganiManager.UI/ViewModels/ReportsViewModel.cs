@@ -388,18 +388,18 @@ public partial class ReportsViewModel : ViewModelBase, IAdminSectionViewModel
 
         if (Kind == ReportKind.Compare && _summary != null)
         {
-            sb.AppendLine(string.Join(";", new[] { Loc["Vm.Employee"], Loc["Vm.Month"], Loc["Vm.Date"], Loc["Vm.Declared"], Loc["Vm.Declared hours"], Loc["Vm.Actual"], Loc["Vm.Actual hours"], Loc["Vm.Night hours"], Loc["Vm.Rounded hours"], Loc["Vm.Rounded in → out"], Loc["Vm.Difference"], Loc["Vm.Overtime"], Loc["Vm.Overtime hours"] }));
+            sb.AppendLine(string.Join(";", new[] { Loc["Vm.Employee"], Loc["Vm.Month"], Loc["Vm.Date"], Loc["Vm.Declared"], Loc["Vm.Holiday type"], Loc["Vm.Declared hours"], Loc["Vm.Actual"], Loc["Vm.Actual hours"], Loc["Vm.Night hours"], Loc["Vm.Rounded hours"], Loc["Vm.Rounded in → out"], Loc["Vm.Difference"], Loc["Vm.Overtime"], Loc["Vm.Overtime hours"] }));
             foreach (var m in _summary.Months)
             {
                 foreach (var d in m.Days)
                     sb.AppendLine(string.Join(";", Q(m.EmployeeName), m.MonthLabel, d.Date.ToString("dd/MM/yyyy", inv),
-                        Q(d.DeclaredText), d.DeclaredHoursText, Q(d.ActualText), d.ActualHoursText, d.NightHoursText, d.RoundedHoursText, Q(d.RoundedInOutCsvText), CsvDiff(d.DiffHours),
+                        Q(d.DeclaredText), Q(d.HolidayType), d.DeclaredHoursText, Q(d.ActualText), d.ActualHoursText, d.NightHoursText, d.RoundedHoursText, Q(d.RoundedInOutCsvText), CsvDiff(d.DiffHours),
                         Q(d.OvertimeRanges), d.OvertimeHours > 0 ? ReportFormat.Hours(d.OvertimeHours) : string.Empty));
-                sb.AppendLine(string.Join(";", Q(m.EmployeeName), m.MonthLabel, Q(Loc["Vm.MONTH TOTAL"]), "",
+                sb.AppendLine(string.Join(";", Q(m.EmployeeName), m.MonthLabel, Q(Loc["Vm.MONTH TOTAL"]), "", "",
                     ReportFormat.Hours(m.DeclaredHours), "", ReportFormat.Hours(m.ActualHours),
                     ReportFormat.Hours(m.NightHours), ReportFormat.Hours(m.RoundedHours), "", CsvDiff(m.DiffHours), "", ReportFormat.Hours(m.OvertimeHours)));
             }
-            sb.AppendLine(string.Join(";", Q(Loc["Vm.ALL EMPLOYEES"]), "", Q(Loc["Vm.GRAND TOTAL"]), "",
+            sb.AppendLine(string.Join(";", Q(Loc["Vm.ALL EMPLOYEES"]), "", Q(Loc["Vm.GRAND TOTAL"]), "", "",
                 ReportFormat.Hours(_summary.DeclaredHours), "", ReportFormat.Hours(_summary.ActualHours), ReportFormat.Hours(_summary.NightHours), ReportFormat.Hours(_summary.RoundedHours), "", "", "", ReportFormat.Hours(_summary.OvertimeHours)));
         }
         else if (Kind == ReportKind.Payroll && _summary != null)
