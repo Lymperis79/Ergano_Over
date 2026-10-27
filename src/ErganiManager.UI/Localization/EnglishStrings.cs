@@ -795,6 +795,7 @@ public static class EnglishStrings
         [L.NoCloneHistory] = "No schedules have been cloned yet.",
         [L.Declared] = "Declared",
         [L.Hours] = "Hours",
+        [L.Holidays] = "Holidays",
         [L.ActualHours] = "Actual hours",
         [L.Analysis] = "Analysis",
         [L.Difference] = "Difference",
