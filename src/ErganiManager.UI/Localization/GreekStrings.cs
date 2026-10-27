@@ -705,6 +705,8 @@ public static class GreekStrings
         ["Vm.Excel Submitted"] = "Υποβλήθηκε στο ΕΡΓΑΝΗ",
         ["Vm.Excel Protocol"] = "Πρωτόκολλο",
         ["Vm.Excel Yes"] = "Ναι",
+        ["Vm.Declared holiday"] = "Δηλωμένη άδεια",
+        ["Vm.Holiday type"] = "Τύπος άδειας",
         ["Vm.Excel No"] = "Όχι",
         ["Vm.Excel Partial"] = "Μερικώς",
         ["Vm.Excel Holiday"] = "Αργία",
