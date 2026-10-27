@@ -111,6 +111,9 @@ public sealed class DayTimeRow
     public string DateText => Date.ToString("ddd dd/MM/yyyy");
 
     public string DeclaredKind { get; init; } = string.Empty;           // Office / Home / Rest / Absent / ""
+    public string HolidayTypeCode { get; init; } = string.Empty;
+    public string HolidayType { get; init; } = string.Empty;
+    public bool IsDeclaredHoliday => !string.IsNullOrWhiteSpace(HolidayTypeCode);
     public TimeOnly? DeclaredFrom { get; init; }
     public TimeOnly? DeclaredTo { get; init; }
     public double? DeclaredHours { get; init; }
@@ -234,6 +237,9 @@ public sealed class AttendanceReportRow
     public string EmployeeName { get; init; } = string.Empty;
     public DateOnly Date { get; init; }
     public string ScheduleKind { get; init; } = string.Empty;
+    public string HolidayTypeCode { get; init; } = string.Empty;
+    public string HolidayType { get; init; } = string.Empty;
+    public bool IsDeclaredHoliday => !string.IsNullOrWhiteSpace(HolidayTypeCode);
     public string ScheduleKindText => string.IsNullOrEmpty(ScheduleKind)
         ? ErganiManager.Data.UiText.T("No schedule")
         : ErganiManager.Data.UiText.T(ScheduleKind switch
