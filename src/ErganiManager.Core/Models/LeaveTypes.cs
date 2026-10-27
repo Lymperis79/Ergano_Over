@@ -87,6 +87,26 @@ public static class LeaveTypes
                 rows = db.LeaveTypeConfigurations.AsNoTracking().OrderBy(t => t.Code).ToList();
             }
 
+            // Keep the four newly introduced official Ergani leave types available
+            // in existing shared databases as well as fresh installations.
+            var newOfficialTypes = Defaults().Where(t =>
+                t.Code is "ΩΑΜΓΤΑ" or "ΑΔΠΓ" or "ΑΔΓΕ" or "ΑΔΕΚΛ").ToList();
+            var existingCodes = rows.Select(t => t.Code).ToHashSet(StringComparer.OrdinalIgnoreCase);
+            var missingOfficialTypes = newOfficialTypes.Where(t => !existingCodes.Contains(t.Code)).ToList();
+            if (missingOfficialTypes.Count > 0)
+            {
+                db.LeaveTypeConfigurations.AddRange(missingOfficialTypes.Select(t => new LeaveTypeConfiguration
+                {
+                    Code = t.Code,
+                    Description = t.Description,
+                    IsHourly = t.IsHourly,
+                    IsPaid = t.IsPaid,
+                    UpdatedAtUtc = DateTime.UtcNow
+                }));
+                db.SaveChanges();
+                rows = db.LeaveTypeConfigurations.AsNoTracking().OrderBy(t => t.Code).ToList();
+            }
+
             _configured = rows.Select(t => new LeaveTypeInfo(t.Code, t.Description, t.IsHourly, t.IsPaid)).ToList();
             _lastRefreshUtc = DateTime.UtcNow;
             WriteLocalCache(_configured);
@@ -152,6 +172,12 @@ public static class LeaveTypes
         new("ΑΔΣΕΑΑ",  "Άδεια λόγω AIDS", false),
         new("ΑΔΕΡΕ",   "Ευέλικτες ρυθμίσεις εργασίας", false),
         new("ΑΔΑΛ",    "Άδεια Άλλη", false),
+
+        // New official Ergani leave types
+        new("ΩΑΜΓΤΑ", "Μειωμένο ωράριο γονέων παιδιών με Αναπηρία (Ώρες)", true),
+        new("ΑΔΠΓ",   "Άδεια πενθούντων γονέων (Ημέρες)", false),
+        new("ΑΔΓΕ",   "Άδεια γυναικολογικού ελέγχου (Ημέρες)", false),
+        new("ΑΔΕΚΛ",  "Εκλογική Άδεια (Ημέρες)", false),
 
         // ── Ωροάδεια (hourly) ──
         new("ΩΑΦΠ",    "Άδεια φροντίδας παιδιού (ΩΡΕΣ)", true),
