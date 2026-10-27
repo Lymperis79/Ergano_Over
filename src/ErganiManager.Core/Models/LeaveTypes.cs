@@ -9,10 +9,21 @@ using ErganiManager.Data.Entities;
 namespace ErganiManager.Core.Models;
 
 /// <summary>One Ergani leave type (f_type of Documents/WTOLeave).</summary>
-public sealed record LeaveTypeInfo(string Code, string Description, bool IsHourly, bool IsPaid = true)
+public sealed record LeaveTypeInfo(string Code, string Description, bool IsHourly, bool IsPaid = true, string PaymentCategory = "EmployerPaid")
 {
+    public string EffectivePaymentCategory => string.IsNullOrWhiteSpace(PaymentCategory)
+        ? LeaveTypes.DefaultPaymentCategory(Code, IsPaid)
+        : PaymentCategory;
+
+    public string LocalizedPaymentCategory => ErganiManager.Data.UiText.T(EffectivePaymentCategory switch
+    {
+        "Subsidized" => "LeavePaymentSubsidized",
+        "Unpaid" => "LeavePaymentUnpaid",
+        _ => "LeavePaymentEmployerPaid"
+    });
+
     /// <summary>Text shown in the type list.</summary>
-    public string Label => $"{Code} — {LocalizedDescription} [{ErganiManager.Data.UiText.T(IsPaid ? "Paid" : "Unpaid")}]";
+    public string Label => $"{Code} — {LocalizedDescription} [{LocalizedPaymentCategory}]";
 
     /// <summary>The official Greek name, or its English translation when the app language is English.</summary>
     public string LocalizedDescription => ErganiManager.Data.UiText.T(Description);
@@ -80,7 +91,8 @@ public static class LeaveTypes
                     Code = t.Code,
                     Description = t.Description,
                     IsHourly = t.IsHourly,
-                    IsPaid = t.IsPaid,
+                    IsPaid = t.EffectivePaymentCategory != "Unpaid",
+                    PaymentCategory = t.EffectivePaymentCategory,
                     UpdatedAtUtc = DateTime.UtcNow
                 }));
                 db.SaveChanges();
@@ -107,7 +119,8 @@ public static class LeaveTypes
                 rows = db.LeaveTypeConfigurations.AsNoTracking().OrderBy(t => t.Code).ToList();
             }
 
-            _configured = rows.Select(t => new LeaveTypeInfo(t.Code, t.Description, t.IsHourly, t.IsPaid)).ToList();
+            _configured = rows.Select(t => new LeaveTypeInfo(t.Code, t.Description, t.IsHourly, t.IsPaid,
+                string.IsNullOrWhiteSpace(t.PaymentCategory) ? DefaultPaymentCategory(t.Code, t.IsPaid) : t.PaymentCategory)).ToList();
             _lastRefreshUtc = DateTime.UtcNow;
             WriteLocalCache(_configured);
         }
@@ -214,18 +227,27 @@ public static class LeaveTypes
                 Code = t.Code,
                 Description = t.Description,
                 IsHourly = t.IsHourly,
-                IsPaid = t.IsPaid,
+                IsPaid = t.EffectivePaymentCategory != "Unpaid",
+                PaymentCategory = t.EffectivePaymentCategory,
                 UpdatedAtUtc = DateTime.UtcNow
             }));
             db.SaveChanges();
             transaction.Commit();
 
-            _configured = list;
+            _configured = list.Select(t => t with { PaymentCategory = t.EffectivePaymentCategory, IsPaid = t.EffectivePaymentCategory != "Unpaid" }).ToList();
             _lastRefreshUtc = DateTime.UtcNow;
-            try { WriteLocalCache(list); } catch { /* central save succeeded; local cache is optional */ }
+            try { WriteLocalCache(_configured); } catch { /* central save succeeded; local cache is optional */ }
         }
     }
 
+    /// <summary>Best-effort classification for existing configurations before an administrator reviews them.</summary>
+    public static string DefaultPaymentCategory(string? code, bool legacyIsPaid = true)
+    {
+        var normalized = (code ?? string.Empty).Trim().ToUpperInvariant();
+        if (new[] { "ΑΔΑΑ", "ΑΔΦΡΟ", "ΑΔΝΠ" }.Contains(normalized)) return "Unpaid";
+        if (new[] { "ΑΔΜΗ", "ΑΔΠΠΜ", "ΑΔΓΟΝ", "ΑΔΑΣ" }.Contains(normalized)) return "Subsidized";
+        return legacyIsPaid ? "EmployerPaid" : "Unpaid";
+    }
     public static LeaveTypeInfo? Find(string? code) =>
         All.FirstOrDefault(t => string.Equals(t.Code, code, StringComparison.OrdinalIgnoreCase));
 
