@@ -608,6 +608,10 @@ public static class L
     public const string LeaveTypeDescription = nameof(LeaveTypeDescription);
     public const string LeaveTypeHourly = nameof(LeaveTypeHourly);
     public const string LeaveTypePaid = nameof(LeaveTypePaid);
+    public const string LeaveTypePaymentCategory = nameof(LeaveTypePaymentCategory);
+    public const string LeavePaymentEmployerPaid = nameof(LeavePaymentEmployerPaid);
+    public const string LeavePaymentSubsidized = nameof(LeavePaymentSubsidized);
+    public const string LeavePaymentUnpaid = nameof(LeavePaymentUnpaid);
     public const string LeaveTypeRemove = nameof(LeaveTypeRemove);
     public const string LeaveTypeAdd = nameof(LeaveTypeAdd);
     public const string LeaveTypeSave = nameof(LeaveTypeSave);
