@@ -794,6 +794,7 @@ public static class GreekStrings
         [L.NoCloneHistory] = "Δεν έχει γίνει ακόμη αντιγραφή ωραρίων.",
         [L.Declared] = "Δηλωμένο",
         [L.Hours] = "Ώρες",
+        [L.Holidays] = "Διακοπες",
         [L.ActualHours] = "Πραγματικές ώρες",
         [L.Analysis] = "Ανάλυση",
         [L.Difference] = "Διαφορά",
