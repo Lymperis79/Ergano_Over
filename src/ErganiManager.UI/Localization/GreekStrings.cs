@@ -1569,5 +1569,14 @@ public static class GreekStrings
         ["Vm.This will send the holidays of {0} day(s) for {1} employee(s) in {2} in one request per branch, so you get one protocol."] = "Θα σταλούν οι άδειες {0} ημερών για {1} εργαζόμενο(ους) τον μήνα {2} σε ένα αίτημα ανά υποκατάστημα, ώστε να λάβετε ένα πρωτόκολλο.",
         ["Vm.Sending {0} holiday day(s) to Ergani, all employees in one request per branch…"] = "Αποστολή {0} ημερών άδειας στο ΕΡΓΑΝΗ, όλοι οι εργαζόμενοι σε ένα αίτημα ανά υποκατάστημα…",
         ["Vm.✅ Copied {0} entry(ies) to {1} employee(s). You can undo this until the copied entries are submitted."] = "✅ Αντιγράφηκαν {0} εγγραφές σε {1} εργαζόμενο(ους). Μπορείτε να το αναιρέσετε μέχρι να υποβληθούν οι αντιγραμμένες εγγραφές.",
+        [L.AdminLeaveTypes] = "Τύποι αδειών",
+        [L.AdminLeaveTypesDescription] = "Επεξεργαστείτε τις κατηγορίες αδειών ΕΡΓΑΝΗ. Η επιλογή «Με αποδοχές» σημαίνει ότι πληρώνεται από τον εργοδότη· επιβεβαιώστε την ταξινόμηση με τους κανόνες μισθοδοσίας. Οι κωδικοί πρέπει να συμφωνούν με τις προδιαγραφές της ΕΡΓΑΝΗ.",
+        [L.LeaveTypeCode] = "Κωδικός",
+        [L.LeaveTypeDescription] = "Περιγραφή",
+        [L.LeaveTypeHourly] = "Ωριαία",
+        [L.LeaveTypePaid] = "Με αποδοχές",
+        [L.LeaveTypeRemove] = "Διαγραφή τύπου άδειας",
+        [L.LeaveTypeAdd] = "Προσθήκη τύπου",
+        [L.LeaveTypeSave] = "Αποθήκευση τύπων",
     };
 }
