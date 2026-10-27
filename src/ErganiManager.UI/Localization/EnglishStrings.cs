@@ -1576,7 +1576,7 @@ public static class EnglishStrings
         ["Vm.Sending {0} holiday day(s) to Ergani, all employees in one request per branch…"] = "Sending {0} holiday day(s) to Ergani, all employees in one request per branch…",
         ["Vm.✅ Copied {0} entry(ies) to {1} employee(s). You can undo this until the copied entries are submitted."] = "✅ Copied {0} entry(ies) to {1} employee(s). You can undo this until the copied entries are submitted.",
         [L.AdminLeaveTypes] = "Leave types",
-        [L.AdminLeaveTypesDescription] = "Edit Ergani leave categories. Paid means paid by the employer; verify each classification with your payroll rules. Codes must match the Ergani specification.",
+        [L.AdminLeaveTypesDescription] = "Edit Ergani leave categories and choose who funds each type: employer-paid, subsidized by DYPA/e-EFKA, or unpaid. Codes must match the Ergani specification.",
         [L.LeaveTypeCode] = "Code",
         [L.LeaveTypeDescription] = "Description",
         [L.LeaveTypeHourly] = "Hourly",
