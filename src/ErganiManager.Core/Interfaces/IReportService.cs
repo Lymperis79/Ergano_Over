@@ -276,6 +276,7 @@ public sealed class AttendanceReportRow
     {
         get
         {
+            if (IsDeclaredHoliday) return ErganiManager.Data.UiText.T("Declared holiday");
             var hasArrival = FirstArrival.HasValue;
             var hasDeparture = LastDeparture.HasValue;
             if (ScheduleKind == nameof(ErganiManager.Data.Entities.WorkType.Rest))
