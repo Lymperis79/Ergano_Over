@@ -995,6 +995,7 @@ public static class GreekStrings
         ["Core.Protocol"] = "Πρωτόκολλο",
         ["Core.Submitted to Ergani"] = "Υποβλήθηκε στο ΕΡΓΑΝΗ",
         ["Core.Yes"] = "Ναι",
+        ["Core.Declared holiday"] = "Δηλωμένη άδεια",
         ["Core.No"] = "Όχι",
         ["Core.Partial"] = "Μερικώς",
         ["Core.Day"] = "Ημέρα",
