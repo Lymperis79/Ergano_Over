@@ -183,32 +183,35 @@
                         </StackPanel>
                     </TabItem>
 
-                    <TabItem Header="Leave Types / Τύποι αδειών">
+                    <TabItem Header="{Binding Loc[AdminLeaveTypes]}">
                         <StackPanel Spacing="12" Margin="0,12,0,0">
-                            <TextBlock Text="Edit the Ergani leave categories here. Paid means paid by the employer; verify each classification with your payroll rules. Codes must match the Ergani specification." TextWrapping="Wrap" Foreground="Gray"/>
-                            <Grid ColumnDefinitions="110,*,Auto,Auto,Auto" ColumnSpacing="8">
-                                <TextBlock Grid.Column="0" Text="Code / Κωδικός" FontWeight="SemiBold"/>
-                                <TextBlock Grid.Column="1" Text="Description / Περιγραφή" FontWeight="SemiBold"/>
-                                <TextBlock Grid.Column="2" Text="Hourly / Ωριαία" FontWeight="SemiBold"/>
-                                <TextBlock Grid.Column="3" Text="Paid / Με αποδοχές" FontWeight="SemiBold"/>
+                            <TextBlock Text="{Binding Loc[AdminLeaveTypesDescription]}" TextWrapping="Wrap" Foreground="Gray"/>
+                            <Grid ColumnDefinitions="110,*,120,120,40" ColumnSpacing="16">
+                                <TextBlock Grid.Column="0" Text="{Binding Loc[LeaveTypeCode]}" FontWeight="SemiBold"/>
+                                <TextBlock Grid.Column="1" Text="{Binding Loc[LeaveTypeDescription]}" FontWeight="SemiBold"/>
+                                <TextBlock Grid.Column="2" Text="{Binding Loc[LeaveTypeHourly]}" FontWeight="SemiBold" TextAlignment="Center"/>
+                                <TextBlock Grid.Column="3" Text="{Binding Loc[LeaveTypePaid]}" FontWeight="SemiBold" TextAlignment="Center"/>
                             </Grid>
                             <ItemsControl ItemsSource="{Binding EditableLeaveTypes}">
-                                <ItemsControl.ItemsPanel><ItemsPanelTemplate><StackPanel Spacing="6"/></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemsPanel><ItemsPanelTemplate><StackPanel Spacing="8"/></ItemsPanelTemplate></ItemsControl.ItemsPanel>
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate x:DataType="vm:LeaveTypeEdit">
-                                        <Grid ColumnDefinitions="110,*,Auto,Auto,Auto" ColumnSpacing="8">
+                                        <Grid ColumnDefinitions="110,*,120,120,40" ColumnSpacing="16">
                                             <TextBox Grid.Column="0" Text="{Binding Code}" MaxLength="10"/>
                                             <TextBox Grid.Column="1" Text="{Binding Description}"/>
-                                            <CheckBox Grid.Column="2" IsChecked="{Binding IsHourly}" VerticalAlignment="Center"/>
-                                            <CheckBox Grid.Column="3" IsChecked="{Binding IsPaid}" VerticalAlignment="Center"/>
-                                            <Button Grid.Column="4" Content="✕" Command="{Binding $parent[UserControl].((vm:AdministrationViewModel)DataContext).RemoveLeaveTypeCommand}" CommandParameter="{Binding}" ToolTip.Tip="Remove type"/>
+                                            <CheckBox Grid.Column="2" IsChecked="{Binding IsHourly}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                            <CheckBox Grid.Column="3" IsChecked="{Binding IsPaid}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                            <Button Grid.Column="4" Content="✕" Foreground="#E53935" FontWeight="Bold" FontSize="16"
+                                                    HorizontalAlignment="Center" VerticalAlignment="Center"
+                                                    Command="{Binding $parent[UserControl].((vm:AdministrationViewModel)DataContext).RemoveLeaveTypeCommand}"
+                                                    CommandParameter="{Binding}" ToolTip.Tip="{Binding Loc[LeaveTypeRemove]}"/>
                                         </Grid>
                                     </DataTemplate>
                                 </ItemsControl.ItemTemplate>
                             </ItemsControl>
                             <StackPanel Orientation="Horizontal" Spacing="8">
-                                <Button Content="Add type / Προσθήκη" Command="{Binding AddLeaveTypeCommand}"/>
-                                <Button Content="Save types / Αποθήκευση" Command="{Binding SaveLeaveTypesCommand}" Classes="accent"/>
+                                <Button Content="{Binding Loc[LeaveTypeAdd]}" Command="{Binding AddLeaveTypeCommand}"/>
+                                <Button Content="{Binding Loc[LeaveTypeSave]}" Command="{Binding SaveLeaveTypesCommand}" Classes="accent"/>
                                 <TextBlock Text="{Binding LeaveTypesStatus}" VerticalAlignment="Center" TextWrapping="Wrap"/>
                             </StackPanel>
                         </StackPanel>
