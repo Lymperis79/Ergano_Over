@@ -182,7 +182,7 @@ public static class LeaveTypes
             // this PC's cache could be written.
             using var db = new AppDbContext(_dbOptionsFactory());
             using var transaction = db.Database.BeginTransaction();
-            db.LeaveTypeConfigurations.RemoveRange(db.LeaveTypeConfigurations);
+            db.Database.ExecuteSqlRaw("DELETE FROM LeaveTypeConfigurations");
             db.LeaveTypeConfigurations.AddRange(list.Select(t => new LeaveTypeConfiguration
             {
                 Code = t.Code,
