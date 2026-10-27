@@ -602,4 +602,13 @@ public static class L
     public const string SetToNow = nameof(SetToNow);
     public const string ManualLateReasonLabel = nameof(ManualLateReasonLabel);
     public const string ManualCardSentHint = nameof(ManualCardSentHint);
+    public const string AdminLeaveTypes = nameof(AdminLeaveTypes);
+    public const string AdminLeaveTypesDescription = nameof(AdminLeaveTypesDescription);
+    public const string LeaveTypeCode = nameof(LeaveTypeCode);
+    public const string LeaveTypeDescription = nameof(LeaveTypeDescription);
+    public const string LeaveTypeHourly = nameof(LeaveTypeHourly);
+    public const string LeaveTypePaid = nameof(LeaveTypePaid);
+    public const string LeaveTypeRemove = nameof(LeaveTypeRemove);
+    public const string LeaveTypeAdd = nameof(LeaveTypeAdd);
+    public const string LeaveTypeSave = nameof(LeaveTypeSave);
 }
