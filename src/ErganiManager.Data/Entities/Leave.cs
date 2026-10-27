@@ -26,6 +26,10 @@ public class Leave
     public TimeOnly? StartTime { get; set; }
     public TimeOnly? EndTime { get; set; }
 
+    /// <summary>Declared shift times retained for calendar, daily status and reports even for whole-day leave.</summary>
+    public TimeOnly? DeclaredStartTime { get; set; }
+    public TimeOnly? DeclaredEndTime { get; set; }
+
     /// <summary>f_year — the year the leave refers to (optional).</summary>
     public int? ReferenceYear { get; set; }
 
