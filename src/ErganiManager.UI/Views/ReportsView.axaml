@@ -231,7 +231,7 @@
                                         <Grid ColumnDefinitions="120,130,180,70,200,80,100,90,120,80,100" ColumnSpacing="8">
                                             <TextBlock Text="{Binding $parent[UserControl].DataContext.Loc[Date]}" Foreground="Gray" FontSize="11" />
                                             <TextBlock Grid.Column="1" Text="{Binding $parent[UserControl].DataContext.Loc[Declared]}" Foreground="Gray" FontSize="11" />
-                                            <TextBlock Grid.Column="2" Text="{Binding $parent[UserControl].DataContext.Loc[Vm.Holiday type]}" Foreground="Gray" FontSize="11" />
+                                            <TextBlock Grid.Column="2" Text="{Binding $parent[UserControl].DataContext.Loc[Holidays]}" Foreground="Gray" FontSize="11" />
                                             <TextBlock Grid.Column="3" Text="{Binding $parent[UserControl].DataContext.Loc[Hours]}" Foreground="Gray" FontSize="11" />
                                             <TextBlock Grid.Column="4" Text="{Binding $parent[UserControl].DataContext.Loc[Actual]}" Foreground="Gray" FontSize="11" />
                                             <TextBlock Grid.Column="5" Text="{Binding $parent[UserControl].DataContext.Loc[ActualHours]}" Foreground="Gray" FontSize="11" />
