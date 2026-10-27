@@ -95,6 +95,10 @@ internal static class Program
 
             Services = BuildServiceProvider();
 
+            // Leave type settings are shared through the main database; the JSON file is only an offline cache.
+            ErganiManager.Core.Models.LeaveTypes.ConfigureDatabase(() =>
+                Services.GetRequiredService<ErganiManager.Core.Interfaces.IConnectionStateService>().GetDbOptions());
+
             // Messages produced by the lower layers (Data / Core / ErganiApi) are written in English
             // and translated here, in the language that is active when the message is created.
             var localization = Services.GetRequiredService<ILocalizationService>();
