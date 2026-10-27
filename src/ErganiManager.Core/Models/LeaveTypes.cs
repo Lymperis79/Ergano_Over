@@ -196,7 +196,7 @@ public static class LeaveTypes
 
             _configured = list;
             _lastRefreshUtc = DateTime.UtcNow;
-            WriteLocalCache(list);
+            try { WriteLocalCache(list); } catch { /* central save succeeded; local cache is optional */ }
         }
     }
 
