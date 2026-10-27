@@ -724,15 +724,17 @@ public partial class ReportService
 
         // Summary per category.
         var summary = report.AddSection(UiText.T("Summary per category"),
-            (UiText.T("Category"), 380), (UiText.T("Employees"), 100), (UiText.T("Days"), 80), (UiText.T("Hours"), 100));
+            (UiText.T("Category"), 340), (UiText.T("Paid by employer"), 150), (UiText.T("Employees"), 100), (UiText.T("Days"), 80), (UiText.T("Hours"), 100));
         foreach (var g in byCategory)
         {
             var hourly = g.Where(l => l.Start != null && l.End != null).Sum(l => SpanHours(l.Start!.Value, l.End!.Value));
-            summary.Add(ErganiManager.Core.Models.LeaveTypes.Label(g.Key), g.Select(l => l.EmployeeId).Distinct().Count().ToString(Inv),
-                g.Count().ToString(Inv), hourly > 0 ? ReportFormat.Hours(hourly) : string.Empty);
+            summary.Add(ErganiManager.Core.Models.LeaveTypes.Label(g.Key),
+                (ErganiManager.Core.Models.LeaveTypes.Find(g.Key)?.IsPaid ?? true) ? UiText.T("Yes") : UiText.T("No"),
+                g.Select(l => l.EmployeeId).Distinct().Count().ToString(Inv), g.Count().ToString(Inv),
+                hourly > 0 ? ReportFormat.Hours(hourly) : string.Empty);
         }
         if (byCategory.Count > 0)
-            summary.Add(RowStyle.Total, UiText.T("All"), leaves.Select(l => l.EmployeeId).Distinct().Count().ToString(Inv),
+            summary.Add(RowStyle.Total, UiText.T("All"), string.Empty, leaves.Select(l => l.EmployeeId).Distinct().Count().ToString(Inv),
                 leaves.Count.ToString(Inv), string.Empty);
 
         // Details: one group per category, consecutive days of the same holiday merged into one row.
@@ -792,6 +794,7 @@ public partial class ReportService
     {
         if (previous.EmployeeId != next.EmployeeId || previous.TypeCode != next.TypeCode ||
             previous.Start != next.Start || previous.End != next.End ||
+            previous.DeclaredStart != next.DeclaredStart || previous.DeclaredEnd != next.DeclaredEnd ||
             (previous.Comments ?? string.Empty) != (next.Comments ?? string.Empty) || next.Date <= previous.Date)
             return false;
 
