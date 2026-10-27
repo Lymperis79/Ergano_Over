@@ -40,6 +40,16 @@ public static class LeaveTypes
         }
     }
 
+    /// <summary>Forces a fresh read from the central database, falling back to the local cache when offline.</summary>
+    public static void Refresh()
+    {
+        lock (Gate)
+        {
+            _lastRefreshUtc = DateTime.MinValue;
+            RefreshFromDatabase();
+        }
+    }
+
     public static IReadOnlyList<LeaveTypeInfo> All
     {
         get
