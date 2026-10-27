@@ -407,11 +407,15 @@ public partial class ReportsViewModel : ViewModelBase, IAdminSectionViewModel
             var recordedOvertime = (_payrollOvertime?.Months ?? new List<OvertimeReportMonth>())
                 .GroupBy(m => (m.EmployeeId, m.Year, m.Month))
                 .ToDictionary(g => g.Key, g => g.Sum(m => m.TotalHours));
-            sb.AppendLine(string.Join(";", new[] { Loc["Vm.Employee"], Loc["Vm.Month"], Loc["Vm.Scheduled hours"], Loc["Vm.Actual hours"], Loc["Vm.Difference"], Loc["Vm.Night hours"], Loc["Vm.Overtime hours"], Loc["Vm.Recorded overtime"] }));
+            sb.AppendLine(string.Join(";", new[] { Loc["Vm.Employee"], Loc["Vm.Month"], Loc["Vm.Holiday type"], Loc["Vm.Scheduled hours"], Loc["Vm.Actual hours"], Loc["Vm.Difference"], Loc["Vm.Night hours"], Loc["Vm.Overtime hours"], Loc["Vm.Recorded overtime"] }));
             foreach (var m in _summary.Months.OrderBy(x => x.EmployeeName, StringComparer.CurrentCultureIgnoreCase).ThenBy(x => x.Year).ThenBy(x => x.Month))
             {
                 recordedOvertime.TryGetValue((m.EmployeeId, m.Year, m.Month), out var recorded);
-                sb.AppendLine(string.Join(";", Q(m.EmployeeName), m.MonthLabel, ReportFormat.Hours(m.DeclaredHours), ReportFormat.Hours(m.ActualHours), CsvDiff(m.DiffHours), ReportFormat.Hours(m.NightHours), ReportFormat.Hours(m.OvertimeHours), ReportFormat.Hours(recorded)));
+                var holidayTypes = string.Join(", ", m.Days
+                    .Where(d => !string.IsNullOrWhiteSpace(d.HolidayType))
+                    .Select(d => d.HolidayType.Trim())
+                    .Distinct(StringComparer.CurrentCultureIgnoreCase));
+                sb.AppendLine(string.Join(";", Q(m.EmployeeName), m.MonthLabel, Q(holidayTypes), ReportFormat.Hours(m.DeclaredHours), ReportFormat.Hours(m.ActualHours), CsvDiff(m.DiffHours), ReportFormat.Hours(m.NightHours), ReportFormat.Hours(m.OvertimeHours), ReportFormat.Hours(recorded)));
             }
         }
         else if (IsOvertimeReport && _overtime != null)
