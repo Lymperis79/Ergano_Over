@@ -108,6 +108,7 @@ public partial class HolidayDialogViewModel : ViewModelBase
         int companyId, EmployeeDto employee, IEnumerable<BranchDto> branches,
         DateOnly? prefillFrom, DateOnly? prefillTo)
     {
+        LeaveTypes.Refresh(); // Pick up administrator changes made on another PC.
         _companyId = companyId;
         _employee  = employee;
 
