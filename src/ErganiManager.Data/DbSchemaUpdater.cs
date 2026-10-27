@@ -138,6 +138,10 @@ public static class DbSchemaUpdater
             "ALTER TABLE ApiSubmissionLogs ADD COLUMN ScheduleDate TEXT NULL",
             "ALTER TABLE ApiSubmissionLogs ADD ScheduleDate date NULL",
             "ALTER TABLE ApiSubmissionLogs ADD COLUMN ScheduleDate DATE NULL"),
+        new("LeaveTypeConfigurations", "PaymentCategory",
+            "ALTER TABLE LeaveTypeConfigurations ADD COLUMN PaymentCategory TEXT NOT NULL DEFAULT ''",
+            "ALTER TABLE LeaveTypeConfigurations ADD PaymentCategory nvarchar(20) NOT NULL CONSTRAINT DF_LeaveTypeConfigurations_PaymentCategory DEFAULT ''",
+            "ALTER TABLE LeaveTypeConfigurations ADD COLUMN PaymentCategory VARCHAR(20) NOT NULL DEFAULT ''"),
     };
 
     private static string? _lastCheckedKey;
