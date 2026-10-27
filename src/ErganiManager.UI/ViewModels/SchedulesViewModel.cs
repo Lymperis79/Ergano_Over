@@ -621,7 +621,9 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
                 ? string.Empty
                 : BuildOvertimeStatusText(dayOvertime);
             official.TryGetValue(date, out var officialName);
-            var userHolidayText = dayLeaves is null ? string.Empty : string.Join(" · ", dayLeaves.Select(l => LeaveTypes.Find(l.LeaveTypeCode)?.LocalizedDescription ?? l.LeaveTypeCode));
+            var userHolidayText = dayLeaves is null ? string.Empty : string.Join(" · ", dayLeaves.Select(l =>
+                (LeaveTypes.Find(l.LeaveTypeCode)?.LocalizedDescription ?? l.LeaveTypeCode) +
+                (LeaveTypes.Find(l.LeaveTypeCode)?.IsPaid == false ? $" ({Loc["Vm.Unpaid"]})" : string.Empty)));
             // Annual leave takes precedence over the imported work-schedule status in the calendar.
             var hasAnnualLeave = dayLeaves?.Any(l => string.Equals(l.LeaveTypeCode, "ΑΔΚΑΝ", StringComparison.OrdinalIgnoreCase)) == true;
             var tooltip = string.Join("\n", new[]
