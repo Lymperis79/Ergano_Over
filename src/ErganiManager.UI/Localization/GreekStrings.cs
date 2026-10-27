@@ -707,6 +707,8 @@ public static class GreekStrings
         ["Vm.Excel Yes"] = "Ναι",
         ["Vm.Declared holiday"] = "Δηλωμένη άδεια",
         ["Vm.Holiday type"] = "Τύπος άδειας",
+        ["Vm.Declared holiday days"] = "Ημέρες δηλωμένης άδειας",
+        ["Vm.Holiday types"] = "Τύποι αδειών",
         ["Vm.Excel No"] = "Όχι",
         ["Vm.Excel Partial"] = "Μερικώς",
         ["Vm.Excel Holiday"] = "Αργία",
