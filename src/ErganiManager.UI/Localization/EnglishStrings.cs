@@ -1570,5 +1570,14 @@ public static class EnglishStrings
         ["Vm.This will send the holidays of {0} day(s) for {1} employee(s) in {2} in one request per branch, so you get one protocol."] = "This will send the holidays of {0} day(s) for {1} employee(s) in {2} in one request per branch, so you get one protocol.",
         ["Vm.Sending {0} holiday day(s) to Ergani, all employees in one request per branch…"] = "Sending {0} holiday day(s) to Ergani, all employees in one request per branch…",
         ["Vm.✅ Copied {0} entry(ies) to {1} employee(s). You can undo this until the copied entries are submitted."] = "✅ Copied {0} entry(ies) to {1} employee(s). You can undo this until the copied entries are submitted.",
+        [L.AdminLeaveTypes] = "Leave types",
+        [L.AdminLeaveTypesDescription] = "Edit Ergani leave categories. Paid means paid by the employer; verify each classification with your payroll rules. Codes must match the Ergani specification.",
+        [L.LeaveTypeCode] = "Code",
+        [L.LeaveTypeDescription] = "Description",
+        [L.LeaveTypeHourly] = "Hourly",
+        [L.LeaveTypePaid] = "Paid",
+        [L.LeaveTypeRemove] = "Delete leave type",
+        [L.LeaveTypeAdd] = "Add type",
+        [L.LeaveTypeSave] = "Save types",
     };
 }
