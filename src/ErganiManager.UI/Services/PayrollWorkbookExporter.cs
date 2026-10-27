@@ -73,7 +73,8 @@ public static class PayrollWorkbookExporter
         {
             T("Vm.Employee"), T("Vm.Date"), T("Vm.Declared"), T("Vm.Declared hours"),
             T("Vm.Actual hours"), T("Vm.Difference (hours)"), T("Vm.Night hours"), T("Vm.Overtime hours"),
-            T("Vm.Rounded hours"), T("Vm.Rounded in → out"), T("Vm.Scan pairs")
+            T("Vm.Rounded hours"), T("Vm.Rounded in → out"), T("Vm.Scan pairs"),
+            T("Vm.Declared holiday"), T("Vm.Holiday type")
         };
         for (var c = 0; c < detailHeaders.Length; c++) detail.Cell(HeaderRow, c + 1).Value = detailHeaders[c];
         StyleHeader(detail.Range(HeaderRow, 1, HeaderRow, detailHeaders.Length));
