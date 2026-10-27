@@ -19,7 +19,7 @@
                     <TextBlock Grid.Row="0" Text="{Binding Title}" FontSize="17" FontWeight="Bold" />
 
                     <!-- Fixed-height form area: only the holiday list below scrolls. -->
-                    <Grid Grid.Row="1" ColumnDefinitions="*,*,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto"
+                    <Grid Grid.Row="1" ColumnDefinitions="*,*,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto"
                           ColumnSpacing="12" RowSpacing="8">
 
                         <StackPanel Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2" Spacing="4">
@@ -68,15 +68,24 @@
                         </StackPanel>
 
                         <StackPanel Grid.Row="3" Grid.Column="0" Spacing="4">
+                            <TextBlock Text="Declared shift start / Έναρξη βάρδιας" FontWeight="SemiBold" />
+                            <TimePicker SelectedTime="{Binding DeclaredStartTime}" ClockIdentifier="24HourClock" />
+                        </StackPanel>
+                        <StackPanel Grid.Row="3" Grid.Column="1" Spacing="4">
+                            <TextBlock Text="Declared shift end / Λήξη βάρδιας" FontWeight="SemiBold" />
+                            <TimePicker SelectedTime="{Binding DeclaredEndTime}" ClockIdentifier="24HourClock" />
+                        </StackPanel>
+
+                        <StackPanel Grid.Row="4" Grid.Column="0" Spacing="4">
                             <TextBlock Text="{Binding Loc[ReferenceYearOptional]}" FontWeight="SemiBold" />
                             <TextBox Text="{Binding ReferenceYear}" PlaceholderText="e.g. 2026" MaxLength="4" />
                         </StackPanel>
-                        <StackPanel Grid.Row="3" Grid.Column="1" Spacing="4">
+                        <StackPanel Grid.Row="4" Grid.Column="1" Spacing="4">
                             <TextBlock Text="{Binding Loc[EntitledLeaveDaysOptional]}" FontWeight="SemiBold" />
                             <TextBox Text="{Binding EntitledDays}" PlaceholderText="e.g. 20" MaxLength="3" />
                         </StackPanel>
 
-                        <StackPanel Grid.Row="4" Grid.Column="0" Grid.ColumnSpan="3" Spacing="4">
+                        <StackPanel Grid.Row="5" Grid.Column="0" Grid.ColumnSpan="3" Spacing="4">
                             <TextBlock Text="{Binding Loc[CommentsOptionalMax200]}" FontWeight="SemiBold" />
                             <TextBox Text="{Binding Comments}" MaxLength="200" />
                         </StackPanel>
