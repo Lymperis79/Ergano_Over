@@ -90,12 +90,12 @@ public class TodayStatusService : ITodayStatusService
         var isWorkDay = wholeDayLeave == null && sched != null
             && (sched.WorkType == Entities.WorkType.Office || sched.WorkType == Entities.WorkType.Home)
             && sched.StartTime.HasValue && sched.EndTime.HasValue;
-        TimeOnly? plannedStart = sched?.StartTime;
-        TimeOnly? plannedEnd   = sched?.EndTime;
+        TimeOnly? plannedStart = sched?.StartTime ?? wholeDayLeave?.DeclaredStartTime;
+        TimeOnly? plannedEnd   = sched?.EndTime ?? wholeDayLeave?.DeclaredEndTime;
 
         // ── plan ─────────────────────────────────────────────
-        dto.PlannedStart = isWorkDay ? plannedStart : null;
-        dto.PlannedEnd   = isWorkDay ? plannedEnd : null;
+        dto.PlannedStart = wholeDayLeave != null ? plannedStart : isWorkDay ? plannedStart : null;
+        dto.PlannedEnd   = wholeDayLeave != null ? plannedEnd : isWorkDay ? plannedEnd : null;
         dto.IsHome       = sched?.WorkType == Entities.WorkType.Home;
         dto.LeaveName    = leaveName;
         dto.ScheduleKind = wholeDayLeave != null ? TodayScheduleKind.Leave
