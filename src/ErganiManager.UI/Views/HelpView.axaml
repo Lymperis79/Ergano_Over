@@ -102,8 +102,7 @@
                 <StackPanel Spacing="3">
                     <TextBlock Text="{Binding SelectedTopic.Title}" FontSize="18"
                                FontWeight="Bold" TextWrapping="Wrap" />
-                    <TextBlock Text="{Binding IsEditing, StringFormat='Edit the selected topic. Changes are saved for this language only.'}"
-                               Opacity="0.72" TextWrapping="Wrap" />
+                    <TextBlock Text="{Binding EditHint}" Opacity="0.72" TextWrapping="Wrap" />
                 </StackPanel>
                 <TextBox Grid.Row="1" Text="{Binding EditText, UpdateSourceTrigger=PropertyChanged}"
                          AcceptsReturn="True" TextWrapping="Wrap"
@@ -128,7 +127,7 @@
             <TextBlock Text="{Binding StatusMessage}" TextWrapping="Wrap"
                        VerticalAlignment="Center" />
             <TextBlock Grid.Column="1" Text="{Binding NoResultsText}"
-                       IsVisible="{Binding SearchText.Length}"
+                       IsVisible="{Binding HasNoSearchResults}"
                        Opacity="0.65" VerticalAlignment="Center"
                        TextWrapping="Wrap" />
         </Grid>
