@@ -37,6 +37,9 @@ public class Company
     /// When false the scan is accepted on those days.</summary>
     public bool BlockClockInOnRestOrAbsentDay { get; set; } = true;
 
+    /// <summary>JSON array of enabled official holiday dates (yyyy-MM-dd), configured per company.</summary>
+    public string OfficialHolidayDatesJson { get; set; } = "[]";
+
     /// <summary>Bit mask of the events that send an alert mail (1 = early departure, the original behaviour).</summary>
     public int AlertEvents { get; set; } = 1;
 
