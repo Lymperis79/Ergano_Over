@@ -8,6 +8,8 @@ using ErganiManager.Core.Models;
 using System.Collections.ObjectModel;
 using System.Linq;
 using ErganiManager.UI.Localization;
+using ErganiManager.ErganiApi;
+using ErganiManager.ErganiApi.Services;
 
 namespace ErganiManager.UI.ViewModels;
 
@@ -39,7 +41,10 @@ public partial class AdministrationViewModel : ViewModelBase, IAdminSectionViewM
     private readonly ICompanyService _companyService;
     private readonly ICacheSyncService _cacheSync;
     private readonly IOfficialHolidayCatalogService _holidayCatalog;
+    private readonly IEmailAlertService _emailAlertService;
     private int? _activeCompanyId;
+    private CompanyDto? _loadedCompanySettings;
+    private bool _loadingCompanySettings;
 
     [ObservableProperty] private DateTimeOffset? _newOfficialHolidayDate = DateTimeOffset.Now;
     [ObservableProperty] private string _newOfficialHolidayName = string.Empty;
@@ -96,9 +101,40 @@ public partial class AdministrationViewModel : ViewModelBase, IAdminSectionViewM
     [ObservableProperty] private decimal? _autoClockOutMinutes = 15;
     [ObservableProperty] private string _autoClockOutStatus = string.Empty;
 
+    // Company-specific operational settings (loaded from the active company selected in the main shell).
+    [ObservableProperty] private string _companyErganiBaseUrl = ErganiEndpoints.TrialBaseUrl;
+    [ObservableProperty] private int _earlyClockInBlockMinutes = 15;
+    [ObservableProperty] private int _earlyDepartureAlertMinutes = 10;
+    [ObservableProperty] private bool _blockClockInWithoutSchedule = true;
+    [ObservableProperty] private bool _blockClockInOnRestOrAbsentDay = true;
+    [ObservableProperty] private bool _alertEmailEnabled;
+    [ObservableProperty] private bool _autoRetryFailedSubmissions = true;
+    [ObservableProperty] private string _alertEmailRecipients = string.Empty;
+    [ObservableProperty] private string _smtpHost = string.Empty;
+    [ObservableProperty] private int? _smtpPort = 465;
+    [ObservableProperty] private string _smtpUser = string.Empty;
+    [ObservableProperty] private string _smtpPassword = string.Empty;
+    [ObservableProperty] private bool _smtpUseTls = true;
+    [ObservableProperty] private bool _alertEvEarlyDeparture = true;
+    [ObservableProperty] private bool _alertEvErganiDown;
+    [ObservableProperty] private bool _alertEvInternetDown;
+    [ObservableProperty] private bool _alertEvEarlyClockIn;
+    [ObservableProperty] private bool _alertEvLateClockIn;
+    [ObservableProperty] private bool _alertEvNoSchedule;
+    [ObservableProperty] private bool _alertEvScanRejected;
+    [ObservableProperty] private bool _alertEvAutomaticClockOut;
+    [ObservableProperty] private int _clockInAlertMinutes = 10;
+    [ObservableProperty] private bool _isTestingCompanyEmail;
+    [ObservableProperty] private bool _companyEmailTestSuccess;
+    [ObservableProperty] private string _companyEmailTestResult = string.Empty;
+    [ObservableProperty] private string _companySettingsStatus = string.Empty;
+    [ObservableProperty] private bool _isCompanySettingsDirty;
+
+
+
     public AdministrationViewModel(IDatabaseMaintenanceService maintenance, IRoundingSettingsService rounding,
         IPortalSettingsService portal, ICompanyService companyService, ICacheSyncService cacheSync,
-        IOfficialHolidayCatalogService holidayCatalog)
+        IOfficialHolidayCatalogService holidayCatalog, IEmailAlertService emailAlertService)
     {
         _maintenance = maintenance;
         _rounding = rounding;
@@ -106,6 +142,7 @@ public partial class AdministrationViewModel : ViewModelBase, IAdminSectionViewM
         _companyService = companyService;
         _cacheSync = cacheSync;
         _holidayCatalog = holidayCatalog;
+        _emailAlertService = emailAlertService;
         var schedule = portal.Current.Schedule;
         var workCards = portal.Current.WorkCards;
 
@@ -434,12 +471,233 @@ public partial class AdministrationViewModel : ViewModelBase, IAdminSectionViewM
         catch (Exception ex) { RoundingStatus = $"❌ {ex.Message}"; }
     }
 
+
+    private int ComposeCompanyAlertEvents() =>
+        (AlertEvEarlyDeparture ? (int)AlertEvent.EarlyDeparture : 0) |
+        (AlertEvErganiDown ? (int)AlertEvent.ErganiDown : 0) |
+        (AlertEvInternetDown ? (int)AlertEvent.InternetDown : 0) |
+        (AlertEvEarlyClockIn ? (int)AlertEvent.EarlyClockIn : 0) |
+        (AlertEvLateClockIn ? (int)AlertEvent.LateClockIn : 0) |
+        (AlertEvNoSchedule ? (int)AlertEvent.NoScheduleClockIn : 0) |
+        (AlertEvScanRejected ? (int)AlertEvent.ScanRejected : 0) |
+        (AlertEvAutomaticClockOut ? (int)AlertEvent.AutomaticClockOut : 0);
+
+    private void ApplyCompanyAlertEvents(int mask)
+    {
+        var events = (AlertEvent)mask;
+        AlertEvEarlyDeparture = events.HasFlag(AlertEvent.EarlyDeparture);
+        AlertEvErganiDown = events.HasFlag(AlertEvent.ErganiDown);
+        AlertEvInternetDown = events.HasFlag(AlertEvent.InternetDown);
+        AlertEvEarlyClockIn = events.HasFlag(AlertEvent.EarlyClockIn);
+        AlertEvLateClockIn = events.HasFlag(AlertEvent.LateClockIn);
+        AlertEvNoSchedule = events.HasFlag(AlertEvent.NoScheduleClockIn);
+        AlertEvScanRejected = events.HasFlag(AlertEvent.ScanRejected);
+        AlertEvAutomaticClockOut = events.HasFlag(AlertEvent.AutomaticClockOut);
+    }
+
+    private async Task LoadCompanySettingsAsync()
+    {
+        if (_activeCompanyId is not { } companyId)
+        {
+            _loadedCompanySettings = null;
+            CompanySettingsStatus = Loc["Select a company in the main window to edit its settings."];
+            return;
+        }
+
+        try
+        {
+            var company = await _companyService.GetByIdAsync(companyId);
+            if (company == null)
+            {
+                CompanySettingsStatus = Loc["Could not load settings for the selected company."];
+                return;
+            }
+
+            await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() =>
+            {
+                _loadingCompanySettings = true;
+                try
+                {
+                    _loadedCompanySettings = company;
+                    CompanyErganiBaseUrl = string.IsNullOrWhiteSpace(company.ErganiBaseUrl)
+                        ? ErganiEndpoints.TrialBaseUrl : company.ErganiBaseUrl;
+                    EarlyClockInBlockMinutes = company.EarlyClockInBlockMinutes;
+                    EarlyDepartureAlertMinutes = company.EarlyDepartureAlertMinutes;
+                    BlockClockInWithoutSchedule = company.BlockClockInWithoutSchedule;
+                    BlockClockInOnRestOrAbsentDay = company.BlockClockInOnRestOrAbsentDay;
+                    AlertEmailEnabled = company.AlertEmailEnabled;
+                    AutoRetryFailedSubmissions = company.AutoRetryFailedSubmissions;
+                    AlertEmailRecipients = company.AlertEmailRecipients ?? string.Empty;
+                    SmtpHost = company.SmtpHost ?? string.Empty;
+                    SmtpPort = company.SmtpPort ?? 465;
+                    SmtpUser = company.SmtpUser ?? string.Empty;
+                    // Passwords are intentionally not returned by CompanyService. Blank means keep the stored password.
+                    SmtpPassword = string.Empty;
+                    SmtpUseTls = company.SmtpUseTls;
+                    ApplyCompanyAlertEvents(company.AlertEvents);
+                    ClockInAlertMinutes = company.ClockInAlertMinutes;
+                    CompanyEmailTestResult = string.Empty;
+                    CompanyEmailTestSuccess = false;
+                    CompanySettingsStatus = string.Format(Loc["Settings loaded for {0}."], company.Name);
+                    IsCompanySettingsDirty = false;
+                }
+                finally { _loadingCompanySettings = false; }
+            });
+        }
+        catch (Exception ex)
+        {
+            CompanySettingsStatus = string.Format(Loc["Could not load company settings: {0}"], ex.Message);
+        }
+    }
+
+    private void MarkCompanySettingsDirty()
+    {
+        if (!_loadingCompanySettings && _loadedCompanySettings != null)
+            IsCompanySettingsDirty = true;
+    }
+
+    partial void OnCompanyErganiBaseUrlChanged(string value) => MarkCompanySettingsDirty();
+    partial void OnEarlyClockInBlockMinutesChanged(int value) => MarkCompanySettingsDirty();
+    partial void OnEarlyDepartureAlertMinutesChanged(int value) => MarkCompanySettingsDirty();
+    partial void OnBlockClockInWithoutScheduleChanged(bool value) => MarkCompanySettingsDirty();
+    partial void OnBlockClockInOnRestOrAbsentDayChanged(bool value) => MarkCompanySettingsDirty();
+    partial void OnAlertEmailEnabledChanged(bool value) => MarkCompanySettingsDirty();
+    partial void OnAutoRetryFailedSubmissionsChanged(bool value) => MarkCompanySettingsDirty();
+    partial void OnAlertEmailRecipientsChanged(string value) => MarkCompanySettingsDirty();
+    partial void OnSmtpHostChanged(string value) => MarkCompanySettingsDirty();
+    partial void OnSmtpPortChanged(int? value) => MarkCompanySettingsDirty();
+    partial void OnSmtpUserChanged(string value) => MarkCompanySettingsDirty();
+    partial void OnSmtpPasswordChanged(string value) => MarkCompanySettingsDirty();
+    partial void OnSmtpUseTlsChanged(bool value) => MarkCompanySettingsDirty();
+    partial void OnAlertEvEarlyDepartureChanged(bool value) => MarkCompanySettingsDirty();
+    partial void OnAlertEvErganiDownChanged(bool value) => MarkCompanySettingsDirty();
+    partial void OnAlertEvInternetDownChanged(bool value) => MarkCompanySettingsDirty();
+    partial void OnAlertEvEarlyClockInChanged(bool value) => MarkCompanySettingsDirty();
+    partial void OnAlertEvLateClockInChanged(bool value) => MarkCompanySettingsDirty();
+    partial void OnAlertEvNoScheduleChanged(bool value) => MarkCompanySettingsDirty();
+    partial void OnAlertEvScanRejectedChanged(bool value) => MarkCompanySettingsDirty();
+    partial void OnAlertEvAutomaticClockOutChanged(bool value) => MarkCompanySettingsDirty();
+    partial void OnClockInAlertMinutesChanged(int value) => MarkCompanySettingsDirty();
+
+    [RelayCommand]
+    private async Task SaveCompanySettingsAsync()
+    {
+        if (_activeCompanyId is not { } companyId)
+        {
+            CompanySettingsStatus = Loc["Select a company in the main window to edit its settings."];
+            return;
+        }
+
+        if (_loadedCompanySettings == null || _loadedCompanySettings.Id != companyId)
+        {
+            CompanySettingsStatus = Loc["Company settings have not finished loading. Please try again."];
+            return;
+        }
+
+        if (!Uri.TryCreate(CompanyErganiBaseUrl, UriKind.Absolute, out var baseUri) ||
+            (baseUri.Scheme != Uri.UriSchemeHttp && baseUri.Scheme != Uri.UriSchemeHttps))
+        {
+            CompanySettingsStatus = Loc["Enter a valid Ergani API URL beginning with http:// or https://."];
+            return;
+        }
+
+        if (EarlyClockInBlockMinutes is < 0 or > 120 ||
+            EarlyDepartureAlertMinutes is < 0 or > 120 ||
+            ClockInAlertMinutes is < 0 or > 240 ||
+            SmtpPort is < 1 or > 65535)
+        {
+            CompanySettingsStatus = Loc["One or more settings are outside the allowed range."];
+            return;
+        }
+
+        try
+        {
+            var company = await _companyService.GetByIdAsync(companyId)
+                ?? throw new InvalidOperationException(Loc["Could not load settings for the selected company."]);
+            company.ErganiBaseUrl = CompanyErganiBaseUrl.Trim();
+            company.EarlyClockInBlockMinutes = EarlyClockInBlockMinutes;
+            company.EarlyDepartureAlertMinutes = EarlyDepartureAlertMinutes;
+            company.BlockClockInWithoutSchedule = BlockClockInWithoutSchedule;
+            company.BlockClockInOnRestOrAbsentDay = BlockClockInOnRestOrAbsentDay;
+            company.AlertEmailEnabled = AlertEmailEnabled;
+            company.AutoRetryFailedSubmissions = AutoRetryFailedSubmissions;
+            company.AlertEmailRecipients = string.IsNullOrWhiteSpace(AlertEmailRecipients) ? null : AlertEmailRecipients.Trim();
+            company.SmtpHost = string.IsNullOrWhiteSpace(SmtpHost) ? null : SmtpHost.Trim();
+            company.SmtpPort = SmtpPort;
+            company.SmtpUser = string.IsNullOrWhiteSpace(SmtpUser) ? null : SmtpUser.Trim();
+            company.SmtpPasswordPlainText = string.IsNullOrWhiteSpace(SmtpPassword) ? null : SmtpPassword;
+            company.SmtpUseTls = SmtpUseTls;
+            company.AlertEvents = ComposeCompanyAlertEvents();
+            company.ClockInAlertMinutes = ClockInAlertMinutes;
+
+            await _companyService.UpdateAsync(company);
+            var sync = await _cacheSync.RefreshCacheFromMainDatabaseAsync(companyId);
+            _loadedCompanySettings = await _companyService.GetByIdAsync(companyId);
+            SmtpPassword = string.Empty;
+            IsCompanySettingsDirty = false;
+            CompanySettingsStatus = sync.Success
+                ? Loc["Company settings saved."]
+                : Loc["Company settings saved, but the terminal cache could not be refreshed: "] + sync.ErrorMessage;
+        }
+        catch (Exception ex)
+        {
+            CompanySettingsStatus = string.Format(Loc["Could not save company settings: {0}"], ex.Message);
+        }
+    }
+
+    [RelayCommand]
+    private async Task TestCompanyEmailAsync()
+    {
+        CompanyEmailTestResult = string.Empty;
+        CompanyEmailTestSuccess = false;
+        if (string.IsNullOrWhiteSpace(SmtpHost))
+        {
+            CompanyEmailTestResult = Loc["Enter the SMTP host."];
+            return;
+        }
+        if (string.IsNullOrWhiteSpace(AlertEmailRecipients))
+        {
+            CompanyEmailTestResult = Loc["Enter at least one recipient email address."];
+            return;
+        }
+        if (!string.IsNullOrWhiteSpace(SmtpUser) && string.IsNullOrEmpty(SmtpPassword))
+        {
+            CompanyEmailTestResult = Loc["Enter the SMTP password to test authenticated SMTP settings."];
+            return;
+        }
+
+        IsTestingCompanyEmail = true;
+        CompanyEmailTestResult = Loc["Sending test email..."];
+        try
+        {
+            var result = await _emailAlertService.TestSmtpAsync(new EmailSmtpTestRequest(
+                SmtpHost.Trim(), SmtpPort ?? 465,
+                string.IsNullOrWhiteSpace(SmtpUser) ? null : SmtpUser.Trim(),
+                string.IsNullOrEmpty(SmtpPassword) ? null : SmtpPassword,
+                AlertEmailRecipients.Trim(), SmtpUseTls));
+            CompanyEmailTestSuccess = result.Success;
+            CompanyEmailTestResult = result.Success
+                ? Loc["Test email sent. Check the recipient inbox."]
+                : "❌ " + (result.ErrorMessage ?? Loc["Email test failed."]);
+        }
+        catch (Exception ex)
+        {
+            CompanyEmailTestSuccess = false;
+            CompanyEmailTestResult = "❌ " + ex.Message;
+        }
+        finally { IsTestingCompanyEmail = false; }
+    }
+
+
     public string SuggestedBackupName => _maintenance.SuggestBackupFileName();
 
     public void Initialize(UserSession session)
     {
         Refresh();
+        var previousCompanyId = _activeCompanyId;
         _activeCompanyId = session.CompanyId;
+        if (previousCompanyId != _activeCompanyId || _loadedCompanySettings == null)
+            _ = LoadCompanySettingsAsync();
         _ = LoadOfficialHolidaysAsync();
     }
 
