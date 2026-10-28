@@ -1050,6 +1050,7 @@ public static class EnglishStrings
         ["Vm.Mail event 16"] = "Late clock-in",
         ["Vm.Mail event 32"] = "Clock-in without schedule",
         ["Vm.Mail event 64"] = "Scan rejected",
+        ["Vm.Mail event 128"] = "Automatic clock-out",
         ["Vm.Mail sent"] = "Sent",
         ["Vm.Mail queued"] = "Waiting to be sent",
         ["Vm.Mail failed"] = "Failed",
