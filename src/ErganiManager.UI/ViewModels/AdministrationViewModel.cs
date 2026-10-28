@@ -452,7 +452,8 @@ public partial class AdministrationViewModel : ViewModelBase, IAdminSectionViewM
             }
 
             var enabledDates = CompanyHolidayCalendar.Parse(company.OfficialHolidayDatesJson);
-            foreach (var holiday in GreekHolidays.ForYear(DateTime.Today.Year).OrderBy(h => h.Date))
+            var displayYears = new[] { DateTime.Today.Year, DateTime.Today.Year + 1 };
+            foreach (var holiday in displayYears.SelectMany(GreekHolidays.ForYear).OrderBy(h => h.Date))
             {
                 var item = new OfficialHolidayEdit(holiday.Date, holiday.Name)
                 {
@@ -461,7 +462,7 @@ public partial class AdministrationViewModel : ViewModelBase, IAdminSectionViewM
                 OfficialHolidays.Add(item);
             }
 
-            OfficialHolidaysStatus = string.Format(Loc[L.OfficialHolidaysLoaded], company.Name, DateTime.Today.Year);
+            OfficialHolidaysStatus = string.Format(Loc[L.OfficialHolidaysLoaded], company.Name, $"{DateTime.Today.Year}–{DateTime.Today.Year + 1}");
         }
         catch (Exception ex)
         {
@@ -482,8 +483,12 @@ public partial class AdministrationViewModel : ViewModelBase, IAdminSectionViewM
         {
             var company = await _companyService.GetByIdAsync(companyId)
                 ?? throw new InvalidOperationException(Loc[L.OfficialHolidaysLoadFailed]);
+            var displayedYears = new HashSet<int> { DateTime.Today.Year, DateTime.Today.Year + 1 };
+            var preservedDates = CompanyHolidayCalendar.Parse(company.OfficialHolidayDatesJson)
+                .Select(value => DateOnly.Parse(value))
+                .Where(date => !displayedYears.Contains(date.Year));
             company.OfficialHolidayDatesJson = CompanyHolidayCalendar.Serialize(
-                OfficialHolidays.Where(h => h.IsEnabled).Select(h => h.Date));
+                preservedDates.Concat(OfficialHolidays.Where(h => h.IsEnabled).Select(h => h.Date)));
             await _companyService.UpdateAsync(company);
             await _cacheSync.RefreshCacheFromMainDatabaseAsync(companyId);
             OfficialHolidaysStatus = Loc[L.OfficialHolidaysSaved];
