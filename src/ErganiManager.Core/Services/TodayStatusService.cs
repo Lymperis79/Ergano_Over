@@ -109,7 +109,9 @@ public class TodayStatusService : ITodayStatusService
                          : isWorkDay ? TodayScheduleKind.Work
                          : sched.WorkType == Entities.WorkType.Absent ? TodayScheduleKind.Absent
                          : TodayScheduleKind.Rest;
-        dto.IsExpectedToday = isWorkDay;
+        // A company-enabled official holiday does not require attendance, but the declared
+        // start/end times above remain available for display and reporting.
+        dto.IsExpectedToday = isWorkDay && !isOfficialHoliday;
 
         // ── clockings ────────────────────────────────────────
         var arrivals   = cards.Where(c => c.MovementType == "Arrival").ToList();
