@@ -95,6 +95,13 @@ public static class L
     public const string OfficialHolidaysLoadFailedDetails = nameof(OfficialHolidaysLoadFailedDetails);
     public const string OfficialHolidaysSaved = nameof(OfficialHolidaysSaved);
     public const string OfficialHolidaysSaveFailed = nameof(OfficialHolidaysSaveFailed);
+    public const string OfficialHolidaysSynchronize = nameof(OfficialHolidaysSynchronize);
+    public const string OfficialHolidaysSyncComplete = nameof(OfficialHolidaysSyncComplete);
+    public const string OfficialHolidayAddCustomTitle = nameof(OfficialHolidayAddCustomTitle);
+    public const string OfficialHolidayNamePlaceholder = nameof(OfficialHolidayNamePlaceholder);
+    public const string OfficialHolidayAddCustom = nameof(OfficialHolidayAddCustom);
+    public const string OfficialHolidayCustomRequired = nameof(OfficialHolidayCustomRequired);
+    public const string OfficialHolidayCustomAdded = nameof(OfficialHolidayCustomAdded);
     public const string NightSettingsApply  = nameof(NightSettingsApply);
     public const string EarlyClockInBlock   = nameof(EarlyClockInBlock);
     public const string EarlyDepartureAlert = nameof(EarlyDepartureAlert);
