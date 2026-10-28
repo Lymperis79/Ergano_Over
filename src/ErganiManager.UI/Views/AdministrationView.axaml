@@ -55,9 +55,18 @@
                                     <TextBlock Text="{Binding Loc[OfficialHolidaysEffect]}" Foreground="Gray" FontSize="12" TextWrapping="Wrap" />
                                     <Separator />
                                     <TextBlock Text="{Binding Loc[OfficialHolidayAddCustomTitle]}" FontWeight="SemiBold" />
-                                    <Grid ColumnDefinitions="180,*" ColumnSpacing="10">
-                                        <DatePicker Grid.Column="0" SelectedDate="{Binding NewOfficialHolidayDate, Mode=TwoWay}" />
-                                        <TextBox Grid.Column="1" Text="{Binding NewOfficialHolidayName, Mode=TwoWay}" PlaceholderText="{Binding Loc[OfficialHolidayNamePlaceholder]}" />
+                                    <Grid RowDefinitions="Auto,Auto" RowSpacing="8">
+                                        <StackPanel Grid.Row="0" Spacing="4">
+                                            <TextBlock Text="{Binding Loc[Date]}" Foreground="Gray" FontSize="11" />
+                                            <DatePicker SelectedDate="{Binding NewOfficialHolidayDate, Mode=TwoWay}"
+                                                        HorizontalAlignment="Stretch" MinWidth="0" />
+                                        </StackPanel>
+                                        <StackPanel Grid.Row="1" Spacing="4">
+                                            <TextBlock Text="{Binding Loc[OfficialHolidayNamePlaceholder]}" Foreground="Gray" FontSize="11" />
+                                            <TextBox Text="{Binding NewOfficialHolidayName, Mode=TwoWay}"
+                                                     PlaceholderText="{Binding Loc[OfficialHolidayNamePlaceholder]}"
+                                                     HorizontalAlignment="Stretch" MinWidth="0" />
+                                        </StackPanel>
                                     </Grid>
                                     <Button Content="{Binding Loc[OfficialHolidayAddCustom]}" Command="{Binding AddCustomOfficialHolidayCommand}" HorizontalAlignment="Left" />
                                     <Button Content="{Binding Loc[Save]}" Command="{Binding SaveOfficialHolidaysCommand}" Classes="accent" HorizontalAlignment="Left" />
