@@ -104,7 +104,7 @@ public static class EnglishStrings
         [L.OfficialHolidayNamePlaceholder] = "Holiday name",
         [L.OfficialHolidayAddCustom] = "Add holiday",
         [L.OfficialHolidayCustomRequired] = "Select a date and enter a holiday name.",
-        [L.OfficialHolidayCustomAdded] = "Custom holiday saved permanently in the main database."
+        [L.OfficialHolidayCustomAdded] = "Custom holiday saved permanently in the main database.",
         [L.NightSettingsApply] = "Generate the report again to apply the change.",
         [L.ReportNightHours] = "Night hours",
         [L.EarlyClockInBlock] = "Block clock-in earlier than (minutes before shift start, 0 = off)",
