@@ -98,6 +98,7 @@ public class TodayEmployeeStatusDto
     public bool HasLeft { get; set; }
     public bool IsNotArrived { get; set; }
     public bool IsExpectedToday { get; set; }
+    public bool IsOfficialHoliday { get; set; }
 
     public bool IsError => Level == StatusLevel.Error;
     public bool IsWarning => Level == StatusLevel.Warning;
