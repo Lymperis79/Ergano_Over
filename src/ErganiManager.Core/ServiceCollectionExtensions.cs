@@ -35,6 +35,7 @@ public static class ServiceCollectionExtensions
         services.AddTransient<IReportService, ReportService>();
         services.AddTransient<ILeaveService, LeaveService>();
         services.AddTransient<IDatabaseMaintenanceService, DatabaseMaintenanceService>();
+        services.AddTransient<IOfficialHolidayCatalogService, OfficialHolidayCatalogService>();
 
         return services;
     }
