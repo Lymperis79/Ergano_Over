@@ -28,7 +28,7 @@ public partial class DashboardViewModel : ViewModelBase, IAdminSectionViewModel
     [ObservableProperty] private string _lastUpdatedText = string.Empty;
     [ObservableProperty] private string _statusMessage = string.Empty;
     [ObservableProperty] private bool _isLoading;
-    [ObservableProperty] private bool _hasCompany;\n\n    public bool CanRefresh => !IsLoading;\n    public bool HasCategories => Categories.Count > 0;\n    public bool HasRecentActivity => RecentActivity.Count > 0;\n    public bool HasStatusMessage => !string.IsNullOrWhiteSpace(StatusMessage);\n\n    partial void OnIsLoadingChanged(bool value) => OnPropertyChanged(nameof(CanRefresh));\n    partial void OnStatusMessageChanged(string value) => OnPropertyChanged(nameof(HasStatusMessage));
+    [ObservableProperty] private bool _hasCompany;\n\n    public bool CanRefresh => !IsLoading;\n    public bool HasCategories => Categories.Count > 0;\n    public bool NoCategories => Categories.Count == 0;\n    public bool HasRecentActivity => RecentActivity.Count > 0;\n    public bool NoRecentActivity => RecentActivity.Count == 0;\n    public bool HasStatusMessage => !string.IsNullOrWhiteSpace(StatusMessage);\n\n    partial void OnIsLoadingChanged(bool value) => OnPropertyChanged(nameof(CanRefresh));\n    partial void OnStatusMessageChanged(string value) => OnPropertyChanged(nameof(HasStatusMessage));
 
     public ObservableCollection<DashboardCategoryRow> Categories { get; } = new();
     public ObservableCollection<DashboardActivityRow> RecentActivity { get; } = new();
@@ -157,7 +157,7 @@ public partial class DashboardViewModel : ViewModelBase, IAdminSectionViewModel
                 });
             }
 
-            OnPropertyChanged(nameof(HasRecentActivity));\n            LastUpdatedText = string.Format(Loc["Dashboard.LastUpdated"], DateTime.Now.ToString("dd/MM/yyyy HH:mm:ss"));
+            OnPropertyChanged(nameof(HasRecentActivity));\n            OnPropertyChanged(nameof(NoRecentActivity));\n            LastUpdatedText = string.Format(Loc["Dashboard.LastUpdated"], DateTime.Now.ToString("dd/MM/yyyy HH:mm:ss"));
             if (Categories.Count == 0)
                 StatusMessage = Loc["Dashboard.NoSubmissionsInPeriod"];
         }
