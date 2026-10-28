@@ -1685,5 +1685,9 @@ public static class GreekStrings
         [L.LeaveTypeRemove] = "Διαγραφή τύπου άδειας",
         [L.LeaveTypeAdd] = "Προσθήκη τύπου",
         [L.LeaveTypeSave] = "Αποθήκευση τύπων",
+
+        ["HealthMissingErganiCredentials"] = "Λείπει το αποθηκευμένο όνομα χρήστη ή ο κωδικός πρόσβασης του ΕΡΓΑΝΗ.",
+        ["HealthErganiAuthenticationSucceeded"] = "Η πιστοποίηση στο ΕΡΓΑΝΗ ολοκληρώθηκε επιτυχώς.",
+        ["HealthErganiAuthenticationFailed"] = "Η πιστοποίηση στο ΕΡΓΑΝΗ απέτυχε ή η υπηρεσία δεν είναι διαθέσιμη.",
     };
 }
