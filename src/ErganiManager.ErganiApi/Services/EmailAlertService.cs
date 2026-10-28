@@ -127,6 +127,49 @@ public class EmailAlertService : IEmailAlertService
         }
     }
 
+    public async Task<bool> UpdateQueuedAlertAsync(int companyId, AlertMessage alert)
+    {
+        try
+        {
+            var company = await LoadCompanyAsync(companyId);
+            if (company == null || !company.AlertEmailEnabled ||
+                (company.AlertEvents & (int)alert.Event) == 0)
+                return false;
+
+            var (subject, body) = Compose(company, alert, delayedSince: null);
+            var entry = AlertOutbox.UpdateQueued(companyId, (int)alert.Event, alert.Title, subject, body);
+            if (entry == null) return false;
+
+            if (entry.LogId is int logId)
+            {
+                var db = OpenDb();
+                if (db != null)
+                {
+                    await using (db)
+                    {
+                        var row = await db.EmailLogs.FindAsync(logId);
+                        if (row != null)
+                        {
+                            row.Title = Trunc(alert.Title, 300) ?? string.Empty;
+                            row.Subject = Trunc(subject, 300) ?? string.Empty;
+                            row.Body = body;
+                            row.ErrorMessage = null;
+                            await db.SaveChangesAsync();
+                        }
+                    }
+                }
+            }
+
+            _logger.LogInformation("Updated queued alert '{Title}' with the final outage details.", alert.Title);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Could not update queued alert '{Title}'.", alert.Title);
+            return false;
+        }
+    }
+
     public async Task FlushOutboxAsync(int companyId)
     {
         try
@@ -365,6 +408,23 @@ internal static class AlertOutbox
             var all = Load();
             all.Add(entry);
             Save(all.OrderBy(e => e.QueuedAtUtc).TakeLast(MaxEntries).ToList());
+        }
+    }
+
+    /// <summary>Updates an existing queued entry in place, retaining its log ID and queue timestamp.</summary>
+    public static Entry? UpdateQueued(int companyId, int eventCode, string title, string subject, string body)
+    {
+        lock (Gate)
+        {
+            var all = Load();
+            var index = all.FindLastIndex(e => e.CompanyId == companyId && e.Event == eventCode);
+            if (index < 0) return null;
+
+            var old = all[index];
+            var updated = old with { Title = title, Subject = subject, Body = body };
+            all[index] = updated;
+            Save(all);
+            return updated;
         }
     }
 
