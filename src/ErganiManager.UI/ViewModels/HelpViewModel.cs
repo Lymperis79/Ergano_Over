@@ -634,7 +634,7 @@ This guide is built into the application and is available without an internet co
 This is an operational guide, not a replacement for official Ergani documentation or legal advice. The exact controls available can vary by role, configuration and application version.
 
 When reporting a missing instruction, include the screen name, selected language, application version if known, and the steps that led to the issue. Do not include passwords or secrets.""",
-            "help guide version notes edit restore language offline support"));
+            "help guide version notes edit restore language offline support")];
     private static System.Collections.Generic.List<HelpTopic> BuildGreekTopics() =>
     [
         new("getting-started", "Ξεκινώντας", "Πρώτα βήματα",
