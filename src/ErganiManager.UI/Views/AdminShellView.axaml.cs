@@ -219,6 +219,7 @@ public class SectionViewModelTemplateSelector : IDataTemplate
     {
         return data switch
         {
+            DashboardViewModel => new DashboardView { DataContext = data },
             CompaniesViewModel => new CompaniesView { DataContext = data },
             BranchesViewModel => new BranchesView { DataContext = data },
             EmployeesViewModel => new EmployeesView { DataContext = data },
