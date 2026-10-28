@@ -1049,6 +1049,7 @@ public static class GreekStrings
         ["Vm.Mail event 16"] = "Καθυστερημένη είσοδος",
         ["Vm.Mail event 32"] = "Είσοδος χωρίς ωράριο",
         ["Vm.Mail event 64"] = "Απόρριψη καταχώρισης",
+        ["Vm.Mail event 128"] = "Αυτόματη έξοδος",
         ["Vm.Mail sent"] = "Στάλθηκε",
         ["Vm.Mail queued"] = "Αναμονή αποστολής",
         ["Vm.Mail failed"] = "Απέτυχε",
