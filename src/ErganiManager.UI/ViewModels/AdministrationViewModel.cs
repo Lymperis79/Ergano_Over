@@ -580,6 +580,13 @@ public partial class AdministrationViewModel : ViewModelBase, IAdminSectionViewM
     partial void OnClockInAlertMinutesChanged(int value) => MarkCompanySettingsDirty();
 
     [RelayCommand]
+    private async Task DiscardCompanySettingsAsync()
+    {
+        await LoadCompanySettingsAsync();
+        CompanySettingsStatus = Loc["Company settings changes discarded."];
+    }
+
+    [RelayCommand]
     private async Task SaveCompanySettingsAsync()
     {
         if (_activeCompanyId is not { } companyId)
