@@ -77,6 +77,7 @@ public static class L
     public const string OnTimeWindowMinutesLabel = nameof(OnTimeWindowMinutesLabel);
     public const string OnTimeWindowSaved = nameof(OnTimeWindowSaved);
     public const string OnTimeWindowInvalid = nameof(OnTimeWindowInvalid);
+    public const string AutoSubmittedBadge = nameof(AutoSubmittedBadge);
     public const string AutoClockOutTitle = nameof(AutoClockOutTitle);
     public const string AutoClockOutDescription = nameof(AutoClockOutDescription);
     public const string AutoClockOutEnabledLabel = nameof(AutoClockOutEnabledLabel);
