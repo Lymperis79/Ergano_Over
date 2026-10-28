@@ -37,7 +37,7 @@ public partial class AdministrationViewModel : ViewModelBase, IAdminSectionViewM
     private readonly IOfficialHolidayCatalogService _holidayCatalog;
     private int? _activeCompanyId;
 
-    [ObservableProperty] private DateTime? _newOfficialHolidayDate = DateTime.Today;
+    [ObservableProperty] private DateTimeOffset? _newOfficialHolidayDate = DateTimeOffset.Now;
     [ObservableProperty] private string _newOfficialHolidayName = string.Empty;
 
     public ObservableCollection<OfficialHolidayEdit> OfficialHolidays { get; } = new();
@@ -513,7 +513,7 @@ public partial class AdministrationViewModel : ViewModelBase, IAdminSectionViewM
 
         try
         {
-            await _holidayCatalog.AddCustomAsync(DateOnly.FromDateTime(date), NewOfficialHolidayName);
+            await _holidayCatalog.AddCustomAsync(DateOnly.FromDateTime(date.DateTime), NewOfficialHolidayName);
             NewOfficialHolidayName = string.Empty;
             await LoadOfficialHolidaysAsync(synchronize: false);
             OfficialHolidaysStatus = Loc[L.OfficialHolidayCustomAdded];
