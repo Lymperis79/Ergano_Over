@@ -32,6 +32,12 @@ public partial class AdministrationViewModel : ViewModelBase, IAdminSectionViewM
 
     private readonly IRoundingSettingsService _rounding;
     private readonly IPortalSettingsService _portal;
+    private readonly ICompanyService _companyService;
+    private readonly ICacheSyncService _cacheSync;
+    private int? _activeCompanyId;
+
+    public ObservableCollection<OfficialHolidayEdit> OfficialHolidays { get; } = new();
+    [ObservableProperty] private string _officialHolidaysStatus = string.Empty;
 
     // Schedule portal settings
     [ObservableProperty] private string _schedulePortalBaseUrl = string.Empty;
@@ -83,11 +89,13 @@ public partial class AdministrationViewModel : ViewModelBase, IAdminSectionViewM
     [ObservableProperty] private string _autoClockOutStatus = string.Empty;
 
     public AdministrationViewModel(IDatabaseMaintenanceService maintenance, IRoundingSettingsService rounding,
-        IPortalSettingsService portal)
+        IPortalSettingsService portal, ICompanyService companyService, ICacheSyncService cacheSync)
     {
         _maintenance = maintenance;
         _rounding = rounding;
         _portal = portal;
+        _companyService = companyService;
+        _cacheSync = cacheSync;
         var schedule = portal.Current.Schedule;
         var workCards = portal.Current.WorkCards;
 
@@ -418,7 +426,73 @@ public partial class AdministrationViewModel : ViewModelBase, IAdminSectionViewM
 
     public string SuggestedBackupName => _maintenance.SuggestBackupFileName();
 
-    public void Initialize(UserSession session) => Refresh();
+    public void Initialize(UserSession session)
+    {
+        Refresh();
+        _activeCompanyId = session.CompanyId;
+        _ = LoadOfficialHolidaysAsync();
+    }
+
+    private async Task LoadOfficialHolidaysAsync()
+    {
+        OfficialHolidays.Clear();
+        if (_activeCompanyId is not { } companyId)
+        {
+            OfficialHolidaysStatus = Loc[L.OfficialHolidaysSelectCompany];
+            return;
+        }
+
+        try
+        {
+            var company = await _companyService.GetByIdAsync(companyId);
+            if (company == null)
+            {
+                OfficialHolidaysStatus = Loc[L.OfficialHolidaysLoadFailed];
+                return;
+            }
+
+            var enabledDates = CompanyHolidayCalendar.Parse(company.OfficialHolidayDatesJson);
+            foreach (var holiday in GreekHolidays.ForYear(DateTime.Today.Year).OrderBy(h => h.Date))
+            {
+                var item = new OfficialHolidayEdit(holiday.Date, holiday.Name)
+                {
+                    IsEnabled = enabledDates.Contains(holiday.Date.ToString("yyyy-MM-dd"))
+                };
+                OfficialHolidays.Add(item);
+            }
+
+            OfficialHolidaysStatus = string.Format(Loc[L.OfficialHolidaysLoaded], company.Name, DateTime.Today.Year);
+        }
+        catch (Exception ex)
+        {
+            OfficialHolidaysStatus = string.Format(Loc[L.OfficialHolidaysLoadFailedDetails], ex.Message);
+        }
+    }
+
+    [RelayCommand]
+    private async Task SaveOfficialHolidaysAsync()
+    {
+        if (_activeCompanyId is not { } companyId)
+        {
+            OfficialHolidaysStatus = Loc[L.OfficialHolidaysSelectCompany];
+            return;
+        }
+
+        try
+        {
+            var company = await _companyService.GetByIdAsync(companyId)
+                ?? throw new InvalidOperationException(Loc[L.OfficialHolidaysLoadFailed]);
+            company.OfficialHolidayDatesJson = CompanyHolidayCalendar.Serialize(
+                OfficialHolidays.Where(h => h.IsEnabled).Select(h => h.Date));
+            await _companyService.UpdateAsync(company);
+            await _cacheSync.RefreshCacheFromMainDatabaseAsync(companyId);
+            OfficialHolidaysStatus = Loc[L.OfficialHolidaysSaved];
+        }
+        catch (Exception ex)
+        {
+            OfficialHolidaysStatus = string.Format(Loc[L.OfficialHolidaysSaveFailed], ex.Message);
+        }
+    }
 
     private void Refresh()
     {
