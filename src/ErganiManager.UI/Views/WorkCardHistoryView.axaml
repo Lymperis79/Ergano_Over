@@ -4,10 +4,9 @@
              x:Class="ErganiManager.UI.Views.WorkCardHistoryView"
              x:DataType="vm:WorkCardHistoryViewModel">
 
-    <!-- The shell does not scroll its sections: the page scrolls here, the list scrolls inside it. -->
+    <!-- Keep the page fixed; only the work-card results list scrolls. -->
     <Grid>
-    <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
-    <StackPanel Spacing="16" Margin="0,0,14,0">
+    <StackPanel Spacing="16" Margin="0,0,0,0">
 
         <!-- No active company -->
 
@@ -332,7 +331,6 @@
         </StackPanel>
 
     </StackPanel>
-    </ScrollViewer>
 
     <Border IsVisible="{Binding IsResponseOpen}" Background="#AA000000" ZIndex="100">
         <Border Background="{DynamicResource PanelBrush}" CornerRadius="12" Padding="20" Width="800" Height="600" VerticalAlignment="Center" HorizontalAlignment="Center">
