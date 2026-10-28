@@ -281,8 +281,13 @@ public class EmailAlertService : IEmailAlertService
 
             using var client = new SmtpClient { Timeout = 30_000 };
 
-            await client.ConnectAsync(company.SmtpHost, company.SmtpPort ?? 587,
-                company.SmtpUseTls ? SecureSocketOptions.StartTls : SecureSocketOptions.None);
+            var port = company.SmtpPort ?? 587;
+            var socketOptions = !company.SmtpUseTls
+                ? SecureSocketOptions.None
+                : port == 465
+                    ? SecureSocketOptions.SslOnConnect
+                    : SecureSocketOptions.StartTls;
+            await client.ConnectAsync(company.SmtpHost, port, socketOptions);
 
             if (!string.IsNullOrWhiteSpace(company.SmtpUser))
             {
