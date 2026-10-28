@@ -706,6 +706,32 @@ IAdminSectionViewModel
 
         try
         {
+            // The operational settings now live in Application Tools. Fetch the latest saved values
+            // before updating company identity fields so this form cannot overwrite newer settings
+            // or holiday selections with stale values from its cached company list.
+            if (FormId > 0)
+            {
+                var latest = await _companyService.GetByIdAsync(FormId);
+                if (latest != null)
+                {
+                    dto.ErganiBaseUrl = latest.ErganiBaseUrl;
+                    dto.EarlyClockInBlockMinutes = latest.EarlyClockInBlockMinutes;
+                    dto.EarlyDepartureAlertMinutes = latest.EarlyDepartureAlertMinutes;
+                    dto.BlockClockInWithoutSchedule = latest.BlockClockInWithoutSchedule;
+                    dto.BlockClockInOnRestOrAbsentDay = latest.BlockClockInOnRestOrAbsentDay;
+                    dto.AlertEvents = latest.AlertEvents;
+                    dto.ClockInAlertMinutes = latest.ClockInAlertMinutes;
+                    dto.AlertEmailEnabled = latest.AlertEmailEnabled;
+                    dto.AutoRetryFailedSubmissions = latest.AutoRetryFailedSubmissions;
+                    dto.AlertEmailRecipients = latest.AlertEmailRecipients;
+                    dto.SmtpHost = latest.SmtpHost;
+                    dto.SmtpPort = latest.SmtpPort;
+                    dto.SmtpUser = latest.SmtpUser;
+                    dto.SmtpUseTls = latest.SmtpUseTls;
+                    dto.OfficialHolidayDatesJson = latest.OfficialHolidayDatesJson;
+                }
+            }
+
             if (FormId == 0)
             {
                 if (string.IsNullOrWhiteSpace(
