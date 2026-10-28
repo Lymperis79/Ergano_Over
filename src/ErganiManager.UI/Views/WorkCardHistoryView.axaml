@@ -213,7 +213,7 @@
                                 CornerRadius="6"
                                 Padding="14,10">
 
-                            <Grid MinWidth="1320" ColumnDefinitions="Auto,Auto,*,Auto,Auto,Auto,Auto,Auto,Auto,Auto">
+                            <Grid MinWidth="1320" ColumnDefinitions="Auto,Auto,*,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto">
 
                                 <!-- Retry selection -->
 
@@ -298,6 +298,20 @@
                                            VerticalAlignment="Center"
                                            Margin="6,0"
                                            IsVisible="{Binding LateJustification, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+
+                                <!-- Automatic submission indicator -->
+                                <Border Grid.Column="10"
+                                        IsVisible="{Binding IsAutomatic}"
+                                        Background="#5D4037"
+                                        CornerRadius="10"
+                                        Padding="8,3"
+                                        VerticalAlignment="Center"
+                                        Margin="0,0,8,0">
+                                    <TextBlock Text="{Binding $parent[UserControl].((vm:WorkCardHistoryViewModel)DataContext).Loc[AutoSubmittedBadge]}"
+                                               FontSize="11"
+                                               FontWeight="Bold"
+                                               Foreground="#FFCC80" />
+                                </Border>
 
                                 <!-- Protocol -->
                                 <TextBlock Grid.Column="7" Text="{Binding Protocol}" FontSize="11" Foreground="#888888" VerticalAlignment="Center" IsVisible="{Binding Protocol, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
