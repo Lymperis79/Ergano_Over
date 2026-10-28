@@ -225,7 +225,7 @@ IAdminSectionViewModel
 
     [ObservableProperty]
     private int? _formSmtpPort =
-        587;
+        465;
 
     [ObservableProperty]
     private string _formSmtpUser =
@@ -379,7 +379,7 @@ IAdminSectionViewModel
             string.Empty;
 
         FormSmtpPort =
-            587;
+            465;
 
         FormSmtpUser =
             string.Empty;
@@ -487,7 +487,7 @@ IAdminSectionViewModel
 
         FormSmtpPort =
             company.SmtpPort
-            ?? 587;
+            ?? 465;
 
         FormSmtpUser =
             company.SmtpUser
@@ -564,7 +564,7 @@ IAdminSectionViewModel
         {
             var result = await _emailAlertService.TestSmtpAsync(new EmailSmtpTestRequest(
                 FormSmtpHost.Trim(),
-                FormSmtpPort ?? 587,
+                FormSmtpPort ?? 465,
                 string.IsNullOrWhiteSpace(FormSmtpUser) ? null : FormSmtpUser.Trim(),
                 string.IsNullOrEmpty(FormSmtpPassword) ? null : FormSmtpPassword,
                 FormAlertEmailRecipients.Trim(),
