@@ -90,7 +90,7 @@ public static class EnglishStrings
         [L.AutoClockOutSaveFailed] = "Could not save automatic clock-out settings: {0}.",
         [L.OfficialHolidays] = "Official holidays",
         [L.OfficialHolidaysTitle] = "Company official holidays",
-        [L.OfficialHolidaysDescription] = "Select the official holidays that are non-working days for this company. The list shows Greek official holidays for this year and next year.",
+        [L.OfficialHolidaysDescription] = "Select the official holidays that are non-working days for this company. Greek public holidays are synchronized into the shared database and retained permanently; you can also add custom dates.",
         [L.OfficialHolidaysEffect] = "Enabled holidays are treated as non-working days for attendance checks. Declared schedule times remain visible, and clock-in scans are still accepted.",
         [L.OfficialHolidaysSelectCompany] = "Select a company to configure its official holidays.",
         [L.OfficialHolidaysLoadFailed] = "Could not load the selected company's official holidays.",
