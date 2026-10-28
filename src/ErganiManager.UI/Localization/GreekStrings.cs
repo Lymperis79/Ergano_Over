@@ -104,7 +104,7 @@ public static class GreekStrings
         [L.OfficialHolidayNamePlaceholder] = "Όνομα αργίας",
         [L.OfficialHolidayAddCustom] = "Προσθήκη αργίας",
         [L.OfficialHolidayCustomRequired] = "Επιλέξτε ημερομηνία και εισαγάγετε όνομα αργίας.",
-        [L.OfficialHolidayCustomAdded] = "Η προσαρμοσμένη αργία αποθηκεύτηκε μόνιμα στην κύρια βάση δεδομένων."
+        [L.OfficialHolidayCustomAdded] = "Η προσαρμοσμένη αργία αποθηκεύτηκε μόνιμα στην κύρια βάση δεδομένων.",
         [L.NightSettingsApply] = "Δημιουργήστε ξανά την αναφορά για να εφαρμοστεί η αλλαγή.",
         [L.ReportNightHours] = "Νυχτερινές ώρες",
         [L.EarlyClockInBlock] = "Αποκλεισμός πρόωρης έναρξης (λεπτά πριν την έναρξη βάρδιας, 0 = ανενεργό)",
