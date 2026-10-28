@@ -3,8 +3,9 @@
              xmlns:vm="using:ErganiManager.UI.ViewModels"
              x:Class="ErganiManager.UI.Views.DashboardView"
              x:DataType="vm:DashboardViewModel">
-    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
-        <StackPanel Spacing="18">
+    <Grid RowDefinitions="Auto,*">
+        <Border Grid.Row="0" Background="{DynamicResource PanelBrush}" Padding="18,12"
+                BorderBrush="#404040" BorderThickness="0,0,0,1">
             <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto">
                 <StackPanel Grid.Row="0" Grid.Column="0" Spacing="4">
                     <TextBlock Text="{Binding Loc[Dashboard.Title]}" FontSize="26" FontWeight="Bold" />
@@ -21,7 +22,9 @@
                 <TextBlock Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" Text="{Binding LastUpdatedText}"
                            FontSize="11" Opacity="0.65" Margin="0,6,0,0" />
             </Grid>
-
+        </Border>
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+            <StackPanel Spacing="18" Margin="18">
             <Grid ColumnDefinitions="*,*,*,*,*" ColumnSpacing="10">
                 <Border Grid.Column="0" Background="{DynamicResource PanelBrush}" CornerRadius="10" Padding="14">
                     <StackPanel Spacing="7">
@@ -134,6 +137,7 @@
                     IsVisible="{Binding HasStatusMessage}">
                 <TextBlock Text="{Binding StatusMessage}" TextWrapping="Wrap" />
             </Border>
-        </StackPanel>
-    </ScrollViewer>
+            </StackPanel>
+        </ScrollViewer>
+    </Grid>
 </UserControl>
