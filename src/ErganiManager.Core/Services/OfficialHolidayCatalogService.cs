@@ -29,8 +29,6 @@ public sealed class OfficialHolidayCatalogService : IOfficialHolidayCatalogServi
     public async Task<IReadOnlyList<OfficialHolidayRecord>> GetForYearsAsync(IEnumerable<int> years)
     {
         var requestedYears = years.Distinct().OrderBy(y => y).ToArray();
-        await SynchronizeAsync(requestedYears);
-
         await using var db = OpenDb();
         return await db.OfficialHolidayDefinitions
             .Where(h => requestedYears.Contains(h.Date.Year))
@@ -77,7 +75,7 @@ public sealed class OfficialHolidayCatalogService : IOfficialHolidayCatalogServi
                     }
                     else
                     {
-                        var row = new OfficialHolidayDefinition
+                        var newRow = new OfficialHolidayDefinition
                         {
                             Date = date,
                             Name = name,
@@ -87,8 +85,8 @@ public sealed class OfficialHolidayCatalogService : IOfficialHolidayCatalogServi
                             CreatedAtUtc = DateTime.UtcNow,
                             LastSyncedAtUtc = DateTime.UtcNow
                         };
-                        db.OfficialHolidayDefinitions.Add(row);
-                        byDate[date] = row;
+                        db.OfficialHolidayDefinitions.Add(newRow);
+                        byDate[date] = newRow;
                     }
                 }
 
