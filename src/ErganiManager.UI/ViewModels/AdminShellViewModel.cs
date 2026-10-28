@@ -408,7 +408,7 @@ public partial class AdminShellViewModel : ViewModelBase
 
     // ── Menu visibility (per user) and menu groups ───────────────────────
 
-    [ObservableProperty] private bool _showCompanies = true;
+    [ObservableProperty] private bool _showDashboard = true;\n    [ObservableProperty] private bool _showCompanies = true;
     [ObservableProperty] private bool _showBranches = true;
     [ObservableProperty] private bool _showEmployees = true;
     [ObservableProperty] private bool _showUsers = true;
@@ -549,7 +549,7 @@ public partial class AdminShellViewModel : ViewModelBase
             SetCompanyText(3, session.CompanyName);
         }
 
-        NavigateTo(FirstAllowedSection(session));
+        NavigateTo("Dashboard");
 
         var companyId =
             _companyContext.ActiveCompanyId;
