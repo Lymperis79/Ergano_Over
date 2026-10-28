@@ -1,3 +1,8 @@
+using System;
+using System.IO;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using System.Text.Json;
 using ErganiManager.Core.Interfaces;
 using ErganiManager.Data;
@@ -59,7 +64,7 @@ public sealed class AutomaticDatabaseBackupService
             lock (_sync)
             {
                 if (!_settings.Enabled) return null;
-                return (_settings.LastSuccessLocal ?? DateTime.Now).AddHours(_settings.IntervalHours);
+                return (_settings.LastSuccessLocal ?? DateTime.Now.AddHours(-_settings.IntervalHours)).AddHours(_settings.IntervalHours);
             }
         }
     }
