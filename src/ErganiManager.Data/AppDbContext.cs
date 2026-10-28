@@ -41,6 +41,10 @@ public class AppDbContext : DbContext
             e.Property(c => c.BlockClockInOnRestOrAbsentDay)
                 .HasDefaultValue(true)
                 .ValueGeneratedNever();
+
+            e.Property(c => c.OfficialHolidayDatesJson)
+                .HasDefaultValue("[]")
+                .ValueGeneratedNever();
         });
 
         // ── BusinessBranch ───────────────────────────────────
