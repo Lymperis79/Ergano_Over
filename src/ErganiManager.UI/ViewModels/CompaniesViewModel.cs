@@ -19,6 +19,7 @@ IAdminSectionViewModel
     private readonly ICompanyService _companyService;
     private readonly IErganiDataImportService _erganiImport;
     private readonly ICacheSyncService _cacheSyncService;
+    private readonly IEmailAlertService _emailAlertService;
 
     private UserSession? _session;
 
@@ -203,6 +204,10 @@ IAdminSectionViewModel
     [ObservableProperty]
     private bool _formAlertEmailEnabled;
 
+    [ObservableProperty] private bool _isTestingEmail;
+    [ObservableProperty] private bool _emailTestSuccess;
+    [ObservableProperty] private string _emailTestResult = string.Empty;
+
     [ObservableProperty]
     private string _formAlertEmailRecipients =
         string.Empty;
@@ -238,7 +243,8 @@ IAdminSectionViewModel
     public CompaniesViewModel(
         ICompanyService companyService,
         IErganiDataImportService erganiImport,
-        ICacheSyncService cacheSyncService)
+        ICacheSyncService cacheSyncService,
+        IEmailAlertService emailAlertService)
     {
         _companyService =
             companyService;
@@ -248,6 +254,8 @@ IAdminSectionViewModel
 
         _cacheSyncService =
             cacheSyncService;
+
+        _emailAlertService = emailAlertService;
 
         InitUsertypes();
     }
@@ -510,6 +518,63 @@ IAdminSectionViewModel
 
         StatusMessage =
             string.Empty;
+    }
+
+    // ---------------------------------------------------------------------
+    // Test email / SMTP settings (does not save the company)
+    // ---------------------------------------------------------------------
+
+    [RelayCommand]
+    private async Task TestEmailSettingsAsync()
+    {
+        EmailTestResult = string.Empty;
+        EmailTestSuccess = false;
+
+        if (string.IsNullOrWhiteSpace(FormSmtpHost))
+        {
+            EmailTestResult = Loc["Vm.Enter the SMTP host."];
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(FormAlertEmailRecipients))
+        {
+            EmailTestResult = Loc["Vm.Enter at least one recipient email address."];
+            return;
+        }
+
+        if (!string.IsNullOrWhiteSpace(FormSmtpUser) && string.IsNullOrEmpty(FormSmtpPassword))
+        {
+            EmailTestResult = Loc["Vm.Enter the SMTP password to test authenticated SMTP settings."];
+            return;
+        }
+
+        IsTestingEmail = true;
+        EmailTestResult = Loc["Vm.⏳ Sending test email..."];
+
+        try
+        {
+            var result = await _emailAlertService.TestSmtpAsync(new EmailSmtpTestRequest(
+                FormSmtpHost.Trim(),
+                FormSmtpPort ?? 587,
+                string.IsNullOrWhiteSpace(FormSmtpUser) ? null : FormSmtpUser.Trim(),
+                string.IsNullOrEmpty(FormSmtpPassword) ? null : FormSmtpPassword,
+                FormAlertEmailRecipients.Trim(),
+                FormSmtpUseTls));
+
+            EmailTestSuccess = result.Success;
+            EmailTestResult = result.Success
+                ? Loc["Vm.✅ Test email sent. Check the recipient inbox."]
+                : $"❌ {result.ErrorMessage ?? Loc["Vm.Email test failed."]}";
+        }
+        catch (Exception ex)
+        {
+            EmailTestSuccess = false;
+            EmailTestResult = $"❌ {ex.Message}";
+        }
+        finally
+        {
+            IsTestingEmail = false;
+        }
     }
 
     // ---------------------------------------------------------------------
