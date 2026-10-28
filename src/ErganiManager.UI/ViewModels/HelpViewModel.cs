@@ -730,7 +730,7 @@ If the database is unavailable
 • Do not delete the database or cache as a general fix. A cache may contain data needed for offline work.
 
 SQL Server, MariaDB and SQLite have different backup and maintenance requirements. Follow the instructions for the provider configured in your installation.""",
-            "database options setup connection provider SQL Server MariaDB SQLite central local cache");
+            "database options setup connection provider SQL Server MariaDB SQLite central local cache"),
 
         new("imports-sync", "Company & configuration", "Imports and synchronization",
             "Import employee/branch data and understand offline-cache synchronization.",
@@ -1198,7 +1198,7 @@ SMTP — Πρωτόκολλο αποστολής email
 • Μη διαγράφετε βάση ή cache ως γενική λύση· η cache μπορεί να περιέχει δεδομένα για εργασία offline.
 
 SQL Server, MariaDB και SQLite έχουν διαφορετικές απαιτήσεις αντιγράφων ασφαλείας και συντήρησης. Ακολουθήστε τις οδηγίες για τον πάροχο της εγκατάστασής σας.""",
-            "βάση επιλογές εγκατάσταση σύνδεση πάροχος SQL Server MariaDB SQLite κεντρική τοπική cache");
+            "βάση επιλογές εγκατάσταση σύνδεση πάροχος SQL Server MariaDB SQLite κεντρική τοπική cache"),
 
         new("imports-sync", "Εταιρεία και ρυθμίσεις", "Εισαγωγή και συγχρονισμός",
             "Εισαγωγή στοιχείων εργαζομένων/υποκαταστημάτων και συγχρονισμός offline cache.",
@@ -1220,7 +1220,7 @@ SQL Server, MariaDB και SQLite έχουν διαφορετικές απαιτ
 • Όταν αποκατασταθεί η σύνδεση, χρησιμοποιήστε την διαθέσιμη ενέργεια ανανέωσης/συγχρονισμού και ελέγξτε αποτέλεσμα και σφάλματα.
 • Επιτυχής ανανέωση cache δεν αποδεικνύει ότι έγιναν δεκτές από το ΕΡΓΑΝΗ εκκρεμείς υποβολές προγραμμάτων, υπερωριών, αδειών ή καρτών εργασίας.
 • Μη διαγράφετε cache ή κεντρική βάση για να εξαναγκάσετε συγχρονισμό. Διατηρήστε τις εγγραφές και διερευνήστε πρώτα το σφάλμα.""",
-            "εισαγωγή εισαγωγές συγχρονισμός εργαζόμενος υποκατάστημα αρχείο γραμμές cache offline ανανέωση");
+            "εισαγωγή εισαγωγές συγχρονισμός εργαζόμενος υποκατάστημα αρχείο γραμμές cache offline ανανέωση"),
 
         new("release-notes", "Αναφορά", "Οδηγός βοήθειας και εκδόσεις",
             "Πώς συντηρείται ο οδηγός και πώς αναφέρετε θέμα που λείπει.",
