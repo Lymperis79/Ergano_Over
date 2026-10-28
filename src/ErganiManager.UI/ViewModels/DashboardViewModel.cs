@@ -1,6 +1,8 @@
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
+using System.Text.Json;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -169,16 +171,112 @@ public partial class DashboardViewModel : ViewModelBase, IAdminSectionViewModel
                     l.Success,
                     l.Protocol,
                     l.ErrorMessage,
-                    l.HttpStatusCode
+                    l.HttpStatusCode,
+                    l.EmployeeId,
+                    l.EmployeeIdsJson,
+                    l.WorkCardId,
+                    l.ScheduleDate
                 })
                 .ToListAsync();
 
+            // Resolve employee names for both single-employee and multi-employee submission batches.
+            var employeeIds = new HashSet<int>();
+            var workCardIds = latest.Where(x => x.WorkCardId.HasValue)
+                .Select(x => x.WorkCardId!.Value).Distinct().ToList();
+
             foreach (var item in latest)
             {
+                if (item.EmployeeId.HasValue)
+                    employeeIds.Add(item.EmployeeId.Value);
+
+                if (!string.IsNullOrWhiteSpace(item.EmployeeIdsJson))
+                {
+                    try
+                    {
+                        var ids = JsonSerializer.Deserialize<List<int>>(item.EmployeeIdsJson);
+                        if (ids != null)
+                            foreach (var id in ids)
+                                employeeIds.Add(id);
+                    }
+                    catch (JsonException)
+                    {
+                        // Older or malformed historical records remain visible without employee names.
+                    }
+                }
+            }
+
+            var workCards = workCardIds.Count == 0
+                ? new Dictionary<int, WorkCard>()
+                : await db.WorkCards.AsNoTracking()
+                    .Where(w => workCardIds.Contains(w.Id))
+                    .ToDictionaryAsync(w => w.Id);
+
+            foreach (var card in workCards.Values)
+                employeeIds.Add(card.EmployeeId);
+
+            var employeeNames = employeeIds.Count == 0
+                ? new Dictionary<int, string>()
+                : await db.Employees.AsNoTracking()
+                    .Where(e => e.CompanyId == companyId.Value && employeeIds.Contains(e.Id))
+                    .ToDictionaryAsync(e => e.Id, e => e.FullName);
+
+            foreach (var item in latest)
+            {
+                var names = new List<string>();
+                if (item.EmployeeId.HasValue && employeeNames.TryGetValue(item.EmployeeId.Value, out var singleName))
+                    names.Add(singleName);
+
+                if (!string.IsNullOrWhiteSpace(item.EmployeeIdsJson))
+                {
+                    try
+                    {
+                        var ids = JsonSerializer.Deserialize<List<int>>(item.EmployeeIdsJson);
+                        if (ids != null)
+                        {
+                            foreach (var id in ids)
+                            {
+                                if (employeeNames.TryGetValue(id, out var name) && !names.Contains(name))
+                                    names.Add(name);
+                            }
+                        }
+                    }
+                    catch (JsonException)
+                    {
+                        // Keep showing the rest of the submission information for legacy rows.
+                    }
+                }
+
+                WorkCard? workCard = null;
+                if (item.WorkCardId.HasValue)
+                    workCards.TryGetValue(item.WorkCardId.Value, out workCard);
+
+                if (workCard != null && employeeNames.TryGetValue(workCard.EmployeeId, out var cardEmployeeName)
+                    && !names.Contains(cardEmployeeName))
+                    names.Add(cardEmployeeName);
+
+                var subjectParts = new List<string>();
+                if (names.Count > 0)
+                    subjectParts.Add(string.Format(Loc["Dashboard.SubjectEmployees"], string.Join(", ", names)));
+                else
+                    subjectParts.Add(Loc["Dashboard.SubjectEmployeeUnknown"]);
+
+                if (item.ScheduleDate.HasValue)
+                    subjectParts.Add(string.Format(Loc["Dashboard.SubjectDate"], item.ScheduleDate.Value.ToString("dd/MM/yyyy")));
+
+                if (workCard != null)
+                {
+                    var movement = workCard.MovementType == MovementType.Arrival
+                        ? Loc["Dashboard.WorkCard.Arrival"]
+                        : Loc["Dashboard.WorkCard.Departure"];
+                    subjectParts.Add(string.Format(Loc["Dashboard.WorkCardEvent"], movement,
+                        workCard.MovementDateTime.ToLocalTime().ToString("dd/MM/yyyy HH:mm")));
+                }
+
                 RecentActivity.Add(new DashboardActivityRow
                 {
                     DateText = item.SubmissionDate.ToLocalTime().ToString("dd/MM/yyyy HH:mm"),
                     TypeText = FormatSubmissionType(item.SubmissionType),
+                    SubjectText = string.Join(" · ", subjectParts),
                     StatusText = item.Success ? "✓ " + Loc["Dashboard.Success"] : "✕ " + Loc["Dashboard.Failed"],
                     DetailText = item.Success
                         ? (!string.IsNullOrWhiteSpace(item.Protocol)
@@ -213,9 +311,9 @@ public partial class DashboardViewModel : ViewModelBase, IAdminSectionViewModel
         var key = (type ?? string.Empty).Trim().ToLowerInvariant();
         return key switch
         {
-            "dailyschedule" or "schedule" or "schedules" => Loc["Dashboard.Type.Schedules"],
-            "overtime" or "wto" => Loc["Dashboard.Type.Overtime"],
-            "workcard" or "workcards" or "wrkcardse" => Loc["Dashboard.Type.WorkCards"],
+            "dailyschedule" or "schedule" or "schedules" or "wtos" => Loc["Dashboard.Type.Schedules"],
+            "overtime" or "wto" or "wtoov" => Loc["Dashboard.Type.Overtime"],
+            "workcard" or "workcards" or "wrkcardse" or "workcardse" => Loc["Dashboard.Type.WorkCards"],
             "leave" or "holiday" or "holidays" or "wtoleave" => Loc["Dashboard.Type.Leaves"],
             "" => Loc["Dashboard.Type.Other"],
             _ => type!
@@ -239,6 +337,7 @@ public sealed class DashboardActivityRow
 {
     public string DateText { get; set; } = string.Empty;
     public string TypeText { get; set; } = string.Empty;
+    public string SubjectText { get; set; } = string.Empty;
     public string StatusText { get; set; } = string.Empty;
     public string DetailText { get; set; } = string.Empty;
     public bool IsSuccess { get; set; }
