@@ -368,6 +368,7 @@ public static class GreekStrings
         [L.TodayIssueNoSchedule] = "Καταγραφή προσέλευσης/αποχώρησης χωρίς πρόγραμμα για την ημέρα",
         [L.TodayIssueRestDay] = "Καταγραφή προσέλευσης/αποχώρησης σε ρεπό/απουσία",
         [L.TodayOk] = "✔ Εντάξει",
+        [L.TodayOfficialHoliday] = "🎉 Επίσημη αργία",
         [L.TodayMoveIn] = "Προσέλευση",
         [L.TodayMoveOut] = "Αποχώρηση",
         [L.TodayNoMovements] = "Δεν έχει καταγραφεί προσέλευση/αποχώρηση.",
