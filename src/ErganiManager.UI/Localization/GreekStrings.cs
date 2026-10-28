@@ -1689,5 +1689,9 @@ public static class GreekStrings
         ["HealthMissingErganiCredentials"] = "Λείπει το αποθηκευμένο όνομα χρήστη ή ο κωδικός πρόσβασης του ΕΡΓΑΝΗ.",
         ["HealthErganiAuthenticationSucceeded"] = "Η πιστοποίηση στο ΕΡΓΑΝΗ ολοκληρώθηκε επιτυχώς.",
         ["HealthErganiAuthenticationFailed"] = "Η πιστοποίηση στο ΕΡΓΑΝΗ απέτυχε ή η υπηρεσία δεν είναι διαθέσιμη.",
+
+        ["Vm.Last backup verified at {0}"] = "Τελευταίο επαληθευμένο αντίγραφο ασφαλείας: {0}. Η ώρα αφορά το τελευταίο επαληθευμένο αντίγραφο αυτής της συνεδρίας.",
+        ["Vm.Type DELETE to confirm database deletion."] = "Για συνέχεια, πληκτρολογήστε DELETE στο παρακάτω πεδίο. Η ενέργεια διαγράφει οριστικά τη ρυθμισμένη βάση δεδομένων.",
+        ["Vm.Database deletion blocked: type DELETE exactly to confirm."] = "Η διαγραφή της βάσης αποτράπηκε: πληκτρολογήστε ακριβώς DELETE για επιβεβαίωση.",
     };
 }
