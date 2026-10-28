@@ -245,7 +245,7 @@ public class ErganiRetryService
                 }
             }
 
-            if (finished != null) SendInternetRestored(company.Id, finished);
+            if (finished != null) await UpdateInternetRestoredAsync(company.Id, finished);
 
             if (kind == OutageKind.Ergani && current.Checks >= 2 && !current.Alerted)
             {
