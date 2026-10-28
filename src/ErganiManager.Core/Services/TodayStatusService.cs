@@ -79,7 +79,8 @@ public class TodayStatusService : ITodayStatusService
         {
             EmployeeId = emp.Id,
             FullName   = emp.FullName,
-            BranchName = emp.Branch?.Name ?? emp.Branch?.Address ?? string.Empty
+            BranchName = emp.Branch?.Name ?? emp.Branch?.Address ?? string.Empty,
+            IsOfficialHoliday = isOfficialHoliday
         };
 
         // "Later than <t> + grace" without wrapping past midnight.
