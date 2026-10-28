@@ -2,6 +2,8 @@ using System;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
+using System.Globalization;
+using System.Text;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using ErganiManager.LocalCache;
@@ -171,12 +173,14 @@ public partial class HelpViewModel : ViewModelBase, IAdminSectionViewModel
 
     private void ApplySearch()
     {
-        var query = (SearchText ?? string.Empty).Trim();
+        var query = NormalizeSearch((SearchText ?? string.Empty).Trim());
         var terms = query.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
         var results = _allTopics.Where(topic =>
         {
-            var searchable = $"{topic.Title} {topic.Category} {topic.Summary} {topic.Content} {topic.Keywords}";
-            return terms.Length == 0 || terms.All(term => searchable.Contains(term, StringComparison.OrdinalIgnoreCase));
+            var searchable = NormalizeSearch($"{topic.Title} {topic.Category} {topic.Summary} {topic.Content} {topic.Keywords}");
+            return terms.Length == 0 || terms.All(term =>
+                SearchAlternatives(term).Any(alternative =>
+                    searchable.Contains(NormalizeSearch(alternative), StringComparison.Ordinal)));
         }).ToList();
 
         FilteredTopics.Clear();
@@ -191,6 +195,40 @@ public partial class HelpViewModel : ViewModelBase, IAdminSectionViewModel
         OnPropertyChanged(nameof(SearchCountText));
         OnPropertyChanged(nameof(HasNoSearchResults));
     }
+
+    private static string NormalizeSearch(string value)
+    {
+        var decomposed = value.Normalize(NormalizationForm.FormD);
+        return new string(decomposed
+            .Where(character => CharUnicodeInfo.GetUnicodeCategory(character) != UnicodeCategory.NonSpacingMark)
+            .ToArray()).ToLowerInvariant();
+    }
+
+    // Common aliases let users search in English even when the guide is Greek, and vice versa.
+    private static string[] SearchAlternatives(string term) => term switch
+    {
+        "overtime" or "υπερωρια" or "υπερωριες" or "extra" => ["overtime", "υπερωρια", "υπερωριες", "extra"],
+        "schedule" or "schedules" or "ωραριο" or "προγραμμα" or "προγραμματα" => ["schedule", "schedules", "ωραριο", "προγραμμα", "προγραμματα"],
+        "employee" or "employees" or "εργαζομενος" or "εργαζομενοι" => ["employee", "employees", "εργαζομενος", "εργαζομενοι"],
+        "branch" or "branches" or "υποκαταστημα" or "υποκαταστηματα" => ["branch", "branches", "υποκαταστημα", "υποκαταστηματα"],
+        "company" or "companies" or "εταιρεια" or "εταιρειες" => ["company", "companies", "εταιρεια", "εταιρειες"],
+        "leave" or "holiday" or "holidays" or "αδεια" or "αδειες" or "αργιες" => ["leave", "holiday", "holidays", "αδεια", "αδειες", "αργιες"],
+        "work" or "card" or "cards" or "workcard" or "workcards" or "καρτα" or "καρτες" or "σαρωση" or "σαρωσεις" => ["work", "card", "cards", "workcard", "workcards", "καρτα", "καρτες", "σαρωση", "σαρωσεις"],
+        "submission" or "submissions" or "υποβολη" or "υποβολες" => ["submission", "submissions", "υποβολη", "υποβολες"],
+        "failed" or "failure" or "error" or "errors" or "σφαλμα" or "σφαλματα" or "απετυχε" or "αποτυχια" => ["failed", "failure", "error", "errors", "σφαλμα", "σφαλματα", "απετυχε", "αποτυχια"],
+        "pending" or "εκκρεμης" or "εκκρεμη" or "εκκρεμεις" => ["pending", "εκκρεμης", "εκκρεμη", "εκκρεμεις"],
+        "user" or "users" or "χρηστης" or "χρηστες" => ["user", "users", "χρηστης", "χρηστες"],
+        "today" or "daily" or "σημερα" or "ημερησια" => ["today", "daily", "σημερα", "ημερησια"],
+        "database" or "databases" or "db" or "βαση" or "δεδομενων" => ["database", "databases", "db", "βαση", "δεδομενων"],
+        "backup" or "backups" or "αντιγραφο" or "ασφαλειας" => ["backup", "backups", "αντιγραφο", "ασφαλειας"],
+        "email" or "mail" or "smtp" or "αλληλογραφια" or "ηλεκτρονικο" => ["email", "mail", "smtp", "αλληλογραφια", "ηλεκτρονικο"],
+        "permission" or "permissions" or "δικαιωμα" or "δικαιωματα" => ["permission", "permissions", "δικαιωμα", "δικαιωματα"],
+        "offline" or "online" or "εκτος" or "συνδεσης" => ["offline", "online", "εκτος", "συνδεσης"],
+        "report" or "reports" or "αναφορα" or "αναφορες" => ["report", "reports", "αναφορα", "αναφορες"],
+        "protocol" or "πρωτοκολλο" or "πρωτοκολλου" => ["protocol", "πρωτοκολλο", "πρωτοκολλου"],
+        "import" or "imported" or "εισαγωγη" or "εισηχθη" => ["import", "imported", "εισαγωγη", "εισηχθη"],
+        _ => [term]
+    };
 
     [RelayCommand]
     private void StartEdit()
