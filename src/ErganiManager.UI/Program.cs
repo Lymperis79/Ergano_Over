@@ -192,6 +192,7 @@ internal static class Program
         services.AddTransient<ViewModels.LoginViewModel>();
         services.AddTransient<ViewModels.TerminalViewModel>();
         services.AddTransient<ViewModels.AdminShellViewModel>();
+        services.AddTransient<ViewModels.DashboardViewModel>();
         services.AddTransient<ViewModels.CompaniesViewModel>();
         services.AddTransient<ViewModels.BranchesViewModel>();
         services.AddTransient<ViewModels.EmployeesViewModel>();
