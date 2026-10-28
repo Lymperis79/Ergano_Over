@@ -27,10 +27,7 @@ public enum AlertEvent
     LateClockIn       = 16,
     /// <summary>Clock-in on a day without a schedule, or on a rest/absence day.</summary>
     NoScheduleClockIn = 32,
-    /// <summary>Ergani rejected a queued scan.</summary>
-    ScanRejected      = 64,
-
-    All = EarlyDeparture | ErganiDown | InternetDown | EarlyClockIn | LateClockIn | NoScheduleClockIn | ScanRejected,
+undefined
     /// <summary>What companies had before the choice existed.</summary>
     Default = EarlyDeparture
 }
