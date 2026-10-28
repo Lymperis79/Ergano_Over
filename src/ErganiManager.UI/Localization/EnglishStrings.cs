@@ -1686,5 +1686,9 @@ public static class EnglishStrings
         [L.LeaveTypeRemove] = "Delete leave type",
         [L.LeaveTypeAdd] = "Add type",
         [L.LeaveTypeSave] = "Save types",
+
+        ["HealthMissingErganiCredentials"] = "Saved Ergani username or password is missing.",
+        ["HealthErganiAuthenticationSucceeded"] = "Ergani authentication succeeded.",
+        ["HealthErganiAuthenticationFailed"] = "Ergani authentication failed or the service is unavailable.",
     };
 }
