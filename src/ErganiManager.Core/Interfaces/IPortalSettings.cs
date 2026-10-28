@@ -17,6 +17,10 @@ public sealed class ErganiPortalProfile
 /// <summary>Separate portal configurations for Schedule and Work Card workflows.</summary>
 public sealed class PortalSettings
 {
+    /// <summary>When enabled, automatically submits a departure if an employee has clocked in but no clock-out exists after their declared end time plus the configured grace period.</summary>
+    public bool AutoClockOutEnabled { get; set; } = false;
+    public int AutoClockOutMinutes { get; set; } = 15;
+
     public ErganiPortalProfile Schedule { get; set; } = new()
     {
         TargetPageUrl = string.Empty,
