@@ -12,7 +12,7 @@
                     <TextBlock Text="{Binding Loc[Dashboard.Subtitle]}" FontSize="12" Opacity="0.7" />
                 </StackPanel>
                 <Button Grid.Row="0" Grid.Column="1" Command="{Binding RefreshCommand}" Padding="14,8"
-                        VerticalAlignment="Top" IsEnabled="{Binding !IsLoading}">
+                        VerticalAlignment="Top" IsEnabled="{Binding CanRefresh}">
                     <StackPanel Orientation="Horizontal" Spacing="7">
                         <TextBlock Text="⟳" />
                         <TextBlock Text="{Binding Loc[Dashboard.Refresh]}" />
@@ -77,13 +77,13 @@
                                         <TextBlock FontSize="11" Opacity="0.7"
                                                    Text="{Binding Successful, StringFormat='✓ {0}'}" />
                                         <TextBlock FontSize="11" Foreground="#EF5350"
-                                                   IsVisible="{Binding Failed, Converter={x:Static vm:IntGreaterThanZeroConverter.Instance}}"
+                                                   IsVisible="{Binding Failed, Converter={x:Static vm:IntToBoolConverter.Instance}}"
                                                    Text="{Binding Failed, StringFormat='✕ {0}'}" />
                                     </StackPanel>
                                 </DataTemplate>
                             </ItemsControl.ItemTemplate>
                         </ItemsControl>
-                        <TextBlock Text="{Binding Loc[Dashboard.NoSubmissionsInPeriod]}" IsVisible="{Binding Categories.Count, Converter={x:Static vm:IntEqualsZeroConverter.Instance}}"
+                        <TextBlock Text="{Binding Loc[Dashboard.NoSubmissionsInPeriod]}" IsVisible="{Binding HasCategories, Converter={x:Static vm:InverseBoolConverter.Instance}}"
                                    FontSize="12" Opacity="0.65" TextWrapping="Wrap" />
                     </StackPanel>
                 </Border>
@@ -109,14 +109,14 @@
                                 </DataTemplate>
                             </ItemsControl.ItemTemplate>
                         </ItemsControl>
-                        <TextBlock Text="{Binding Loc[Dashboard.NoRecentActivity]}" IsVisible="{Binding RecentActivity.Count, Converter={x:Static vm:IntEqualsZeroConverter.Instance}}"
+                        <TextBlock Text="{Binding Loc[Dashboard.NoRecentActivity]}" IsVisible="{Binding HasRecentActivity, Converter={x:Static vm:InverseBoolConverter.Instance}}"
                                    FontSize="12" Opacity="0.65" />
                     </StackPanel>
                 </Border>
             </Grid>
 
             <Border Background="{DynamicResource PanelBrush}" CornerRadius="8" Padding="12"
-                    IsVisible="{Binding !string.IsNullOrWhiteSpace(StatusMessage)}">
+                    IsVisible="{Binding HasStatusMessage}">
                 <TextBlock Text="{Binding StatusMessage}" TextWrapping="Wrap" />
             </Border>
         </StackPanel>
