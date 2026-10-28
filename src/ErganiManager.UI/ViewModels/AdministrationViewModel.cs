@@ -11,6 +11,8 @@ using System.Net.Http;
 using ErganiManager.UI.Localization;
 using ErganiManager.ErganiApi;
 using ErganiManager.ErganiApi.Services;
+using ErganiManager.Data;
+using Microsoft.EntityFrameworkCore;
 
 namespace ErganiManager.UI.ViewModels;
 
@@ -45,6 +47,9 @@ public partial class AdministrationViewModel : ViewModelBase, IAdminSectionViewM
     private readonly IEmailAlertService _emailAlertService;
     private readonly IInternetCheckService _internetCheckService;
     private readonly IHttpClientFactory _httpClientFactory;
+    private readonly IErganiHealthCheckService _erganiHealthCheckService;
+    private readonly IConnectionStateService _connectionState;
+    private readonly ICredentialProtector _credentialProtector;
     private int? _activeCompanyId;
     private CompanyDto? _loadedCompanySettings;
     private bool _loadingCompanySettings;
@@ -154,7 +159,9 @@ public partial class AdministrationViewModel : ViewModelBase, IAdminSectionViewM
     public AdministrationViewModel(IDatabaseMaintenanceService maintenance, IRoundingSettingsService rounding,
         IPortalSettingsService portal, ICompanyService companyService, ICacheSyncService cacheSync,
         IOfficialHolidayCatalogService holidayCatalog, IEmailAlertService emailAlertService,
-        IInternetCheckService internetCheckService, IHttpClientFactory httpClientFactory)
+        IInternetCheckService internetCheckService, IHttpClientFactory httpClientFactory,
+        IErganiHealthCheckService erganiHealthCheckService, IConnectionStateService connectionState,
+        ICredentialProtector credentialProtector)
     {
         _maintenance = maintenance;
         _rounding = rounding;
@@ -165,6 +172,9 @@ public partial class AdministrationViewModel : ViewModelBase, IAdminSectionViewM
         _emailAlertService = emailAlertService;
         _internetCheckService = internetCheckService;
         _httpClientFactory = httpClientFactory;
+        _erganiHealthCheckService = erganiHealthCheckService;
+        _connectionState = connectionState;
+        _credentialProtector = credentialProtector;
         var schedule = portal.Current.Schedule;
         var workCards = portal.Current.WorkCards;
 
@@ -555,18 +565,44 @@ public partial class AdministrationViewModel : ViewModelBase, IAdminSectionViewM
             {
                 try
                 {
-                    using var client = _httpClientFactory.CreateClient("ErganiApi");
-                    client.Timeout = TimeSpan.FromSeconds(8);
-                    using var response = await client.GetAsync(company.ErganiBaseUrl.TrimEnd('/') + "/",
-                        HttpCompletionOption.ResponseHeadersRead);
-                    var code = (int)response.StatusCode;
-                    apiServerError = code >= 500;
-                    ErganiHealthStatus = apiServerError
-                        ? string.Format(Loc["HealthServerErrorHttp"], code)
-                        : string.Format(Loc["HealthServerRespondingHttp"], code);
+                    // Use the same real JWT-authentication health check as the background retry/outage routine.
+                    // Do not GET the API base URL: that route may legitimately return HTTP 404.
+                    await using var db = new AppDbContext(_connectionState.GetDbOptions());
+                    var storedCompany = await db.Companies.AsNoTracking()
+                        .FirstOrDefaultAsync(c => c.Id == company.Id);
+
+                    if (storedCompany == null)
+                    {
+                        ErganiHealthStatus = Loc["HealthNoCompanyApiUrl"];
+                        apiConfigurationProblem = true;
+                    }
+                    else if (string.IsNullOrWhiteSpace(storedCompany.ErganiUsername) ||
+                             string.IsNullOrWhiteSpace(storedCompany.ErganiPasswordEncrypted))
+                    {
+                        ErganiHealthStatus = Loc["HealthEndpointUnreachable"] + " " +
+                            Loc["HealthMissingErganiCredentials"];
+                        apiConfigurationProblem = true;
+                    }
+                    else
+                    {
+                        var credentials = new ErganiManager.ErganiApi.Models.ErganiCredentials
+                        {
+                            Username = storedCompany.ErganiUsername,
+                            Password = _credentialProtector.Unprotect(storedCompany.ErganiPasswordEncrypted),
+                            Usertype = storedCompany.ErganiUsertype,
+                            BaseUrl = storedCompany.ErganiBaseUrl
+                        };
+
+                        var status = await _erganiHealthCheckService.CheckAsync(credentials);
+                        apiServerError = status == ErganiServiceStatus.Offline;
+                        ErganiHealthStatus = status == ErganiServiceStatus.Online
+                            ? Loc["HealthOnline"] + " — " + Loc["HealthErganiAuthenticationSucceeded"]
+                            : Loc["HealthOffline"] + " — " + Loc["HealthErganiAuthenticationFailed"];
+                    }
                 }
-                catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or UriFormatException)
+                catch (Exception ex)
                 {
+                    apiServerError = true;
                     ErganiHealthStatus = Loc["HealthEndpointUnreachable"] + " " + ex.Message;
                 }
             }
