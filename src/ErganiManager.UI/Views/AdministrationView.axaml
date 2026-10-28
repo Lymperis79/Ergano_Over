@@ -30,6 +30,70 @@
                         </StackPanel>
                     </TabItem>
 
+
+                    <TabItem Header="{Binding Loc[CompanySettings]}" IsVisible="{Binding !IsDatabaseOptionsView}">
+                        <StackPanel Spacing="16" Margin="0,12,0,0">
+                            <Border Background="{DynamicResource CardBrush}" CornerRadius="8" Padding="20">
+                                <StackPanel Spacing="10">
+                                    <TextBlock Text="{Binding Loc[CompanySettings]}" FontSize="16" FontWeight="SemiBold" />
+                                    <TextBlock Text="{Binding Loc[CompanySettingsUsesMainSelector]}" Foreground="Gray" FontSize="12" TextWrapping="Wrap" />
+                                    <TextBlock Text="{Binding CompanySettingsStatus}" TextWrapping="Wrap" />
+                                    <TextBlock Text="{Binding Loc[ErganiBaseUrl]}" FontWeight="SemiBold" />
+                                    <TextBox Text="{Binding CompanyErganiBaseUrl, Mode=TwoWay}" />
+                                    <Separator />
+                                    <TextBlock Text="{Binding Loc[TimeRules]}" FontSize="15" FontWeight="SemiBold" />
+                                    <TextBlock Text="{Binding Loc[EarlyClockInBlock]}" FontWeight="SemiBold" />
+                                    <NumericUpDown Value="{Binding EarlyClockInBlockMinutes}" Minimum="0" Maximum="120" />
+                                    <TextBlock Text="{Binding Loc[EarlyDepartureAlert]}" FontWeight="SemiBold" />
+                                    <NumericUpDown Value="{Binding EarlyDepartureAlertMinutes}" Minimum="0" Maximum="120" />
+                                    <CheckBox Content="{Binding Loc[BlockRestAbsent]}" IsChecked="{Binding BlockClockInOnRestOrAbsentDay}" />
+                                    <CheckBox Content="{Binding Loc[BlockNoSchedule]}" IsChecked="{Binding BlockClockInWithoutSchedule}" />
+                                    <Separator />
+                                    <TextBlock Text="{Binding Loc[EmailAlerts]}" FontSize="15" FontWeight="SemiBold" />
+                                    <CheckBox Content="{Binding Loc[EmailAlerts]}" IsChecked="{Binding AlertEmailEnabled}" />
+                                    <StackPanel IsVisible="{Binding AlertEmailEnabled}" Spacing="10">
+                                        <TextBlock Text="{Binding Loc[AlertEmailRecipientsCommaSeparated]}" FontWeight="SemiBold" />
+                                        <TextBox Text="{Binding AlertEmailRecipients}" />
+                                        <TextBlock Text="{Binding Loc[SMTPHost]}" FontWeight="SemiBold" />
+                                        <TextBox Text="{Binding SmtpHost}" PlaceholderText="smtp.example.com" />
+                                        <TextBlock Text="{Binding Loc[SMTPPort]}" FontWeight="SemiBold" />
+                                        <NumericUpDown Value="{Binding SmtpPort}" Minimum="1" Maximum="65535" />
+                                        <TextBlock Text="{Binding Loc[SMTPUsername]}" FontWeight="SemiBold" />
+                                        <TextBox Text="{Binding SmtpUser}" />
+                                        <TextBlock Text="{Binding Loc[SMTPPassword]}" FontWeight="SemiBold" />
+                                        <TextBox Text="{Binding SmtpPassword}" PasswordChar="•" />
+                                        <CheckBox Content="{Binding Loc[UseTLS]}" IsChecked="{Binding SmtpUseTls}" />
+                                        <Button Content="{Binding Loc[TestEmailSettings]}" Command="{Binding TestCompanyEmailCommand}" IsEnabled="{Binding !IsTestingCompanyEmail}" HorizontalAlignment="Left" />
+                                        <Border IsVisible="{Binding CompanyEmailTestResult, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" CornerRadius="4" Padding="8,6">
+                                            <Border.Background>
+                                                <SolidColorBrush Color="{Binding CompanyEmailTestSuccess, Converter={x:Static vm:BoolToBackgroundConverter.Instance}}" />
+                                            </Border.Background>
+                                            <TextBlock Text="{Binding CompanyEmailTestResult}" Foreground="White" FontSize="12" TextWrapping="Wrap" />
+                                        </Border>
+                                        <Separator />
+                                        <TextBlock Text="{Binding Loc[AlertEventsTitle]}" FontWeight="SemiBold" />
+                                        <CheckBox Content="{Binding Loc[AlertEvEarlyDeparture]}" IsChecked="{Binding AlertEvEarlyDeparture}" />
+                                        <CheckBox Content="{Binding Loc[AlertEvErganiDown]}" IsChecked="{Binding AlertEvErganiDown}" />
+                                        <CheckBox Content="{Binding Loc[AlertEvInternetDown]}" IsChecked="{Binding AlertEvInternetDown}" />
+                                        <CheckBox Content="{Binding Loc[AlertEvEarlyClockIn]}" IsChecked="{Binding AlertEvEarlyClockIn}" />
+                                        <CheckBox Content="{Binding Loc[AlertEvLateClockIn]}" IsChecked="{Binding AlertEvLateClockIn}" />
+                                        <CheckBox Content="{Binding Loc[AlertEvNoSchedule]}" IsChecked="{Binding AlertEvNoSchedule}" />
+                                        <CheckBox Content="{Binding Loc[AlertEvScanRejected]}" IsChecked="{Binding AlertEvScanRejected}" />
+                                        <CheckBox Content="{Binding Loc[AlertEvAutomaticClockOut]}" IsChecked="{Binding AlertEvAutomaticClockOut}" />
+                                        <TextBlock Text="{Binding Loc[ClockInAlertMinutes]}" FontWeight="SemiBold" />
+                                        <NumericUpDown Value="{Binding ClockInAlertMinutes}" Minimum="0" Maximum="240" />
+                                        <TextBlock Text="{Binding Loc[AlertEventsHint]}" TextWrapping="Wrap" Foreground="Gray" FontSize="11" />
+                                    </StackPanel>
+                                    <Separator />
+                                    <TextBlock Text="{Binding Loc[AutoRetry]}" FontSize="15" FontWeight="SemiBold" />
+                                    <CheckBox Content="{Binding Loc[AutoRetry]}" IsChecked="{Binding AutoRetryFailedSubmissions}" />
+                                    <TextBlock Text="{Binding Loc[AutoRetryDesc]}" TextWrapping="Wrap" Foreground="Gray" FontSize="11" />
+                                    <Button Content="{Binding Loc[Save]}" Command="{Binding SaveCompanySettingsCommand}" Classes="accent" HorizontalAlignment="Left" />
+                                </StackPanel>
+                            </Border>
+                        </StackPanel>
+                    </TabItem>
+
                     <TabItem Header="{Binding Loc[OfficialHolidays]}" IsVisible="{Binding !IsDatabaseOptionsView}">
                         <StackPanel Spacing="12" Margin="0,12,0,0">
                             <Border Background="{DynamicResource CardBrush}" CornerRadius="8" Padding="20">
