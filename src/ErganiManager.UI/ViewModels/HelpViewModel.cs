@@ -619,6 +619,80 @@ Ergani user types
 Terminology can differ slightly between screens. When a status affects whether an item can be sent again, rely on the specific screen's instructions and submission log.""",
             "glossary terminology Greek English translation status user type EFKA"),
 
+        new("users", "Administration", "Users and permissions",
+            "Manage user accounts, roles and access to application screens.",
+            """USERS AND PERMISSIONS
+
+1. Open Users with an account that has permission to manage users.
+2. Review the account, active status, role and permitted menu items before changing access.
+3. Grant only the screens and actions the person needs.
+4. If a menu item is missing, check the user's role and permissions, then confirm the active company and application mode.
+
+Good practice
+• Keep an appropriately protected administrator account available.
+• Do not share user accounts; separate accounts make actions easier to audit.
+• Do not remove the last administrator or change your own access until another authorized administrator can sign in.
+• Application login credentials are different from credentials used to authenticate with Ergani.""",
+            "users user account permissions roles access menu login administrator"),
+
+        new("today-board", "Daily operations", "Today board and daily status",
+            "Compare the daily schedule with available attendance information.",
+            """TODAY BOARD
+
+1. Open Today and confirm the active company and date.
+2. Review each employee's schedule and the attendance/work-card information available.
+3. If a person or event is missing, check the date, employee's branch, active status and work-card history.
+4. Open the underlying schedule or work-card record to investigate discrepancies.
+
+The daily board is an operational overview. A missing event can be caused by data availability, synchronization, filters or a blocked scan; it is not automatically proof that no event occurred.
+
+For a disputed clock-in or clock-out, review the original event and its log and preserve the details for follow-up.""",
+            "today daily board status attendance schedule clock in clock out employee"),
+
+        new("work-card-scan", "Daily operations", "Work-card scanning and terminal",
+            "Review scans, blocked events, manual entries and connectivity limitations.",
+            """WORK-CARD SCANNING AND TERMINAL
+
+Normal scan
+1. Confirm the terminal is connected and configured for the correct company/branch.
+2. Scan the employee identifier using the configured device or terminal workflow.
+3. Read the result and check whether the scan was accepted or blocked.
+4. If rejected, note the displayed reason and inspect the corresponding scan log.
+
+Blocked scans
+• Company rules can block clock-in, for example when a schedule is required and none is on file.
+• Verify the saved company setting before testing a rule change.
+• A blocked scan is not a successful attendance event.
+
+Connectivity
+• A lost connection can affect whether an event is sent immediately or queued. Check the status and log; do not assume every entry type is queued.
+• Manual/late card workflows can behave differently offline from ordinary scans. Follow the warning shown in the form.
+• After connectivity returns, verify whether queued events synchronized and whether failed items need attention.
+
+When reporting a scan problem, keep the employee, timestamp, branch, device and result. Do not use a duplicate scan as the first troubleshooting step.""",
+            "scan terminal device work card blocked scan clock in offline queue branch manual"),
+
+        new("database-options", "Administration", "Database options and connection setup",
+            "Understand the configured provider and connection settings before maintenance.",
+            """DATABASE OPTIONS AND CONNECTION SETUP
+
+Change database settings only when you understand how this installation connects to its central database and local/offline data.
+
+Before changing settings
+1. Identify the configured provider and target database.
+2. Confirm server/address, database name and connection details with the system administrator.
+3. Determine whether the application uses a central database, local SQLite database or offline cache.
+4. Verify a backup using a method supported by that provider before maintenance or migration.
+
+If the database is unavailable
+• Read the complete message and log details.
+• Check network access, server availability, database name, credentials and provider-specific configuration.
+• Use an available connection/setup test to diagnose the issue before changing or recreating data.
+• Do not delete the database or cache as a general fix. A cache may contain data needed for offline work.
+
+SQL Server, MariaDB and SQLite have different backup and maintenance requirements. Follow the instructions for the provider configured in your installation.""",
+            "database options setup connection provider SQL Server MariaDB SQLite central local cache");
+
         new("release-notes", "Reference", "Help guide and version notes",
             "How this guide is maintained and how to report a missing topic.",
             """ABOUT THIS HELP GUIDE
@@ -990,6 +1064,80 @@ SMTP — Πρωτόκολλο αποστολής email
 
 Η ορολογία μπορεί να διαφέρει ελαφρά μεταξύ οθονών. Όταν μια κατάσταση καθορίζει αν μια εγγραφή μπορεί να ξανασταλεί, ακολουθήστε τις οδηγίες της συγκεκριμένης οθόνης και το αρχείο υποβολών.""",
             "γλωσσάρι ορολογία ελληνικά αγγλικά μετάφραση κατάσταση τύπος χρήστη ΕΦΚΑ"),
+
+        new("users", "Διαχείριση", "Χρήστες και δικαιώματα",
+            "Λογαριασμοί χρηστών, ρόλοι και πρόσβαση στις οθόνες.",
+            """ΧΡΗΣΤΕΣ ΚΑΙ ΔΙΚΑΙΩΜΑΤΑ
+
+1. Ανοίξτε τους Χρήστες με λογαριασμό που έχει δικαίωμα διαχείρισης χρηστών.
+2. Ελέγξτε λογαριασμό, ενεργή κατάσταση, ρόλο και επιτρεπόμενα στοιχεία μενού πριν αλλάξετε πρόσβαση.
+3. Δώστε μόνο τις οθόνες και ενέργειες που χρειάζεται ο χρήστης.
+4. Αν λείπει επιλογή από το μενού, ελέγξτε ρόλο/δικαιώματα και μετά την επιλεγμένη εταιρεία και τη λειτουργία της εφαρμογής.
+
+Καλή πρακτική
+• Διατηρείτε έναν κατάλληλα προστατευμένο λογαριασμό διαχειριστή.
+• Μην μοιράζεστε λογαριασμούς· οι ξεχωριστοί λογαριασμοί βοηθούν στον έλεγχο ενεργειών.
+• Μην αφαιρείτε τον τελευταίο διαχειριστή και μην αλλάζετε τα δικά σας δικαιώματα πριν επιβεβαιώσετε ότι άλλος εξουσιοδοτημένος διαχειριστής μπορεί να συνδεθεί.
+• Τα στοιχεία σύνδεσης στην εφαρμογή διαφέρουν από τους κωδικούς ταυτοποίησης στο ΕΡΓΑΝΗ.""",
+            "χρήστες λογαριασμός δικαιώματα ρόλοι πρόσβαση μενού σύνδεση διαχειριστής"),
+
+        new("today-board", "Καθημερινές εργασίες", "Πίνακας σημερινής κατάστασης",
+            "Σύγκριση προγράμματος και διαθέσιμων στοιχείων παρουσίας.",
+            """ΠΙΝΑΚΑΣ ΣΗΜΕΡΙΝΗΣ ΚΑΤΑΣΤΑΣΗΣ
+
+1. Ανοίξτε το Σήμερα και επιβεβαιώστε την ενεργή εταιρεία και ημερομηνία.
+2. Ελέγξτε το πρόγραμμα εργαζομένου και τα διαθέσιμα στοιχεία κάρτας εργασίας/παρουσίας.
+3. Αν λείπει εργαζόμενος ή συμβάν, ελέγξτε ημερομηνία, υποκατάστημα, ενεργή κατάσταση και ιστορικό κάρτας.
+4. Ανοίξτε την αρχική εγγραφή προγράμματος ή κάρτας για να διερευνήσετε τη διαφορά.
+
+Ο ημερήσιος πίνακας είναι λειτουργική σύνοψη. Η απουσία συμβάντος μπορεί να οφείλεται σε διαθεσιμότητα δεδομένων, συγχρονισμό, φίλτρα ή αποκλεισμένη σάρωση· δεν αποδεικνύει αυτόματα ότι δεν συνέβη τίποτα.
+
+Για αμφισβητούμενη είσοδο ή έξοδο, ελέγξτε το αρχικό συμβάν και το αρχείο καταγραφής και διατηρήστε τις λεπτομέρειες.""",
+            "σήμερα ημερήσιος πίνακας κατάσταση παρουσία πρόγραμμα είσοδος έξοδος εργαζόμενος"),
+
+        new("work-card-scan", "Καθημερινές εργασίες", "Σάρωση κάρτας και τερματικό",
+            "Σαρώσεις, αποκλεισμένα συμβάντα, χειροκίνητες εγγραφές και σύνδεση.",
+            """ΣΑΡΩΣΗ ΚΑΡΤΑΣ ΕΡΓΑΣΙΑΣ ΚΑΙ ΤΕΡΜΑΤΙΚΟ
+
+Κανονική σάρωση
+1. Επιβεβαιώστε ότι το τερματικό είναι συνδεδεμένο και ρυθμισμένο για τη σωστή εταιρεία/υποκατάστημα.
+2. Σαρώστε το αναγνωριστικό εργαζομένου.
+3. Διαβάστε το αποτέλεσμα και ελέγξτε αν η σάρωση έγινε δεκτή ή αποκλείστηκε.
+4. Αν απορριφθεί, καταγράψτε τον λόγο και ελέγξτε το αρχείο σαρώσεων.
+
+Αποκλεισμένες σαρώσεις
+• Κανόνες εταιρείας μπορεί να αποκλείουν είσοδο, για παράδειγμα όταν απαιτείται πρόγραμμα και δεν υπάρχει.
+• Επαληθεύστε την αποθηκευμένη ρύθμιση πριν δοκιμάσετε αλλαγή κανόνα.
+• Η αποκλεισμένη σάρωση δεν είναι επιτυχές συμβάν παρουσίας.
+
+Σύνδεση
+• Η απώλεια σύνδεσης επηρεάζει το αν το συμβάν αποστέλλεται αμέσως ή μπαίνει σε ουρά. Ελέγξτε την κατάσταση και το αρχείο καταγραφής.
+• Οι χειροκίνητες/καθυστερημένες κάρτες μπορεί να έχουν διαφορετική συμπεριφορά offline. Ακολουθήστε την προειδοποίηση της φόρμας.
+• Μετά την επανασύνδεση, ελέγξτε αν συγχρονίστηκαν τα συμβάντα και αν χρειάζεται χειρισμός αποτυχημένων εγγραφών.
+
+Όταν αναφέρετε πρόβλημα, κρατήστε εργαζόμενο, ώρα, υποκατάστημα, συσκευή και αποτέλεσμα. Μην ξεκινάτε με διπλή σάρωση.""",
+            "σάρωση τερματικό συσκευή κάρτα εργασίας αποκλεισμός είσοδος εκτός σύνδεσης ουρά υποκατάστημα χειροκίνητη"),
+
+        new("database-options", "Διαχείριση", "Επιλογές βάσης και ρύθμιση σύνδεσης",
+            "Πάροχος βάσης, σύνδεση και ρυθμίσεις εγκατάστασης.",
+            """ΕΠΙΛΟΓΕΣ ΒΑΣΗΣ ΚΑΙ ΡΥΘΜΙΣΗ ΣΥΝΔΕΣΗΣ
+
+Αλλάξτε τις ρυθμίσεις μόνο αν γνωρίζετε πώς συνδέεται η εγκατάσταση με την κεντρική βάση και τα τοπικά δεδομένα.
+
+Πριν από αλλαγές
+1. Εντοπίστε τον πάροχο και τη βάση που έχει ρυθμιστεί.
+2. Επιβεβαιώστε διακομιστή/διεύθυνση, όνομα βάσης και στοιχεία σύνδεσης με τον διαχειριστή.
+3. Διαπιστώστε αν χρησιμοποιείται κεντρική βάση, τοπική SQLite ή offline cache.
+4. Πριν από συντήρηση ή μετάβαση, επαληθεύστε αντίγραφο ασφαλείας με μέθοδο που υποστηρίζει ο πάροχος.
+
+Αν η βάση δεν είναι διαθέσιμη
+• Διαβάστε ολόκληρο το μήνυμα και τις λεπτομέρειες καταγραφής.
+• Ελέγξτε δίκτυο, διακομιστή, όνομα βάσης, διαπιστευτήρια και ρυθμίσεις παρόχου.
+• Χρησιμοποιήστε διαθέσιμο έλεγχο σύνδεσης/εγκατάστασης πριν αλλάξετε ή δημιουργήσετε ξανά δεδομένα.
+• Μη διαγράφετε βάση ή cache ως γενική λύση· η cache μπορεί να περιέχει δεδομένα για εργασία offline.
+
+SQL Server, MariaDB και SQLite έχουν διαφορετικές απαιτήσεις αντιγράφων ασφαλείας και συντήρησης. Ακολουθήστε τις οδηγίες για τον πάροχο της εγκατάστασής σας.""",
+            "βάση επιλογές εγκατάσταση σύνδεση πάροχος SQL Server MariaDB SQLite κεντρική τοπική cache");
 
         new("release-notes", "Αναφορά", "Οδηγός βοήθειας και εκδόσεις",
             "Πώς συντηρείται ο οδηγός και πώς αναφέρετε θέμα που λείπει.",
