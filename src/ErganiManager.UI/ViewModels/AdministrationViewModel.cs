@@ -7,6 +7,7 @@ using ErganiManager.Core.Interfaces;
 using ErganiManager.Core.Models;
 using System.Collections.ObjectModel;
 using System.Linq;
+using System.Net.Http;
 using ErganiManager.UI.Localization;
 using ErganiManager.ErganiApi;
 using ErganiManager.ErganiApi.Services;
@@ -42,6 +43,8 @@ public partial class AdministrationViewModel : ViewModelBase, IAdminSectionViewM
     private readonly ICacheSyncService _cacheSync;
     private readonly IOfficialHolidayCatalogService _holidayCatalog;
     private readonly IEmailAlertService _emailAlertService;
+    private readonly IInternetCheckService _internetCheckService;
+    private readonly IHttpClientFactory _httpClientFactory;
     private int? _activeCompanyId;
     private CompanyDto? _loadedCompanySettings;
     private bool _loadingCompanySettings;
@@ -131,10 +134,26 @@ public partial class AdministrationViewModel : ViewModelBase, IAdminSectionViewM
     [ObservableProperty] private bool _isCompanySettingsDirty;
 
 
+    // System health dashboard (read-only checks; no submissions or emails are sent).
+    [ObservableProperty] private bool _isRefreshingSystemHealth;
+    [ObservableProperty] private string _systemHealthSummary = string.Empty;
+    [ObservableProperty] private string _databaseHealthStatus = string.Empty;
+    [ObservableProperty] private string _databaseHealthDetail = string.Empty;
+    [ObservableProperty] private string _internetHealthStatus = string.Empty;
+    [ObservableProperty] private string _erganiHealthStatus = string.Empty;
+    [ObservableProperty] private string _emailHealthStatus = string.Empty;
+    [ObservableProperty] private string _cacheHealthStatus = string.Empty;
+    [ObservableProperty] private string _queuedScansHealthStatus = "—";
+    [ObservableProperty] private string _failedSubmissionsHealthStatus = "—";
+    [ObservableProperty] private string _healthLastChecked = string.Empty;
+
+
+
 
     public AdministrationViewModel(IDatabaseMaintenanceService maintenance, IRoundingSettingsService rounding,
         IPortalSettingsService portal, ICompanyService companyService, ICacheSyncService cacheSync,
-        IOfficialHolidayCatalogService holidayCatalog, IEmailAlertService emailAlertService)
+        IOfficialHolidayCatalogService holidayCatalog, IEmailAlertService emailAlertService,
+        IInternetCheckService internetCheckService, IHttpClientFactory httpClientFactory)
     {
         _maintenance = maintenance;
         _rounding = rounding;
@@ -143,6 +162,8 @@ public partial class AdministrationViewModel : ViewModelBase, IAdminSectionViewM
         _cacheSync = cacheSync;
         _holidayCatalog = holidayCatalog;
         _emailAlertService = emailAlertService;
+        _internetCheckService = internetCheckService;
+        _httpClientFactory = httpClientFactory;
         var schedule = portal.Current.Schedule;
         var workCards = portal.Current.WorkCards;
 
@@ -472,6 +493,121 @@ public partial class AdministrationViewModel : ViewModelBase, IAdminSectionViewM
     }
 
 
+
+    [RelayCommand]
+    private async Task RefreshSystemHealthAsync()
+    {
+        if (IsRefreshingSystemHealth) return;
+        IsRefreshingSystemHealth = true;
+        SystemHealthSummary = Loc["HealthChecking"];
+        var apiServerError = false;
+        try
+        {
+            var internetTask = _internetCheckService.IsOnlineAsync();
+            List<CompanyDto>? companies = null;
+            Exception? databaseError = null;
+            try
+            {
+                // A read-only data query verifies the configured main database without running migrations.
+                companies = await _companyService.GetAllAsync();
+                DatabaseHealthStatus = Loc["HealthOnline"];
+                try { DatabaseHealthDetail = _maintenance.DescribeDatabase(); }
+                catch { DatabaseHealthDetail = Loc["HealthDatabaseConfigured"]; }
+            }
+            catch (Exception ex)
+            {
+                databaseError = ex;
+                DatabaseHealthStatus = Loc["HealthOffline"];
+                DatabaseHealthDetail = ex.Message;
+            }
+
+            bool internetOnline;
+            try
+            {
+                internetOnline = await internetTask;
+                InternetHealthStatus = internetOnline ? Loc["HealthOnline"] : Loc["HealthOffline"];
+            }
+            catch (Exception ex)
+            {
+                internetOnline = false;
+                InternetHealthStatus = Loc["HealthCheckFailed"] + " " + ex.Message;
+            }
+
+            var company = companies?.FirstOrDefault(c => c.Id == _activeCompanyId);
+            if (company == null && companies?.Count > 0 && _activeCompanyId == null)
+                company = companies[0];
+
+            if (!internetOnline)
+            {
+                ErganiHealthStatus = Loc["HealthNotCheckedNoInternet"];
+            }
+            else if (company == null || string.IsNullOrWhiteSpace(company.ErganiBaseUrl) ||
+                     !Uri.TryCreate(company.ErganiBaseUrl, UriKind.Absolute, out var apiUri) ||
+                     (apiUri.Scheme != Uri.UriSchemeHttp && apiUri.Scheme != Uri.UriSchemeHttps))
+            {
+                ErganiHealthStatus = Loc["HealthNoCompanyApiUrl"];
+            }
+            else
+            {
+                try
+                {
+                    using var client = _httpClientFactory.CreateClient("ErganiApi");
+                    client.Timeout = TimeSpan.FromSeconds(8);
+                    using var response = await client.GetAsync(company.ErganiBaseUrl.TrimEnd('/') + "/",
+                        HttpCompletionOption.ResponseHeadersRead);
+                    var code = (int)response.StatusCode;
+                    apiServerError = code >= 500;
+                    ErganiHealthStatus = apiServerError
+                        ? string.Format(Loc["HealthServerErrorHttp"], code)
+                        : string.Format(Loc["HealthServerRespondingHttp"], code);
+                }
+                catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or UriFormatException)
+                {
+                    ErganiHealthStatus = Loc["HealthEndpointUnreachable"] + " " + ex.Message;
+                }
+            }
+
+            if (company == null)
+                EmailHealthStatus = Loc["HealthNoCompanySelected"];
+            else if (!company.AlertEmailEnabled)
+                EmailHealthStatus = Loc["HealthEmailDisabled"];
+            else if (string.IsNullOrWhiteSpace(company.SmtpHost) ||
+                     string.IsNullOrWhiteSpace(company.AlertEmailRecipients))
+                EmailHealthStatus = Loc["HealthEmailNeedsConfiguration"];
+            else
+                EmailHealthStatus = Loc["HealthEmailConfiguredNotTested"];
+
+            try
+            {
+                var cache = _maintenance.GetLocalCacheStatus();
+                QueuedScansHealthStatus = cache.PendingScans.ToString();
+                FailedSubmissionsHealthStatus = cache.FailedSubmissions.ToString();
+                CacheHealthStatus = Loc["HealthCacheAvailable"];
+            }
+            catch (Exception ex)
+            {
+                CacheHealthStatus = Loc["HealthCacheUnavailable"] + " " + ex.Message;
+                QueuedScansHealthStatus = "—";
+                FailedSubmissionsHealthStatus = "—";
+            }
+
+            var hasFailedSubmissions = int.TryParse(FailedSubmissionsHealthStatus, out var failed) && failed > 0;
+            var endpointUnreachable = ErganiHealthStatus.StartsWith(Loc["HealthEndpointUnreachable"], StringComparison.Ordinal);
+            var hasProblem = databaseError != null || !internetOnline || apiServerError || endpointUnreachable || hasFailedSubmissions;
+            SystemHealthSummary = hasProblem ? Loc["HealthAttentionRequired"] : Loc["HealthAllChecksComplete"];
+            HealthLastChecked = DateTimeOffset.Now.ToString("yyyy-MM-dd HH:mm:ss");
+        }
+        catch (Exception ex)
+        {
+            SystemHealthSummary = Loc["HealthDashboardError"] + " " + ex.Message;
+            HealthLastChecked = DateTimeOffset.Now.ToString("yyyy-MM-dd HH:mm:ss");
+        }
+        finally
+        {
+            IsRefreshingSystemHealth = false;
+        }
+    }
+
     private int ComposeCompanyAlertEvents() =>
         (AlertEvEarlyDeparture ? (int)AlertEvent.EarlyDeparture : 0) |
         (AlertEvErganiDown ? (int)AlertEvent.ErganiDown : 0) |
@@ -701,6 +837,7 @@ public partial class AdministrationViewModel : ViewModelBase, IAdminSectionViewM
     public void Initialize(UserSession session)
     {
         Refresh();
+        _ = RefreshSystemHealthAsync();
         var previousCompanyId = _activeCompanyId;
         _activeCompanyId = session.CompanyId;
         if (previousCompanyId != _activeCompanyId || _loadedCompanySettings == null)
