@@ -4,36 +4,133 @@
              x:Class="ErganiManager.UI.Views.HelpView"
              x:DataType="vm:HelpViewModel">
 
-    <Grid RowDefinitions="Auto,*,Auto">
-        <Grid Grid.Row="0" ColumnDefinitions="*,Auto,Auto" Margin="0,0,0,12">
-            <TextBlock Text="{Binding Loc[HelpTitle]}" FontSize="22" FontWeight="Bold" />
-            <Button Grid.Column="1" Content="{Binding Loc[HelpResetDefault]}"
-                    Command="{Binding RestoreDefaultCommand}" Margin="0,0,6,0"
-                    IsVisible="{Binding IsEditing}" />
-            <Button Grid.Column="2" Content="{Binding Loc[HelpEditAction]}"
-                    Command="{Binding StartEditCommand}" IsVisible="{Binding !IsEditing}" />
+    <Grid RowDefinitions="Auto,Auto,*,Auto" RowSpacing="12">
+        <!-- Page heading -->
+        <Grid Grid.Row="0" ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
+            <StackPanel Spacing="3">
+                <TextBlock Text="{Binding Loc[HelpTitle]}" FontSize="24" FontWeight="Bold" />
+                <TextBlock Text="{Binding PageSubtitle}" Opacity="0.72" TextWrapping="Wrap" />
+            </StackPanel>
+            <Button Grid.Column="1"
+                    Content="{Binding RestoreDefaultText}"
+                    Command="{Binding RestoreDefaultCommand}"
+                    IsVisible="{Binding CanRestoreDefault}"
+                    VerticalAlignment="Center" />
+            <Button Grid.Column="2"
+                    Content="{Binding EditTopicText}"
+                    Command="{Binding StartEditCommand}"
+                    IsVisible="{Binding !IsEditing}"
+                    VerticalAlignment="Center"
+                    Classes="accent" />
         </Grid>
 
-        <!-- Read mode -->
-        <ScrollViewer Grid.Row="1" IsVisible="{Binding !IsEditing}">
-            <Border Background="{DynamicResource CardBrush}" CornerRadius="8" Padding="20">
-                <SelectableTextBlock Text="{Binding HelpText}" TextWrapping="Wrap" />
+        <!-- Search -->
+        <Grid Grid.Row="1" ColumnDefinitions="Auto,*" ColumnSpacing="10">
+            <Border Background="{DynamicResource CardBrush}" CornerRadius="8" Padding="10"
+                    VerticalAlignment="Center">
+                <TextBlock Text="⌕" FontSize="20" />
             </Border>
-        </ScrollViewer>
-
-        <!-- Edit mode -->
-        <Grid Grid.Row="1" Grid.RowSpan="2" IsVisible="{Binding IsEditing}" RowDefinitions="*,Auto">
-            <TextBox Grid.Row="0" Text="{Binding EditText}" AcceptsReturn="True"
-                     TextWrapping="Wrap" VerticalContentAlignment="Top" />
-            <Grid Grid.Row="1" ColumnDefinitions="*,*" ColumnSpacing="8" Margin="0,8,0,0">
-                <Button Grid.Column="0" Content="{Binding Loc[Cancel]}"
-                        Command="{Binding CancelEditCommand}" HorizontalAlignment="Stretch" />
-                <Button Grid.Column="1" Content="{Binding Loc[Save]}"
-                        Command="{Binding SaveEditCommand}" Classes="accent" HorizontalAlignment="Stretch" />
-            </Grid>
+            <TextBox Grid.Column="1"
+                     Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
+                     Watermark="{Binding SearchPlaceholder}"
+                     VerticalContentAlignment="Center"
+                     MinHeight="42" />
         </Grid>
 
-        <TextBlock Grid.Row="2" Text="{Binding StatusMessage}" Margin="0,8,0,0"
-                   IsVisible="{Binding !IsEditing}" />
+        <!-- Browse mode: topic index and article -->
+        <Grid Grid.Row="2" ColumnDefinitions="300,*" ColumnSpacing="12"
+              IsVisible="{Binding !IsEditing}">
+            <Border Grid.Column="0" Background="{DynamicResource CardBrush}"
+                    CornerRadius="10" Padding="12">
+                <Grid RowDefinitions="Auto,Auto,*" RowSpacing="8">
+                    <TextBlock Text="{Binding TopicsHeading}" FontSize="11"
+                               FontWeight="Bold" Opacity="0.7" />
+                    <TextBlock Grid.Row="1" Text="{Binding SearchCountText}"
+                               FontSize="12" Opacity="0.7" />
+                    <ListBox Grid.Row="2"
+                             ItemsSource="{Binding FilteredTopics}"
+                             SelectedItem="{Binding SelectedTopic}"
+                             Background="Transparent"
+                             BorderThickness="0"
+                             Padding="0">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate x:DataType="vm:HelpTopic">
+                                <Border Padding="10" Margin="0,2" CornerRadius="7">
+                                    <StackPanel Spacing="4">
+                                        <TextBlock Text="{Binding Category}" FontSize="10"
+                                                   FontWeight="SemiBold" Opacity="0.68"
+                                                   TextWrapping="Wrap" />
+                                        <TextBlock Text="{Binding Title}" FontSize="14"
+                                                   FontWeight="SemiBold" TextWrapping="Wrap" />
+                                        <TextBlock Text="{Binding Summary}" FontSize="11"
+                                                   Opacity="0.72" TextWrapping="Wrap" />
+                                    </StackPanel>
+                                </Border>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                </Grid>
+            </Border>
+
+            <Border Grid.Column="1" Background="{DynamicResource CardBrush}"
+                    CornerRadius="10" Padding="22">
+                <Grid RowDefinitions="Auto,Auto,*" RowSpacing="12">
+                    <StackPanel Spacing="5">
+                        <TextBlock Text="{Binding SelectedTopic.Category}" FontSize="11"
+                                   FontWeight="Bold" Opacity="0.68" TextWrapping="Wrap" />
+                        <TextBlock Text="{Binding SelectedTopic.Title}" FontSize="22"
+                                   FontWeight="Bold" TextWrapping="Wrap" />
+                        <TextBlock Text="{Binding SelectedTopic.Summary}" FontSize="13"
+                                   Opacity="0.75" TextWrapping="Wrap" />
+                    </StackPanel>
+                    <Border Grid.Row="1" Height="1" Background="{DynamicResource ThemeBorderLowBrush}" />
+                    <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto"
+                                  HorizontalScrollBarVisibility="Disabled">
+                        <SelectableTextBlock Text="{Binding SelectedTopic.Content}"
+                                             TextWrapping="Wrap"
+                                             LineHeight="22"
+                                             FontSize="14" />
+                    </ScrollViewer>
+                </Grid>
+            </Border>
+        </Grid>
+
+        <!-- Edit mode keeps the existing administrator-editable Help capability -->
+        <Border Grid.Row="2" IsVisible="{Binding IsEditing}"
+                Background="{DynamicResource CardBrush}" CornerRadius="10" Padding="16">
+            <Grid RowDefinitions="Auto,*,Auto" RowSpacing="10">
+                <StackPanel Spacing="3">
+                    <TextBlock Text="{Binding SelectedTopic.Title}" FontSize="18"
+                               FontWeight="Bold" TextWrapping="Wrap" />
+                    <TextBlock Text="{Binding IsEditing, StringFormat='Edit the selected topic. Changes are saved for this language only.'}"
+                               Opacity="0.72" TextWrapping="Wrap" />
+                </StackPanel>
+                <TextBox Grid.Row="1" Text="{Binding EditText, UpdateSourceTrigger=PropertyChanged}"
+                         AcceptsReturn="True" TextWrapping="Wrap"
+                         VerticalContentAlignment="Top"
+                         HorizontalContentAlignment="Stretch"
+                         MinHeight="180"
+                         VerticalScrollBarVisibility="Auto"
+                         HorizontalScrollBarVisibility="Auto" />
+                <Grid Grid.Row="2" ColumnDefinitions="*,*" ColumnSpacing="8">
+                    <Button Grid.Column="0" Content="{Binding Loc[Cancel]}"
+                            Command="{Binding CancelEditCommand}"
+                            HorizontalAlignment="Stretch" />
+                    <Button Grid.Column="1" Content="{Binding Loc[Save]}"
+                            Command="{Binding SaveEditCommand}"
+                            Classes="accent" HorizontalAlignment="Stretch" />
+                </Grid>
+            </Grid>
+        </Border>
+
+        <!-- Status and empty-search feedback -->
+        <Grid Grid.Row="3" ColumnDefinitions="*,Auto" ColumnSpacing="12">
+            <TextBlock Text="{Binding StatusMessage}" TextWrapping="Wrap"
+                       VerticalAlignment="Center" />
+            <TextBlock Grid.Column="1" Text="{Binding NoResultsText}"
+                       IsVisible="{Binding SearchText.Length}"
+                       Opacity="0.65" VerticalAlignment="Center"
+                       TextWrapping="Wrap" />
+        </Grid>
     </Grid>
 </UserControl>
