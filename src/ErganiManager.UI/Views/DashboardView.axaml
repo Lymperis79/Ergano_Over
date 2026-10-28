@@ -95,7 +95,7 @@
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate x:DataType="vm:DashboardActivityRow">
                                     <Border BorderBrush="#404040" BorderThickness="0,0,0,1" Padding="0,8">
-                                        <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto,Auto">
+                                        <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto,Auto,Auto">
                                             <TextBlock Grid.Row="0" Grid.Column="0" Text="{Binding TypeText}" FontWeight="SemiBold"
                                                        TextWrapping="Wrap" />
                                             <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding StatusText}" FontSize="11"
