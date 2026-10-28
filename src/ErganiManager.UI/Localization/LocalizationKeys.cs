@@ -77,6 +77,13 @@ public static class L
     public const string OnTimeWindowMinutesLabel = nameof(OnTimeWindowMinutesLabel);
     public const string OnTimeWindowSaved = nameof(OnTimeWindowSaved);
     public const string OnTimeWindowInvalid = nameof(OnTimeWindowInvalid);
+    public const string AutoClockOutTitle = nameof(AutoClockOutTitle);
+    public const string AutoClockOutDescription = nameof(AutoClockOutDescription);
+    public const string AutoClockOutEnabledLabel = nameof(AutoClockOutEnabledLabel);
+    public const string AutoClockOutMinutesLabel = nameof(AutoClockOutMinutesLabel);
+    public const string AutoClockOutSaved = nameof(AutoClockOutSaved);
+    public const string AutoClockOutInvalid = nameof(AutoClockOutInvalid);
+    public const string AutoClockOutSaveFailed = nameof(AutoClockOutSaveFailed);
     public const string NightSettingsApply  = nameof(NightSettingsApply);
     public const string EarlyClockInBlock   = nameof(EarlyClockInBlock);
     public const string EarlyDepartureAlert = nameof(EarlyDepartureAlert);
