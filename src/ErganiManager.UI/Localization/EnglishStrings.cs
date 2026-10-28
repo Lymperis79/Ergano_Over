@@ -1690,5 +1690,9 @@ public static class EnglishStrings
         ["HealthMissingErganiCredentials"] = "Saved Ergani username or password is missing.",
         ["HealthErganiAuthenticationSucceeded"] = "Ergani authentication succeeded.",
         ["HealthErganiAuthenticationFailed"] = "Ergani authentication failed or the service is unavailable.",
+
+        ["Vm.Last backup verified at {0}"] = "Last backup verified at {0}. This timestamp reflects the latest verified backup in this session.",
+        ["Vm.Type DELETE to confirm database deletion."] = "To continue, type DELETE in the box below. This permanently removes the configured database.",
+        ["Vm.Database deletion blocked: type DELETE exactly to confirm."] = "Database deletion blocked: type DELETE exactly to confirm.",
     };
 }
