@@ -2,6 +2,7 @@ using System;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -76,6 +77,9 @@ public partial class EmailLogViewModel : ViewModelBase, IAdminSectionViewModel
 {
     private readonly IConnectionStateService _connectionState;
     private UserSession? _session;
+    private readonly SemaphoreSlim _loadGate = new(1, 1);
+    private CancellationTokenSource? _autoRefreshCts;
+    private static readonly TimeSpan AutoRefreshInterval = TimeSpan.FromSeconds(5);
 
     public ObservableCollection<EmailLogRow> Rows { get; } = new();
 
@@ -114,14 +118,67 @@ public partial class EmailLogViewModel : ViewModelBase, IAdminSectionViewModel
         _session = session;
         HasActiveCompany = session.CompanyId.HasValue;
         NoCompanyMessage = session.CompanyId.HasValue ? string.Empty : Loc["Vm.Select a company first."];
-        if (HasActiveCompany) _ = LoadAsync();
+        // Loading is triggered when the Email Log section is selected, not just when the
+        // cached ViewModel is first created.
+    }
+
+    /// <summary>Refresh immediately whenever the user opens/selects the Email Log section.</summary>
+    public async Task RefreshOnFormSelectedAsync()
+    {
+        if (!HasActiveCompany) return;
+        await LoadAsync();
+        StartAutoRefresh();
+    }
+
+    /// <summary>Stop background polling when the user leaves the Email Log section.</summary>
+    public void StopAutoRefresh()
+    {
+        var cts = Interlocked.Exchange(ref _autoRefreshCts, null);
+        if (cts == null) return;
+        cts.Cancel();
+        cts.Dispose();
+    }
+
+    private void StartAutoRefresh()
+    {
+        if (_autoRefreshCts != null || !HasActiveCompany) return;
+
+        var cts = new CancellationTokenSource();
+        if (Interlocked.CompareExchange(ref _autoRefreshCts, cts, null) != null)
+        {
+            cts.Dispose();
+            return;
+        }
+
+        _ = AutoRefreshLoopAsync(cts);
+    }
+
+    private async Task AutoRefreshLoopAsync(CancellationTokenSource owner)
+    {
+        try
+        {
+            while (!owner.IsCancellationRequested)
+            {
+                await Task.Delay(AutoRefreshInterval, owner.Token);
+                await LoadAsync();
+            }
+        }
+        catch (OperationCanceledException) { }
+        finally
+        {
+            Interlocked.CompareExchange(ref _autoRefreshCts, null, owner);
+            owner.Dispose();
+        }
     }
 
     [RelayCommand]
     private async Task LoadAsync()
     {
         if (_session?.CompanyId is not int companyId) return;
+        // Avoid overlapping refreshes from the timer, filter changes, and the Refresh button.
+        if (!await _loadGate.WaitAsync(0)) return;
 
+        var previouslySelectedId = SelectedRow?.Id;
         try
         {
             var from = DateTime.SpecifyKind((FromDate ?? DateTimeOffset.Now.AddDays(-30)).LocalDateTime.Date, DateTimeKind.Local);
@@ -146,7 +203,9 @@ public partial class EmailLogViewModel : ViewModelBase, IAdminSectionViewModel
                     Body = l.Body, Attempts = l.Attempts
                 });
 
-            SelectedRow = null;
+            SelectedRow = previouslySelectedId is int selectedId
+                ? Rows.FirstOrDefault(row => row.Id == selectedId)
+                : null;
             StatusMessage = Rows.Count == 0
                 ? Loc["Vm.No emails in this period."]
                 : string.Format(Loc["Vm.{0} email(s) found."], Rows.Count);
@@ -154,6 +213,10 @@ public partial class EmailLogViewModel : ViewModelBase, IAdminSectionViewModel
         catch (Exception ex)
         {
             StatusMessage = $"❌ {ex.Message}";
+        }
+        finally
+        {
+            _loadGate.Release();
         }
     }
 }
