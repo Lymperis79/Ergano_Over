@@ -695,6 +695,11 @@ public partial class AdminShellViewModel : ViewModelBase
             return;
 
         var wasCached = _sectionCache.ContainsKey(section);
+
+        // Poll the Email Log only while that section is selected.
+        if (CurrentSectionViewModel is EmailLogViewModel previousEmailLogVm)
+            previousEmailLogVm.StopAutoRefresh();
+
         ActiveSection = section;
 
         if (!_sectionCache.TryGetValue(
@@ -804,6 +809,10 @@ public partial class AdminShellViewModel : ViewModelBase
         }
 
         CurrentSectionViewModel = vm;
+
+        // Reload immediately on every visit, then poll for delivery/status changes while visible.
+        if (section == AdminSection.EmailLog && vm is EmailLogViewModel emailLogVm)
+            _ = emailLogVm.RefreshOnFormSelectedAsync();
 
         // Automatically load saved work-card results whenever the Work Cards form is selected.
         // This loads the application's history; it does not open the external Ergani portal.
