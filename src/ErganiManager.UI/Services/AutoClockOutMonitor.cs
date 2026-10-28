@@ -157,7 +157,8 @@ public sealed class AutoClockOutMonitor
                 CompanyId = companyId,
                 BranchId = schedule.BranchId,
                 MovementType = "Departure",
-                MovementDateTime = departureTime
+                MovementDateTime = departureTime,
+                IsAutomatic = true
             }).ConfigureAwait(false);
 
             if (result.Success)
