@@ -17,6 +17,7 @@ namespace ErganiManager.UI.ViewModels;
 
 public enum AdminSection
 {
+    Dashboard,
     Companies,
     Branches,
     Employees,
@@ -408,7 +409,8 @@ public partial class AdminShellViewModel : ViewModelBase
 
     // ── Menu visibility (per user) and menu groups ───────────────────────
 
-    [ObservableProperty] private bool _showDashboard = true;\n    [ObservableProperty] private bool _showCompanies = true;
+    [ObservableProperty] private bool _showDashboard = true;\n    [ObservableProperty] private bool _showDashboard = true;
+    [ObservableProperty] private bool _showCompanies = true;
     [ObservableProperty] private bool _showBranches = true;
     [ObservableProperty] private bool _showEmployees = true;
     [ObservableProperty] private bool _showUsers = true;
@@ -707,7 +709,7 @@ public partial class AdminShellViewModel : ViewModelBase
         }
 
         // A menu hidden for this user cannot be opened (also not through a stale command).
-        if (_session != null &&
+        if (_session != null && section != AdminSection.Dashboard &&
             !(section == AdminSection.DatabaseOptions
                 ? _session.CanSee(MenuKeys.Administration)
                 : _session.CanSee(sectionName)))
@@ -727,6 +729,9 @@ public partial class AdminShellViewModel : ViewModelBase
         {
             vm = section switch
             {
+                AdminSection.Dashboard =>
+                    (ViewModelBase)_services.GetRequiredService<DashboardViewModel>(),
+
                 AdminSection.Companies =>
                     (ViewModelBase)
                         _services
