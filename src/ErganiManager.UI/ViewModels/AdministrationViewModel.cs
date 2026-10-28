@@ -38,6 +38,9 @@ public partial class AdministrationViewModel : ViewModelBase, IAdminSectionViewM
 
     [ObservableProperty] private bool _isConfirmOpen;
     [ObservableProperty] private string _confirmText = string.Empty;
+    [ObservableProperty] private string _confirmPhraseInput = string.Empty;
+    [ObservableProperty] private bool _isDeleteDatabaseConfirmation;
+    [ObservableProperty] private string _lastBackupInfo = string.Empty;
 
     private readonly IRoundingSettingsService _rounding;
     private readonly IPortalSettingsService _portal;
@@ -1033,10 +1036,17 @@ public partial class AdministrationViewModel : ViewModelBase, IAdminSectionViewM
     }
 
     /// <summary>Called by the view after the user picked a destination file.</summary>
+    public string SuggestedBackupName => _maintenance.SuggestBackupFileName();
+
     public async Task BackupToAsync(string path)
     {
         IsBusy = true;
-        try { StatusMessage = "✅ " + await _maintenance.BackupAsync(path); }
+        try
+        {
+            var message = await _maintenance.BackupAsync(path);
+            LastBackupInfo = string.Format(Loc["Vm.Last backup verified at {0}"], DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"));
+            StatusMessage = "✅ " + message;
+        }
         catch (Exception ex) { StatusMessage = string.Format(Loc["Vm.❌ Backup failed: {0}"], ex.Message); }
         finally { IsBusy = false; }
     }
@@ -1045,6 +1055,8 @@ public partial class AdministrationViewModel : ViewModelBase, IAdminSectionViewM
     private void AskDeleteCache()
     {
         _pending = PendingAction.DeleteCache;
+        IsDeleteDatabaseConfirmation = false;
+        ConfirmPhraseInput = string.Empty;
         string extra;
         try
         {
@@ -1062,18 +1074,36 @@ public partial class AdministrationViewModel : ViewModelBase, IAdminSectionViewM
     private void AskDeleteDatabase()
     {
         _pending = PendingAction.DeleteDatabase;
-        ConfirmText = string.Format(Loc["Vm.PERMANENTLY DELETE the main database ({0})? All companies, employees, schedules and logs are lost. Make a backup first. The setup wizard opens afterwards."], DatabaseInfo);
+        IsDeleteDatabaseConfirmation = true;
+        ConfirmPhraseInput = string.Empty;
+        ConfirmText = string.Format(Loc["Vm.PERMANENTLY DELETE the main database ({0})? All companies, employees, schedules and logs are lost. Make a backup first. The setup wizard opens afterwards."], DatabaseInfo)
+            + Environment.NewLine + Loc["Vm.Type DELETE to confirm database deletion."];
         IsConfirmOpen = true;
     }
 
     [RelayCommand]
-    private void CancelConfirm() { _pending = PendingAction.None; IsConfirmOpen = false; }
+    private void CancelConfirm()
+    {
+        _pending = PendingAction.None;
+        IsDeleteDatabaseConfirmation = false;
+        ConfirmPhraseInput = string.Empty;
+        IsConfirmOpen = false;
+    }
 
     [RelayCommand]
     private async Task ConfirmAsync()
     {
         var action = _pending;
+        if (action == PendingAction.DeleteDatabase &&
+            !string.Equals(ConfirmPhraseInput?.Trim(), "DELETE", StringComparison.Ordinal))
+        {
+            StatusMessage = Loc["Vm.Database deletion blocked: type DELETE exactly to confirm."];
+            return;
+        }
+
         _pending = PendingAction.None;
+        IsDeleteDatabaseConfirmation = false;
+        ConfirmPhraseInput = string.Empty;
         IsConfirmOpen = false;
         IsBusy = true;
         try
