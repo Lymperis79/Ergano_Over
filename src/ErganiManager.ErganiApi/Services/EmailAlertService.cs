@@ -324,7 +324,7 @@ public class EmailAlertService : IEmailAlertService
 
             using var client = new SmtpClient { Timeout = 30_000 };
 
-            var port = company.SmtpPort ?? 587;
+            var port = company.SmtpPort ?? 465;
             var socketOptions = !company.SmtpUseTls
                 ? SecureSocketOptions.None
                 : port == 465
