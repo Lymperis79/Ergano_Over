@@ -50,8 +50,16 @@ public class AlertMessage
     }
 }
 
+/// <summary>SMTP settings entered in the company form, used to send a real test message.</summary>
+public sealed record EmailSmtpTestRequest(
+    string Host, int Port, string? Username, string? Password,
+    string Recipients, bool UseTls);
+
 public interface IEmailAlertService
 {
+    /// <summary>Sends a test message using the settings currently entered in the company form.</summary>
+    Task<(bool Success, string? ErrorMessage)> TestSmtpAsync(EmailSmtpTestRequest request);
+
     /// <summary>
     /// Sends an alert mail with the SMTP settings of the company, but only when the company has alerts
     /// enabled AND selected this kind of event. Never throws. When the mail server cannot be reached
