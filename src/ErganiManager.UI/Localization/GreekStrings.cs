@@ -302,7 +302,7 @@ public static class GreekStrings
         [L.AdminDeleteCache] = "🧹 Διαγραφή τοπικής cache",
         [L.AdminDangerZone] = "Επικίνδυνη ζώνη",
         [L.AdminDeleteDb] = "🗑 Διαγραφή βάσης δεδομένων…",
-        [L.AdminGeneralSettings] = "Γενικά",
+        [L.AdminGeneralSettings] = "Εργαλεία βάσεων δεδομένων",
         [L.AdminHoursSettings] = "Ρυθμίσεις ωραρίου",
         [L.AdminPortalSettings] = "Ρυθμίσεις πυλών",
         [L.AdminDatabaseSettings] = "Βάση & cache",
