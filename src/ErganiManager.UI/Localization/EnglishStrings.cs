@@ -297,7 +297,7 @@ public static class EnglishStrings
         [L.AdminTitle] = "Application Tools",
         ["Application Tools"] = "Application Tools",
         ["Database Options"] = "Database Options",
-        ["NavDatabaseOptions"] = "Database Options",
+        ["NavDatabaseOptions"] = "🗄️ Database Options",
         [L.AdminDatabase] = "Database",
         [L.AdminBackup] = "💾 Backup database…",
         [L.AdminLocalCache] = "Temporary local database (cache)",
@@ -386,7 +386,7 @@ public static class EnglishStrings
 
         [L.NavMasterData] = "🗂 Master data",
         [L.NavAdminGroup] = "⚙ Administration",
-        [L.NavDatabaseTools] = "Application Tools",
+        [L.NavDatabaseTools] = "⚙️ Application Tools",
         [L.NavScan] = "📟 Scan",
         [L.UsersMenus] = "Visible menus",
         [L.UsersMenusHint] = "Tick the menus this user can see. Unticked menus are hidden for this user.",
