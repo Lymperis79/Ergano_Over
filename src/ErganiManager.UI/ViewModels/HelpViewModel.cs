@@ -739,7 +739,7 @@ This guide is built into the application and is available without an internet co
 
 • The guide follows the application's selected language (English or Greek).
 • Use search to find a feature, error message or alternate term.
-• Administrators with Help editing permission can edit a topic and save a language-specific override.
+• If the Edit topic action is available to your account, you can save a language-specific override for that topic.
 • Restoring a topic removes its override and returns to the built-in text.
 • Older saved Help text, if present, is shown separately and is not silently overwritten.
 
@@ -1185,7 +1185,7 @@ SQL Server, MariaDB και SQLite έχουν διαφορετικές απαιτ
 
 • Ακολουθεί τη γλώσσα της εφαρμογής (Ελληνικά ή Αγγλικά).
 • Χρησιμοποιήστε την αναζήτηση για λειτουργία, μήνυμα σφάλματος ή εναλλακτικό όρο.
-• Διαχειριστές με δικαίωμα επεξεργασίας βοήθειας μπορούν να αλλάξουν θέμα και να αποθηκεύσουν προσαρμοσμένο κείμενο ανά γλώσσα.
+• Αν ο λογαριασμός σας διαθέτει την ενέργεια Επεξεργασία θέματος, μπορείτε να αποθηκεύσετε προσαρμοσμένο κείμενο ανά γλώσσα.
 • Η επαναφορά θέματος αφαιρεί την προσαρμογή και επαναφέρει το ενσωματωμένο κείμενο.
 • Παλαιότερο αποθηκευμένο κείμενο βοήθειας, αν υπάρχει, εμφανίζεται ξεχωριστά και δεν αντικαθίσταται σιωπηρά.
 
