@@ -783,9 +783,11 @@ public partial class WorkCardScanViewModel :
                 AutoDetect ? null : movement);
             if (AutoDetect) movement = shift.Movement;
             var schedule = shift.Schedule;
+            var isOfficialHoliday = movement == "Arrival" &&
+                CompanyHolidayCalendar.IsEnabled(companySettings?.OfficialHolidayDatesJson, DateOnly.FromDateTime(scanTime));
 
             // A departure is never blocked: it closes an arrival that already exists.
-            if (movement == "Arrival" && schedule != null && schedule.WorkType is 2 or 3 &&
+            if (!isOfficialHoliday && movement == "Arrival" && schedule != null && schedule.WorkType is 2 or 3 &&
                 (companySettings == null || companySettings.BlockClockInOnRestOrAbsentDay))
             {
                 var dayType = schedule.WorkType == 2 ? Loc["Vm.rest day"] : Loc["Vm.absence day"];
@@ -796,7 +798,7 @@ public partial class WorkCardScanViewModel :
                 return;
             }
 
-            if (movement == "Arrival" && schedule == null &&
+            if (!isOfficialHoliday && movement == "Arrival" && schedule == null &&
                 companySettings?.BlockClockInWithoutSchedule == true)
             {
                 LogBlockedScan("WorkCardScanView", employee, companyId.Value, movement,
@@ -807,7 +809,7 @@ public partial class WorkCardScanViewModel :
             }
 
             // 0 = option off. Full date-times are compared, so shifts around midnight work.
-            if (movement == "Arrival" && shift.ShiftStart is { } shiftStart
+            if (!isOfficialHoliday && movement == "Arrival" && shift.ShiftStart is { } shiftStart
                 && companySettings is { EarlyClockInBlockMinutes: > 0 })
             {
                 var earliestAllowed = shiftStart.AddMinutes(-companySettings.EarlyClockInBlockMinutes);
