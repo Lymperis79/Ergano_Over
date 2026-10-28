@@ -23,6 +23,27 @@
 
                             <Border Background="{DynamicResource CardBrush}" CornerRadius="8" Padding="20">
                                 <StackPanel Spacing="10">
+                                    <TextBlock Text="{Binding Loc[AutomaticBackupTitle]}" FontSize="16" FontWeight="SemiBold" />
+                                    <TextBlock Text="{Binding Loc[AutomaticBackupNote]}" Foreground="Gray" FontSize="12" TextWrapping="Wrap" />
+                                    <CheckBox Content="{Binding Loc[AutomaticBackupEnabled]}" IsChecked="{Binding AutomaticBackupEnabled}" />
+                                    <TextBlock Text="{Binding Loc[AutomaticBackupInterval]}" />
+                                    <NumericUpDown Value="{Binding AutomaticBackupIntervalHours}" Minimum="1" Maximum="168" Increment="1" />
+                                    <TextBlock Text="{Binding Loc[AutomaticBackupRetention]}" />
+                                    <NumericUpDown Value="{Binding AutomaticBackupRetentionCount}" Minimum="1" Maximum="100" Increment="1" />
+                                    <TextBlock Text="{Binding Loc[AutomaticBackupFolder]}" />
+                                    <TextBox Text="{Binding AutomaticBackupFolder, Mode=TwoWay}" />
+                                    <Button Content="{Binding Loc[SaveAutomaticBackupSettings]}" Command="{Binding SaveAutomaticBackupSettingsCommand}" IsEnabled="{Binding !IsBusy}" HorizontalAlignment="Left" />
+                                    <TextBlock Text="{Binding Loc[AutomaticBackupLastSuccess]}" FontWeight="SemiBold" />
+                                    <TextBlock Text="{Binding AutomaticBackupLastSuccess}" Foreground="Gray" />
+                                    <TextBlock Text="{Binding Loc[AutomaticBackupNextRun]}" FontWeight="SemiBold" />
+                                    <TextBlock Text="{Binding AutomaticBackupNextRun}" Foreground="Gray" />
+                                    <TextBlock Text="{Binding Loc[AutomaticBackupStatus]}" FontWeight="SemiBold" />
+                                    <TextBlock Text="{Binding AutomaticBackupStatus}" TextWrapping="Wrap" />
+                                </StackPanel>
+                            </Border>
+
+                            <Border Background="{DynamicResource CardBrush}" CornerRadius="8" Padding="20">
+                                <StackPanel Spacing="10">
                                     <TextBlock Text="{Binding Loc[AdminLocalCache]}" FontSize="16" FontWeight="SemiBold" />
                                     <TextBlock Text="{Binding CacheInfo}" Foreground="Gray" TextWrapping="Wrap" />
                                     <Button Content="{Binding Loc[AdminDeleteCache]}" Command="{Binding AskDeleteCacheCommand}" IsEnabled="{Binding !IsBusy}" />
