@@ -87,7 +87,7 @@ public static class GreekStrings
         [L.AutoClockOutMinutesLabel] = "Λεπτά μετά τη λήξη του δηλωμένου ωραρίου",
         [L.AutoClockOutSaved] = "Οι ρυθμίσεις αυτόματης εξόδου αποθηκεύτηκαν.",
         [L.AutoClockOutInvalid] = "Εισάγετε ακέραιο αριθμό λεπτών από 0 έως {0}.",
-        [L.AutoClockOutSaveFailed] = "Αποτυχία αποθήκευσης ρυθμίσεων αυτόματης εξόδου: {0}."
+        [L.AutoClockOutSaveFailed] = "Αποτυχία αποθήκευσης ρυθμίσεων αυτόματης εξόδου: {0}.",
         [L.NightSettingsApply] = "Δημιουργήστε ξανά την αναφορά για να εφαρμοστεί η αλλαγή.",
         [L.ReportNightHours] = "Νυχτερινές ώρες",
         [L.EarlyClockInBlock] = "Αποκλεισμός πρόωρης έναρξης (λεπτά πριν την έναρξη βάρδιας, 0 = ανενεργό)",
