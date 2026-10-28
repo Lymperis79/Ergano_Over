@@ -574,7 +574,9 @@ public static class GreekStrings
         [L.AlertEvEarlyClockIn] = "Εργαζόμενος κάνει είσοδο νωρίς",
         [L.AlertEvLateClockIn] = "Εργαζόμενος κάνει είσοδο αργά",
         [L.AlertEvNoSchedule] = "Εργαζόμενος κάνει είσοδο χωρίς ωράριο (ή σε ρεπό / απουσία)",
-undefined
+        [L.AlertEvScanRejected] = "Το ΕΡΓΑΝΗ απορρίπτει μια καταχώριση",
+        [L.AlertEvAutomaticClockOut] = "Η εφαρμογή υπέβαλε αυτόματα έξοδο μετά την καθορισμένη καθυστέρηση",
+        [L.ClockInAlertMinutes] = "Ανοχή νωρίς / αργά εισόδου (λεπτά, 0 = ανενεργό)",
         [L.AlertEventsHint] = "Τα email που δεν μπορούν να σταλούν αμέσως (π.χ. χωρίς internet) αποθηκεύονται και αποστέλλονται αυτόματα μόλις επανέλθει η σύνδεση.",
         [L.NavEmailLog] = "✉ Αρχείο email",
         [L.EmailLogTitle] = "Αρχείο email",
