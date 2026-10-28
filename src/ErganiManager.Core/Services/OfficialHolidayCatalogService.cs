@@ -157,6 +157,8 @@ public sealed class OfficialHolidayCatalogService : IOfficialHolidayCatalogServi
 
     private sealed class NagerHoliday
     {
+        public NagerHoliday() { }
+
         [JsonPropertyName("date")] public string Date { get; set; } = string.Empty;
         [JsonPropertyName("localName")] public string LocalName { get; set; } = string.Empty;
         [JsonPropertyName("name")] public string Name { get; set; } = string.Empty;
