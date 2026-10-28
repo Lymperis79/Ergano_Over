@@ -109,8 +109,8 @@
                          VerticalContentAlignment="Top"
                          HorizontalContentAlignment="Stretch"
                          MinHeight="180"
-                         VerticalScrollBarVisibility="Auto"
-                         HorizontalScrollBarVisibility="Auto" />
+                         ScrollViewer.VerticalScrollBarVisibility="Auto"
+                         ScrollViewer.HorizontalScrollBarVisibility="Auto" />
                 <Grid Grid.Row="2" ColumnDefinitions="*,*" ColumnSpacing="8">
                     <Button Grid.Column="0" Content="{Binding Loc[Cancel]}"
                             Command="{Binding CancelEditCommand}"
