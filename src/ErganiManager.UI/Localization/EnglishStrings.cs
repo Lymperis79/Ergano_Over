@@ -367,6 +367,7 @@ public static class EnglishStrings
         [L.TodayIssueNoSchedule] = "Clocked in/out but there is no schedule for this day",
         [L.TodayIssueRestDay] = "Clocked in/out on a rest/absent day",
         [L.TodayOk] = "✔ OK",
+        [L.TodayOfficialHoliday] = "🎉 Official Holiday",
         [L.TodayMoveIn] = "Clock-in",
         [L.TodayMoveOut] = "Clock-out",
         [L.TodayNoMovements] = "No clock-in/out recorded.",
