@@ -55,6 +55,7 @@ public class WorkCardHistoryService : IWorkCardHistoryService
             BranchName = w.Branch?.Name ?? w.Branch?.Address ?? "",
             MovementType = w.MovementType.ToString(),
             MovementDateTime = w.MovementDateTime,
+            IsAutomatic = w.IsAutomatic,
             LateJustification = w.LateJustification,
             SubmittedToErgani = w.SubmittedToErgani,
             Protocol = w.Protocol,
