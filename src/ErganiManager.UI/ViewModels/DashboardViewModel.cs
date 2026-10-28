@@ -230,6 +230,7 @@ public sealed class DashboardCategoryRow
     public int Successful { get; set; }
     public string SuccessfulText => $"✓ {Successful}";
     public int Failed { get; set; }
+    public bool HasFailures => Failed > 0;
     public string FailedText => $"✕ {Failed}";
     public int MaxCount { get; set; }
 }
