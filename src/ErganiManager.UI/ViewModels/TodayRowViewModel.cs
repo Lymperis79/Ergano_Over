@@ -61,7 +61,7 @@ public class TodayRowViewModel : ObservableObject
     };
 
     public string IssuesText => Dto.Issues.Count == 0
-        ? _loc[L.TodayOk]
+        ? Dto.IsOfficialHoliday ? _loc[L.TodayOfficialHoliday] : _loc[L.TodayOk]
         : string.Join("\n", IssueLines());
 
     /// <summary>Every movement of the day with its Ergani status, then the problems.</summary>
