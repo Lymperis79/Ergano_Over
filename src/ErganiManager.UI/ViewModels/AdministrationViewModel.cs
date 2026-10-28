@@ -145,6 +145,7 @@ public partial class AdministrationViewModel : ViewModelBase, IAdminSectionViewM
     [ObservableProperty] private string _cacheHealthStatus = string.Empty;
     [ObservableProperty] private string _queuedScansHealthStatus = "—";
     [ObservableProperty] private string _failedSubmissionsHealthStatus = "—";
+    [ObservableProperty] private string _lastSuccessfulSyncHealthStatus = "—";
     [ObservableProperty] private string _healthLastChecked = string.Empty;
 
 
@@ -548,7 +549,7 @@ public partial class AdministrationViewModel : ViewModelBase, IAdminSectionViewM
                      (apiUri.Scheme != Uri.UriSchemeHttp && apiUri.Scheme != Uri.UriSchemeHttps))
             {
                 ErganiHealthStatus = Loc["HealthNoCompanyApiUrl"];
-                apiConfigurationProblem = company != null;
+                apiConfigurationProblem = true;
             }
             else
             {
@@ -568,6 +569,25 @@ public partial class AdministrationViewModel : ViewModelBase, IAdminSectionViewM
                 {
                     ErganiHealthStatus = Loc["HealthEndpointUnreachable"] + " " + ex.Message;
                 }
+            }
+
+            if (company != null)
+            {
+                try
+                {
+                    var lastSync = await _cacheSync.GetLastSuccessfulRefreshAsync(company.Id);
+                    LastSuccessfulSyncHealthStatus = lastSync.HasValue
+                        ? lastSync.Value.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss")
+                        : Loc["HealthNeverSynced"];
+                }
+                catch
+                {
+                    LastSuccessfulSyncHealthStatus = Loc["HealthSyncTimeUnavailable"];
+                }
+            }
+            else
+            {
+                LastSuccessfulSyncHealthStatus = Loc["HealthNoCompanySelected"];
             }
 
             if (company == null)
