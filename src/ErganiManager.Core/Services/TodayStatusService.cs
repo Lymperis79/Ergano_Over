@@ -27,6 +27,11 @@ public class TodayStatusService : ITodayStatusService
             .OrderBy(e => e.LastName).ThenBy(e => e.FirstName)
             .ToListAsync();
         var ids = employees.Select(e => e.Id).ToList();
+        var officialHolidayDatesJson = await db.Companies
+            .Where(c => c.Id == companyId)
+            .Select(c => c.OfficialHolidayDatesJson)
+            .FirstOrDefaultAsync();
+        var isOfficialHoliday = CompanyHolidayCalendar.IsEnabled(officialHolidayDatesJson, date);
 
         var schedules = (await db.Schedules
                 .Where(s => s.ScheduleDate == date && ids.Contains(s.EmployeeId))
@@ -57,7 +62,7 @@ public class TodayStatusService : ITodayStatusService
             schedules.TryGetValue(emp.Id, out var sched);
             leaves.TryGetValue(emp.Id, out var empLeaves);
             cards.TryGetValue(emp.Id, out var empCards);
-            rows.Add(Build(emp, sched, empLeaves ?? new(), empCards ?? new(), nowTime, isPastDay, grace));
+            rows.Add(Build(emp, sched, empLeaves ?? new(), empCards ?? new(), nowTime, isPastDay, grace, isOfficialHoliday));
         }
 
         return rows
@@ -68,7 +73,7 @@ public class TodayStatusService : ITodayStatusService
 
     private static TodayEmployeeStatusDto Build(
         Entities.Employee emp, Entities.EmployeeSchedule? sched, List<Entities.Leave> leaves,
-        List<WorkCardHistoryDto> cards, TimeOnly nowTime, bool isPastDay, TimeSpan grace)
+        List<WorkCardHistoryDto> cards, TimeOnly nowTime, bool isPastDay, TimeSpan grace, bool isOfficialHoliday)
     {
         var dto = new TodayEmployeeStatusDto
         {
@@ -181,7 +186,7 @@ public class TodayStatusService : ITodayStatusService
                     Time = arrivalTime, Planned = plannedStart, Minutes = (int)late.TotalMinutes });
         }
 
-        if (arrivals.Count == 0 && isWorkDay && plannedStart.HasValue && After(plannedStart.Value) && departures.Count == 0)
+        if (!isOfficialHoliday && arrivals.Count == 0 && isWorkDay && plannedStart.HasValue && After(plannedStart.Value) && departures.Count == 0)
             Add(new TodayIssueDto { Code = TodayIssueCode.NoClockIn, Level = StatusLevel.Error, Planned = plannedStart });
 
         if (arrivals.Count == 0 && departures.Count > 0)
