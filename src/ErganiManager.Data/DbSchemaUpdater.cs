@@ -103,6 +103,10 @@ public static class DbSchemaUpdater
 
     private static readonly ColumnPatch[] Patches =
     {
+        new("WorkCards", "IsAutomatic",
+            "ALTER TABLE WorkCards ADD COLUMN IsAutomatic INTEGER NOT NULL DEFAULT 0",
+            "ALTER TABLE WorkCards ADD IsAutomatic bit NOT NULL CONSTRAINT DF_WorkCards_IsAutomatic DEFAULT 0",
+            "ALTER TABLE WorkCards ADD COLUMN IsAutomatic TINYINT(1) NOT NULL DEFAULT 0"),
         new("Companies", "AlertEvents",
             "ALTER TABLE Companies ADD COLUMN AlertEvents INTEGER NOT NULL DEFAULT 1",
             "ALTER TABLE Companies ADD AlertEvents int NOT NULL CONSTRAINT DF_Companies_AlertEvents DEFAULT 1",
