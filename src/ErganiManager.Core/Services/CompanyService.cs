@@ -88,6 +88,7 @@ public class CompanyService : ICompanyService
             EarlyDepartureAlertMinutes = dto.EarlyDepartureAlertMinutes,
             BlockClockInWithoutSchedule = dto.BlockClockInWithoutSchedule,
             BlockClockInOnRestOrAbsentDay = dto.BlockClockInOnRestOrAbsentDay,
+            OfficialHolidayDatesJson = string.IsNullOrWhiteSpace(dto.OfficialHolidayDatesJson) ? "[]" : dto.OfficialHolidayDatesJson,
             AlertEvents = dto.AlertEvents,
             ClockInAlertMinutes = dto.ClockInAlertMinutes,
             AlertEmailEnabled = dto.AlertEmailEnabled,
@@ -126,6 +127,7 @@ public class CompanyService : ICompanyService
         entity.EarlyDepartureAlertMinutes = dto.EarlyDepartureAlertMinutes;
         entity.BlockClockInWithoutSchedule = dto.BlockClockInWithoutSchedule;
         entity.BlockClockInOnRestOrAbsentDay = dto.BlockClockInOnRestOrAbsentDay;
+        entity.OfficialHolidayDatesJson = string.IsNullOrWhiteSpace(dto.OfficialHolidayDatesJson) ? "[]" : dto.OfficialHolidayDatesJson;
         entity.AlertEvents = dto.AlertEvents;
         entity.ClockInAlertMinutes = dto.ClockInAlertMinutes;
         entity.AlertEmailEnabled = dto.AlertEmailEnabled;
@@ -184,6 +186,7 @@ public class CompanyService : ICompanyService
         EarlyDepartureAlertMinutes = c.EarlyDepartureAlertMinutes,
         BlockClockInWithoutSchedule = c.BlockClockInWithoutSchedule,
         BlockClockInOnRestOrAbsentDay = c.BlockClockInOnRestOrAbsentDay,
+        OfficialHolidayDatesJson = string.IsNullOrWhiteSpace(c.OfficialHolidayDatesJson) ? "[]" : c.OfficialHolidayDatesJson,
         AlertEvents = c.AlertEvents,
         ClockInAlertMinutes = c.ClockInAlertMinutes,
         AlertEmailEnabled = c.AlertEmailEnabled,
