@@ -25,10 +25,20 @@ public class AppDbContext : DbContext
     public DbSet<EmployeeImport> EmployeeImports => Set<EmployeeImport>();
     public DbSet<ErganiImportLog> ErganiImportLogs => Set<ErganiImportLog>();
     public DbSet<ScheduleCloneBatch> ScheduleCloneBatches => Set<ScheduleCloneBatch>();
+    public DbSet<OfficialHolidayDefinition> OfficialHolidayDefinitions => Set<OfficialHolidayDefinition>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
+
+        // ── Permanent official holiday catalogue ───────────────
+        modelBuilder.Entity<OfficialHolidayDefinition>(e =>
+        {
+            e.HasIndex(h => h.Date).IsUnique();
+            e.Property(h => h.Name).HasMaxLength(200).IsRequired();
+            e.Property(h => h.CountryCode).HasMaxLength(2).IsRequired();
+            e.Property(h => h.Source).HasMaxLength(40).IsRequired();
+        });
 
         // ── Company ──────────────────────────────────────────
         modelBuilder.Entity<Company>(e =>
