@@ -98,6 +98,13 @@ public static class EnglishStrings
         [L.OfficialHolidaysLoadFailedDetails] = "Could not load official holidays: {0}",
         [L.OfficialHolidaysSaved] = "Company official holiday settings saved and synced to this computer.",
         [L.OfficialHolidaysSaveFailed] = "Could not save official holidays: {0}",
+        [L.OfficialHolidaysSynchronize] = "Synchronize official holidays from internet",
+        [L.OfficialHolidaysSyncComplete] = "Updated {0} year(s) from the online feed. Existing database records were retained.",
+        [L.OfficialHolidayAddCustomTitle] = "Add a custom holiday to the shared database",
+        [L.OfficialHolidayNamePlaceholder] = "Holiday name",
+        [L.OfficialHolidayAddCustom] = "Add holiday",
+        [L.OfficialHolidayCustomRequired] = "Select a date and enter a holiday name.",
+        [L.OfficialHolidayCustomAdded] = "Custom holiday saved permanently in the main database."
         [L.NightSettingsApply] = "Generate the report again to apply the change.",
         [L.ReportNightHours] = "Night hours",
         [L.EarlyClockInBlock] = "Block clock-in earlier than (minutes before shift start, 0 = off)",
