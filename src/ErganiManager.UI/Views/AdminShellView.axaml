@@ -213,6 +213,10 @@
                         IsVisible="{Binding ShowAdministration}"
                         Command="{Binding NavigateToCommand}" CommandParameter="Administration"
                         HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" />
+                    <Button Content="{Binding Loc[NavDatabaseOptions]}" Classes="navItem navChild"
+                        IsVisible="{Binding ShowAdministration}"
+                        Command="{Binding NavigateToCommand}" CommandParameter="DatabaseOptions"
+                        HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" />
                 </StackPanel>
             </StackPanel>
 
