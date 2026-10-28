@@ -1,4 +1,5 @@
 using System;
+using Avalonia.Threading;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -41,6 +42,15 @@ public partial class AdministrationViewModel : ViewModelBase, IAdminSectionViewM
     [ObservableProperty] private string _confirmPhraseInput = string.Empty;
     [ObservableProperty] private bool _isDeleteDatabaseConfirmation;
     [ObservableProperty] private string _lastBackupInfo = string.Empty;
+
+    private readonly ErganiManager.UI.Services.AutomaticDatabaseBackupService _automaticBackup;
+    [ObservableProperty] private bool _automaticBackupEnabled;
+    [ObservableProperty] private int _automaticBackupIntervalHours = 24;
+    [ObservableProperty] private int _automaticBackupRetentionCount = 14;
+    [ObservableProperty] private string _automaticBackupFolder = string.Empty;
+    [ObservableProperty] private string _automaticBackupStatus = string.Empty;
+    [ObservableProperty] private string _automaticBackupLastSuccess = string.Empty;
+    [ObservableProperty] private string _automaticBackupNextRun = string.Empty;
 
     private readonly IRoundingSettingsService _rounding;
     private readonly IPortalSettingsService _portal;
@@ -164,7 +174,7 @@ public partial class AdministrationViewModel : ViewModelBase, IAdminSectionViewM
         IOfficialHolidayCatalogService holidayCatalog, IEmailAlertService emailAlertService,
         IInternetCheckService internetCheckService, IHttpClientFactory httpClientFactory,
         IErganiHealthCheckService erganiHealthCheckService, IConnectionStateService connectionState,
-        ICredentialProtector credentialProtector)
+        ICredentialProtector credentialProtector, ErganiManager.UI.Services.AutomaticDatabaseBackupService automaticBackup)
     {
         _maintenance = maintenance;
         _rounding = rounding;
@@ -178,6 +188,13 @@ public partial class AdministrationViewModel : ViewModelBase, IAdminSectionViewM
         _erganiHealthCheckService = erganiHealthCheckService;
         _connectionState = connectionState;
         _credentialProtector = credentialProtector;
+        _automaticBackup = automaticBackup;
+        AutomaticBackupEnabled = automaticBackup.IsEnabled;
+        AutomaticBackupIntervalHours = automaticBackup.IntervalHours;
+        AutomaticBackupRetentionCount = automaticBackup.RetentionCount;
+        AutomaticBackupFolder = automaticBackup.BackupFolder;
+        RefreshAutomaticBackupStatus();
+        automaticBackup.StatusChanged += (_, _) => Dispatcher.UIThread.Post(RefreshAutomaticBackupStatus);
         var schedule = portal.Current.Schedule;
         var workCards = portal.Current.WorkCards;
 
@@ -1033,6 +1050,34 @@ public partial class AdministrationViewModel : ViewModelBase, IAdminSectionViewM
             CacheInfo = string.Format(Loc["Vm.Unsynced scans: {0} · Unresolved failed submissions: {1}"], s.PendingScans, s.FailedSubmissions);
         }
         catch (Exception ex) { CacheInfo = string.Format(Loc["Vm.Cache unreadable: {0}"], ex.Message); }
+    }
+
+
+    private void RefreshAutomaticBackupStatus()
+    {
+        AutomaticBackupStatus = _automaticBackup.Status;
+        AutomaticBackupLastSuccess = _automaticBackup.LastSuccessLocal is { } last
+            ? last.ToString("yyyy-MM-dd HH:mm:ss")
+            : Loc["Vm.No automatic backup completed yet."];
+        AutomaticBackupNextRun = _automaticBackup.NextRunLocal is { } next
+            ? next.ToString("yyyy-MM-dd HH:mm:ss")
+            : Loc["Vm.Not scheduled"];
+    }
+
+    [RelayCommand]
+    private void SaveAutomaticBackupSettings()
+    {
+        try
+        {
+            _automaticBackup.SaveSettings(AutomaticBackupEnabled, AutomaticBackupIntervalHours,
+                AutomaticBackupRetentionCount, AutomaticBackupFolder);
+            RefreshAutomaticBackupStatus();
+            StatusMessage = Loc["Vm.Automatic backup settings saved."];
+        }
+        catch (Exception ex)
+        {
+            AutomaticBackupStatus = string.Format(Loc["Vm.Could not save automatic backup settings: {0}"], ex.Message);
+        }
     }
 
     /// <summary>Called by the view after the user picked a destination file.</summary>
