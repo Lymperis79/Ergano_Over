@@ -247,21 +247,35 @@ public class ErganiRetryService
 
             if (finished != null) await UpdateInternetRestoredAsync(company.Id, finished);
 
-            if (kind == OutageKind.Ergani && current.Checks >= 2 && !current.Alerted)
+            if (current.Checks >= 2 && !current.Alerted)
             {
                 current.Alerted = true;
                 var queued = await cache.PendingSubmissions.CountAsync(p => p.CompanyId == company.Id && !p.Synced, ct);
 
-                _ = _emailAlerts.SendAlertAsync(company.Id, new AlertMessage
-                {
-                    Event = AlertEvent.ErganiDown,
-                    Title = ErganiManager.Data.UiText.T("Ergani service is down"),
-                    OccurredAt = current.Since
-                }
-                .Add("Status", ErganiManager.Data.UiText.T("The internet connection works, but Ergani does not answer."))
-                .Add("Down since", current.Since.ToString("dd/MM/yyyy HH:mm"))
-                .Add("Scans waiting", queued.ToString())
-                .Add("What happens now", ErganiManager.Data.UiText.T("Scans are kept and sent automatically when Ergani answers again.")));
+                var alert = kind == OutageKind.Internet
+                    ? new AlertMessage
+                    {
+                        Event = AlertEvent.InternetDown,
+                        Title = ErganiManager.Data.UiText.T("Internet connection is down"),
+                        OccurredAt = current.Since
+                    }
+                    .Add("Status", ErganiManager.Data.UiText.T("The device cannot reach the internet."))
+                    .Add("Down since", current.Since.ToString("dd/MM/yyyy HH:mm"))
+                    .Add("Scans waiting", queued.ToString())
+                    .Add("What happens now", ErganiManager.Data.UiText.T("This alert is queued if email cannot be sent and will be updated when the internet returns."))
+                    : new AlertMessage
+                    {
+                        Event = AlertEvent.ErganiDown,
+                        Title = ErganiManager.Data.UiText.T("Ergani service is down"),
+                        OccurredAt = current.Since
+                    }
+                    .Add("Status", ErganiManager.Data.UiText.T("The internet connection works, but Ergani does not answer."))
+                    .Add("Down since", current.Since.ToString("dd/MM/yyyy HH:mm"))
+                    .Add("Scans waiting", queued.ToString())
+                    .Add("What happens now", ErganiManager.Data.UiText.T("Scans are kept and sent automatically when Ergani answers again."));
+
+                // Await this so the Email Log/outbox write completes before this health-check cycle ends.
+                await _emailAlerts.SendAlertAsync(company.Id, alert);
             }
         }
         catch (OperationCanceledException) { throw; }
