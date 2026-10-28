@@ -298,7 +298,7 @@ public static class GreekStrings
         [L.AdminTitle] = "Εργαλεία εφαρμογής",
         ["Application Tools"] = "Εργαλεία εφαρμογής",
         ["Database Options"] = "Επιλογές βάσης δεδομένων",
-        ["NavDatabaseOptions"] = "Επιλογές βάσης δεδομένων",
+        ["NavDatabaseOptions"] = "🗄️ Επιλογές βάσης δεδομένων",
         [L.AdminDatabase] = "Βάση δεδομένων",
         [L.AdminBackup] = "💾 Αντίγραφο ασφαλείας βάσης…",
         [L.AdminLocalCache] = "Προσωρινή τοπική βάση (cache)",
@@ -387,7 +387,7 @@ public static class GreekStrings
 
         [L.NavMasterData] = "🗂 Κύρια δεδομένα",
         [L.NavAdminGroup] = "⚙ Διαχείριση",
-        [L.NavDatabaseTools] = "Εργαλεία εφαρμογής",
+        [L.NavDatabaseTools] = "⚙️ Εργαλεία εφαρμογής",
         [L.NavScan] = "📟 Σάρωση",
         [L.UsersMenus] = "Ορατά μενού",
         [L.UsersMenusHint] = "Επιλέξτε τα μενού που βλέπει ο χρήστης. Τα μενού που δεν επιλέγονται είναι κρυμμένα για αυτόν.",
