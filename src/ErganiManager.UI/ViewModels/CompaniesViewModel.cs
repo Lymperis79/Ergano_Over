@@ -387,6 +387,9 @@ IAdminSectionViewModel
         FormSmtpUseTls =
             true;
 
+        EmailTestResult = string.Empty;
+        EmailTestSuccess = false;
+
         ErganiTestResult =
             string.Empty;
 
@@ -492,6 +495,9 @@ IAdminSectionViewModel
 
         FormSmtpUseTls =
             company.SmtpUseTls;
+
+        EmailTestResult = string.Empty;
+        EmailTestSuccess = false;
 
         ErganiTestResult =
             string.Empty;
