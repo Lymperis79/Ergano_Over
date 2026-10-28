@@ -28,6 +28,37 @@ public class EmailAlertService : IEmailAlertService
         _logger = logger;
     }
 
+    /// <summary>Sends a real test email using unsaved settings from the company form.</summary>
+    public async Task<(bool Success, string? ErrorMessage)> TestSmtpAsync(EmailSmtpTestRequest request)
+    {
+        if (string.IsNullOrWhiteSpace(request.Host))
+            return (false, "SMTP host is required.");
+        if (string.IsNullOrWhiteSpace(request.Recipients))
+            return (false, "Enter at least one recipient email address.");
+        if (!string.IsNullOrWhiteSpace(request.Username) && string.IsNullOrEmpty(request.Password))
+            return (false, "Enter the SMTP password to test authenticated SMTP settings.");
+
+        var company = new Company
+        {
+            Name = "Ergani Manager SMTP test",
+            SmtpHost = request.Host.Trim(),
+            SmtpPort = request.Port,
+            SmtpUser = string.IsNullOrWhiteSpace(request.Username) ? null : request.Username.Trim(),
+            SmtpPasswordEncrypted = null,
+            SmtpUseTls = request.UseTls,
+            AlertEmailRecipients = request.Recipients.Trim()
+        };
+
+        var subject = "Ergani Manager — SMTP test";
+        var body = "This is a test email from Ergani Manager. If you received it, the SMTP settings are working.";
+        var (success, error, _) = await TrySendAsync(company, subject, body, request.Password);
+        if (success)
+            _logger.LogInformation("SMTP test email sent successfully to {Recipients}.", request.Recipients);
+        else
+            _logger.LogWarning("SMTP test email failed: {Error}", error);
+        return (success, error);
+    }
+
     // ------------------------------------------------------------------ early departure
 
     public Task<(bool Success, string? ErrorMessage)> SendEarlyDepartureAlertAsync(
@@ -229,7 +260,7 @@ public class EmailAlertService : IEmailAlertService
     }
 
     private async Task<(bool Success, string? Error, bool Retryable)> TrySendAsync(
-        Company company, string subject, string body)
+        Company company, string subject, string body, string? passwordOverride = null)
     {
         if (string.IsNullOrWhiteSpace(company.AlertEmailRecipients) || string.IsNullOrWhiteSpace(company.SmtpHost))
             return (false, "Email alerts are enabled but SMTP host or recipients are not configured.", false);
@@ -243,7 +274,7 @@ public class EmailAlertService : IEmailAlertService
         try
         {
             var message = new MimeMessage();
-            message.From.Add(MailboxAddress.Parse(company.SmtpUser ?? company.SmtpHost));
+            message.From.Add(MailboxAddress.Parse(string.IsNullOrWhiteSpace(company.SmtpUser) ? recipients[0] : company.SmtpUser));
             foreach (var address in recipients) message.To.Add(MailboxAddress.Parse(address));
             message.Subject = subject;
             message.Body = new TextPart("plain") { Text = body };
@@ -253,8 +284,14 @@ public class EmailAlertService : IEmailAlertService
             await client.ConnectAsync(company.SmtpHost, company.SmtpPort ?? 587,
                 company.SmtpUseTls ? SecureSocketOptions.StartTls : SecureSocketOptions.None);
 
-            if (!string.IsNullOrEmpty(company.SmtpUser) && !string.IsNullOrEmpty(company.SmtpPasswordEncrypted))
-                await client.AuthenticateAsync(company.SmtpUser, _credentialProtector.Unprotect(company.SmtpPasswordEncrypted));
+            if (!string.IsNullOrWhiteSpace(company.SmtpUser))
+            {
+                var password = passwordOverride ?? (string.IsNullOrEmpty(company.SmtpPasswordEncrypted)
+                    ? string.Empty
+                    : _credentialProtector.Unprotect(company.SmtpPasswordEncrypted));
+                if (!string.IsNullOrEmpty(password))
+                    await client.AuthenticateAsync(company.SmtpUser, password);
+            }
 
             await client.SendAsync(message);
             await client.DisconnectAsync(quit: true);
