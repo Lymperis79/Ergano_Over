@@ -1,11 +1,11 @@
 namespace ErganiManager.Core.Models;
 
-/// <summary>Greek national/religious holidays shown on the schedule calendar.</summary>
+/// <summary>Fallback seed definitions used only when the online feed is unavailable and a database year has no records.</summary>
 public sealed record GreekHoliday(DateOnly Date, string Name);
 
 public static class GreekHolidays
 {
-    /// <summary>Returns the commonly observed Greek public holidays for the supplied year.</summary>
+    /// <summary>Returns fallback Greek public holiday definitions for a supplied year.</summary>
     public static IReadOnlyList<GreekHoliday> ForYear(int year)
     {
         var easter = OrthodoxEaster(year);
