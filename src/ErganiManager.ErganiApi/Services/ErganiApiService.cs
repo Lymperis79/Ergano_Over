@@ -145,12 +145,14 @@ public class ErganiApiService : IWorkCardSubmitter
                 BranchId = branch.Id,
                 MovementType = movementEnum,
                 MovementDateTime = request.MovementDateTime,
+                IsAutomatic = request.IsAutomatic,
                 SubmissionDate = DateOnly.FromDateTime(DateTime.Today),
                 CreatedAt = DateTime.UtcNow
             };
             db.WorkCards.Add(workCard);
         }
 
+        workCard.IsAutomatic = workCard.IsAutomatic || request.IsAutomatic;
         workCard.SubmittedToErgani = succeeded;
         workCard.SubmissionId = firstResponse?.SubmissionId;
         workCard.Protocol = firstResponse?.Protocol;
