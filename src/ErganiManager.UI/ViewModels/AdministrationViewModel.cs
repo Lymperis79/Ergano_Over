@@ -1097,7 +1097,9 @@ public partial class AdministrationViewModel : ViewModelBase, IAdminSectionViewM
         if (action == PendingAction.DeleteDatabase &&
             !string.Equals(ConfirmPhraseInput?.Trim(), "DELETE", StringComparison.Ordinal))
         {
-            StatusMessage = Loc["Vm.Database deletion blocked: type DELETE exactly to confirm."];
+            ConfirmText = string.Format(Loc["Vm.PERMANENTLY DELETE the main database ({0})? All companies, employees, schedules and logs are lost. Make a backup first. The setup wizard opens afterwards."], DatabaseInfo)
+                + Environment.NewLine + Loc["Vm.Type DELETE to confirm database deletion."]
+                + Environment.NewLine + Loc["Vm.Database deletion blocked: type DELETE exactly to confirm."];
             return;
         }
 
