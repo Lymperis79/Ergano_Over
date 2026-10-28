@@ -8,12 +8,14 @@ using ErganiManager.Core.Interfaces;
 using ErganiManager.Core.Models;
 using ErganiManager.Data;
 using Microsoft.EntityFrameworkCore;
+using ErganiManager.UI.Services;
 
 namespace ErganiManager.UI.ViewModels;
 
 public partial class DashboardViewModel : ViewModelBase, IAdminSectionViewModel
 {
     private readonly IConnectionStateService _connectionState;
+    private readonly AutomaticDatabaseBackupService _automaticBackup;
     private UserSession? _session;
 
     [ObservableProperty] private string _companyName = string.Empty;
@@ -29,6 +31,9 @@ public partial class DashboardViewModel : ViewModelBase, IAdminSectionViewModel
     [ObservableProperty] private string _statusMessage = string.Empty;
     [ObservableProperty] private bool _isLoading;
     [ObservableProperty] private bool _hasCompany;
+    [ObservableProperty] private string _backupStatus = string.Empty;
+    [ObservableProperty] private string _backupLastSuccess = string.Empty;
+    [ObservableProperty] private string _backupNextRun = string.Empty;
 
     public bool CanRefresh => !IsLoading;
     public bool HasCategories => Categories.Count > 0;
@@ -43,10 +48,21 @@ public partial class DashboardViewModel : ViewModelBase, IAdminSectionViewModel
     public ObservableCollection<DashboardCategoryRow> Categories { get; } = new();
     public ObservableCollection<DashboardActivityRow> RecentActivity { get; } = new();
 
-    public DashboardViewModel(IConnectionStateService connectionState)
+    public DashboardViewModel(IConnectionStateService connectionState, AutomaticDatabaseBackupService automaticBackup)
     {
         _connectionState = connectionState;
+        _automaticBackup = automaticBackup;
         PeriodText = Loc["Dashboard.CurrentMonth"];
+        RefreshBackupSummary();
+    }
+
+    private void RefreshBackupSummary()
+    {
+        BackupStatus = _automaticBackup.Status;
+        BackupLastSuccess = _automaticBackup.LastSuccessLocal is { } last
+            ? last.ToString("dd/MM/yyyy HH:mm") : Loc["Dashboard.NotYet"];
+        BackupNextRun = _automaticBackup.NextRunLocal is { } next
+            ? next.ToString("dd/MM/yyyy HH:mm") : Loc["Dashboard.NotScheduled"];
     }
 
     public void Initialize(UserSession session)
@@ -62,6 +78,7 @@ public partial class DashboardViewModel : ViewModelBase, IAdminSectionViewModel
         if (IsLoading) return;
         IsLoading = true;
         StatusMessage = string.Empty;
+        RefreshBackupSummary();
 
         try
         {
@@ -211,7 +228,9 @@ public sealed class DashboardCategoryRow
     public string Name { get; set; } = string.Empty;
     public int Total { get; set; }
     public int Successful { get; set; }
+    public string SuccessfulText => $"✓ {Successful}";
     public int Failed { get; set; }
+    public string FailedText => $"✕ {Failed}";
     public int MaxCount { get; set; }
 }
 
