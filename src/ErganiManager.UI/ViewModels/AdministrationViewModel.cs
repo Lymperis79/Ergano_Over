@@ -78,6 +78,10 @@ public partial class AdministrationViewModel : ViewModelBase, IAdminSectionViewM
     [ObservableProperty] private decimal? _onTimeWindowMinutes = RoundingRules.DefaultOnTimeWindowMinutes;
     [ObservableProperty] private string _onTimeWindowStatus = string.Empty;
 
+    [ObservableProperty] private bool _autoClockOutEnabled;
+    [ObservableProperty] private decimal? _autoClockOutMinutes = 15;
+    [ObservableProperty] private string _autoClockOutStatus = string.Empty;
+
     public AdministrationViewModel(IDatabaseMaintenanceService maintenance, IRoundingSettingsService rounding,
         IPortalSettingsService portal)
     {
@@ -110,6 +114,8 @@ public partial class AdministrationViewModel : ViewModelBase, IAdminSectionViewM
         NightStartTime = TimeSpan.FromMinutes(Math.Clamp(rules.NightStartMinuteOfDay, 0, 1439));
         NightEndTime = TimeSpan.FromMinutes(Math.Clamp(rules.NightEndMinuteOfDay, 0, 1439));
         OnTimeWindowMinutes = rules.OnTimeWindowMinutes;
+        AutoClockOutEnabled = portal.Current.AutoClockOutEnabled;
+        AutoClockOutMinutes = Math.Clamp(portal.Current.AutoClockOutMinutes, 0, 1440);
         LeaveTypes.Refresh();
         LoadLeaveTypes();
     }
@@ -318,6 +324,29 @@ public partial class AdministrationViewModel : ViewModelBase, IAdminSectionViewM
             NightStatus = Loc[L.NightSettingsSaved] + " " + Loc[L.NightSettingsApply];
         }
         catch (Exception ex) { NightStatus = $"❌ {ex.Message}"; }
+    }
+
+    [RelayCommand]
+    private void SaveAutoClockOut()
+    {
+        if (AutoClockOutMinutes is not { } value || value < 0 || value > 1440 || value != decimal.Truncate(value))
+        {
+            AutoClockOutStatus = string.Format(Loc[L.AutoClockOutInvalid], 1440);
+            return;
+        }
+
+        try
+        {
+            var settings = _portal.Current;
+            settings.AutoClockOutEnabled = AutoClockOutEnabled;
+            settings.AutoClockOutMinutes = (int)value;
+            _portal.Save(settings);
+            AutoClockOutStatus = Loc[L.AutoClockOutSaved];
+        }
+        catch (Exception ex)
+        {
+            AutoClockOutStatus = string.Format(Loc[L.AutoClockOutSaveFailed], ex.Message);
+        }
     }
 
     [RelayCommand]
