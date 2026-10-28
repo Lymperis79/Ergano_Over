@@ -384,7 +384,7 @@ public static class GreekStrings
 
         [L.NavMasterData] = "🗂 Κύρια δεδομένα",
         [L.NavAdminGroup] = "⚙ Διαχείριση",
-        [L.NavDatabaseTools] = "🛠 Εργαλεία βάσης δεδομένων",
+        [L.NavDatabaseTools] = "🧰 Εργαλεία εφαρμογής",
         [L.NavScan] = "📟 Σάρωση",
         [L.UsersMenus] = "Ορατά μενού",
         [L.UsersMenusHint] = "Επιλέξτε τα μενού που βλέπει ο χρήστης. Τα μενού που δεν επιλέγονται είναι κρυμμένα για αυτόν.",
