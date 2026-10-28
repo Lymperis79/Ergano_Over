@@ -39,6 +39,11 @@ public sealed class OfficialHolidayCatalogService : IOfficialHolidayCatalogServi
 
     public async Task<int> SynchronizeAsync(IEnumerable<int> years)
     {
+        // Ensure the catalogue table exists even when upgrading an older database that predates this feature.
+        var config = _connection.LoadConfig()
+            ?? throw new InvalidOperationException("The main database is not configured.");
+        await DbSchemaUpdater.EnsureUpToDateAsync(config);
+
         var synchronized = 0;
         var uniqueYears = years.Where(y => y is >= 1900 and <= 2200).Distinct().OrderBy(y => y);
 
