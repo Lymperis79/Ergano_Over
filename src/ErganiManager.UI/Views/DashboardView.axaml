@@ -1,0 +1,124 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:ErganiManager.UI.ViewModels"
+             x:Class="ErganiManager.UI.Views.DashboardView"
+             x:DataType="vm:DashboardViewModel">
+    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+        <StackPanel Spacing="18">
+            <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto">
+                <StackPanel Grid.Row="0" Grid.Column="0" Spacing="4">
+                    <TextBlock Text="{Binding Loc[Dashboard.Title]}" FontSize="26" FontWeight="Bold" />
+                    <TextBlock Text="{Binding CompanyName}" FontSize="16" Foreground="{DynamicResource AccentLightBrush}" />
+                    <TextBlock Text="{Binding Loc[Dashboard.Subtitle]}" FontSize="12" Opacity="0.7" />
+                </StackPanel>
+                <Button Grid.Row="0" Grid.Column="1" Command="{Binding RefreshCommand}" Padding="14,8"
+                        VerticalAlignment="Top" IsEnabled="{Binding !IsLoading}">
+                    <StackPanel Orientation="Horizontal" Spacing="7">
+                        <TextBlock Text="⟳" />
+                        <TextBlock Text="{Binding Loc[Dashboard.Refresh]}" />
+                    </StackPanel>
+                </Button>
+                <TextBlock Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" Text="{Binding LastUpdatedText}"
+                           FontSize="11" Opacity="0.65" Margin="0,6,0,0" />
+            </Grid>
+
+            <Grid ColumnDefinitions="*,*,*,*,*" ColumnSpacing="10">
+                <Border Grid.Column="0" Background="{DynamicResource PanelBrush}" CornerRadius="10" Padding="14">
+                    <StackPanel Spacing="7">
+                        <TextBlock Text="🏬" FontSize="20" />
+                        <TextBlock Text="{Binding Loc[Dashboard.Branches]}" FontSize="12" Opacity="0.75" />
+                        <TextBlock Text="{Binding BranchCount}" FontSize="27" FontWeight="Bold" />
+                    </StackPanel>
+                </Border>
+                <Border Grid.Column="1" Background="{DynamicResource PanelBrush}" CornerRadius="10" Padding="14">
+                    <StackPanel Spacing="7">
+                        <TextBlock Text="👥" FontSize="20" />
+                        <TextBlock Text="{Binding Loc[Dashboard.ActiveEmployees]}" FontSize="12" Opacity="0.75" />
+                        <TextBlock Text="{Binding EmployeeCount}" FontSize="27" FontWeight="Bold" />
+                    </StackPanel>
+                </Border>
+                <Border Grid.Column="2" Background="{DynamicResource PanelBrush}" CornerRadius="10" Padding="14">
+                    <StackPanel Spacing="7">
+                        <TextBlock Text="📨" FontSize="20" />
+                        <TextBlock Text="{Binding Loc[Dashboard.SubmissionsThisMonth]}" FontSize="12" Opacity="0.75" />
+                        <TextBlock Text="{Binding SubmissionCount}" FontSize="27" FontWeight="Bold" />
+                    </StackPanel>
+                </Border>
+                <Border Grid.Column="3" Background="{DynamicResource PanelBrush}" CornerRadius="10" Padding="14">
+                    <StackPanel Spacing="7">
+                        <TextBlock Text="⚠" FontSize="20" />
+                        <TextBlock Text="{Binding Loc[Dashboard.Errors30Days]}" FontSize="12" Opacity="0.75" />
+                        <TextBlock Text="{Binding ErrorCount}" FontSize="27" FontWeight="Bold" Foreground="#EF5350" />
+                    </StackPanel>
+                </Border>
+                <Border Grid.Column="4" Background="{DynamicResource PanelBrush}" CornerRadius="10" Padding="14">
+                    <StackPanel Spacing="7">
+                        <TextBlock Text="⏳" FontSize="20" />
+                        <TextBlock Text="{Binding Loc[Dashboard.PendingItems]}" FontSize="12" Opacity="0.75" />
+                        <TextBlock Text="{Binding PendingCount}" FontSize="27" FontWeight="Bold" />
+                    </StackPanel>
+                </Border>
+            </Grid>
+
+            <Grid ColumnDefinitions="1.1*,1*" ColumnSpacing="14">
+                <Border Grid.Column="0" Background="{DynamicResource PanelBrush}" CornerRadius="10" Padding="18">
+                    <StackPanel Spacing="12">
+                        <TextBlock Text="{Binding Loc[Dashboard.SubmissionBreakdown]}" FontSize="17" FontWeight="SemiBold" />
+                        <TextBlock Text="{Binding PeriodText}" FontSize="11" Opacity="0.65" />
+                        <ItemsControl ItemsSource="{Binding Categories}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="vm:DashboardCategoryRow">
+                                    <StackPanel Spacing="5" Margin="0,4,0,7">
+                                        <Grid ColumnDefinitions="*,Auto">
+                                            <TextBlock Grid.Column="0" Text="{Binding Name}" FontWeight="SemiBold" />
+                                            <TextBlock Grid.Column="1" Text="{Binding Total}" FontWeight="Bold" />
+                                        </Grid>
+                                        <ProgressBar Minimum="0" Maximum="{Binding MaxCount}" Value="{Binding Total}" Height="8" />
+                                        <TextBlock FontSize="11" Opacity="0.7"
+                                                   Text="{Binding Successful, StringFormat='✓ {0}'}" />
+                                        <TextBlock FontSize="11" Foreground="#EF5350"
+                                                   IsVisible="{Binding Failed, Converter={x:Static vm:IntGreaterThanZeroConverter.Instance}}"
+                                                   Text="{Binding Failed, StringFormat='✕ {0}'}" />
+                                    </StackPanel>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                        <TextBlock Text="{Binding Loc[Dashboard.NoSubmissionsInPeriod]}" IsVisible="{Binding Categories.Count, Converter={x:Static vm:IntEqualsZeroConverter.Instance}}"
+                                   FontSize="12" Opacity="0.65" TextWrapping="Wrap" />
+                    </StackPanel>
+                </Border>
+
+                <Border Grid.Column="1" Background="{DynamicResource PanelBrush}" CornerRadius="10" Padding="18">
+                    <StackPanel Spacing="12">
+                        <TextBlock Text="{Binding Loc[Dashboard.RecentActivity]}" FontSize="17" FontWeight="SemiBold" />
+                        <ItemsControl ItemsSource="{Binding RecentActivity}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="vm:DashboardActivityRow">
+                                    <Border BorderBrush="{DynamicResource SeparatorBrush}" BorderThickness="0,0,0,1" Padding="0,8">
+                                        <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto,Auto">
+                                            <TextBlock Grid.Row="0" Grid.Column="0" Text="{Binding TypeText}" FontWeight="SemiBold"
+                                                       TextWrapping="Wrap" />
+                                            <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding StatusText}" FontSize="11"
+                                                       HorizontalAlignment="Right" />
+                                            <TextBlock Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" Text="{Binding DateText}"
+                                                       FontSize="11" Opacity="0.65" Margin="0,3,0,0" />
+                                            <TextBlock Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2" Text="{Binding DetailText}"
+                                                       FontSize="11" Opacity="0.8" TextWrapping="Wrap" Margin="0,3,0,0" />
+                                        </Grid>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                        <TextBlock Text="{Binding Loc[Dashboard.NoRecentActivity]}" IsVisible="{Binding RecentActivity.Count, Converter={x:Static vm:IntEqualsZeroConverter.Instance}}"
+                                   FontSize="12" Opacity="0.65" />
+                    </StackPanel>
+                </Border>
+            </Grid>
+
+            <Border Background="{DynamicResource PanelBrush}" CornerRadius="8" Padding="12"
+                    IsVisible="{Binding !string.IsNullOrWhiteSpace(StatusMessage)}">
+                <TextBlock Text="{Binding StatusMessage}" TextWrapping="Wrap" />
+            </Border>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>
