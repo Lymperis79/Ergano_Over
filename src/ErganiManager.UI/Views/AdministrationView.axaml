@@ -125,6 +125,20 @@
                                     <Button Content="{Binding Loc[Save]}" Command="{Binding SaveOnTimeWindowCommand}" Classes="accent" HorizontalAlignment="Left" />
                                 </StackPanel>
                             </Border>
+
+                            <Border Background="{DynamicResource CardBrush}" CornerRadius="8" Padding="20">
+                                <StackPanel Spacing="10">
+                                    <TextBlock Text="{Binding Loc[AutoClockOutTitle]}" FontSize="16" FontWeight="SemiBold" />
+                                    <TextBlock Text="{Binding Loc[AutoClockOutDescription]}" Foreground="Gray" FontSize="12" TextWrapping="Wrap" />
+                                    <CheckBox IsChecked="{Binding AutoClockOutEnabled}" Content="{Binding Loc[AutoClockOutEnabledLabel]}" />
+                                    <StackPanel Spacing="4" HorizontalAlignment="Left">
+                                        <TextBlock Text="{Binding Loc[AutoClockOutMinutesLabel]}" Foreground="Gray" FontSize="11" />
+                                        <NumericUpDown Value="{Binding AutoClockOutMinutes}" Minimum="0" Maximum="1440" Increment="1" FormatString="0" MinWidth="160" />
+                                    </StackPanel>
+                                    <TextBlock Text="{Binding AutoClockOutStatus}" TextWrapping="Wrap" />
+                                    <Button Content="{Binding Loc[Save]}" Command="{Binding SaveAutoClockOutCommand}" Classes="accent" HorizontalAlignment="Left" />
+                                </StackPanel>
+                            </Border>
                         </StackPanel>
                     </TabItem>
 
