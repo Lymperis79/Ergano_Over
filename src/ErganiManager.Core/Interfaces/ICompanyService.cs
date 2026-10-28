@@ -15,6 +15,7 @@ public class CompanyDto
     public int EarlyDepartureAlertMinutes { get; set; } = 10;
     public bool BlockClockInWithoutSchedule { get; set; } = true;
     public bool BlockClockInOnRestOrAbsentDay { get; set; } = true;
+    public string OfficialHolidayDatesJson { get; set; } = "[]";
 
     /// <summary>Which events send an alert mail (bit mask of <see cref="AlertEvent"/>).</summary>
     public int AlertEvents { get; set; } = (int)AlertEvent.Default;
