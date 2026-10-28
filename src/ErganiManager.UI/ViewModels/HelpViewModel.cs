@@ -35,6 +35,10 @@ public partial class HelpViewModel : ViewModelBase, IAdminSectionViewModel
     public string NoResultsText => IsGreek
         ? "Δεν βρέθηκαν θέματα. Δοκιμάστε διαφορετικές λέξεις."
         : "No topics found. Try different keywords.";
+    public string EditHint => IsGreek
+        ? "Επεξεργαστείτε το επιλεγμένο θέμα. Οι αλλαγές αποθηκεύονται μόνο για αυτή τη γλώσσα."
+        : "Edit the selected topic. Changes are saved for this language only.";
+    public bool HasNoSearchResults => !string.IsNullOrWhiteSpace(SearchText) && FilteredTopics.Count == 0;
     public string SelectTopicText => IsGreek
         ? "Επιλέξτε ένα θέμα από αριστερά για να δείτε τις οδηγίες."
         : "Choose a topic on the left to read its instructions.";
@@ -43,7 +47,7 @@ public partial class HelpViewModel : ViewModelBase, IAdminSectionViewModel
     public string SearchCountText => IsGreek
         ? $"{FilteredTopics.Count} θέματα"
         : $"{FilteredTopics.Count} topics";
-    public bool CanRestoreDefault => SelectedTopic is not null && SelectedTopic.Id != "legacy-custom";
+    public bool CanRestoreDefault => !IsEditing && SelectedTopic is not null && SelectedTopic.Id != "legacy-custom";
 
     private bool IsGreek => Loc.CurrentLanguage == AppLanguage.Greek;
     private string LanguageSuffix => IsGreek ? "el" : "en";
@@ -59,6 +63,7 @@ public partial class HelpViewModel : ViewModelBase, IAdminSectionViewModel
                 OnPropertyChanged(nameof(SearchPlaceholder));
                 OnPropertyChanged(nameof(TopicsHeading));
                 OnPropertyChanged(nameof(NoResultsText));
+                OnPropertyChanged(nameof(EditHint));
                 OnPropertyChanged(nameof(SelectTopicText));
                 OnPropertyChanged(nameof(EditTopicText));
                 OnPropertyChanged(nameof(RestoreDefaultText));
@@ -70,7 +75,11 @@ public partial class HelpViewModel : ViewModelBase, IAdminSectionViewModel
 
     public void Initialize(UserSession session) => LoadTopics();
 
-    partial void OnSearchTextChanged(string value) => ApplySearch();
+    partial void OnSearchTextChanged(string value)
+    {
+        ApplySearch();
+        OnPropertyChanged(nameof(HasNoSearchResults));
+    }
 
     partial void OnSelectedTopicChanged(HelpTopic? value)
     {
@@ -150,6 +159,7 @@ public partial class HelpViewModel : ViewModelBase, IAdminSectionViewModel
         OnPropertyChanged(nameof(SearchPlaceholder));
         OnPropertyChanged(nameof(TopicsHeading));
         OnPropertyChanged(nameof(NoResultsText));
+        OnPropertyChanged(nameof(EditHint));
         OnPropertyChanged(nameof(SelectTopicText));
         OnPropertyChanged(nameof(EditTopicText));
         OnPropertyChanged(nameof(RestoreDefaultText));
@@ -179,6 +189,7 @@ public partial class HelpViewModel : ViewModelBase, IAdminSectionViewModel
             SelectedTopic = FilteredTopics[0];
 
         OnPropertyChanged(nameof(SearchCountText));
+        OnPropertyChanged(nameof(HasNoSearchResults));
     }
 
     [RelayCommand]
