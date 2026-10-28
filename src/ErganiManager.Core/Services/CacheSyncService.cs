@@ -120,6 +120,16 @@ public class CacheSyncService : ICacheSyncService
         return result;
     }
 
+    public async Task<DateTime?> GetLastSuccessfulRefreshAsync(int companyId)
+    {
+        using var cache = LocalCacheDbContextFactory.Create();
+        return await cache.CachedCompanySettings
+            .AsNoTracking()
+            .Where(settings => settings.CompanyId == companyId)
+            .Select(settings => (DateTime?)settings.LastSyncAt)
+            .FirstOrDefaultAsync();
+    }
+
     public async Task<SyncResult> FlushPendingSubmissionsAsync()
     {
         using var cache = LocalCacheDbContextFactory.Create();
