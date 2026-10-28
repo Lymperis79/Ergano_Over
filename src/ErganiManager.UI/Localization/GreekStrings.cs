@@ -32,6 +32,7 @@ public static class GreekStrings
         [L.RetrySelected] = "⚡ Επανάληψη επιλεγμένων",
         [L.SelectAllFailed] = "Επιλογή όλων των αποτυχημένων",
         [L.TestConnection] = "Δοκιμή Σύνδεσης",
+        [L.Date] = "Ημερομηνία",
 
         // ── Auth / Login ──────────────────────────────────────
         [L.AppTitle] = "Ergani Manager",
