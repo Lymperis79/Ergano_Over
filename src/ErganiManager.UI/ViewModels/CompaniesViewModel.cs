@@ -173,8 +173,7 @@ IAdminSectionViewModel
     [ObservableProperty] private bool _formAlertEvEarlyClockIn;
     [ObservableProperty] private bool _formAlertEvLateClockIn;
     [ObservableProperty] private bool _formAlertEvNoSchedule;
-    [ObservableProperty] private bool _formAlertEvScanRejected;
-    [ObservableProperty] private int _formClockInAlertMinutes = 10;
+undefined
 
     private int ComposeAlertEvents() =>
         (FormAlertEvEarlyDeparture ? (int)AlertEvent.EarlyDeparture : 0) |
