@@ -80,6 +80,7 @@ public static class EnglishStrings
         [L.OnTimeWindowMinutesLabel] = "Minutes allowed without a reason",
         [L.OnTimeWindowSaved] = "✅ Time limit saved. It applies immediately to new submissions and retries.",
         [L.OnTimeWindowInvalid] = "❌ Enter a whole number of minutes from 0 to {0}.",
+        [L.AutoSubmittedBadge] = "AUTO",
         [L.AutoClockOutTitle] = "Automatic clock-out for missing departures",
         [L.AutoClockOutDescription] = "While Ergani II is open, check clock-ins against declared working hours. If no clock-out exists after the scheduled end plus the configured delay, create and submit a departure. Disabled by default.",
         [L.AutoClockOutEnabledLabel] = "Enable automatic clock-out",
