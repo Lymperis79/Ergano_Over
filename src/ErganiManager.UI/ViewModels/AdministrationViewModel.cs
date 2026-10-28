@@ -26,6 +26,10 @@ public partial class AdministrationViewModel : ViewModelBase, IAdminSectionViewM
     [ObservableProperty] private string _cacheInfo = string.Empty;
     [ObservableProperty] private string _statusMessage = string.Empty;
     [ObservableProperty] private bool _isBusy;
+    [ObservableProperty] private bool _isDatabaseOptionsView;
+
+    public string FormTitle => IsDatabaseOptionsView ? Loc["Database Options"] : Loc["Application Tools"];
+    partial void OnIsDatabaseOptionsViewChanged(bool value) => OnPropertyChanged(nameof(FormTitle));
 
     [ObservableProperty] private bool _isConfirmOpen;
     [ObservableProperty] private string _confirmText = string.Empty;
