@@ -17,6 +17,7 @@
                                     <TextBlock Text="{Binding Loc[AdminDatabaseSettings]}" FontSize="16" FontWeight="SemiBold" />
                                     <TextBlock Text="{Binding DatabaseInfo}" Foreground="Gray" TextWrapping="Wrap" />
                                     <Button Content="{Binding Loc[AdminBackup]}" Click="OnBackupClick" IsEnabled="{Binding !IsBusy}" />
+                                    <TextBlock Text="{Binding LastBackupInfo}" Foreground="Gray" FontSize="12" TextWrapping="Wrap" />
                                 </StackPanel>
                             </Border>
 
@@ -436,6 +437,7 @@
                             HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,-14,-14,0"
                             Padding="8,4" />
                     <TextBlock Text="{Binding ConfirmText}" TextWrapping="Wrap" />
+                    <TextBox Text="{Binding ConfirmPhraseInput, Mode=TwoWay}" IsVisible="{Binding IsDeleteDatabaseConfirmation}" Watermark="DELETE" MinWidth="260" />
                     <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
                         <Button Grid.Column="0" Content="{Binding Loc[Cancel]}" Command="{Binding CancelConfirmCommand}" HorizontalAlignment="Stretch" />
                         <Button Grid.Column="1" Content="{Binding Loc[AdminConfirm]}" Command="{Binding ConfirmCommand}" Classes="accent" HorizontalAlignment="Stretch" />
