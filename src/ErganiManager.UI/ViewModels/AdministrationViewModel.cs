@@ -501,6 +501,8 @@ public partial class AdministrationViewModel : ViewModelBase, IAdminSectionViewM
         IsRefreshingSystemHealth = true;
         SystemHealthSummary = Loc["HealthChecking"];
         var apiServerError = false;
+        var apiConfigurationProblem = false;
+        var emailConfigurationProblem = false;
         try
         {
             var internetTask = _internetCheckService.IsOnlineAsync();
@@ -546,6 +548,7 @@ public partial class AdministrationViewModel : ViewModelBase, IAdminSectionViewM
                      (apiUri.Scheme != Uri.UriSchemeHttp && apiUri.Scheme != Uri.UriSchemeHttps))
             {
                 ErganiHealthStatus = Loc["HealthNoCompanyApiUrl"];
+                apiConfigurationProblem = company != null;
             }
             else
             {
@@ -573,7 +576,10 @@ public partial class AdministrationViewModel : ViewModelBase, IAdminSectionViewM
                 EmailHealthStatus = Loc["HealthEmailDisabled"];
             else if (string.IsNullOrWhiteSpace(company.SmtpHost) ||
                      string.IsNullOrWhiteSpace(company.AlertEmailRecipients))
+            {
                 EmailHealthStatus = Loc["HealthEmailNeedsConfiguration"];
+                emailConfigurationProblem = true;
+            }
             else
                 EmailHealthStatus = Loc["HealthEmailConfiguredNotTested"];
 
@@ -593,7 +599,7 @@ public partial class AdministrationViewModel : ViewModelBase, IAdminSectionViewM
 
             var hasFailedSubmissions = int.TryParse(FailedSubmissionsHealthStatus, out var failed) && failed > 0;
             var endpointUnreachable = ErganiHealthStatus.StartsWith(Loc["HealthEndpointUnreachable"], StringComparison.Ordinal);
-            var hasProblem = databaseError != null || !internetOnline || apiServerError || endpointUnreachable || hasFailedSubmissions;
+            var hasProblem = databaseError != null || !internetOnline || apiServerError || apiConfigurationProblem || endpointUnreachable || hasFailedSubmissions || emailConfigurationProblem;
             SystemHealthSummary = hasProblem ? Loc["HealthAttentionRequired"] : Loc["HealthAllChecksComplete"];
             HealthLastChecked = DateTimeOffset.Now.ToString("yyyy-MM-dd HH:mm:ss");
         }
@@ -837,9 +843,9 @@ public partial class AdministrationViewModel : ViewModelBase, IAdminSectionViewM
     public void Initialize(UserSession session)
     {
         Refresh();
-        _ = RefreshSystemHealthAsync();
         var previousCompanyId = _activeCompanyId;
         _activeCompanyId = session.CompanyId;
+        _ = RefreshSystemHealthAsync();
         if (previousCompanyId != _activeCompanyId || _loadedCompanySettings == null)
             _ = LoadCompanySettingsAsync();
         _ = LoadOfficialHolidaysAsync();
