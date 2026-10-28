@@ -189,9 +189,9 @@ public class ErganiRetryService
             return;
         }
 
-        // Ergani answers again, so the internet works: close an outage (mails the internet outage
-        // that just ended) and send the alert mails that could not be delivered earlier.
-        EndOutage(company);
+        // Ergani answers again, so the internet works: update the queued internet-outage email
+        // in place before flushing the outbox. The Email Log keeps the original row and its final body.
+        await EndOutageAsync(company);
         await _emailAlerts.FlushOutboxAsync(company.Id);
 
         // Scans saved by the scan screens are the first delivery, so they are always sent.
@@ -218,10 +218,8 @@ public class ErganiRetryService
 
     /// <summary>
     /// Called on every check where Ergani did not answer. Two failed checks in a row (about a minute)
-    /// make a real outage, so a short blip sends nothing.
-    ///  - internet up, Ergani silent  → "Ergani service is down" mail right away (once per outage);
-    ///  - internet down               → nothing can be mailed now; the mail "internet was down" is
-    ///                                  sent when the connection is back.
+    /// make a real outage, so a short blip sends nothing. When internet is down, create the queued
+    /// alert immediately so it appears in Email Log while the outage is still happening.
     /// </summary>
     private async Task TrackOutageAsync(Company company, LocalCache.LocalCacheDbContext cache, CancellationToken ct)
     {
@@ -273,23 +271,25 @@ public class ErganiRetryService
         }
     }
 
-    /// <summary>Ergani answered: an internet outage that just ended is mailed now that mail can be sent.</summary>
-    private void EndOutage(Company company)
+    /// <summary>Close the outage and update the existing queued email instead of creating a duplicate.</summary>
+    private async Task EndOutageAsync(Company company)
     {
         Outage? finished;
         lock (_outages)
         {
             if (!_outages.Remove(company.Id, out finished)) return;
         }
-        if (finished.Kind == OutageKind.Internet) SendInternetRestored(company.Id, finished);
+
+        if (finished.Kind == OutageKind.Internet)
+            await UpdateInternetRestoredAsync(company.Id, finished);
     }
 
-    private void SendInternetRestored(int companyId, Outage outage)
+    private async Task UpdateInternetRestoredAsync(int companyId, Outage outage)
     {
-        if (outage.Checks < 2) return;      // a blip, not an outage
+        if (outage.Checks < 2 || !outage.Alerted) return; // a blip, or no alert was queued
 
         var end = DateTime.Now;
-        _ = _emailAlerts.SendAlertAsync(companyId, new AlertMessage
+        var updated = await _emailAlerts.UpdateQueuedAlertAsync(companyId, new AlertMessage
         {
             Event = AlertEvent.InternetDown,
             Title = ErganiManager.Data.UiText.T("Internet connection was down"),
@@ -299,6 +299,9 @@ public class ErganiRetryService
         .Add("Back at", end.ToString("dd/MM/yyyy HH:mm"))
         .Add("Duration", ErganiManager.Data.UiText.F("{0} minute(s)", Math.Max(1, (int)Math.Round((end - outage.Since).TotalMinutes))))
         .Add("What happened", ErganiManager.Data.UiText.T("Scans made during this time were saved and are sent to Ergani automatically.")));
+
+        if (!updated)
+            _logger.LogWarning("Internet outage for company {Id} ended, but no queued email was available to update.", companyId);
     }
 
     /// <summary>Ergani refused a queued scan: mail the details (the employee name is read before the
