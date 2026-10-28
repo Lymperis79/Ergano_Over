@@ -485,7 +485,7 @@ Use the API submission log to trace what the application attempted to send and w
 3. Read the full error/response details. Check whether the failure points to connectivity, authentication, missing data, validation or an Ergani service issue.
 4. When a protocol number is returned, retain it for reference.
 5. Open or save the associated PDF/document when the screen provides that action.
-6. After correcting the cause, retry only records that are still eligible for submission.
+6. After correcting the cause, retry only records that are still eligible for submission. If automatic retry is enabled, queued/failed items may be retried when connectivity returns; confirm the actual result in the log.
 
 Status meanings
 • Pending / not sent: saved locally but not confirmed as accepted by Ergani.
@@ -731,6 +731,28 @@ If the database is unavailable
 SQL Server, MariaDB and SQLite have different backup and maintenance requirements. Follow the instructions for the provider configured in your installation.""",
             "database options setup connection provider SQL Server MariaDB SQLite central local cache");
 
+        new("imports-sync", "Company & configuration", "Imports and synchronization",
+            "Import employee/branch data and understand offline-cache synchronization.",
+            """IMPORTS AND SYNCHRONIZATION
+
+Before importing
+1. Confirm the active company and the source of the data.
+2. Check the file format, required columns and employee/branch identifiers expected by the import screen.
+3. Review the preview or validation results, when available, before confirming the import.
+4. Investigate skipped or rejected rows using the displayed message or import log instead of repeatedly importing the same file.
+
+After importing
+• Verify the employee/branch counts and inspect a few records in the destination screen.
+• Avoid creating duplicates to compensate for missing records; check identifiers, company and branch associations first.
+• An import changes the application's records but does not necessarily submit anything to Ergani.
+
+Synchronization and offline cache
+• The application may synchronize selected company data between the central database and an offline cache.
+• Use the available refresh/synchronization action when the connection is restored, then inspect the reported result and error log.
+• A successful cache refresh is not proof that pending schedule, overtime, leave or work-card submissions were accepted by Ergani.
+• Do not delete the cache or central database as a way to force synchronization. Preserve the existing records and diagnose the reported error first.""",
+            "import imports synchronization sync employee branch file rows skipped cache offline refresh"),
+
         new("release-notes", "Reference", "Help guide and version notes",
             "How this guide is maintained and how to report a missing topic.",
             """ABOUT THIS HELP GUIDE
@@ -931,7 +953,7 @@ When reporting a missing instruction, include the screen name, selected language
 3. Διαβάστε ολόκληρη την απάντηση/το σφάλμα. Ελέγξτε αν αφορά σύνδεση, ταυτοποίηση, ελλιπή δεδομένα, επικύρωση ή υπηρεσία ΕΡΓΑΝΗ.
 4. Όταν επιστρέφεται αριθμός πρωτοκόλλου, διατηρήστε τον για αναφορά.
 5. Ανοίξτε ή αποθηκεύστε το σχετικό PDF/έγγραφο, όταν υπάρχει αυτή η ενέργεια.
-6. Μετά τη διόρθωση, επαναλάβετε μόνο εγγραφές που εξακολουθούν να είναι επιλέξιμες.
+6. Μετά τη διόρθωση, επαναλάβετε μόνο εγγραφές που εξακολουθούν να είναι επιλέξιμες. Αν είναι ενεργή η αυτόματη επανάληψη, στοιχεία σε ουρά/αποτυχία μπορεί να επαναληφθούν όταν αποκατασταθεί η σύνδεση· επιβεβαιώστε το πραγματικό αποτέλεσμα στο αρχείο καταγραφής.
 
 Ερμηνεία καταστάσεων
 • Εκκρεμής / μη απεσταλμένη: αποθηκεύτηκε τοπικά, χωρίς επιβεβαίωση αποδοχής από το ΕΡΓΑΝΗ.
@@ -1176,6 +1198,28 @@ SMTP — Πρωτόκολλο αποστολής email
 
 SQL Server, MariaDB και SQLite έχουν διαφορετικές απαιτήσεις αντιγράφων ασφαλείας και συντήρησης. Ακολουθήστε τις οδηγίες για τον πάροχο της εγκατάστασής σας.""",
             "βάση επιλογές εγκατάσταση σύνδεση πάροχος SQL Server MariaDB SQLite κεντρική τοπική cache");
+
+        new("imports-sync", "Εταιρεία και ρυθμίσεις", "Εισαγωγή και συγχρονισμός",
+            "Εισαγωγή στοιχείων εργαζομένων/υποκαταστημάτων και συγχρονισμός offline cache.",
+            """ΕΙΣΑΓΩΓΗ ΚΑΙ ΣΥΓΧΡΟΝΙΣΜΟΣ
+
+Πριν από την εισαγωγή
+1. Επιβεβαιώστε την ενεργή εταιρεία και την προέλευση των δεδομένων.
+2. Ελέγξτε τη μορφή αρχείου, τις απαιτούμενες στήλες και τα αναγνωριστικά εργαζομένων/υποκαταστημάτων της φόρμας εισαγωγής.
+3. Ελέγξτε την προεπισκόπηση ή τα αποτελέσματα επικύρωσης, όπου διατίθενται, πριν επιβεβαιώσετε.
+4. Διερευνήστε γραμμές που παραλείφθηκαν ή απορρίφθηκαν από το μήνυμα ή το αρχείο εισαγωγής αντί να εισάγετε επανειλημμένα το ίδιο αρχείο.
+
+Μετά την εισαγωγή
+• Επαληθεύστε πλήθος εργαζομένων/υποκαταστημάτων και ελέγξτε μερικές εγγραφές στην οθόνη προορισμού.
+• Μη δημιουργείτε διπλές εγγραφές για να καλύψετε στοιχεία που λείπουν· ελέγξτε πρώτα αναγνωριστικά, εταιρεία και υποκατάστημα.
+• Η εισαγωγή ενημερώνει τις εγγραφές της εφαρμογής, αλλά δεν υποβάλλει απαραίτητα δεδομένα στο ΕΡΓΑΝΗ.
+
+Συγχρονισμός και offline cache
+• Η εφαρμογή μπορεί να συγχρονίζει δεδομένα επιλεγμένης εταιρείας μεταξύ κεντρικής βάσης και τοπικής cache.
+• Όταν αποκατασταθεί η σύνδεση, χρησιμοποιήστε την διαθέσιμη ενέργεια ανανέωσης/συγχρονισμού και ελέγξτε αποτέλεσμα και σφάλματα.
+• Επιτυχής ανανέωση cache δεν αποδεικνύει ότι έγιναν δεκτές από το ΕΡΓΑΝΗ εκκρεμείς υποβολές προγραμμάτων, υπερωριών, αδειών ή καρτών εργασίας.
+• Μη διαγράφετε cache ή κεντρική βάση για να εξαναγκάσετε συγχρονισμό. Διατηρήστε τις εγγραφές και διερευνήστε πρώτα το σφάλμα.""",
+            "εισαγωγή εισαγωγές συγχρονισμός εργαζόμενος υποκατάστημα αρχείο γραμμές cache offline ανανέωση");
 
         new("release-notes", "Αναφορά", "Οδηγός βοήθειας και εκδόσεις",
             "Πώς συντηρείται ο οδηγός και πώς αναφέρετε θέμα που λείπει.",
