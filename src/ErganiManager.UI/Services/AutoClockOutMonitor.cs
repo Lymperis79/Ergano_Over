@@ -20,7 +20,9 @@ public sealed class AutoClockOutMonitor
     private readonly IConnectionStateService _connectionState;
     private readonly ICompanyContext _companyContext;
     private readonly IPortalSettingsService _settings;
-undefined
+    private readonly IWorkCardSubmitter _submitter;
+    private readonly IEmailAlertService _emailAlertService;
+    private readonly ILogger<AutoClockOutMonitor> _logger;
     private CancellationTokenSource? _cts;
     private Task? _loop;
 
@@ -29,12 +31,14 @@ undefined
         ICompanyContext companyContext,
         IPortalSettingsService settings,
         IWorkCardSubmitter submitter,
+        IEmailAlertService emailAlertService,
         ILogger<AutoClockOutMonitor> logger)
     {
         _connectionState = connectionState;
         _companyContext = companyContext;
         _settings = settings;
         _submitter = submitter;
+        _emailAlertService = emailAlertService;
         _logger = logger;
     }
 
@@ -161,8 +165,26 @@ undefined
             }).ConfigureAwait(false);
 
             if (result.Success)
+            {
                 _logger.LogInformation("Automatic clock-out submitted for employee {EmployeeId}; protocol {Protocol}.",
                     employee.Id, result.Protocol);
+
+                var employeeName = $"{employee.FirstName} {employee.LastName}".Trim();
+                var alert = new AlertMessage
+                {
+                    Event = AlertEvent.AutomaticClockOut,
+                    Title = ErganiManager.Data.UiText.F("Automatic clock-out submitted – {0}", employeeName),
+                    OccurredAt = departureTime
+                }
+                .Add("Employee", employeeName)
+                .Add("Employee ID", employee.Id.ToString())
+                .Add("Scheduled end", end.ToString("dd/MM/yyyy HH:mm"))
+                .Add("Automatic clock-out time", departureTime.ToString("dd/MM/yyyy HH:mm"))
+                .Add("Delay after scheduled end", $"{graceMinutes} minute(s)")
+                .Add("Protocol", result.Protocol);
+
+                await _emailAlertService.SendAlertAsync(companyId, alert).ConfigureAwait(false);
+            }
             else
                 _logger.LogWarning("Automatic clock-out submission failed for employee {EmployeeId}: {Error}",
                     employee.Id, result.ErrorMessage);
