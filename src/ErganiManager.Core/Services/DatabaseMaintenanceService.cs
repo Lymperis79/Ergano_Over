@@ -46,9 +46,9 @@ public class DatabaseMaintenanceService : IDatabaseMaintenanceService
         {
             case DatabaseProvider.Sqlite:
             {
-                // VACUUM INTO writes a consistent copy even while the database is in use,
-                // but refuses to overwrite an existing file.
-                if (File.Exists(destinationPath)) File.Delete(destinationPath);
+                // Never delete or overwrite an existing backup. The user must choose a new path.
+                if (File.Exists(destinationPath))
+                    throw new IOException("A file already exists at the selected backup path. Choose a new filename so an existing backup is never destroyed.");
                 using var cmd = conn.CreateCommand();
                 cmd.CommandText = "VACUUM INTO $path";
                 var p = cmd.CreateParameter();
@@ -56,28 +56,74 @@ public class DatabaseMaintenanceService : IDatabaseMaintenanceService
                 p.Value = destinationPath;
                 cmd.Parameters.Add(p);
                 await cmd.ExecuteNonQueryAsync();
-                return $"Backup saved to {destinationPath}";
+
+                try
+                {
+                    await VerifySqliteBackupAsync(destinationPath);
+                }
+                catch
+                {
+                    try { File.Delete(destinationPath); } catch { /* preserve verification failure */ }
+                    throw;
+                }
+
+                return $"Backup verified successfully and saved to {destinationPath} ({new FileInfo(destinationPath).Length:N0} bytes).";
             }
 
             case DatabaseProvider.SqlServer:
             {
-                // Runs on the SQL Server machine, so the path is on the SERVER, not on this PC.
+                // SQL Server interprets this path on the SERVER, not on this PC.
+                // Do not use WITH INIT: that could overwrite a previously good backup.
                 var dbName = conn.Database.Replace("]", "]]");
-                using var cmd = conn.CreateCommand();
-                cmd.CommandTimeout = 600;
-                cmd.CommandText = $"BACKUP DATABASE [{dbName}] TO DISK = @path WITH INIT";
-                var p = cmd.CreateParameter();
-                p.ParameterName = "@path";
-                p.Value = destinationPath;
-                cmd.Parameters.Add(p);
-                await cmd.ExecuteNonQueryAsync();
-                return $"Backup written on the SQL Server machine: {destinationPath}";
+                using (var cmd = conn.CreateCommand())
+                {
+                    cmd.CommandTimeout = 600;
+                    cmd.CommandText = $"BACKUP DATABASE [{dbName}] TO DISK = @path";
+                    var p = cmd.CreateParameter();
+                    p.ParameterName = "@path";
+                    p.Value = destinationPath;
+                    cmd.Parameters.Add(p);
+                    await cmd.ExecuteNonQueryAsync();
+                }
+
+                using (var verify = conn.CreateCommand())
+                {
+                    verify.CommandTimeout = 600;
+                    verify.CommandText = "RESTORE VERIFYONLY FROM DISK = @path";
+                    var p = verify.CreateParameter();
+                    p.ParameterName = "@path";
+                    p.Value = destinationPath;
+                    verify.Parameters.Add(p);
+                    await verify.ExecuteNonQueryAsync();
+                }
+
+                return $"SQL Server backup verification succeeded. Backup is on the SQL Server machine: {destinationPath}";
             }
 
             default:
                 throw new NotSupportedException(
                     "Built-in backup supports SQLite and SQL Server. For MariaDB use mysqldump.");
         }
+    }
+
+    private static async Task VerifySqliteBackupAsync(string backupPath)
+    {
+        if (!File.Exists(backupPath) || new FileInfo(backupPath).Length == 0)
+            throw new InvalidDataException("The backup file is missing or empty.");
+
+        var builder = new SqliteConnectionStringBuilder
+        {
+            DataSource = backupPath,
+            Mode = SqliteOpenMode.ReadOnly
+        };
+        await using var backupConnection = new SqliteConnection(builder.ToString());
+        await backupConnection.OpenAsync();
+
+        await using var command = backupConnection.CreateCommand();
+        command.CommandText = "PRAGMA integrity_check;";
+        var result = Convert.ToString(await command.ExecuteScalarAsync());
+        if (!string.Equals(result, "ok", StringComparison.OrdinalIgnoreCase))
+            throw new InvalidDataException($"SQLite backup integrity check failed: {result}");
     }
 
     public async Task DeleteDatabaseAsync()
