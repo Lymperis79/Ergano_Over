@@ -588,6 +588,8 @@ IAdminSectionViewModel
                 BlockClockInOnRestOrAbsentDay =
                     FormBlockClockInOnRestOrAbsentDay,
 
+                OfficialHolidayDatesJson = SelectedCompany?.OfficialHolidayDatesJson ?? "[]",
+
                 AlertEmailEnabled =
                     FormAlertEmailEnabled,
 
