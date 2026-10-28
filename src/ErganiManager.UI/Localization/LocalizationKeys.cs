@@ -29,6 +29,7 @@ public static class L
     public const string RetrySelected   = nameof(RetrySelected);
     public const string SelectAllFailed = nameof(SelectAllFailed);
     public const string TestConnection  = nameof(TestConnection);
+    public const string Date            = nameof(Date);
 
     // Auth / Login
     public const string AppTitle            = nameof(AppTitle);
