@@ -575,7 +575,9 @@ public static class EnglishStrings
         [L.AlertEvEarlyClockIn] = "An employee clocks in early",
         [L.AlertEvLateClockIn] = "An employee clocks in late",
         [L.AlertEvNoSchedule] = "An employee clocks in without a schedule (or on a rest / absence day)",
-undefined
+        [L.AlertEvScanRejected] = "Ergani rejects a scan",
+        [L.AlertEvAutomaticClockOut] = "The app automatically submitted a clock-out after the configured delay",
+        [L.ClockInAlertMinutes] = "Early / late clock-in tolerance (minutes, 0 = off)",
         [L.AlertEventsHint] = "Mails that cannot be sent right away (for example no internet) are kept and sent automatically as soon as the connection is back.",
         [L.NavEmailLog] = "✉ Email log",
         [L.EmailLogTitle] = "Email log",
