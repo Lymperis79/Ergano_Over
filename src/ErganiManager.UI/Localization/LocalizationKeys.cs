@@ -493,7 +493,9 @@ public static class L
     public const string AlertEvEarlyClockIn = nameof(AlertEvEarlyClockIn);
     public const string AlertEvLateClockIn = nameof(AlertEvLateClockIn);
     public const string AlertEvNoSchedule = nameof(AlertEvNoSchedule);
-undefined
+    public const string AlertEvScanRejected = nameof(AlertEvScanRejected);
+    public const string AlertEvAutomaticClockOut = nameof(AlertEvAutomaticClockOut);
+    public const string ClockInAlertMinutes = nameof(ClockInAlertMinutes);
     public const string AlertEventsHint = nameof(AlertEventsHint);
     public const string NavEmailLog = nameof(NavEmailLog);
     public const string EmailLogTitle = nameof(EmailLogTitle);
