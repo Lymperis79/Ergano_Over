@@ -94,7 +94,7 @@
                         <ItemsControl ItemsSource="{Binding RecentActivity}">
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate x:DataType="vm:DashboardActivityRow">
-                                    <Border BorderBrush="{DynamicResource SeparatorBrush}" BorderThickness="0,0,0,1" Padding="0,8">
+                                    <Border BorderBrush="#404040" BorderThickness="0,0,0,1" Padding="0,8">
                                         <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto,Auto">
                                             <TextBlock Grid.Row="0" Grid.Column="0" Text="{Binding TypeText}" FontWeight="SemiBold"
                                                        TextWrapping="Wrap" />
