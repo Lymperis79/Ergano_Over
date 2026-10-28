@@ -144,6 +144,11 @@
                       VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
         <StackPanel Spacing="2">
 
+            <Button Content="{Binding Loc[NavDashboard]}" Classes="navItem"
+                    IsVisible="{Binding ShowDashboard}"
+                    Command="{Binding NavigateToCommand}" CommandParameter="Dashboard"
+                    HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" />
+
             <!-- Master data -->
             <StackPanel IsVisible="{Binding ShowMasterData}" Spacing="2">
                 <Button Content="{Binding MasterDataHeader}" Classes="navGroup"
