@@ -383,7 +383,7 @@ public static class EnglishStrings
 
         [L.NavMasterData] = "🗂 Master data",
         [L.NavAdminGroup] = "⚙ Administration",
-        [L.NavDatabaseTools] = "🛠 Database tools",
+        [L.NavDatabaseTools] = "🧰 Application Tools",
         [L.NavScan] = "📟 Scan",
         [L.UsersMenus] = "Visible menus",
         [L.UsersMenusHint] = "Tick the menus this user can see. Unticked menus are hidden for this user.",
