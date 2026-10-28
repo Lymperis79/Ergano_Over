@@ -283,7 +283,6 @@ public static class L
     public const string Roster = nameof(Roster);
     public const string OvertimeTrend = nameof(OvertimeTrend);
     public const string OvertimeExtraHoursAnalysis = nameof(OvertimeExtraHoursAnalysis);
-    public const string Date = nameof(Date);
     public const string Declared = nameof(Declared);
     public const string Hours = nameof(Hours);
     public const string Actual = nameof(Actual);
