@@ -107,6 +107,8 @@ public static class LocalCacheDbContextFactory
                 "ALTER TABLE CachedCompanySettings ADD COLUMN AlertEvents INTEGER NOT NULL DEFAULT 1");
             AddColumn("CachedCompanySettings", "ClockInAlertMinutes",
                 "ALTER TABLE CachedCompanySettings ADD COLUMN ClockInAlertMinutes INTEGER NOT NULL DEFAULT 10");
+            AddColumn("CachedCompanySettings", "OfficialHolidayDatesJson",
+                "ALTER TABLE CachedCompanySettings ADD COLUMN OfficialHolidayDatesJson TEXT NOT NULL DEFAULT '[]'");
             return added;
         }
         catch
