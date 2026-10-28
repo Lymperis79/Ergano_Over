@@ -178,6 +178,11 @@ public class ErganiRetryService
             // Alert mails: "Ergani is down" now, "internet was down" once the connection is back.
             await TrackOutageAsync(company, cache, ct);
 
+            // SMTP only needs internet, not a healthy Ergani endpoint. If the internet is
+            // back while Ergani is still down, deliver any previously queued alert emails now.
+            if (await _internetCheck.IsOnlineAsync(ct))
+                await _emailAlerts.FlushOutboxAsync(company.Id);
+
             // Remember WHY the queued cards are waiting: they will be sent later with their
             // original scan time and this reason.
             await RecordOutageReasonAsync(company.Id, cache, ct);
