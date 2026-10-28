@@ -577,6 +577,21 @@ public partial class AdminShellViewModel : ViewModelBase
             return;
         }
 
+        // Do not silently discard company-specific settings edits when the main company selector changes.
+        var dirtySettingsVm = _sectionCache.Values
+            .OfType<AdministrationViewModel>()
+            .FirstOrDefault(vm => vm.IsCompanySettingsDirty);
+        if (dirtySettingsVm != null)
+        {
+            var currentCompanyId = _companyContext.ActiveCompanyId;
+            SelectedSwitchCompany = currentCompanyId.HasValue
+                ? SwitchableCompanies.FirstOrDefault(c => c.Id == currentCompanyId.Value)
+                : null;
+            dirtySettingsVm.CompanySettingsStatus = Loc["Unsaved company settings. Save or discard the changes before switching companies."];
+            ShowNotification(Loc["Unsaved company settings. Save or discard the changes before switching companies."]);
+            return;
+        }
+
         // Only perform the expensive operations on a real company switch.
         _companyContext.SwitchCompany(value.Id, value.Name);
         HasActiveCompany = true;
