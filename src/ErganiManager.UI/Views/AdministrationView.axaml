@@ -7,10 +7,10 @@
     <Grid>
         <ScrollViewer>
             <StackPanel Spacing="16" MaxWidth="820" HorizontalAlignment="Left">
-                <TextBlock Text="{Binding Loc[AdminTitle]}" FontSize="22" FontWeight="Bold" />
+                <TextBlock Text="{Binding FormTitle}" FontSize="22" FontWeight="Bold" />
 
                 <TabControl>
-                    <TabItem Header="{Binding Loc[AdminGeneralSettings]}">
+                    <TabItem Header="{Binding Loc[AdminGeneralSettings]}" IsVisible="{Binding IsDatabaseOptionsView}">
                         <StackPanel Spacing="16" Margin="0,12,0,0">
                             <Border Background="{DynamicResource CardBrush}" CornerRadius="8" Padding="20">
                                 <StackPanel Spacing="10">
@@ -30,7 +30,7 @@
                         </StackPanel>
                     </TabItem>
 
-                    <TabItem Header="{Binding Loc[OfficialHolidays]}">
+                    <TabItem Header="{Binding Loc[OfficialHolidays]}" IsVisible="{Binding !IsDatabaseOptionsView}">
                         <StackPanel Spacing="12" Margin="0,12,0,0">
                             <Border Background="{DynamicResource CardBrush}" CornerRadius="8" Padding="20">
                                 <StackPanel Spacing="10">
@@ -75,7 +75,7 @@
                         </StackPanel>
                     </TabItem>
 
-                    <TabItem Header="{Binding Loc[AdminHoursSettings]}">
+                    <TabItem Header="{Binding Loc[AdminHoursSettings]}" IsVisible="{Binding !IsDatabaseOptionsView}">
                         <StackPanel Spacing="16" Margin="0,12,0,0">
                             <Border Background="{DynamicResource CardBrush}" CornerRadius="8" Padding="20">
                                 <StackPanel Spacing="10">
@@ -187,7 +187,7 @@
                         </StackPanel>
                     </TabItem>
 
-                    <TabItem Header="{Binding Loc[AdminPortalSettings]}">
+                    <TabItem Header="{Binding Loc[AdminPortalSettings]}" IsVisible="{Binding !IsDatabaseOptionsView}">
                         <StackPanel Spacing="16" Margin="0,12,0,0">
                             <Border Background="{DynamicResource CardBrush}" CornerRadius="8" Padding="20">
                                 <StackPanel Spacing="10">
@@ -242,7 +242,7 @@
                         </StackPanel>
                     </TabItem>
 
-                    <TabItem Header="{Binding Loc[AdminLeaveTypes]}">
+                    <TabItem Header="{Binding Loc[AdminLeaveTypes]}" IsVisible="{Binding !IsDatabaseOptionsView}">
                         <StackPanel Spacing="12" Margin="0,12,0,0">
                             <TextBlock Text="{Binding Loc[AdminLeaveTypesDescription]}" TextWrapping="Wrap" Foreground="Gray"/>
                             <Grid ColumnDefinitions="110,*,100,180,40" ColumnSpacing="16">
@@ -289,7 +289,7 @@
                         </StackPanel>
                     </TabItem>
 
-                    <TabItem Header="{Binding Loc[AdminDangerZone]}">
+                    <TabItem Header="{Binding Loc[AdminDangerZone]}" IsVisible="{Binding IsDatabaseOptionsView}">
                         <Border Background="#2A1A1A" BorderBrush="#EF5350" BorderThickness="1" CornerRadius="8" Padding="20" Margin="0,12,0,0">
                             <StackPanel Spacing="10">
                                 <TextBlock Text="{Binding Loc[AdminDangerZone]}" FontSize="16" FontWeight="SemiBold" Foreground="#EF9A9A" />
