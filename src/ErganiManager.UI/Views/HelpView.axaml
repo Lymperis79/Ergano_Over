@@ -32,7 +32,7 @@
             </Border>
             <TextBox Grid.Column="1"
                      Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
-                     Watermark="{Binding SearchPlaceholder}"
+                     PlaceholderText="{Binding SearchPlaceholder}"
                      VerticalContentAlignment="Center"
                      MinHeight="42" />
         </Grid>
