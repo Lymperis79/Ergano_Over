@@ -7,6 +7,8 @@ public class WorkCardSubmissionRequest
     public int BranchId { get; set; }
     public string MovementType { get; set; } = string.Empty; // "Arrival" or "Departure"
     public DateTime MovementDateTime { get; set; }
+    /// <summary>True when this card was generated automatically by the missing clock-out monitor.</summary>
+    public bool IsAutomatic { get; set; }
 }
 
 public class WorkCardSubmissionOutcome
