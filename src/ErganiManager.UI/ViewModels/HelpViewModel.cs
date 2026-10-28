@@ -227,6 +227,7 @@ public partial class HelpViewModel : ViewModelBase, IAdminSectionViewModel
         "report" or "reports" or "αναφορα" or "αναφορες" => ["report", "reports", "αναφορα", "αναφορες"],
         "protocol" or "πρωτοκολλο" or "πρωτοκολλου" => ["protocol", "πρωτοκολλο", "πρωτοκολλου"],
         "import" or "imported" or "εισαγωγη" or "εισηχθη" => ["import", "imported", "εισαγωγη", "εισηχθη"],
+        "sync" or "synchronize" or "synchronization" or "συγχρονισμος" => ["sync", "synchronize", "synchronization", "συγχρονισμος"],
         _ => [term]
     };
 
