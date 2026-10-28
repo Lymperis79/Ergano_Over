@@ -179,8 +179,7 @@
                             <CheckBox Content="{Binding Loc[AlertEvEarlyClockIn]}" IsChecked="{Binding FormAlertEvEarlyClockIn}" />
                             <CheckBox Content="{Binding Loc[AlertEvLateClockIn]}" IsChecked="{Binding FormAlertEvLateClockIn}" />
                             <CheckBox Content="{Binding Loc[AlertEvNoSchedule]}" IsChecked="{Binding FormAlertEvNoSchedule}" />
-                            <CheckBox Content="{Binding Loc[AlertEvScanRejected]}" IsChecked="{Binding FormAlertEvScanRejected}" />
-                            <TextBlock Text="{Binding Loc[ClockInAlertMinutes]}" FontWeight="SemiBold" />
+undefined
                             <NumericUpDown Value="{Binding FormClockInAlertMinutes}" Minimum="0" Maximum="240" />
                             <TextBlock Text="{Binding Loc[AlertEventsHint]}" TextWrapping="Wrap" Foreground="Gray" FontSize="11" />
                         </StackPanel>
