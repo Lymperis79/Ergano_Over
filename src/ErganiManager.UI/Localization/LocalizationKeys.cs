@@ -85,6 +85,16 @@ public static class L
     public const string AutoClockOutSaved = nameof(AutoClockOutSaved);
     public const string AutoClockOutInvalid = nameof(AutoClockOutInvalid);
     public const string AutoClockOutSaveFailed = nameof(AutoClockOutSaveFailed);
+    public const string OfficialHolidays = nameof(OfficialHolidays);
+    public const string OfficialHolidaysTitle = nameof(OfficialHolidaysTitle);
+    public const string OfficialHolidaysDescription = nameof(OfficialHolidaysDescription);
+    public const string OfficialHolidaysEffect = nameof(OfficialHolidaysEffect);
+    public const string OfficialHolidaysSelectCompany = nameof(OfficialHolidaysSelectCompany);
+    public const string OfficialHolidaysLoadFailed = nameof(OfficialHolidaysLoadFailed);
+    public const string OfficialHolidaysLoaded = nameof(OfficialHolidaysLoaded);
+    public const string OfficialHolidaysLoadFailedDetails = nameof(OfficialHolidaysLoadFailedDetails);
+    public const string OfficialHolidaysSaved = nameof(OfficialHolidaysSaved);
+    public const string OfficialHolidaysSaveFailed = nameof(OfficialHolidaysSaveFailed);
     public const string NightSettingsApply  = nameof(NightSettingsApply);
     public const string EarlyClockInBlock   = nameof(EarlyClockInBlock);
     public const string EarlyDepartureAlert = nameof(EarlyDepartureAlert);
