@@ -301,7 +301,7 @@ public static class EnglishStrings
         [L.AdminDeleteCache] = "🧹 Delete local cache",
         [L.AdminDangerZone] = "Danger zone",
         [L.AdminDeleteDb] = "🗑 Delete database…",
-        [L.AdminGeneralSettings] = "General",
+        [L.AdminGeneralSettings] = "Database Tools",
         [L.AdminHoursSettings] = "Hours settings",
         [L.AdminPortalSettings] = "Portal settings",
         [L.AdminDatabaseSettings] = "Database & cache",
