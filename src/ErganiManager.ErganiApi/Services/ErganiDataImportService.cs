@@ -412,7 +412,7 @@ public class ErganiDataImportService : IErganiDataImportService
                         existingCompany?.SmtpHost,
 
                     SmtpPort =
-                        existingCompany?.SmtpPort ?? 587,
+                        existingCompany?.SmtpPort ?? 465,
 
                     SmtpUser =
                         existingCompany?.SmtpUser,
