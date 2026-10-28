@@ -32,6 +32,7 @@ public static class EnglishStrings
         [L.RetrySelected] = "⚡ Retry selected",
         [L.SelectAllFailed] = "Select all failed",
         [L.TestConnection] = "Test Connection",
+        [L.Date] = "Date",
 
         // ── Auth / Login ──────────────────────────────────────
         [L.AppTitle] = "Ergani Manager",
