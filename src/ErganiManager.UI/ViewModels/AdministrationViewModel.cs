@@ -1080,9 +1080,6 @@ public partial class AdministrationViewModel : ViewModelBase, IAdminSectionViewM
         }
     }
 
-    /// <summary>Called by the view after the user picked a destination file.</summary>
-    public string SuggestedBackupName => _maintenance.SuggestBackupFileName();
-
     public async Task BackupToAsync(string path)
     {
         IsBusy = true;
