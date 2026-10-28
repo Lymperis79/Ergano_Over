@@ -99,6 +99,47 @@ public static class DbSchemaUpdater
                     CONSTRAINT FK_Leaves_Employees_EmployeeId FOREIGN KEY (EmployeeId) REFERENCES Employees (Id) ON DELETE CASCADE,
                     CONSTRAINT FK_Leaves_Branches_BranchId FOREIGN KEY (BranchId) REFERENCES Branches (Id) ON DELETE NO ACTION)"
             }),
+        new("OfficialHolidayDefinitions",
+            Sqlite: new[]
+            {
+                @"CREATE TABLE IF NOT EXISTS OfficialHolidayDefinitions (
+                    Id INTEGER NOT NULL CONSTRAINT PK_OfficialHolidayDefinitions PRIMARY KEY AUTOINCREMENT,
+                    Date TEXT NOT NULL,
+                    Name TEXT NOT NULL,
+                    CountryCode TEXT NOT NULL,
+                    Source TEXT NOT NULL,
+                    IsCustom INTEGER NOT NULL,
+                    CreatedAtUtc TEXT NOT NULL,
+                    LastSyncedAtUtc TEXT NULL)",
+                "CREATE UNIQUE INDEX IF NOT EXISTS IX_OfficialHolidayDefinitions_Date ON OfficialHolidayDefinitions (Date)"
+            },
+            SqlServer: new[]
+            {
+                @"CREATE TABLE OfficialHolidayDefinitions (
+                    Id int NOT NULL IDENTITY(1,1) CONSTRAINT PK_OfficialHolidayDefinitions PRIMARY KEY,
+                    Date date NOT NULL,
+                    Name nvarchar(200) NOT NULL,
+                    CountryCode nvarchar(2) NOT NULL,
+                    Source nvarchar(40) NOT NULL,
+                    IsCustom bit NOT NULL,
+                    CreatedAtUtc datetime2 NOT NULL,
+                    LastSyncedAtUtc datetime2 NULL)",
+                "CREATE UNIQUE INDEX IX_OfficialHolidayDefinitions_Date ON OfficialHolidayDefinitions (Date)"
+            },
+            MariaDb: new[]
+            {
+                @"CREATE TABLE IF NOT EXISTS OfficialHolidayDefinitions (
+                    Id INT NOT NULL AUTO_INCREMENT,
+                    Date DATE NOT NULL,
+                    Name VARCHAR(200) NOT NULL,
+                    CountryCode VARCHAR(2) NOT NULL,
+                    Source VARCHAR(40) NOT NULL,
+                    IsCustom TINYINT(1) NOT NULL,
+                    CreatedAtUtc DATETIME(6) NOT NULL,
+                    LastSyncedAtUtc DATETIME(6) NULL,
+                    PRIMARY KEY (Id),
+                    UNIQUE INDEX IX_OfficialHolidayDefinitions_Date (Date))"
+            }),
     };
 
     private static readonly ColumnPatch[] Patches =
