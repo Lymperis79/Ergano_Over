@@ -354,12 +354,14 @@ public partial class TerminalViewModel : ViewModelBase
             cache, employee.Id, now, settings?.EarlyClockInBlockMinutes ?? 0);
         var movementType = shift.Movement;
         var schedule = shift.Schedule;
+        var isOfficialHoliday = movementType == "Arrival" &&
+            CompanyHolidayCalendar.IsEnabled(settings?.OfficialHolidayDatesJson, DateOnly.FromDateTime(now));
         _currentMovementText = movementType == "Arrival" ? Loc[L.Arrival] : Loc[L.Departure];
 
         // Rest/Absent days block the clock-in (company setting; without cached settings the safe default is
         // to block). A departure is never blocked: it closes an arrival that already exists, and blocking
         // it would leave the employee clocked in forever.
-        if (movementType == "Arrival" && schedule != null && schedule.WorkType is 2 or 3 &&
+        if (!isOfficialHoliday && movementType == "Arrival" && schedule != null && schedule.WorkType is 2 or 3 &&
             (settings == null || settings.BlockClockInOnRestOrAbsentDay))
         {
             var dayType = schedule.WorkType == 2 ? Loc["Vm.rest day"] : Loc["Vm.absence day"];
@@ -375,7 +377,7 @@ public partial class TerminalViewModel : ViewModelBase
 
         if (movementType == "Arrival")
         {
-            if (schedule == null && settings != null && settings.BlockClockInWithoutSchedule)
+            if (!isOfficialHoliday && schedule == null && settings != null && settings.BlockClockInWithoutSchedule)
             {
                 await LogBlockedAttemptAsync(cache, employee, companyId, movementType, "Clock-in blocked: no schedule");
                 SendAlert(companyId, AlertEvent.NoScheduleClockIn, employee, isOnline,
@@ -386,7 +388,7 @@ public partial class TerminalViewModel : ViewModelBase
             }
 
             // 0 = option off. Full date-times are compared, so shifts around midnight work.
-            if (shift.ShiftStart is { } shiftStart && settings is { EarlyClockInBlockMinutes: > 0 })
+            if (!isOfficialHoliday && shift.ShiftStart is { } shiftStart && settings is { EarlyClockInBlockMinutes: > 0 })
             {
                 var earliestAllowed = shiftStart.AddMinutes(-settings.EarlyClockInBlockMinutes);
 
