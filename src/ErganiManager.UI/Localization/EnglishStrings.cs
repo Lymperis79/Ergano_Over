@@ -65,6 +65,9 @@ public static class EnglishStrings
         // ── Companies ─────────────────────────────────────────
         [L.Companies] = "Companies",
         ["CompanySettings"] = "Company Settings",
+        ["DiscardChanges"] = "Discard changes",
+        ["Company settings changes discarded."] = "Company settings changes discarded.",
+        ["Unsaved company settings. Save or discard the changes before switching companies."] = "Unsaved company settings. Save or discard the changes before switching companies.",
         ["CompanySettingsUsesMainSelector"] = "These settings apply to the company currently selected at the top of the main window. Changes are saved only for that company.",
         ["Select a company in the main window to edit its settings."] = "Select a company in the main window to edit its settings.",
         ["Could not load settings for the selected company."] = "Could not load settings for the selected company.",
