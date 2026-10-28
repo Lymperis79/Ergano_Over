@@ -65,6 +65,9 @@ public static class GreekStrings
         // ── Companies ─────────────────────────────────────────
         [L.Companies] = "Εταιρείες",
         ["CompanySettings"] = "Ρυθμίσεις εταιρείας",
+        ["DiscardChanges"] = "Απόρριψη αλλαγών",
+        ["Company settings changes discarded."] = "Οι αλλαγές στις ρυθμίσεις εταιρείας απορρίφθηκαν.",
+        ["Unsaved company settings. Save or discard the changes before switching companies."] = "Υπάρχουν μη αποθηκευμένες ρυθμίσεις εταιρείας. Αποθηκεύστε ή απορρίψτε τις αλλαγές πριν αλλάξετε εταιρεία.",
         ["CompanySettingsUsesMainSelector"] = "Οι ρυθμίσεις αφορούν την εταιρεία που είναι επιλεγμένη στο επάνω μέρος του κύριου παραθύρου. Οι αλλαγές αποθηκεύονται μόνο για αυτή την εταιρεία.",
         ["Select a company in the main window to edit its settings."] = "Επιλέξτε εταιρεία από το κύριο παράθυρο για να επεξεργαστείτε τις ρυθμίσεις της.",
         ["Could not load settings for the selected company."] = "Δεν ήταν δυνατή η φόρτωση των ρυθμίσεων της επιλεγμένης εταιρείας.",
