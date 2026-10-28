@@ -34,7 +34,11 @@ public partial class AdministrationViewModel : ViewModelBase, IAdminSectionViewM
     private readonly IPortalSettingsService _portal;
     private readonly ICompanyService _companyService;
     private readonly ICacheSyncService _cacheSync;
+    private readonly IOfficialHolidayCatalogService _holidayCatalog;
     private int? _activeCompanyId;
+
+    [ObservableProperty] private DateTime? _newOfficialHolidayDate = DateTime.Today;
+    [ObservableProperty] private string _newOfficialHolidayName = string.Empty;
 
     public ObservableCollection<OfficialHolidayEdit> OfficialHolidays { get; } = new();
     [ObservableProperty] private string _officialHolidaysStatus = string.Empty;
@@ -89,13 +93,15 @@ public partial class AdministrationViewModel : ViewModelBase, IAdminSectionViewM
     [ObservableProperty] private string _autoClockOutStatus = string.Empty;
 
     public AdministrationViewModel(IDatabaseMaintenanceService maintenance, IRoundingSettingsService rounding,
-        IPortalSettingsService portal, ICompanyService companyService, ICacheSyncService cacheSync)
+        IPortalSettingsService portal, ICompanyService companyService, ICacheSyncService cacheSync,
+        IOfficialHolidayCatalogService holidayCatalog)
     {
         _maintenance = maintenance;
         _rounding = rounding;
         _portal = portal;
         _companyService = companyService;
         _cacheSync = cacheSync;
+        _holidayCatalog = holidayCatalog;
         var schedule = portal.Current.Schedule;
         var workCards = portal.Current.WorkCards;
 
@@ -433,7 +439,7 @@ public partial class AdministrationViewModel : ViewModelBase, IAdminSectionViewM
         _ = LoadOfficialHolidaysAsync();
     }
 
-    private async Task LoadOfficialHolidaysAsync()
+    private async Task LoadOfficialHolidaysAsync(bool synchronize = true)
     {
         OfficialHolidays.Clear();
         if (_activeCompanyId is not { } companyId)
@@ -451,9 +457,16 @@ public partial class AdministrationViewModel : ViewModelBase, IAdminSectionViewM
                 return;
             }
 
+            var currentYear = DateTime.Today.Year;
+            var displayYears = new[] { currentYear, currentYear + 1 };
+            var catalogueYears = new[] { currentYear - 1, currentYear, currentYear + 1 };
+            var synchronizedYears = synchronize
+                ? await _holidayCatalog.SynchronizeAsync(catalogueYears)
+                : (int?)null;
+            var catalogue = await _holidayCatalog.GetForYearsAsync(displayYears);
             var enabledDates = CompanyHolidayCalendar.Parse(company.OfficialHolidayDatesJson);
-            var displayYears = new[] { DateTime.Today.Year, DateTime.Today.Year + 1 };
-            foreach (var holiday in displayYears.SelectMany(GreekHolidays.ForYear).OrderBy(h => h.Date))
+
+            foreach (var holiday in catalogue.OrderBy(h => h.Date))
             {
                 var item = new OfficialHolidayEdit(holiday.Date, holiday.Name)
                 {
@@ -462,7 +475,48 @@ public partial class AdministrationViewModel : ViewModelBase, IAdminSectionViewM
                 OfficialHolidays.Add(item);
             }
 
-            OfficialHolidaysStatus = string.Format(Loc[L.OfficialHolidaysLoaded], company.Name, $"{DateTime.Today.Year}–{DateTime.Today.Year + 1}");
+            var loadedText = string.Format(Loc[L.OfficialHolidaysLoaded], company.Name, $"{currentYear}–{currentYear + 1}");
+            OfficialHolidaysStatus = synchronizedYears.HasValue
+                ? loadedText + " " + string.Format(Loc[L.OfficialHolidaysSyncComplete], synchronizedYears.Value)
+                : loadedText;
+        }
+        catch (Exception ex)
+        {
+            OfficialHolidaysStatus = string.Format(Loc[L.OfficialHolidaysLoadFailedDetails], ex.Message);
+        }
+    }
+
+    [RelayCommand]
+    private async Task SynchronizeOfficialHolidaysAsync()
+    {
+        try
+        {
+            var currentYear = DateTime.Today.Year;
+            var synchronized = await _holidayCatalog.SynchronizeAsync(new[] { currentYear - 1, currentYear, currentYear + 1 });
+            await LoadOfficialHolidaysAsync(synchronize: false);
+            OfficialHolidaysStatus += " " + string.Format(Loc[L.OfficialHolidaysSyncComplete], synchronized);
+        }
+        catch (Exception ex)
+        {
+            OfficialHolidaysStatus = string.Format(Loc[L.OfficialHolidaysLoadFailedDetails], ex.Message);
+        }
+    }
+
+    [RelayCommand]
+    private async Task AddCustomOfficialHolidayAsync()
+    {
+        if (NewOfficialHolidayDate is not { } date || string.IsNullOrWhiteSpace(NewOfficialHolidayName))
+        {
+            OfficialHolidaysStatus = Loc[L.OfficialHolidayCustomRequired];
+            return;
+        }
+
+        try
+        {
+            await _holidayCatalog.AddCustomAsync(DateOnly.FromDateTime(date), NewOfficialHolidayName);
+            NewOfficialHolidayName = string.Empty;
+            await LoadOfficialHolidaysAsync(synchronize: false);
+            OfficialHolidaysStatus = Loc[L.OfficialHolidayCustomAdded];
         }
         catch (Exception ex)
         {
