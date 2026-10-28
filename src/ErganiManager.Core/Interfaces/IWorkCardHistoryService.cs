@@ -29,6 +29,8 @@ public class WorkCardHistoryDto : INotifyPropertyChanged
     private int _retryAttempts;
     private string? _retryError;
 
+    public bool IsAutomatic { get; set; }
+
     public bool SubmittedToErgani
     {
         get => _submittedToErgani;
