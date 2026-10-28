@@ -446,6 +446,7 @@ public static class L
     public const string SMTPUsername = nameof(SMTPUsername);
     public const string SMTPPort = nameof(SMTPPort);
     public const string SMTPHost = nameof(SMTPHost);
+    public const string TestEmailSettings = nameof(TestEmailSettings);
     public const string AlertEmailRecipientsCommaSeparated = nameof(AlertEmailRecipientsCommaSeparated);
     public const string ImportBranchesEmployeesFromErgani = nameof(ImportBranchesEmployeesFromErgani);
     public const string TestConnection2 = nameof(TestConnection2);
