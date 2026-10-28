@@ -157,6 +157,19 @@
                             <TextBlock Text="{Binding Loc[SMTPPassword]}" FontWeight="SemiBold" />
                             <TextBox Text="{Binding FormSmtpPassword}" PasswordChar="•" />
                             <CheckBox Content="{Binding Loc[UseTLS]}" IsChecked="{Binding FormSmtpUseTls}" />
+                            <Button Content="{Binding Loc[TestEmailSettings]}"
+                                    Command="{Binding TestEmailSettingsCommand}"
+                                    IsEnabled="{Binding !IsTestingEmail}"
+                                    HorizontalAlignment="Left" Margin="0,4,0,0" />
+                            <Border IsVisible="{Binding EmailTestResult, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                                    CornerRadius="4" Padding="8,6" Margin="0,4,0,0">
+                                <Border.Background>
+                                    <SolidColorBrush Color="{Binding EmailTestSuccess,
+                                        Converter={x:Static vm:BoolToBackgroundConverter.Instance}}" />
+                                </Border.Background>
+                                <TextBlock Text="{Binding EmailTestResult}" Foreground="White"
+                                           FontSize="12" TextWrapping="Wrap" />
+                            </Border>
 
                             <Separator />
                             <TextBlock Text="{Binding Loc[AlertEventsTitle]}" FontWeight="SemiBold" />
