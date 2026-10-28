@@ -88,7 +88,10 @@
                                     <TextBlock Text="{Binding Loc[AutoRetry]}" FontSize="15" FontWeight="SemiBold" />
                                     <CheckBox Content="{Binding Loc[AutoRetry]}" IsChecked="{Binding AutoRetryFailedSubmissions}" />
                                     <TextBlock Text="{Binding Loc[AutoRetryDesc]}" TextWrapping="Wrap" Foreground="Gray" FontSize="11" />
-                                    <Button Content="{Binding Loc[Save]}" Command="{Binding SaveCompanySettingsCommand}" Classes="accent" HorizontalAlignment="Left" />
+                                    <StackPanel Orientation="Horizontal" Spacing="8">
+                                        <Button Content="{Binding Loc[Save]}" Command="{Binding SaveCompanySettingsCommand}" Classes="accent" />
+                                        <Button Content="{Binding Loc[DiscardChanges]}" Command="{Binding DiscardCompanySettingsCommand}" IsEnabled="{Binding IsCompanySettingsDirty}" />
+                                    </StackPanel>
                                 </StackPanel>
                             </Border>
                         </StackPanel>
