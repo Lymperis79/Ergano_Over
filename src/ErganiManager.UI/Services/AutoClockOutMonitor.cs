@@ -20,8 +20,7 @@ public sealed class AutoClockOutMonitor
     private readonly IConnectionStateService _connectionState;
     private readonly ICompanyContext _companyContext;
     private readonly IPortalSettingsService _settings;
-    private readonly IWorkCardSubmitter _submitter;
-    private readonly ILogger<AutoClockOutMonitor> _logger;
+undefined
     private CancellationTokenSource? _cts;
     private Task? _loop;
 
