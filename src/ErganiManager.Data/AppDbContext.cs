@@ -34,6 +34,7 @@ public class AppDbContext : DbContext
         // ── Permanent official holiday catalogue ───────────────
         modelBuilder.Entity<OfficialHolidayDefinition>(e =>
         {
+            e.ToTable("OfficialHolidayDefinitions");
             e.HasIndex(h => h.Date).IsUnique();
             e.Property(h => h.Name).HasMaxLength(200).IsRequired();
             e.Property(h => h.CountryCode).HasMaxLength(2).IsRequired();
