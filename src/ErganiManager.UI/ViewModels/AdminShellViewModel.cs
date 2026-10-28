@@ -30,7 +30,8 @@ public enum AdminSection
     SubmissionLog,
     EmailLog,
     Help,
-    Administration
+    Administration,
+    DatabaseOptions
 }
 
 /// <summary>
@@ -691,7 +692,10 @@ public partial class AdminShellViewModel : ViewModelBase
         }
 
         // A menu hidden for this user cannot be opened (also not through a stale command).
-        if (_session != null && !_session.CanSee(sectionName))
+        if (_session != null &&
+            !(section == AdminSection.DatabaseOptions
+                ? _session.CanSee(MenuKeys.Administration)
+                : _session.CanSee(sectionName)))
             return;
 
         var wasCached = _sectionCache.ContainsKey(section);
@@ -779,6 +783,11 @@ public partial class AdminShellViewModel : ViewModelBase
                         .GetRequiredService<
                             AdministrationViewModel>(),
 
+                AdminSection.DatabaseOptions =>
+                    _services
+                        .GetRequiredService<
+                            AdministrationViewModel>(),
+
                 _ =>
                     throw new ArgumentOutOfRangeException(
                         nameof(section))
@@ -807,6 +816,9 @@ public partial class AdminShellViewModel : ViewModelBase
                     BuildSessionForActiveCompany());
             }
         }
+
+        if (vm is AdministrationViewModel administrationVm)
+            administrationVm.IsDatabaseOptionsView = section == AdminSection.DatabaseOptions;
 
         CurrentSectionViewModel = vm;
 
