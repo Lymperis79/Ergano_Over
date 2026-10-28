@@ -135,7 +135,7 @@ public class ExcelImportExportService
         {
             Tr.Loc["Vm.Employee"], Tr.Loc["Vm.Tax ID (AFM)"], Tr.Loc["Vm.Branch"], Tr.Loc["Vm.Type"],
             Tr.Loc["Vm.Date"], Tr.Loc["Vm.Time"], Tr.Loc["Vm.Submitted"], Tr.Loc["Vm.Protocol"],
-            Tr.Loc["Vm.Early Departure"], Tr.Loc["Vm.Early (min)"], Tr.Loc["Vm.Email Alert Sent"]
+            Tr.Loc["Vm.Early Departure"], Tr.Loc["Vm.Early (min)"], Tr.Loc["Vm.Email Alert Sent"], "Automatic"
         };
 
         for (int i = 0; i < headers.Length; i++)
@@ -164,6 +164,7 @@ public class ExcelImportExportService
             ws.Cell(row, 9).Value = r.WasEarlyDeparture ? Tr.Loc["Vm.Yes"] : Tr.Loc["Vm.No"];
             ws.Cell(row, 10).Value = r.EarlyDepartureMinutes?.ToString() ?? "";
             ws.Cell(row, 11).Value = r.EmailAlertSent ? Tr.Loc["Vm.Yes"] : Tr.Loc["Vm.No"];
+            ws.Cell(row, 12).Value = r.IsAutomatic ? Tr.Loc["Vm.Yes"] : Tr.Loc["Vm.No"];
 
             // Highlight early departures in amber
             if (r.WasEarlyDeparture)
