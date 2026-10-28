@@ -382,6 +382,7 @@ public static class L
     public const string TodayIssueNoSchedule   = nameof(TodayIssueNoSchedule);
     public const string TodayIssueRestDay      = nameof(TodayIssueRestDay);
     public const string TodayOk                = nameof(TodayOk);
+    public const string TodayOfficialHoliday    = nameof(TodayOfficialHoliday);
     public const string TodayMoveIn            = nameof(TodayMoveIn);
     public const string TodayMoveOut           = nameof(TodayMoveOut);
     public const string TodayNoMovements       = nameof(TodayNoMovements);
