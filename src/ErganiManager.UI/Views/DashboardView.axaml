@@ -77,13 +77,13 @@
                                         <TextBlock FontSize="11" Opacity="0.7"
                                                    Text="{Binding Successful, StringFormat='✓ {0}'}" />
                                         <TextBlock FontSize="11" Foreground="#EF5350"
-                                                   IsVisible="{Binding Failed, Converter={x:Static vm:IntToBoolConverter.Instance}}"
+                                                   IsVisible="{Binding HasFailures}"
                                                    Text="{Binding Failed, StringFormat='✕ {0}'}" />
                                     </StackPanel>
                                 </DataTemplate>
                             </ItemsControl.ItemTemplate>
                         </ItemsControl>
-                        <TextBlock Text="{Binding Loc[Dashboard.NoSubmissionsInPeriod]}" IsVisible="{Binding HasCategories, Converter={x:Static vm:InverseBoolConverter.Instance}}"
+                        <TextBlock Text="{Binding Loc[Dashboard.NoSubmissionsInPeriod]}" IsVisible="{Binding NoCategories}"
                                    FontSize="12" Opacity="0.65" TextWrapping="Wrap" />
                     </StackPanel>
                 </Border>
@@ -109,7 +109,7 @@
                                 </DataTemplate>
                             </ItemsControl.ItemTemplate>
                         </ItemsControl>
-                        <TextBlock Text="{Binding Loc[Dashboard.NoRecentActivity]}" IsVisible="{Binding HasRecentActivity, Converter={x:Static vm:InverseBoolConverter.Instance}}"
+                        <TextBlock Text="{Binding Loc[Dashboard.NoRecentActivity]}" IsVisible="{Binding NoRecentActivity}"
                                    FontSize="12" Opacity="0.65" />
                     </StackPanel>
                 </Border>
