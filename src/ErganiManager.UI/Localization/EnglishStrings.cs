@@ -80,6 +80,13 @@ public static class EnglishStrings
         [L.OnTimeWindowMinutesLabel] = "Minutes allowed without a reason",
         [L.OnTimeWindowSaved] = "✅ Time limit saved. It applies immediately to new submissions and retries.",
         [L.OnTimeWindowInvalid] = "❌ Enter a whole number of minutes from 0 to {0}.",
+        [L.AutoClockOutTitle] = "Automatic clock-out for missing departures",
+        [L.AutoClockOutDescription] = "While Ergani II is open, check clock-ins against declared working hours. If no clock-out exists after the scheduled end plus the configured delay, create and submit a departure. Disabled by default.",
+        [L.AutoClockOutEnabledLabel] = "Enable automatic clock-out",
+        [L.AutoClockOutMinutesLabel] = "Minutes after declared shift end",
+        [L.AutoClockOutSaved] = "Automatic clock-out settings saved.",
+        [L.AutoClockOutInvalid] = "Enter a whole number of minutes from 0 to {0}.",
+        [L.AutoClockOutSaveFailed] = "Could not save automatic clock-out settings: {0}."
         [L.NightSettingsApply] = "Generate the report again to apply the change.",
         [L.ReportNightHours] = "Night hours",
         [L.EarlyClockInBlock] = "Block clock-in earlier than (minutes before shift start, 0 = off)",
