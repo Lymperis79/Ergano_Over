@@ -67,6 +67,9 @@ public interface IEmailAlertService
     /// </summary>
     Task<(bool Success, string? ErrorMessage)> SendAlertAsync(int companyId, AlertMessage alert);
 
+    /// <summary>Updates an existing queued alert (and its log row) without creating a duplicate email.</summary>
+    Task<bool> UpdateQueuedAlertAsync(int companyId, AlertMessage alert);
+
     /// <summary>Sends the alert mails that could not be delivered earlier. Never throws.</summary>
     Task FlushOutboxAsync(int companyId);
 
