@@ -173,7 +173,9 @@ IAdminSectionViewModel
     [ObservableProperty] private bool _formAlertEvEarlyClockIn;
     [ObservableProperty] private bool _formAlertEvLateClockIn;
     [ObservableProperty] private bool _formAlertEvNoSchedule;
-undefined
+    [ObservableProperty] private bool _formAlertEvScanRejected;
+    [ObservableProperty] private bool _formAlertEvAutomaticClockOut;
+    [ObservableProperty] private int _formClockInAlertMinutes = 10;
 
     private int ComposeAlertEvents() =>
         (FormAlertEvEarlyDeparture ? (int)AlertEvent.EarlyDeparture : 0) |
@@ -182,7 +184,8 @@ undefined
         (FormAlertEvEarlyClockIn   ? (int)AlertEvent.EarlyClockIn : 0) |
         (FormAlertEvLateClockIn    ? (int)AlertEvent.LateClockIn : 0) |
         (FormAlertEvNoSchedule     ? (int)AlertEvent.NoScheduleClockIn : 0) |
-        (FormAlertEvScanRejected   ? (int)AlertEvent.ScanRejected : 0);
+        (FormAlertEvScanRejected   ? (int)AlertEvent.ScanRejected : 0) |
+        (FormAlertEvAutomaticClockOut ? (int)AlertEvent.AutomaticClockOut : 0);
 
     private void ApplyAlertEvents(int mask)
     {
@@ -194,6 +197,7 @@ undefined
         FormAlertEvLateClockIn    = events.HasFlag(AlertEvent.LateClockIn);
         FormAlertEvNoSchedule     = events.HasFlag(AlertEvent.NoScheduleClockIn);
         FormAlertEvScanRejected   = events.HasFlag(AlertEvent.ScanRejected);
+        FormAlertEvAutomaticClockOut = events.HasFlag(AlertEvent.AutomaticClockOut);
     }
 
     // ---------------------------------------------------------------------
