@@ -98,6 +98,13 @@ public static class GreekStrings
         [L.OfficialHolidaysLoadFailedDetails] = "Αποτυχία φόρτωσης επίσημων αργιών: {0}",
         [L.OfficialHolidaysSaved] = "Οι ρυθμίσεις επίσημων αργιών αποθηκεύτηκαν και συγχρονίστηκαν σε αυτόν τον υπολογιστή.",
         [L.OfficialHolidaysSaveFailed] = "Αποτυχία αποθήκευσης επίσημων αργιών: {0}",
+        [L.OfficialHolidaysSynchronize] = "Συγχρονισμός επίσημων αργιών από το διαδίκτυο",
+        [L.OfficialHolidaysSyncComplete] = "Ενημερώθηκαν {0} έτη από την ηλεκτρονική πηγή. Οι υπάρχουσες εγγραφές της βάσης διατηρήθηκαν.",
+        [L.OfficialHolidayAddCustomTitle] = "Προσθήκη προσαρμοσμένης αργίας στην κοινόχρηστη βάση",
+        [L.OfficialHolidayNamePlaceholder] = "Όνομα αργίας",
+        [L.OfficialHolidayAddCustom] = "Προσθήκη αργίας",
+        [L.OfficialHolidayCustomRequired] = "Επιλέξτε ημερομηνία και εισαγάγετε όνομα αργίας.",
+        [L.OfficialHolidayCustomAdded] = "Η προσαρμοσμένη αργία αποθηκεύτηκε μόνιμα στην κύρια βάση δεδομένων."
         [L.NightSettingsApply] = "Δημιουργήστε ξανά την αναφορά για να εφαρμοστεί η αλλαγή.",
         [L.ReportNightHours] = "Νυχτερινές ώρες",
         [L.EarlyClockInBlock] = "Αποκλεισμός πρόωρης έναρξης (λεπτά πριν την έναρξη βάρδιας, 0 = ανενεργό)",
