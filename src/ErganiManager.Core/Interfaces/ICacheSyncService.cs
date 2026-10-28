@@ -26,4 +26,7 @@ public interface ICacheSyncService
     /// repeatedly; already-synced rows are skipped.
     /// </summary>
     Task<SyncResult> FlushPendingSubmissionsAsync();
+
+    /// <summary>Returns the last successful cached company-settings refresh time, if one exists.</summary>
+    Task<DateTime?> GetLastSuccessfulRefreshAsync(int companyId);
 }
