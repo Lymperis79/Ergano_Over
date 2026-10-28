@@ -82,8 +82,6 @@
                         <TextBlock Text="{Binding Loc[ErganiPassword]}" FontWeight="SemiBold" />
                         <TextBox Text="{Binding FormErganiPassword}" PasswordChar="•" />
 
-                        <TextBlock Text="{Binding Loc[ErganiBaseUrl]}" FontWeight="SemiBold" />
-                        <TextBox Text="{Binding FormErganiBaseUrl}" />
 
                         <TextBlock Text="{Binding Loc[UserType]}" FontWeight="SemiBold" />
                         <ComboBox ItemsSource="{Binding AvailableUsertypes}"
@@ -126,72 +124,6 @@
 
                         <CheckBox Content="{Binding Loc[Active]}" IsChecked="{Binding FormIsActive}" />
 
-                        <Separator />
-                        <TextBlock Text="{Binding Loc[TimeRules]}" FontSize="15" FontWeight="SemiBold" />
-
-                        <TextBlock Text="{Binding Loc[EarlyClockInBlock]}" FontWeight="SemiBold" />
-                        <NumericUpDown Value="{Binding FormEarlyClockInBlockMinutes}" Minimum="0" Maximum="120" />
-
-                        <TextBlock Text="{Binding Loc[EarlyDepartureAlert]}" FontWeight="SemiBold" />
-                        <NumericUpDown Value="{Binding FormEarlyDepartureAlertMinutes}" Minimum="0" Maximum="120" />
-
-                        <CheckBox Content="{Binding Loc[BlockRestAbsent]}"
-                                  IsChecked="{Binding FormBlockClockInOnRestOrAbsentDay}" />
-
-                        <CheckBox Content="{Binding Loc[BlockNoSchedule]}"
-                                  IsChecked="{Binding FormBlockClockInWithoutSchedule}" />
-
-                        <Separator />
-                        <TextBlock Text="{Binding Loc[EmailAlerts]}" FontSize="15" FontWeight="SemiBold" />
-                        <CheckBox Content="{Binding Loc[EmailAlerts]}" IsChecked="{Binding FormAlertEmailEnabled}" />
-
-                        <StackPanel IsVisible="{Binding FormAlertEmailEnabled}" Spacing="10">
-                            <TextBlock Text="{Binding Loc[AlertEmailRecipientsCommaSeparated]}" FontWeight="SemiBold" />
-                            <TextBox Text="{Binding FormAlertEmailRecipients}" />
-                            <TextBlock Text="{Binding Loc[SMTPHost]}" FontWeight="SemiBold" />
-                            <TextBox Text="{Binding FormSmtpHost}" PlaceholderText="smtp.example.com" />
-                            <TextBlock Text="{Binding Loc[SMTPPort]}" FontWeight="SemiBold" />
-                            <NumericUpDown Value="{Binding FormSmtpPort}" Minimum="1" Maximum="65535" />
-                            <TextBlock Text="{Binding Loc[SMTPUsername]}" FontWeight="SemiBold" />
-                            <TextBox Text="{Binding FormSmtpUser}" />
-                            <TextBlock Text="{Binding Loc[SMTPPassword]}" FontWeight="SemiBold" />
-                            <TextBox Text="{Binding FormSmtpPassword}" PasswordChar="•" />
-                            <CheckBox Content="{Binding Loc[UseTLS]}" IsChecked="{Binding FormSmtpUseTls}" />
-                            <Button Content="{Binding Loc[TestEmailSettings]}"
-                                    Command="{Binding TestEmailSettingsCommand}"
-                                    IsEnabled="{Binding !IsTestingEmail}"
-                                    HorizontalAlignment="Left" Margin="0,4,0,0" />
-                            <Border IsVisible="{Binding EmailTestResult, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
-                                    CornerRadius="4" Padding="8,6" Margin="0,4,0,0">
-                                <Border.Background>
-                                    <SolidColorBrush Color="{Binding EmailTestSuccess,
-                                        Converter={x:Static vm:BoolToBackgroundConverter.Instance}}" />
-                                </Border.Background>
-                                <TextBlock Text="{Binding EmailTestResult}" Foreground="White"
-                                           FontSize="12" TextWrapping="Wrap" />
-                            </Border>
-
-                            <Separator />
-                            <TextBlock Text="{Binding Loc[AlertEventsTitle]}" FontWeight="SemiBold" />
-                            <CheckBox Content="{Binding Loc[AlertEvEarlyDeparture]}" IsChecked="{Binding FormAlertEvEarlyDeparture}" />
-                            <CheckBox Content="{Binding Loc[AlertEvErganiDown]}" IsChecked="{Binding FormAlertEvErganiDown}" />
-                            <CheckBox Content="{Binding Loc[AlertEvInternetDown]}" IsChecked="{Binding FormAlertEvInternetDown}" />
-                            <CheckBox Content="{Binding Loc[AlertEvEarlyClockIn]}" IsChecked="{Binding FormAlertEvEarlyClockIn}" />
-                            <CheckBox Content="{Binding Loc[AlertEvLateClockIn]}" IsChecked="{Binding FormAlertEvLateClockIn}" />
-                            <CheckBox Content="{Binding Loc[AlertEvNoSchedule]}" IsChecked="{Binding FormAlertEvNoSchedule}" />
-                            <CheckBox Content="{Binding Loc[AlertEvScanRejected]}" IsChecked="{Binding FormAlertEvScanRejected}" />
-                            <CheckBox Content="{Binding Loc[AlertEvAutomaticClockOut]}" IsChecked="{Binding FormAlertEvAutomaticClockOut}" />
-                            <TextBlock Text="{Binding Loc[ClockInAlertMinutes]}" FontWeight="SemiBold" />
-                            <NumericUpDown Value="{Binding FormClockInAlertMinutes}" Minimum="0" Maximum="240" />
-                            <TextBlock Text="{Binding Loc[AlertEventsHint]}" TextWrapping="Wrap" Foreground="Gray" FontSize="11" />
-                        </StackPanel>
-
-                        <Separator />
-                        <TextBlock Text="{Binding Loc[AutoRetry]}" FontSize="15" FontWeight="SemiBold" />
-                        <CheckBox Content="{Binding Loc[AutoRetry]}"
-                                  IsChecked="{Binding FormAutoRetryFailedSubmissions}" />
-                        <TextBlock Text="{Binding Loc[AutoRetryDesc]}" TextWrapping="Wrap"
-                                   Foreground="Gray" FontSize="11" />
 
                         <TextBlock Text="{Binding StatusMessage}" Foreground="Red"
                                    TextWrapping="Wrap" Margin="0,8,0,0" />
