@@ -88,6 +88,7 @@ public partial class TerminalViewModel : ViewModelBase
 
     // Movement of the scan being processed (for the list); empty when it could not be decided.
     private string _currentMovementText = string.Empty;
+    private int _lastQueuedPendingId;
 
     /// <summary>Raised when the operator confirms closing the application.</summary>
     public event EventHandler? ExitRequested;
@@ -626,7 +627,7 @@ public partial class TerminalViewModel : ViewModelBase
             return false;
         }
 
-        cache.PendingSubmissions.Add(new PendingSubmission
+        var pending = new PendingSubmission
         {
             EmployeeId = employee.Id,
             CompanyId = companyId,
@@ -635,8 +636,10 @@ public partial class TerminalViewModel : ViewModelBase
             MovementType = movementType,
             ScannedAt = scannedAt,
             Synced = false
-        });
+        };
+        cache.PendingSubmissions.Add(pending);
         await cache.SaveChangesAsync();
+        _lastQueuedPendingId = pending.Id;
 
         // Wake the background sender now; this returns immediately.
         _retryService.TriggerNow();
@@ -659,7 +662,7 @@ public partial class TerminalViewModel : ViewModelBase
     {
         RecentScans.Insert(0, new RecentScanItem
         {
-            PendingId = 0,
+            PendingId = _lastQueuedPendingId,
             TimeText = DateTime.Now.ToString("HH:mm:ss"),
             EmployeeName = string.IsNullOrWhiteSpace(employeeName) ? "—" : employeeName,
             MovementText = (_currentMovementText == Loc[L.Arrival] ? "→ " : _currentMovementText == Loc[L.Departure] ? "← " : "") + _currentMovementText,
@@ -671,6 +674,7 @@ public partial class TerminalViewModel : ViewModelBase
             IsBad = kind is ScanPopupKind.TooEarlyBlocked or ScanPopupKind.NoScheduleBlocked
                     or ScanPopupKind.UnknownBadge or ScanPopupKind.Error
         });
+        _lastQueuedPendingId = 0;
     }
 
     private void ShowPopup(ScanPopupKind kind, string title, string employeeName, string line1, string line2, string line3)
