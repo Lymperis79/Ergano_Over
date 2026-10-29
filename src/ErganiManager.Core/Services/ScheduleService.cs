@@ -96,6 +96,7 @@ public class ScheduleService : IScheduleService
         var alreadyAtErgani = dto.Source == ErganiManager.Core.Interfaces.ScheduleSource.ErganiImported && dto.SubmittedToErgani;
 
         var existing = await db.Schedules
+            .Include(s => s.WorkingPeriods)
             .FirstOrDefaultAsync(s => s.EmployeeId == dto.EmployeeId && s.ScheduleDate == dto.ScheduleDate);
 
         if (existing == null)
@@ -107,8 +108,8 @@ public class ScheduleService : IScheduleService
                 ScheduleDate = dto.ScheduleDate,
                 WorkType = ToEntityWorkType(dto.WorkType),
                 Source = ToEntityScheduleSource(dto.Source),
-                StartTime = dto.StartTime,
-                EndTime = dto.EndTime ?? periods.LastOrDefault().EndTime,
+                StartTime = dto.StartTime ?? (periods.Count > 0 ? periods[0].StartTime : null),
+                EndTime = dto.EndTime ?? (periods.Count > 0 ? periods[^1].EndTime : null),
                 WorkingPeriods = periods.Select((p, i) => new ScheduleWorkingPeriod { PeriodNumber = i + 1, StartTime = p.StartTime, EndTime = p.EndTime }).ToList(),
                 Comments = dto.Comments,
                 SubmittedToErgani = alreadyAtErgani,
@@ -122,8 +123,8 @@ public class ScheduleService : IScheduleService
         existing.BranchId = dto.BranchId;
         existing.WorkType = ToEntityWorkType(dto.WorkType);
         existing.Source = ToEntityScheduleSource(dto.Source);
-        existing.StartTime = dto.StartTime;
-        existing.EndTime = dto.EndTime ?? periods.LastOrDefault().EndTime;
+        existing.StartTime = dto.StartTime ?? (periods.Count > 0 ? periods[0].StartTime : null);
+        existing.EndTime = dto.EndTime ?? (periods.Count > 0 ? periods[^1].EndTime : null);
         db.ScheduleWorkingPeriods.RemoveRange(existing.WorkingPeriods);
         existing.WorkingPeriods = periods.Select((p, i) => new ScheduleWorkingPeriod { PeriodNumber = i + 1, StartTime = p.StartTime, EndTime = p.EndTime }).ToList();
         existing.Comments = dto.Comments;
@@ -216,6 +217,7 @@ public class ScheduleService : IScheduleService
         await using var db = OpenDb();
 
         var existingInRange = await db.Schedules
+            .Include(s => s.WorkingPeriods)
             .Where(s => s.EmployeeId == employeeId && s.ScheduleDate >= fromDate && s.ScheduleDate <= toDate)
             .ToListAsync();
         var existingByDate = existingInRange.ToDictionary(s => s.ScheduleDate);
@@ -233,6 +235,10 @@ public class ScheduleService : IScheduleService
                 existing.Source = Data.Entities.ScheduleSource.Manual;
                 existing.StartTime = startTime;
                 existing.EndTime = endTime;
+                db.ScheduleWorkingPeriods.RemoveRange(existing.WorkingPeriods);
+                existing.WorkingPeriods = startTime.HasValue && endTime.HasValue && endTime > startTime
+                    ? new List<ScheduleWorkingPeriod> { new() { PeriodNumber = 1, StartTime = startTime.Value, EndTime = endTime.Value } }
+                    : new List<ScheduleWorkingPeriod>();
                 existing.UpdatedAt = DateTime.UtcNow;
                 if (existing.SubmittedToErgani)
                 {
@@ -252,6 +258,9 @@ public class ScheduleService : IScheduleService
                     Source = Data.Entities.ScheduleSource.Manual,
                     StartTime = startTime,
                     EndTime = endTime,
+                    WorkingPeriods = startTime.HasValue && endTime.HasValue && endTime > startTime
+                        ? new List<ScheduleWorkingPeriod> { new() { PeriodNumber = 1, StartTime = startTime.Value, EndTime = endTime.Value } }
+                        : new List<ScheduleWorkingPeriod>(),
                     CreatedAt = DateTime.UtcNow
                 });
             }
