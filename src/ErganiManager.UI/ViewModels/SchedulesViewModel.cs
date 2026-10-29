@@ -342,7 +342,8 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
     public bool BulkShowTimeFields => BulkWorkType    is AppWorkType.Office or AppWorkType.Home;
     public bool IsEditingExisting  => EditingScheduleId != 0;
     /// <summary>Only Office/Home days that are not yet at Ergani can be submitted from the day dialog.</summary>
-    public bool CanSubmitEditingDay => ShowTimeFields && !EditingSubmitted &&
+    public bool CanShowSubmitEditingDay => ShowTimeFields && !EditingSubmitted;
+    public bool CanSubmitEditingDay => CanShowSubmitEditingDay &&
         !Cells.Any(c => c.Date == EditingDate && c.HasRestWarning) &&
         !Cells.Any(c => c.Date == EditingDate.AddDays(-1) && c.HasRestWarning);
     public bool HasEditingOvertime => PotentialExtraHours > 0;
