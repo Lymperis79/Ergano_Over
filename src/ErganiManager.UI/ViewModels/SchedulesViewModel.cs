@@ -30,6 +30,8 @@ public partial class CalendarCellViewModel : ViewModelBase
     public bool HasOvertimeText => !string.IsNullOrWhiteSpace(OvertimeText);
     [ObservableProperty] private string _overtimeStatusText = string.Empty;
     public bool HasOvertimeStatusText => !string.IsNullOrWhiteSpace(OvertimeStatusText);
+    [ObservableProperty] private string _restWarningText = string.Empty;
+    public bool HasRestWarning => !string.IsNullOrWhiteSpace(RestWarningText);
     [ObservableProperty] private bool _hasSchedule;
     [ObservableProperty] private bool _isToday;
     [ObservableProperty] private bool _isSelected;
@@ -612,6 +614,52 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
         return leave is null ? string.Empty : $"{leave.DeclaredStartTime:HH:mm}–{leave.DeclaredEndTime:HH:mm}";
     }
 
+    /// <summary>Flags the following workday when rest from prior clock-out to next clock-in is below 11 hours.</summary>
+    private Dictionary<DateOnly, string> BuildRestWarnings(IEnumerable<ScheduleDayDto> scheduleRows)
+    {
+        var byDate = scheduleRows.GroupBy(s => s.ScheduleDate).ToDictionary(g => g.Key, g => g.First());
+        var warnings = new Dictionary<DateOnly, string>();
+        foreach (var next in byDate.Values.OrderBy(s => s.ScheduleDate))
+        {
+            if (!byDate.TryGetValue(next.ScheduleDate.AddDays(-1), out var previous)) continue;
+            DateTime? clockOut = null;
+            DateTime? clockIn = null;
+            var actual = previous.ActualDeparture.HasValue && next.ActualArrival.HasValue;
+            if (actual)
+            {
+                clockOut = previous.ActualDeparture.Value;
+                clockIn = next.ActualArrival.Value;
+            }
+            else
+            {
+                var previousPeriods = previous.WorkingPeriods?.OrderBy(p => p.PeriodNumber).ToList() ?? new();
+                var nextPeriods = next.WorkingPeriods?.OrderBy(p => p.PeriodNumber).ToList() ?? new();
+                var previousEnd = previousPeriods.Count > 0 ? previousPeriods[^1].EndTime : previous.EndTime;
+                var nextStart = nextPeriods.Count > 0 ? nextPeriods[0].StartTime : next.StartTime;
+                if (previousEnd.HasValue && nextStart.HasValue)
+                {
+                    clockOut = previous.ScheduleDate.ToDateTime(previousEnd.Value);
+                    clockIn = next.ScheduleDate.ToDateTime(nextStart.Value);
+                }
+            }
+
+            if (clockOut.HasValue && clockIn.HasValue)
+            {
+                var rest = clockIn.Value - clockOut.Value;
+                if (rest < TimeSpan.FromHours(11))
+                {
+                    var basis = actual
+                        ? Loc["Rest warning based on actual clock punches."]
+                        : Loc["Rest warning based on planned schedule."];
+                    warnings[next.ScheduleDate] = string.Format(
+                        Loc["⚑ REST WARNING: only {0:F1} hours rest (minimum 11). {1}"],
+                        Math.Max(0, rest.TotalHours), basis);
+                }
+            }
+        }
+        return warnings;
+    }
+
     private async Task BuildMonthCalendarAsync()
     {
         var first = new DateOnly(Year, Month, 1);
@@ -620,6 +668,14 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
 
         var schedules = await _scheduleService
             .GetMonthAsync(SelectedEmployee!.Id, Year, Month).ConfigureAwait(false);
+        // Include adjacent months so the first/last day also receives a rest-gap check.
+        var previousMonth = first.AddMonths(-1);
+        var nextMonth = first.AddMonths(1);
+        schedules = (await _scheduleService.GetMonthAsync(SelectedEmployee.Id, previousMonth.Year, previousMonth.Month).ConfigureAwait(false))
+            .Concat(schedules)
+            .Concat(await _scheduleService.GetMonthAsync(SelectedEmployee.Id, nextMonth.Year, nextMonth.Month).ConfigureAwait(false))
+            .GroupBy(s => s.ScheduleDate).Select(g => g.First()).ToList();
+        var restWarnings = BuildRestWarnings(schedules);
         var leaves = _session?.CompanyId is int companyId
             ? await Holidays.GetCalendarLeavesAsync(companyId, SelectedEmployee.Id, first, last).ConfigureAwait(false)
             : new List<LeaveDto>();
@@ -679,6 +735,7 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
                 TimeRangeText      = WorkRangeText(sched) is { Length: > 0 } workRange ? workRange : DeclaredLeaveRangeText(dayLeaves),
                 OvertimeText  = overtimeText,
                 OvertimeStatusText = overtimeStatusText,
+                RestWarningText = restWarnings.GetValueOrDefault(date, string.Empty),
                 OfficialHolidayText = officialName ?? string.Empty,
                 UserHolidayText     = userHolidayText,
                 HolidayTooltip      = tooltip,
@@ -707,6 +764,15 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
             schedules = schedules.Concat(extra).ToList();
         }
 
+        // Include neighbouring months when the visible week crosses a month boundary.
+        var previousDate = from.AddDays(-1);
+        if (previousDate.Month != from.Month)
+            schedules = schedules.Concat(await _scheduleService.GetMonthAsync(SelectedEmployee.Id, previousDate.Year, previousDate.Month).ConfigureAwait(false)).ToList();
+        var nextDate = to.AddDays(1);
+        if (nextDate.Month != to.Month)
+            schedules = schedules.Concat(await _scheduleService.GetMonthAsync(SelectedEmployee.Id, nextDate.Year, nextDate.Month).ConfigureAwait(false)).ToList();
+        schedules = schedules.GroupBy(s => s.ScheduleDate).Select(g => g.First()).ToList();
+        var restWarnings = BuildRestWarnings(schedules);
         var byDate = schedules.ToDictionary(s => s.ScheduleDate);
         var leaves = _session?.CompanyId is int companyId
             ? await Holidays.GetCalendarLeavesAsync(companyId, SelectedEmployee.Id, from, to).ConfigureAwait(false)
@@ -759,6 +825,7 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
                 TimeRangeText       = WorkRangeText(sched) is { Length: > 0 } workRange ? workRange : DeclaredLeaveRangeText(dayLeaves),
                 OvertimeText   = overtimeText,
                 OvertimeStatusText = overtimeStatusText,
+                RestWarningText = restWarnings.GetValueOrDefault(d, string.Empty),
                 OfficialHolidayText = officialName ?? string.Empty,
                 UserHolidayText     = userHolidayText,
                 HolidayTooltip      = tooltip,
