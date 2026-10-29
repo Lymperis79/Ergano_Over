@@ -228,6 +228,9 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
     [ObservableProperty] private AppWorkType _editingWorkType = AppWorkType.Office;
     [ObservableProperty] private TimeSpan? _editingStartTime = new(9, 0, 0);
     [ObservableProperty] private TimeSpan? _editingEndTime   = new(17, 0, 0);
+    [ObservableProperty] private bool _editingSplitShift;
+    [ObservableProperty] private TimeSpan? _editingSecondStartTime = new(17, 0, 0);
+    [ObservableProperty] private TimeSpan? _editingSecondEndTime = new(21, 0, 0);
     [ObservableProperty] private string _editingComments = string.Empty;
     [ObservableProperty] private string _editingActualText = string.Empty;
     [ObservableProperty] private string _editingSubmissionText = string.Empty;
@@ -338,24 +341,35 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
     public bool IsEditingExisting  => EditingScheduleId != 0;
     /// <summary>Only Office/Home days that are not yet at Ergani can be submitted from the day dialog.</summary>
     public bool CanSubmitEditingDay => ShowTimeFields && !EditingSubmitted;
-    public bool HasEditingOvertime =>
-        ShowTimeFields && EditingStartTime.HasValue && EditingEndTime.HasValue &&
-        ScheduleHours.GetOvertimeRange(
-            EditingStartTime.HasValue ? TimeOnly.FromTimeSpan(EditingStartTime.Value) : null,
-            EditingEndTime.HasValue ? TimeOnly.FromTimeSpan(EditingEndTime.Value) : null).HasValue;
+    public bool HasEditingOvertime => PotentialExtraHours > 0;
+    public double EditingTotalHours => ScheduleHours.GetTotalHours(GetEditingPeriods());
+    public double PotentialExtraHours => SelectedEmployee == null ? 0 :
+        ScheduleHours.GetPotentialExtraHours(GetEditingPeriods(), SelectedEmployee.NormalDailyHours);
+    public string EditingOvertimeNote => !ShowTimeFields || PotentialExtraHours <= 0 ? string.Empty :
+        string.Format(Loc["Vm.⚠ Planned time totals {0:0.##} hours; this is {1:0.##} hour(s) above the employee's normal {2:0.##} hours. Review the correct declaration type in the Overtime form; nothing is automatically classified as overtime."],
+            EditingTotalHours, PotentialExtraHours, SelectedEmployee?.NormalDailyHours ?? 8);
 
-    /// <summary>Shown when the day is longer than 8 hours: how it will be split for Ergani.</summary>
-    public string EditingOvertimeNote
+    private List<(TimeOnly Start, TimeOnly End)> GetEditingPeriods()
     {
-        get
-        {
-            if (!ShowTimeFields || !EditingStartTime.HasValue || !EditingEndTime.HasValue) return string.Empty;
-            var start = TimeOnly.FromTimeSpan(EditingStartTime.Value);
-            var end   = TimeOnly.FromTimeSpan(EditingEndTime.Value);
-            if (ScheduleHours.GetOvertimeRange(start, end) is not { } ot) return string.Empty;
-            return string.Format(Loc["Vm.⏱ Over {0} hours — {1}–{2} is submitted as the schedule, {2}–{3} is submitted as overtime."],
-                ScheduleHours.NormalDailyHours, start.ToString("HH:mm"), ot.From.ToString("HH:mm"), ot.To.ToString("HH:mm"));
-        }
+        var periods = new List<(TimeOnly Start, TimeOnly End)>();
+        if (EditingStartTime is TimeSpan start && EditingEndTime is TimeSpan end)
+            periods.Add((TimeOnly.FromTimeSpan(start), TimeOnly.FromTimeSpan(end)));
+        if (EditingSplitShift && EditingSecondStartTime is TimeSpan start2 && EditingSecondEndTime is TimeSpan end2)
+            periods.Add((TimeOnly.FromTimeSpan(start2), TimeOnly.FromTimeSpan(end2)));
+        return periods;
+    }
+
+    partial void OnEditingSplitShiftChanged(bool value) => NotifyHoursChanged();
+    partial void OnEditingStartTimeChanged(TimeSpan? value) => NotifyHoursChanged();
+    partial void OnEditingEndTimeChanged(TimeSpan? value) => NotifyHoursChanged();
+    partial void OnEditingSecondStartTimeChanged(TimeSpan? value) => NotifyHoursChanged();
+    partial void OnEditingSecondEndTimeChanged(TimeSpan? value) => NotifyHoursChanged();
+    private void NotifyHoursChanged()
+    {
+        OnPropertyChanged(nameof(EditingTotalHours));
+        OnPropertyChanged(nameof(PotentialExtraHours));
+        OnPropertyChanged(nameof(EditingOvertimeNote));
+        OnPropertyChanged(nameof(HasEditingOvertime));
     }
 
     public SchedulesViewModel(IScheduleService scheduleService,
@@ -816,42 +830,16 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
         EditingWorkType   = existing?.WorkType ?? AppWorkType.Office;
         SelectedEditingShift = FindMatchingShift(existing?.StartTime?.ToTimeSpan(), existing?.EndTime?.ToTimeSpan())
             ?? AvailableShifts.FirstOrDefault();
-        EditingStartTime  = existing?.StartTime?.ToTimeSpan() ?? SelectedEditingShift?.StartTime ?? new TimeSpan(9, 0, 0);
-        EditingEndTime    = existing?.EndTime?.ToTimeSpan()   ?? SelectedEditingShift?.EndTime ?? new TimeSpan(17, 0, 0);
+        var existingPeriods = existing?.WorkingPeriods?.OrderBy(p => p.PeriodNumber).ToList() ?? new();
+        EditingStartTime = (existingPeriods.Count > 0 ? existingPeriods[0].StartTime : existing?.StartTime)?.ToTimeSpan()
+            ?? SelectedEditingShift?.StartTime ?? new TimeSpan(9, 0, 0);
+        EditingEndTime = (existingPeriods.Count > 0 ? existingPeriods[0].EndTime : existing?.EndTime)?.ToTimeSpan()
+            ?? SelectedEditingShift?.EndTime ?? new TimeSpan(17, 0, 0);
+        EditingSplitShift = existingPeriods.Count > 1;
+        EditingSecondStartTime = existingPeriods.Count > 1 ? existingPeriods[1].StartTime.ToTimeSpan() : new TimeSpan(17, 0, 0);
+        EditingSecondEndTime = existingPeriods.Count > 1 ? existingPeriods[1].EndTime.ToTimeSpan() : new TimeSpan(21, 0, 0);
         EditingComments   = existing?.Comments ?? string.Empty;
         EditingOvertimeJustification = ErganiManager.Data.Entities.OvertimeJustification.ExceptionalWorkload;
-        if (_session?.CompanyId is int companyIdForOvertime)
-        {
-            var overtimeRecords = await _overtimeService.GetByCompanyAsync(companyIdForOvertime, date, date);
-            var overtimeRange = ScheduleHours.GetOvertimeRange(
-                EditingStartTime.HasValue ? TimeOnly.FromTimeSpan(EditingStartTime.Value) : null,
-                EditingEndTime.HasValue ? TimeOnly.FromTimeSpan(EditingEndTime.Value) : null);
-            var savedOvertime = overtimeRange.HasValue
-                ? overtimeRecords.FirstOrDefault(o => o.EmployeeId == SelectedEmployee.Id &&
-                    o.StartTime == overtimeRange.Value.From && o.EndTime == overtimeRange.Value.To && !o.IsCancelled)
-                : null;
-            if (savedOvertime != null &&
-                Enum.TryParse<ErganiManager.Data.Entities.OvertimeJustification>(savedOvertime.Justification.ToString(), out var savedJustification))
-                EditingOvertimeJustification = savedJustification;
-        }
-        EditingSubmitted  = existing?.SubmittedToErgani ?? false;
-        EditingBranch     = (existing != null
-                                ? AvailableBranches.FirstOrDefault(b => b.Id == existing.BranchId)
-                                : null)
-                            ?? AvailableBranches.FirstOrDefault();
-
-        EditingActualText = day?.ActualArrival != null || day?.ActualDeparture != null
-            ? string.Format(Loc[L.ActualClockTimes],
-                day?.ActualArrival?.ToString("HH:mm") ?? "—",
-                day?.ActualDeparture?.ToString("HH:mm") ?? "—")
-            : string.Empty;
-
-        EditingSubmissionText = existing == null
-            ? string.Empty
-            : existing.SubmittedToErgani
-                ? string.Format(Loc[L.SubmittedProtocol], existing.Protocol)
-                : Loc[L.NotSubmitted];
-
         IsDayDialogOpen = true;
     }
 
@@ -892,7 +880,9 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
         ScheduleDate = EditingDate,
         WorkType     = EditingWorkType,
         StartTime    = EditingStartTime.HasValue ? TimeOnly.FromTimeSpan(EditingStartTime.Value) : null,
-        EndTime      = EditingEndTime.HasValue   ? TimeOnly.FromTimeSpan(EditingEndTime.Value)   : null,
+        EndTime      = EditingSplitShift && EditingSecondEndTime.HasValue ? TimeOnly.FromTimeSpan(EditingSecondEndTime.Value)
+                      : EditingEndTime.HasValue ? TimeOnly.FromTimeSpan(EditingEndTime.Value) : null,
+        WorkingPeriods = GetEditingPeriods().Select((p, i) => new ScheduleWorkingPeriodDto { PeriodNumber = i + 1, StartTime = p.Start, EndTime = p.End }).ToList(),
         Comments     = EditingComments
     };
 
@@ -904,8 +894,6 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
         {
             await _scheduleService.UpsertDayAsync(BuildEditingDto());
             var saved = await _scheduleService.GetByDateAsync(SelectedEmployee.Id, EditingDate);
-            if (saved is { Id: > 0 })
-                await EnsureScheduleOvertimePendingAsync(saved);
             IsDayDialogOpen = false;
             await RefreshCalendarAsync();
         }
@@ -1027,7 +1015,6 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
             if (saved is not { Id: > 0 })
             { StatusMessage = Loc["Vm.❌ Could not reload the saved day."]; return; }
 
-            await EnsureScheduleOvertimePendingAsync(saved);
             await SubmitDaysAsync(companyId, new List<ScheduleDayDto> { saved }, 1);
         }
         catch (Exception ex) { StatusMessage = $"❌ {ex.Message}"; }
