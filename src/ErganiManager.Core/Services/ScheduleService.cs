@@ -28,6 +28,7 @@ public class ScheduleService : IScheduleService
 
         var schedules = await db.Schedules
             .Where(s => s.EmployeeId == employeeId && s.ScheduleDate >= firstDay && s.ScheduleDate <= lastDay)
+            .Include(s => s.WorkingPeriods)
             .ToListAsync();
 
         var workCards = await db.WorkCards
@@ -48,6 +49,7 @@ public class ScheduleService : IScheduleService
         await using var db = OpenDb();
 
         var schedule = await db.Schedules
+            .Include(s => s.WorkingPeriods)
             .FirstOrDefaultAsync(s => s.EmployeeId == employeeId && s.ScheduleDate == date);
 
         var dayCards = await db.WorkCards
@@ -75,13 +77,16 @@ public class ScheduleService : IScheduleService
 
     public async Task<int> UpsertDayAsync(ScheduleDayDto dto)
     {
+        var periods = dto.WorkingPeriods?.OrderBy(p => p.PeriodNumber)
+            .Select(p => (p.StartTime, p.EndTime)).ToList() ?? new();
+        if (periods.Count == 0 && dto.StartTime is TimeOnly legacyStart && dto.EndTime is TimeOnly legacyEnd)
+            periods.Add((legacyStart, legacyEnd));
+
         if (dto.WorkType is AppWorkType.Office or AppWorkType.Home)
         {
-            if (dto.StartTime == null || dto.EndTime == null)
-                throw new InvalidOperationException(ErganiManager.Data.UiText.T("Start and end time are required for Office/Home work days."));
-
-            if (dto.EndTime <= dto.StartTime)
-                throw new InvalidOperationException(ErganiManager.Data.UiText.T("End time must be after start time."));
+            if (periods.Count == 0)
+                throw new InvalidOperationException(ErganiManager.Data.UiText.T("At least one start and end time is required for Office/Home work days."));
+            _ = ScheduleHours.GetTotalHours(periods);
         }
 
         await using var db = OpenDb();
@@ -103,7 +108,8 @@ public class ScheduleService : IScheduleService
                 WorkType = ToEntityWorkType(dto.WorkType),
                 Source = ToEntityScheduleSource(dto.Source),
                 StartTime = dto.StartTime,
-                EndTime = dto.EndTime,
+                EndTime = dto.EndTime ?? periods.LastOrDefault().EndTime,
+                WorkingPeriods = periods.Select((p, i) => new ScheduleWorkingPeriod { PeriodNumber = i + 1, StartTime = p.StartTime, EndTime = p.EndTime }).ToList(),
                 Comments = dto.Comments,
                 SubmittedToErgani = alreadyAtErgani,
                 CreatedAt = DateTime.UtcNow
@@ -117,7 +123,9 @@ public class ScheduleService : IScheduleService
         existing.WorkType = ToEntityWorkType(dto.WorkType);
         existing.Source = ToEntityScheduleSource(dto.Source);
         existing.StartTime = dto.StartTime;
-        existing.EndTime = dto.EndTime;
+        existing.EndTime = dto.EndTime ?? periods.LastOrDefault().EndTime;
+        db.ScheduleWorkingPeriods.RemoveRange(existing.WorkingPeriods);
+        existing.WorkingPeriods = periods.Select((p, i) => new ScheduleWorkingPeriod { PeriodNumber = i + 1, StartTime = p.StartTime, EndTime = p.EndTime }).ToList();
         existing.Comments = dto.Comments;
         existing.UpdatedAt = DateTime.UtcNow;
 
@@ -292,8 +300,9 @@ public class ScheduleService : IScheduleService
         ScheduleDate = s.ScheduleDate,
         WorkType = ToAppWorkType(s.WorkType),
         Source = ToAppScheduleSource(s.Source),
-        StartTime = s.StartTime,
-        EndTime = s.EndTime,
+        StartTime = s.WorkingPeriods.Count > 0 ? s.WorkingPeriods.OrderBy(p => p.PeriodNumber).First().StartTime : s.StartTime,
+        EndTime = s.WorkingPeriods.Count > 0 ? s.WorkingPeriods.OrderBy(p => p.PeriodNumber).Last().EndTime : s.EndTime,
+        WorkingPeriods = s.WorkingPeriods.OrderBy(p => p.PeriodNumber).Select(p => new ScheduleWorkingPeriodDto { PeriodNumber = p.PeriodNumber, StartTime = p.StartTime, EndTime = p.EndTime }).ToList(),
         SubmittedToErgani = s.SubmittedToErgani,
         Protocol = s.Protocol,
         Comments = s.Comments,
