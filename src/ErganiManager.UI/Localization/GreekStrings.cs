@@ -1756,5 +1756,7 @@ public static class GreekStrings
         ["Vm.Database deletion blocked: type DELETE exactly to confirm."] = "Η διαγραφή της βάσης αποτράπηκε: πληκτρολογήστε ακριβώς DELETE για επιβεβαίωση.",
         ["RestSubmitBlockedTooltip"] = "Η υποβολή απενεργοποιήθηκε: η ημέρα αυτή αφήνει λιγότερες από 11 ώρες ανάπαυσης μεταξύ εργάσιμων ημερών.",
         ["Vm.{0} day(s) blocked: less than 11 hours rest"] = "Αποκλείστηκαν {0} ημέρες επειδή παραβιάζεται η ελάχιστη ανάπαυση των 11 ωρών.",
+        ["Vm.This employee was scanned recently."] = "Ο εργαζόμενος σαρώθηκε πρόσφατα.",
+        ["Vm.Please wait before scanning again."] = "Περιμένετε πριν σαρώσετε ξανά.",
     };
 }
