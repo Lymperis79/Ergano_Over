@@ -14,6 +14,14 @@ public enum ScheduleSource
     ErganiImported
 }
 
+public sealed class ScheduleWorkingPeriodDto
+{
+    public int PeriodNumber { get; set; } = 1;
+    public TimeOnly StartTime { get; set; }
+    public TimeOnly EndTime { get; set; }
+    public double DurationHours => EndTime > StartTime ? (EndTime - StartTime).TotalHours : 0;
+}
+
 public class ScheduleDayDto
 {
     public int Id { get; set; }
@@ -24,6 +32,8 @@ public class ScheduleDayDto
     public ScheduleSource Source { get; set; } = ScheduleSource.Manual;
     public TimeOnly? StartTime { get; set; }
     public TimeOnly? EndTime { get; set; }
+    /// <summary>Continuous work periods for this day. Empty on old callers means use StartTime/EndTime.</summary>
+    public List<ScheduleWorkingPeriodDto> WorkingPeriods { get; set; } = new();
     public bool SubmittedToErgani { get; set; }
     public string? Protocol { get; set; }
     public string? Comments { get; set; }
