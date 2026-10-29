@@ -76,7 +76,6 @@ public partial class TerminalViewModel : ViewModelBase
 
     /// <summary>The last scans (newest first), including refused ones.</summary>
     public System.Collections.ObjectModel.ObservableCollection<RecentScanItem> RecentScans { get; } = new();
-    private const int RecentScanCount = 10;
     public bool HasRecentScans => RecentScans.Count > 0;
 
     // Movement of the scan being processed (for the list); empty when it could not be decided.
@@ -149,8 +148,8 @@ public partial class TerminalViewModel : ViewModelBase
             {
                 using var cache = LocalCacheDbContextFactory.Create();
                 var scans = await cache.PendingSubmissions
-                    .Where(p => p.CompanyId == companyId)
-                    .OrderByDescending(p => p.ScannedAt).Take(RecentScanCount).ToListAsync();
+                    .Where(p => p.CompanyId == companyId && p.ScannedAt >= DateTime.Today && p.ScannedAt < DateTime.Today.AddDays(1))
+                    .OrderByDescending(p => p.ScannedAt).ToListAsync();
                 var ids = scans.Select(s => s.EmployeeId).Distinct().ToList();
                 var names = await cache.CachedEmployees.Where(e => ids.Contains(e.Id))
                     .ToDictionaryAsync(e => e.Id, e => e.FullName);
@@ -165,11 +164,13 @@ public partial class TerminalViewModel : ViewModelBase
                 }).ToList();
             });
 
-            // Scans made while this was loading are already at the top; keep them.
+            // Show every scan from today. The view uses a scrollable, screen-sized area,
+            // so larger displays can show more rows without an arbitrary item limit.
             foreach (var item in items)
             {
-                if (RecentScans.Count >= RecentScanCount) break;
-                RecentScans.Add(item);
+                if (!RecentScans.Any(existing => existing.TimeText == item.TimeText &&
+                    existing.EmployeeName == item.EmployeeName && existing.MovementText == item.MovementText))
+                    RecentScans.Add(item);
             }
         }
         catch (Exception ex)
@@ -588,7 +589,6 @@ public partial class TerminalViewModel : ViewModelBase
             IsBad = kind is ScanPopupKind.TooEarlyBlocked or ScanPopupKind.NoScheduleBlocked
                     or ScanPopupKind.UnknownBadge or ScanPopupKind.Error
         });
-        while (RecentScans.Count > RecentScanCount) RecentScans.RemoveAt(RecentScans.Count - 1);
     }
 
     private void ShowPopup(ScanPopupKind kind, string title, string employeeName, string line1, string line2, string line3)
