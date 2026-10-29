@@ -12,6 +12,7 @@ public class EmployeeDto
     public string BarcodeId { get; set; } = string.Empty;
     public string ProfessionCode { get; set; } = string.Empty;
     public int WeeklyWorkdays { get; set; } = 5;
+    public double NormalDailyHours { get; set; } = 8;
     public bool IsActive { get; set; } = true;
 
     public string FullName => $"{FirstName} {LastName}";
