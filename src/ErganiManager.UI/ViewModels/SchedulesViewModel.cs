@@ -343,9 +343,7 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
     public bool IsEditingExisting  => EditingScheduleId != 0;
     /// <summary>Only Office/Home days that are not yet at Ergani can be submitted from the day dialog.</summary>
     public bool CanShowSubmitEditingDay => ShowTimeFields && !EditingSubmitted;
-    public bool CanSubmitEditingDay => CanShowSubmitEditingDay &&
-        !Cells.Any(c => c.Date == EditingDate && c.HasRestWarning) &&
-        !Cells.Any(c => c.Date == EditingDate.AddDays(-1) && c.HasRestWarning);
+    public bool CanSubmitEditingDay => CanShowSubmitEditingDay && !HasEditingRestViolation;
     public bool HasEditingOvertime => PotentialExtraHours > 0;
     public double EditingTotalHours => GetEditingPeriods()
         .Where(p => p.End > p.Start).Sum(p => (p.End - p.Start).TotalHours);
@@ -354,6 +352,46 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
     public string EditingOvertimeNote => !ShowTimeFields || PotentialExtraHours <= 0 ? string.Empty :
         string.Format(Loc["Vm.⚠ Planned time totals {0:0.##} hours; this is {1:0.##} hour(s) above the employee's normal {2:0.##} hours. Review the correct declaration type in the Overtime form; nothing is automatically classified as overtime."],
             EditingTotalHours, PotentialExtraHours, SelectedEmployee?.NormalDailyHours ?? 8);
+
+    private ScheduleDayDto? _editingPreviousDay;
+    private ScheduleDayDto? _editingNextDay;
+
+    public bool HasEditingRestViolation
+    {
+        get
+        {
+            if (!ShowTimeFields) return false;
+            var periods = GetEditingPeriods().OrderBy(p => p.Start).ToList();
+            if (periods.Count == 0) return false;
+            var firstStart = periods[0].Start;
+            var lastEnd = periods[^1].End;
+
+            static TimeOnly? FirstStart(ScheduleDayDto? row)
+            {
+                if (row is null) return null;
+                var ps = row.WorkingPeriods?.OrderBy(p => p.PeriodNumber).ToList() ?? new();
+                return ps.Count > 0 ? ps[0].StartTime : row.StartTime;
+            }
+            static TimeOnly? LastEnd(ScheduleDayDto? row)
+            {
+                if (row is null) return null;
+                var ps = row.WorkingPeriods?.OrderBy(p => p.PeriodNumber).ToList() ?? new();
+                return ps.Count > 0 ? ps[^1].EndTime : row.EndTime;
+            }
+
+            var previousEnd = LastEnd(_editingPreviousDay);
+            if (previousEnd.HasValue &&
+                EditingDate.ToDateTime(firstStart) - _editingPreviousDay!.ScheduleDate.ToDateTime(previousEnd.Value) < TimeSpan.FromHours(11))
+                return true;
+
+            var nextStart = FirstStart(_editingNextDay);
+            if (nextStart.HasValue &&
+                _editingNextDay!.ScheduleDate.ToDateTime(nextStart.Value) - EditingDate.ToDateTime(lastEnd) < TimeSpan.FromHours(11))
+                return true;
+
+            return false;
+        }
+    }
 
     private List<(TimeOnly Start, TimeOnly End)> GetEditingPeriods()
     {
@@ -365,11 +403,11 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
         return periods;
     }
 
-    partial void OnEditingSplitShiftChanged(bool value) => NotifyHoursChanged();
-    partial void OnEditingStartTimeChanged(TimeSpan? value) => NotifyHoursChanged();
-    partial void OnEditingEndTimeChanged(TimeSpan? value) => NotifyHoursChanged();
-    partial void OnEditingSecondStartTimeChanged(TimeSpan? value) => NotifyHoursChanged();
-    partial void OnEditingSecondEndTimeChanged(TimeSpan? value) => NotifyHoursChanged();
+    partial void OnEditingSplitShiftChanged(bool value) { NotifyHoursChanged(); OnPropertyChanged(nameof(HasEditingRestViolation)); OnPropertyChanged(nameof(CanSubmitEditingDay)); }
+    partial void OnEditingStartTimeChanged(TimeSpan? value) { NotifyHoursChanged(); OnPropertyChanged(nameof(HasEditingRestViolation)); OnPropertyChanged(nameof(CanSubmitEditingDay)); }
+    partial void OnEditingEndTimeChanged(TimeSpan? value) { NotifyHoursChanged(); OnPropertyChanged(nameof(HasEditingRestViolation)); OnPropertyChanged(nameof(CanSubmitEditingDay)); }
+    partial void OnEditingSecondStartTimeChanged(TimeSpan? value) { NotifyHoursChanged(); OnPropertyChanged(nameof(HasEditingRestViolation)); OnPropertyChanged(nameof(CanSubmitEditingDay)); }
+    partial void OnEditingSecondEndTimeChanged(TimeSpan? value) { NotifyHoursChanged(); OnPropertyChanged(nameof(HasEditingRestViolation)); OnPropertyChanged(nameof(CanSubmitEditingDay)); }
     private void NotifyHoursChanged()
     {
         OnPropertyChanged(nameof(EditingTotalHours));
@@ -963,6 +1001,18 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
 
         // GetByDateAsync also returns a stub (Id = 0) when the day only has work cards.
         var existing = day is { Id: > 0 } ? day : null;
+        try
+        {
+            var previous = await _scheduleService.GetByDateAsync(SelectedEmployee.Id, date.AddDays(-1));
+            var next = await _scheduleService.GetByDateAsync(SelectedEmployee.Id, date.AddDays(1));
+            _editingPreviousDay = previous is { Id: > 0 } ? previous : null;
+            _editingNextDay = next is { Id: > 0 } ? next : null;
+        }
+        catch
+        {
+            _editingPreviousDay = null;
+            _editingNextDay = null;
+        }
 
         EditingDate       = date;
         EditingScheduleId = existing?.Id ?? 0;
@@ -996,8 +1046,11 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
     partial void OnEditingScheduleIdChanged(int value) =>
         OnPropertyChanged(nameof(IsEditingExisting));
 
-    partial void OnEditingDateChanged(DateOnly value) =>
+    partial void OnEditingDateChanged(DateOnly value)
+    {
+        OnPropertyChanged(nameof(HasEditingRestViolation));
         OnPropertyChanged(nameof(CanSubmitEditingDay));
+    }
 
     partial void OnEditingSubmittedChanged(bool value) =>
         OnPropertyChanged(nameof(CanSubmitEditingDay));
