@@ -32,6 +32,9 @@ public class Employee
 
     public int WeeklyWorkdays { get; set; } = 5; // 5 or 6
 
+    /// <summary>Contractual/normal daily hours used only to flag potential extra time for review.</summary>
+    public double NormalDailyHours { get; set; } = 8;
+
     public bool IsActive { get; set; } = true;
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
