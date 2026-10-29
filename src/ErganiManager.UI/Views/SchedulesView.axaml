@@ -433,6 +433,15 @@
                                     <TimePicker SelectedTime="{Binding EditingStartTime}" ClockIdentifier="24HourClock" HorizontalAlignment="Stretch" />
                                     <TextBlock Text="{Binding Loc[EndTime]}" FontWeight="SemiBold" />
                                     <TimePicker SelectedTime="{Binding EditingEndTime}" ClockIdentifier="24HourClock" HorizontalAlignment="Stretch" />
+                                    <CheckBox Content="{Binding Loc[SplitShift]}" IsChecked="{Binding EditingSplitShift}" />
+                                    <StackPanel IsVisible="{Binding EditingSplitShift}" Spacing="4">
+                                        <TextBlock Text="{Binding Loc[SecondPeriod]}" FontWeight="SemiBold" />
+                                        <TextBlock Text="{Binding Loc[StartTime]}" FontSize="12" />
+                                        <TimePicker SelectedTime="{Binding EditingSecondStartTime}" ClockIdentifier="24HourClock" HorizontalAlignment="Stretch" />
+                                        <TextBlock Text="{Binding Loc[EndTime]}" FontSize="12" />
+                                        <TimePicker SelectedTime="{Binding EditingSecondEndTime}" ClockIdentifier="24HourClock" HorizontalAlignment="Stretch" />
+                                    </StackPanel>
+                                    <TextBlock Text="{Binding EditingTotalHours, StringFormat='Total planned hours: {0:0.##}'}" Foreground="Gray" FontSize="12" />
                                 </StackPanel>
                             </StackPanel>
 
