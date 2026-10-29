@@ -27,7 +27,7 @@
         <Style Selector="TextBlock.status.bad"><Setter Property="Foreground" Value="#EF5350" /></Style>
     </Window.Styles>
 
-    <Grid Background="#0F1115" RowDefinitions="*,Auto">
+    <Grid Background="#0F1115" RowDefinitions="2*,*">
 
         <!-- Main terminal content -->
         <StackPanel Grid.Row="0" VerticalAlignment="Center" HorizontalAlignment="Center"
@@ -68,29 +68,32 @@
 
         </StackPanel>
 
-        <!-- The last 10 clock-ins / clock-outs -->
-        <Border Grid.Row="1" Width="820" HorizontalAlignment="Center" Margin="0,0,0,28"
+        <!-- Today's scans: scrollable and sized by the available screen area.
+             No fixed "last 10" limit; larger displays show more rows at once. -->
+        <Border Grid.Row="1" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Margin="16,0,16,28"
                 Background="{DynamicResource CardBrush}" CornerRadius="10" Padding="16,10"
                 IsVisible="{Binding HasRecentScans}">
-            <StackPanel Spacing="4">
-                <TextBlock Text="{Binding Loc[RecentScans]}" FontSize="13" FontWeight="SemiBold"
-                           Foreground="#AAAAAA" Margin="0,0,0,4" />
-                <ItemsControl ItemsSource="{Binding RecentScans}">
-                    <ItemsControl.ItemTemplate>
-                        <DataTemplate x:DataType="vm:RecentScanItem">
-                            <Grid ColumnDefinitions="95,*,120,240" Margin="0,2">
-                                <TextBlock Grid.Column="0" Text="{Binding TimeText}" Foreground="#888888" FontSize="14" />
-                                <TextBlock Grid.Column="1" Text="{Binding EmployeeName}" Foreground="White"
-                                           FontSize="14" TextTrimming="CharacterEllipsis" />
-                                <TextBlock Grid.Column="2" Text="{Binding MovementText}" Foreground="#CCCCCC" FontSize="13" />
-                                <TextBlock Grid.Column="3" Text="{Binding StatusText}" Classes="status" FontSize="13"
-                                           Classes.ok="{Binding IsOk}" Classes.warn="{Binding IsWarn}"
-                                           Classes.bad="{Binding IsBad}" TextTrimming="CharacterEllipsis" />
-                            </Grid>
-                        </DataTemplate>
-                    </ItemsControl.ItemTemplate>
-                </ItemsControl>
-            </StackPanel>
+            <Grid RowDefinitions="Auto,*">
+                <TextBlock Grid.Row="0" Text="{Binding Loc[RecentScans]}" FontSize="13" FontWeight="SemiBold"
+                           Foreground="#AAAAAA" Margin="0,0,0,6" />
+                <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                    <ItemsControl ItemsSource="{Binding RecentScans}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="vm:RecentScanItem">
+                                <Grid ColumnDefinitions="95,*,120,240" Margin="0,2">
+                                    <TextBlock Grid.Column="0" Text="{Binding TimeText}" Foreground="#888888" FontSize="14" />
+                                    <TextBlock Grid.Column="1" Text="{Binding EmployeeName}" Foreground="White"
+                                               FontSize="14" TextTrimming="CharacterEllipsis" />
+                                    <TextBlock Grid.Column="2" Text="{Binding MovementText}" Foreground="#CCCCCC" FontSize="13" />
+                                    <TextBlock Grid.Column="3" Text="{Binding StatusText}" Classes="status" FontSize="13"
+                                               Classes.ok="{Binding IsOk}" Classes.warn="{Binding IsWarn}"
+                                               Classes.bad="{Binding IsBad}" TextTrimming="CharacterEllipsis" />
+                                </Grid>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </ScrollViewer>
+            </Grid>
         </Border>
 
         <!-- Key hints (kiosk: no buttons that could be pressed by accident) -->
