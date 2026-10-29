@@ -56,6 +56,13 @@ public partial class TerminalViewModel : ViewModelBase
     [ObservableProperty] private bool _erganiConnected;
     [ObservableProperty] private bool _erganiStatusKnown;
     [ObservableProperty] private string _erganiStatusText = "Ergani: not checked";
+    public bool ErganiUnavailable => ErganiStatusKnown && !ErganiConnected;
+
+    partial void OnErganiConnectedChanged(bool value) =>
+        OnPropertyChanged(nameof(ErganiUnavailable));
+
+    partial void OnErganiStatusKnownChanged(bool value) =>
+        OnPropertyChanged(nameof(ErganiUnavailable));
     [ObservableProperty] private string _internetStatusText = "Internet: checking";
 
     // Popup state
