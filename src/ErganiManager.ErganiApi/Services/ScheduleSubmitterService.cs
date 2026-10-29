@@ -481,4 +481,5 @@ public class ScheduleSubmitterService : IScheduleSubmitter
                 EndTime = p.End!.Value
             })
             .ToList();
-    }}
+    }
+}
