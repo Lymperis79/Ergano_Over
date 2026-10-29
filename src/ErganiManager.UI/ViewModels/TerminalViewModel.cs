@@ -7,6 +7,8 @@ using ErganiManager.ErganiApi.Services;
 using ErganiManager.LocalCache;
 using ErganiManager.LocalCache.Entities;
 using Microsoft.EntityFrameworkCore;
+using Avalonia.Threading;
+using System.Net.Http;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -36,6 +38,8 @@ public partial class TerminalViewModel : ViewModelBase
 
     private readonly System.Timers.Timer _clockTimer;
     private readonly System.Timers.Timer _popupAutoCloseTimer;
+    private readonly System.Timers.Timer _internetStatusTimer;
+    private static readonly HttpClient InternetHttpClient = new() { Timeout = TimeSpan.FromSeconds(4) };
 
     private UserSession? _session;
 
@@ -48,6 +52,10 @@ public partial class TerminalViewModel : ViewModelBase
     [ObservableProperty] private bool _isProcessing;
 
     [ObservableProperty] private bool _isOfflineMode;
+    [ObservableProperty] private bool _hasInternet;
+    [ObservableProperty] private bool _erganiConnected;
+    [ObservableProperty] private string _erganiStatusText = "Ergani: waiting for status";
+    [ObservableProperty] private string _internetStatusText = "Internet: checking";
 
     // Popup state
     [ObservableProperty] private bool _isPopupVisible;
@@ -99,6 +107,8 @@ public partial class TerminalViewModel : ViewModelBase
     {
         _clockTimer.Stop();
         _popupAutoCloseTimer.Stop();
+        _internetStatusTimer.Stop();
+        _retryService.QueuedScanUpdated -= OnQueuedScanUpdated;
     }
 
     public TerminalViewModel(
@@ -118,7 +128,13 @@ public partial class TerminalViewModel : ViewModelBase
         UpdateClock();
 
         _popupAutoCloseTimer = new System.Timers.Timer(PopupSeconds * 1000) { AutoReset = false };
-        _popupAutoCloseTimer.Elapsed += (_, _) => CloseScanPopup();
+        _popupAutoCloseTimer.Elapsed += (_, _) => Dispatcher.UIThread.Post(CloseScanPopup);
+
+        _internetStatusTimer = new System.Timers.Timer(15000) { AutoReset = true };
+        _internetStatusTimer.Elapsed += async (_, _) => await CheckInternetStatusAsync();
+        _internetStatusTimer.Start();
+        _ = CheckInternetStatusAsync();
+        _retryService.QueuedScanUpdated += OnQueuedScanUpdated;
 
         RecentScans.CollectionChanged += (_, _) => OnPropertyChanged(nameof(HasRecentScans));
     }
@@ -155,6 +171,7 @@ public partial class TerminalViewModel : ViewModelBase
                     .ToDictionaryAsync(e => e.Id, e => e.FullName);
                 return scans.Select(s => new RecentScanItem
                 {
+                    PendingId = s.Id,
                     TimeText = TimeLabel(s.ScannedAt),
                     EmployeeName = names.TryGetValue(s.EmployeeId, out var n) ? n : "—",
                     MovementText = (s.MovementType == "Arrival" ? "→ " + Loc[L.Arrival] : "← " + Loc[L.Departure]),
@@ -179,6 +196,66 @@ public partial class TerminalViewModel : ViewModelBase
         {
             Serilog.Log.Warning(ex, Loc["Vm.Could not load the recent scans for the terminal."]);
         }
+    }
+
+    private async Task CheckInternetStatusAsync()
+    {
+        bool online;
+        try
+        {
+            using var response = await InternetHttpClient.GetAsync("https://www.google.com/generate_204");
+            online = response.IsSuccessStatusCode;
+        }
+        catch { online = false; }
+
+        Dispatcher.UIThread.Post(() =>
+        {
+            HasInternet = online;
+            InternetStatusText = online ? "Internet: connected" : "Internet: unavailable";
+        });
+    }
+
+    private void OnQueuedScanUpdated(object? sender, QueuedScanUpdate update)
+    {
+        Dispatcher.UIThread.Post(() =>
+        {
+            var item = RecentScans.FirstOrDefault(x => x.PendingId == update.PendingId);
+            if (item != null)
+            {
+                switch (update.Status)
+                {
+                    case QueuedScanStatus.Sent:
+                        item.StatusText = string.IsNullOrWhiteSpace(update.Protocol) ? Loc[L.ScanSent] : Loc[L.ScanSent] + " • " + update.Protocol;
+                        item.IsOk = true; item.IsWarn = false; item.IsBad = false;
+                        break;
+                    case QueuedScanStatus.Retrying:
+                        item.StatusText = "Submitting to Ergani…";
+                        item.IsOk = false; item.IsWarn = true; item.IsBad = false;
+                        break;
+                    case QueuedScanStatus.Waiting:
+                        item.StatusText = Loc[L.ScanWaiting];
+                        item.IsOk = false; item.IsWarn = true; item.IsBad = false;
+                        break;
+                    case QueuedScanStatus.Rejected:
+                        item.StatusText = "Ergani rejected" + (string.IsNullOrWhiteSpace(update.Error) ? "" : ": " + update.Error);
+                        item.IsOk = false; item.IsWarn = false; item.IsBad = true;
+                        break;
+                }
+            }
+
+            if (update.Status == QueuedScanStatus.Sent)
+            {
+                ErganiConnected = true;
+                ErganiStatusText = "Ergani: connected";
+            }
+            else if (update.Status is QueuedScanStatus.Waiting or QueuedScanStatus.Rejected)
+            {
+                ErganiConnected = false;
+                ErganiStatusText = "Ergani: unavailable";
+            }
+            else if (update.Status == QueuedScanStatus.Retrying)
+                ErganiStatusText = "Ergani: checking";
+        });
     }
 
     private static string TimeLabel(DateTime when) =>
@@ -582,6 +659,7 @@ public partial class TerminalViewModel : ViewModelBase
     {
         RecentScans.Insert(0, new RecentScanItem
         {
+            PendingId = 0,
             TimeText = DateTime.Now.ToString("HH:mm:ss"),
             EmployeeName = string.IsNullOrWhiteSpace(employeeName) ? "—" : employeeName,
             MovementText = (_currentMovementText == Loc[L.Arrival] ? "→ " : _currentMovementText == Loc[L.Departure] ? "← " : "") + _currentMovementText,
