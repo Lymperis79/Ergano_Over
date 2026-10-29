@@ -407,7 +407,8 @@ public partial class TerminalViewModel : ViewModelBase
                 }
             }
 
-            await QueueScanAsync(cache, employee, companyId, "Arrival", now);
+            if (!await QueueScanAsync(cache, employee, companyId, "Arrival", now))
+                return;
 
             // Alert mails for the arrival (each one only when the company selected that event).
             if (schedule == null || schedule.WorkType is 2 or 3)
@@ -452,7 +453,8 @@ public partial class TerminalViewModel : ViewModelBase
                 earlyMinutes = (int)Math.Round((shiftEnd - now).TotalMinutes);
             }
 
-            await QueueScanAsync(cache, employee, companyId, "Departure", now);
+            if (!await QueueScanAsync(cache, employee, companyId, "Departure", now))
+                return;
 
             if (isEarly)
             {
@@ -519,10 +521,31 @@ public partial class TerminalViewModel : ViewModelBase
     /// service sends it to Ergani, retrying for as long as the connection is down. The terminal is
     /// free for the next person immediately, whatever the state of the network or Ergani.
     /// </summary>
-    private async Task QueueScanAsync(
+    private async Task<bool> QueueScanAsync(
         LocalCacheDbContext cache, CachedEmployee employee, int companyId,
         string movementType, DateTime scannedAt)
     {
+        // Check persisted queue history as well as the in-memory cooldown. This survives
+        // application restarts and still catches duplicates after the first scan synced.
+        var duplicateSince = scannedAt - ScanCooldown;
+        var recentDuplicate = await cache.PendingSubmissions.AnyAsync(p =>
+            p.CompanyId == companyId &&
+            p.EmployeeId == employee.Id &&
+            p.ScannedAt >= duplicateSince &&
+            p.ScannedAt <= scannedAt.AddSeconds(1));
+
+        if (recentDuplicate)
+        {
+            Serilog.Log.Warning(
+                "Blocked scan: Source={ScanSource}, EmployeeId={EmployeeId}, CompanyId={CompanyId}, Movement={Movement}, Reason={Reason}, Time={ScanTime}",
+                "BarcodeScanView", employee.Id, companyId, movementType,
+                "Persistent duplicate scan prevention", scannedAt);
+            ShowPopup(ScanPopupKind.TooEarlyBlocked, Loc["Vm.⏳ ALREADY SCANNED"], employee.FullName,
+                Loc["Vm.This employee was scanned recently."],
+                Loc["Vm.Please wait before scanning again."], "");
+            return false;
+        }
+
         cache.PendingSubmissions.Add(new PendingSubmission
         {
             EmployeeId = employee.Id,
@@ -537,6 +560,7 @@ public partial class TerminalViewModel : ViewModelBase
 
         // Wake the background sender now; this returns immediately.
         _retryService.TriggerNow();
+        return true;
     }
 
     private static Task LogBlockedAttemptAsync(
