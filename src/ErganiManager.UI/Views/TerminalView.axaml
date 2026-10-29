@@ -104,7 +104,7 @@
         <Border Grid.RowSpan="2" IsVisible="{Binding IsPopupVisible}"
                 Background="#CC000000">
             <Border Background="{DynamicResource PanelBrush}" CornerRadius="12" Padding="36"
-                    Width="640" MaxWidth="90%" VerticalAlignment="Center" HorizontalAlignment="Center"
+                    Width="640" MaxWidth="900" VerticalAlignment="Center" HorizontalAlignment="Center"
                     BorderBrush="{DynamicResource LineBrush}" BorderThickness="1">
                 <StackPanel Spacing="10">
                     <TextBlock Text="{Binding PopupTitle}" FontSize="32" FontWeight="Bold"
