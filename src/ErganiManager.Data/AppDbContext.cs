@@ -113,6 +113,9 @@ public class AppDbContext : DbContext
             // Barcode IDs must be unique within a company, not globally
             e.HasIndex(emp => new { emp.CompanyId, emp.BarcodeId }).IsUnique();
             e.HasIndex(emp => emp.TaxId);
+            e.Property(emp => emp.NormalDailyHours)
+                .HasDefaultValue(8d)
+                .ValueGeneratedNever();
         });
 
         // ── EmployeeSchedule ──────────────────────────────────
