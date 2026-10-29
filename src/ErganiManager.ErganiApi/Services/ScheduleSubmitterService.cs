@@ -327,8 +327,12 @@ public class ScheduleSubmitterService : IScheduleSubmitter
 
         foreach (var day in days.Where(d => d.BranchId > 0).OrderBy(d => d.ScheduleDate))
         {
+            var scheduledPeriods = day.WorkingPeriods?.OrderBy(p => p.PeriodNumber)
+                .Select(p => (p.StartTime, p.EndTime)).ToList() ?? new List<(TimeOnly StartTime, TimeOnly EndTime)>();
+            if (scheduledPeriods.Count == 0 && day.StartTime is TimeOnly legacyStart && day.EndTime is TimeOnly legacyEnd)
+                scheduledPeriods.Add((legacyStart, legacyEnd));
             var scheduled = day.WorkType is AppWorkType.Office or AppWorkType.Home
-                ? ScheduleHours.GetOvertimeRange(day.StartTime, day.EndTime)
+                ? ScheduleHours.GetOvertimeRange(scheduledPeriods.Select(p => (p.StartTime, p.EndTime)))
                 : null;
             var range = scheduled ?? GetClockedOvertimeRange(day);
             if (range is not { } r) continue;
