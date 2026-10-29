@@ -41,6 +41,9 @@ public class EmployeeSchedule
     public TimeOnly? StartTime { get; set; }
     public TimeOnly? EndTime { get; set; }
 
+    /// <summary>One or more continuous working intervals. Legacy StartTime/EndTime remain for compatibility.</summary>
+    public List<ScheduleWorkingPeriod> WorkingPeriods { get; set; } = new();
+
     public bool SubmittedToErgani { get; set; } = false;
     [MaxLength(100)]
     public string? SubmissionId { get; set; }
