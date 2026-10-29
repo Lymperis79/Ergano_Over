@@ -187,6 +187,7 @@ public static class GreekStrings
         [L.BarcodeId] = "Κωδικός Barcode",
         [L.ProfessionCode] = "Κωδικός Ειδικότητας",
         [L.WeeklyWorkdays] = "Εργάσιμες Ημέρες/Εβδ.",
+        [L.NormalDailyHours] = "Κανονικές ώρες ημερησίως (για έλεγχο πρόσθετων ωρών)",
         [L.Branch] = "Παράρτημα",
         [L.ImportFromExcel] = "⬆ Εισαγωγή από Excel",
 
@@ -222,6 +223,8 @@ public static class GreekStrings
         [L.WorkType] = "Τύπος Εργασίας",
         [L.StartTime] = "Ώρα έναρξης",
         [L.EndTime] = "Ώρα λήξης",
+        [L.SplitShift] = "Σπαστό ωράριο (προσθήκη δεύτερης περιόδου)",
+        [L.SecondPeriod] = "Δεύτερη περίοδος εργασίας",
         [L.Comments] = "Σχόλια (προαιρετικό)",
         [L.NotSubmitted] = "⏳ Δεν έχει υποβληθεί στην Εργάνη",
         [L.SubmittedProtocol] = "✅ Υποβλήθηκε στην Εργάνη — Πρωτόκολλο: {0}",

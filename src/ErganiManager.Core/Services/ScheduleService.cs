@@ -28,6 +28,7 @@ public class ScheduleService : IScheduleService
 
         var schedules = await db.Schedules
             .Where(s => s.EmployeeId == employeeId && s.ScheduleDate >= firstDay && s.ScheduleDate <= lastDay)
+            .Include(s => s.WorkingPeriods)
             .ToListAsync();
 
         var workCards = await db.WorkCards
@@ -48,6 +49,7 @@ public class ScheduleService : IScheduleService
         await using var db = OpenDb();
 
         var schedule = await db.Schedules
+            .Include(s => s.WorkingPeriods)
             .FirstOrDefaultAsync(s => s.EmployeeId == employeeId && s.ScheduleDate == date);
 
         var dayCards = await db.WorkCards
@@ -75,13 +77,16 @@ public class ScheduleService : IScheduleService
 
     public async Task<int> UpsertDayAsync(ScheduleDayDto dto)
     {
+        var periods = dto.WorkingPeriods?.OrderBy(p => p.PeriodNumber)
+            .Select(p => (p.StartTime, p.EndTime)).ToList() ?? new();
+        if (periods.Count == 0 && dto.StartTime is TimeOnly legacyStart && dto.EndTime is TimeOnly legacyEnd)
+            periods.Add((legacyStart, legacyEnd));
+
         if (dto.WorkType is AppWorkType.Office or AppWorkType.Home)
         {
-            if (dto.StartTime == null || dto.EndTime == null)
-                throw new InvalidOperationException(ErganiManager.Data.UiText.T("Start and end time are required for Office/Home work days."));
-
-            if (dto.EndTime <= dto.StartTime)
-                throw new InvalidOperationException(ErganiManager.Data.UiText.T("End time must be after start time."));
+            if (periods.Count == 0)
+                throw new InvalidOperationException(ErganiManager.Data.UiText.T("At least one start and end time is required for Office/Home work days."));
+            _ = ScheduleHours.GetTotalHours(periods);
         }
 
         await using var db = OpenDb();
@@ -91,6 +96,7 @@ public class ScheduleService : IScheduleService
         var alreadyAtErgani = dto.Source == ErganiManager.Core.Interfaces.ScheduleSource.ErganiImported && dto.SubmittedToErgani;
 
         var existing = await db.Schedules
+            .Include(s => s.WorkingPeriods)
             .FirstOrDefaultAsync(s => s.EmployeeId == dto.EmployeeId && s.ScheduleDate == dto.ScheduleDate);
 
         if (existing == null)
@@ -102,8 +108,9 @@ public class ScheduleService : IScheduleService
                 ScheduleDate = dto.ScheduleDate,
                 WorkType = ToEntityWorkType(dto.WorkType),
                 Source = ToEntityScheduleSource(dto.Source),
-                StartTime = dto.StartTime,
-                EndTime = dto.EndTime,
+                StartTime = dto.StartTime ?? (periods.Count > 0 ? periods[0].StartTime : null),
+                EndTime = dto.EndTime ?? (periods.Count > 0 ? periods[^1].EndTime : null),
+                WorkingPeriods = periods.Select((p, i) => new ScheduleWorkingPeriod { PeriodNumber = i + 1, StartTime = p.StartTime, EndTime = p.EndTime }).ToList(),
                 Comments = dto.Comments,
                 SubmittedToErgani = alreadyAtErgani,
                 CreatedAt = DateTime.UtcNow
@@ -116,8 +123,10 @@ public class ScheduleService : IScheduleService
         existing.BranchId = dto.BranchId;
         existing.WorkType = ToEntityWorkType(dto.WorkType);
         existing.Source = ToEntityScheduleSource(dto.Source);
-        existing.StartTime = dto.StartTime;
-        existing.EndTime = dto.EndTime;
+        existing.StartTime = dto.StartTime ?? (periods.Count > 0 ? periods[0].StartTime : null);
+        existing.EndTime = dto.EndTime ?? (periods.Count > 0 ? periods[^1].EndTime : null);
+        db.ScheduleWorkingPeriods.RemoveRange(existing.WorkingPeriods);
+        existing.WorkingPeriods = periods.Select((p, i) => new ScheduleWorkingPeriod { PeriodNumber = i + 1, StartTime = p.StartTime, EndTime = p.EndTime }).ToList();
         existing.Comments = dto.Comments;
         existing.UpdatedAt = DateTime.UtcNow;
 
@@ -208,6 +217,7 @@ public class ScheduleService : IScheduleService
         await using var db = OpenDb();
 
         var existingInRange = await db.Schedules
+            .Include(s => s.WorkingPeriods)
             .Where(s => s.EmployeeId == employeeId && s.ScheduleDate >= fromDate && s.ScheduleDate <= toDate)
             .ToListAsync();
         var existingByDate = existingInRange.ToDictionary(s => s.ScheduleDate);
@@ -225,6 +235,10 @@ public class ScheduleService : IScheduleService
                 existing.Source = Data.Entities.ScheduleSource.Manual;
                 existing.StartTime = startTime;
                 existing.EndTime = endTime;
+                db.ScheduleWorkingPeriods.RemoveRange(existing.WorkingPeriods);
+                existing.WorkingPeriods = startTime.HasValue && endTime.HasValue && endTime > startTime
+                    ? new List<ScheduleWorkingPeriod> { new() { PeriodNumber = 1, StartTime = startTime.Value, EndTime = endTime.Value } }
+                    : new List<ScheduleWorkingPeriod>();
                 existing.UpdatedAt = DateTime.UtcNow;
                 if (existing.SubmittedToErgani)
                 {
@@ -244,6 +258,9 @@ public class ScheduleService : IScheduleService
                     Source = Data.Entities.ScheduleSource.Manual,
                     StartTime = startTime,
                     EndTime = endTime,
+                    WorkingPeriods = startTime.HasValue && endTime.HasValue && endTime > startTime
+                        ? new List<ScheduleWorkingPeriod> { new() { PeriodNumber = 1, StartTime = startTime.Value, EndTime = endTime.Value } }
+                        : new List<ScheduleWorkingPeriod>(),
                     CreatedAt = DateTime.UtcNow
                 });
             }
@@ -292,8 +309,9 @@ public class ScheduleService : IScheduleService
         ScheduleDate = s.ScheduleDate,
         WorkType = ToAppWorkType(s.WorkType),
         Source = ToAppScheduleSource(s.Source),
-        StartTime = s.StartTime,
-        EndTime = s.EndTime,
+        StartTime = s.WorkingPeriods.Count > 0 ? s.WorkingPeriods.OrderBy(p => p.PeriodNumber).First().StartTime : s.StartTime,
+        EndTime = s.WorkingPeriods.Count > 0 ? s.WorkingPeriods.OrderBy(p => p.PeriodNumber).Last().EndTime : s.EndTime,
+        WorkingPeriods = s.WorkingPeriods.OrderBy(p => p.PeriodNumber).Select(p => new ScheduleWorkingPeriodDto { PeriodNumber = p.PeriodNumber, StartTime = p.StartTime, EndTime = p.EndTime }).ToList(),
         SubmittedToErgani = s.SubmittedToErgani,
         Protocol = s.Protocol,
         Comments = s.Comments,
@@ -323,6 +341,14 @@ public class ScheduleService : IScheduleService
         public string? Comments { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime? UpdatedAt { get; set; }
+        public List<SchedulePeriodSnapshot> WorkingPeriods { get; set; } = new();
+    }
+
+    private sealed class SchedulePeriodSnapshot
+    {
+        public int PeriodNumber { get; set; }
+        public TimeOnly StartTime { get; set; }
+        public TimeOnly EndTime { get; set; }
     }
 
     /// <summary>An unsent overtime record as it was before a clone removed it.</summary>
@@ -404,6 +430,7 @@ public class ScheduleService : IScheduleService
         await using var db = OpenDb();
 
         var sourceDays = await db.Schedules.AsNoTracking()
+            .Include(s => s.WorkingPeriods)
             .Where(s => s.EmployeeId == sourceEmployeeId && dateSet.Contains(s.ScheduleDate))
             .ToListAsync();
         var sourceLeaves = includeHolidays
@@ -423,6 +450,7 @@ public class ScheduleService : IScheduleService
         // Everything the clone is about to replace. It is saved in the history (together with the
         // Ergani status / protocol / submission id / import source) so Undo can put it back as it was.
         var replaced = await db.Schedules
+            .Include(s => s.WorkingPeriods)
             .Where(s => targetIds.Contains(s.EmployeeId) && dateSet.Contains(s.ScheduleDate))
             .ToListAsync();
         var snapshot = replaced.Select(r => new SnapshotRow
@@ -431,7 +459,8 @@ public class ScheduleService : IScheduleService
             WorkType = r.WorkType, ScheduleType = r.ScheduleType, Source = r.Source,
             StartTime = r.StartTime, EndTime = r.EndTime,
             SubmittedToErgani = r.SubmittedToErgani, SubmissionId = r.SubmissionId, Protocol = r.Protocol,
-            Comments = r.Comments, CreatedAt = r.CreatedAt, UpdatedAt = r.UpdatedAt
+            Comments = r.Comments, CreatedAt = r.CreatedAt, UpdatedAt = r.UpdatedAt,
+            WorkingPeriods = r.WorkingPeriods.OrderBy(p => p.PeriodNumber).Select(p => new SchedulePeriodSnapshot { PeriodNumber = p.PeriodNumber, StartTime = p.StartTime, EndTime = p.EndTime }).ToList()
         }).ToList();
 
         db.Schedules.RemoveRange(replaced);
@@ -513,10 +542,8 @@ public class ScheduleService : IScheduleService
         }
 
         int written = 0;
-        var pendingOvertimeItems = new List<(Overtime Overtime, EmployeeSchedule Schedule, ApiSubmissionLog Log)>();
         foreach (var targetId in targetIds)
         {
-            var targetEmployee = targets.FirstOrDefault(e => e.Id == targetId);
             foreach (var src in sourceDays)
             {
                 var copiedSchedule = new EmployeeSchedule
@@ -524,49 +551,17 @@ public class ScheduleService : IScheduleService
                     EmployeeId = targetId, BranchId = src.BranchId, ScheduleDate = src.ScheduleDate,
                     WorkType = src.WorkType, Source = Data.Entities.ScheduleSource.Manual,
                     StartTime = src.StartTime, EndTime = src.EndTime, Comments = src.Comments,
+                    WorkingPeriods = src.WorkingPeriods.Count > 0
+                        ? src.WorkingPeriods.OrderBy(p => p.PeriodNumber).Select(p => new ScheduleWorkingPeriod
+                            { PeriodNumber = p.PeriodNumber, StartTime = p.StartTime, EndTime = p.EndTime }).ToList()
+                        : src.StartTime.HasValue && src.EndTime.HasValue && src.EndTime > src.StartTime
+                            ? new List<ScheduleWorkingPeriod> { new() { PeriodNumber = 1, StartTime = src.StartTime.Value, EndTime = src.EndTime.Value } }
+                            : new List<ScheduleWorkingPeriod>(),
                     SubmittedToErgani = false, CreatedAt = cloneTime
                 };
                 db.Schedules.Add(copiedSchedule);
                 written++;
 
-                if (targetEmployee == null ||
-                    src.WorkType is not (WorkType.Office or WorkType.Home))
-                    continue;
-
-                var overtimeRange = ScheduleHours.GetOvertimeRange(src.StartTime, src.EndTime);
-                if (overtimeRange is not { } range)
-                    continue;
-
-                // Carry over the source day's reason when a matching source overtime exists;
-                // otherwise use the normal default. Weekly workdays belong to the destination employee.
-                var sourceOvertime = await db.Overtimes.AsNoTracking().FirstOrDefaultAsync(o =>
-                    o.EmployeeId == sourceEmployeeId && o.OvertimeDate == src.ScheduleDate &&
-                    o.StartTime == range.From && o.EndTime == range.To && !o.IsCancelled);
-                var overtime = new Overtime
-                {
-                    EmployeeId = targetId,
-                    BranchId = src.BranchId,
-                    OvertimeDate = src.ScheduleDate,
-                    StartTime = range.From,
-                    EndTime = range.To,
-                    Justification = sourceOvertime?.Justification ?? OvertimeJustification.ExceptionalWorkload,
-                    WeeklyWorkdaysNumber = targetEmployee.WeeklyWorkdays,
-                    CreatedAt = cloneTime
-                };
-                db.Overtimes.Add(overtime);
-
-                // Link the schedule, overtime and log after SaveChanges assigns their primary keys.
-                pendingOvertimeItems.Add((overtime, copiedSchedule, new ApiSubmissionLog
-                {
-                    CompanyId = source.CompanyId,
-                    EmployeeId = targetId,
-                    EmployeeIdsJson = JsonSerializer.Serialize(new[] { targetId }),
-                    SubmissionType = "Overtime",
-                    ScheduleDate = src.ScheduleDate,
-                    SubmissionDate = cloneTime,
-                    Success = false,
-                    ErrorMessage = "PENDING_OVERTIME"
-                }));
             }
         }
 
@@ -611,24 +606,6 @@ public class ScheduleService : IScheduleService
         // written together or not at all. Save once to assign overtime IDs, then attach their log rows.
         await db.SaveChangesAsync();
 
-        if (pendingOvertimeItems.Count > 0)
-        {
-            foreach (var item in pendingOvertimeItems)
-            {
-                item.Overtime.RequestPayloadJson = JsonSerializer.Serialize(new
-                {
-                    source = "schedule",
-                    scheduleId = item.Schedule.Id
-                });
-                item.Log.RequestPayloadJson = JsonSerializer.Serialize(new
-                {
-                    overtimeId = item.Overtime.Id,
-                    source = "schedule"
-                });
-                db.ApiSubmissionLogs.Add(item.Log);
-            }
-            await db.SaveChangesAsync();
-        }
 
         return written + copiedLeaves;
     }
@@ -815,7 +792,9 @@ public class ScheduleService : IScheduleService
                 WorkType = r.WorkType, ScheduleType = r.ScheduleType, Source = r.Source,
                 StartTime = r.StartTime, EndTime = r.EndTime,
                 SubmittedToErgani = r.SubmittedToErgani, SubmissionId = r.SubmissionId, Protocol = r.Protocol,
-                Comments = r.Comments, CreatedAt = r.CreatedAt, UpdatedAt = r.UpdatedAt
+                Comments = r.Comments, CreatedAt = r.CreatedAt, UpdatedAt = r.UpdatedAt,
+                WorkingPeriods = r.WorkingPeriods.Select(p => new ScheduleWorkingPeriod
+                    { PeriodNumber = p.PeriodNumber, StartTime = p.StartTime, EndTime = p.EndTime }).ToList()
             });
         }
 

@@ -79,6 +79,10 @@
                         <NumericUpDown Value="{Binding FormWeeklyWorkdays}"
                                        Minimum="5" Maximum="6" />
 
+                        <TextBlock Text="{Binding Loc[NormalDailyHours]}" FontWeight="SemiBold" />
+                        <NumericUpDown Value="{Binding FormNormalDailyHours}"
+                                       Minimum="0.5" Maximum="24" Increment="0.5" />
+
                         <TextBlock Text="{Binding Loc[Branch]}" FontWeight="SemiBold" />
                         <ComboBox ItemsSource="{Binding AvailableBranches}"
                                   SelectedItem="{Binding FormBranch}"

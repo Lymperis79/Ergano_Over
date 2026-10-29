@@ -66,6 +66,7 @@ public class EmployeeService : IEmployeeService
             BarcodeId = dto.BarcodeId.Trim(),
             ProfessionCode = dto.ProfessionCode.Trim(),
             WeeklyWorkdays = dto.WeeklyWorkdays,
+            NormalDailyHours = dto.NormalDailyHours,
             IsActive = dto.IsActive,
             CreatedAt = DateTime.UtcNow
         };
@@ -100,6 +101,7 @@ public class EmployeeService : IEmployeeService
         entity.BarcodeId = dto.BarcodeId.Trim();
         entity.ProfessionCode = dto.ProfessionCode.Trim();
         entity.WeeklyWorkdays = dto.WeeklyWorkdays;
+        entity.NormalDailyHours = dto.NormalDailyHours;
         entity.IsActive = dto.IsActive;
 
         await db.SaveChangesAsync();
@@ -130,6 +132,9 @@ public class EmployeeService : IEmployeeService
 
         if (dto.WeeklyWorkdays is not (5 or 6))
             throw new InvalidOperationException(ErganiManager.Data.UiText.T("Weekly workdays must be 5 or 6."));
+
+        if (dto.NormalDailyHours <= 0 || dto.NormalDailyHours > 24)
+            throw new InvalidOperationException(ErganiManager.Data.UiText.T("Normal daily hours must be greater than 0 and no more than 24."));
     }
 
     private static EmployeeDto ToDto(Employee e) => new()
@@ -144,6 +149,7 @@ public class EmployeeService : IEmployeeService
         BarcodeId = e.BarcodeId,
         ProfessionCode = e.ProfessionCode,
         WeeklyWorkdays = e.WeeklyWorkdays,
+        NormalDailyHours = e.NormalDailyHours,
         IsActive = e.IsActive
     };
 

@@ -12,6 +12,7 @@ public class AppDbContext : DbContext
     public DbSet<AppUser> Users => Set<AppUser>();
     public DbSet<Employee> Employees => Set<Employee>();
     public DbSet<EmployeeSchedule> Schedules => Set<EmployeeSchedule>();
+    public DbSet<ScheduleWorkingPeriod> ScheduleWorkingPeriods => Set<ScheduleWorkingPeriod>();
     public DbSet<WorkCard> WorkCards => Set<WorkCard>();
     public DbSet<Overtime> Overtimes => Set<Overtime>();
     public DbSet<Leave> Leaves => Set<Leave>();
@@ -112,6 +113,9 @@ public class AppDbContext : DbContext
             // Barcode IDs must be unique within a company, not globally
             e.HasIndex(emp => new { emp.CompanyId, emp.BarcodeId }).IsUnique();
             e.HasIndex(emp => emp.TaxId);
+            e.Property(emp => emp.NormalDailyHours)
+                .HasDefaultValue(8d)
+                .ValueGeneratedNever();
         });
 
         // ── EmployeeSchedule ──────────────────────────────────
@@ -132,6 +136,17 @@ public class AppDbContext : DbContext
             e.Property(s => s.WorkType).HasConversion<string>();
             e.Property(s => s.ScheduleType).HasConversion<string>();
             e.Property(s => s.Source).HasConversion<string>();
+        });
+
+        // ── Schedule working periods (split shifts) ────────────────────────
+        modelBuilder.Entity<ScheduleWorkingPeriod>(e =>
+        {
+            e.HasOne(p => p.Schedule)
+                .WithMany(s => s.WorkingPeriods)
+                .HasForeignKey(p => p.ScheduleId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            e.HasIndex(p => new { p.ScheduleId, p.PeriodNumber }).IsUnique();
         });
 
         // ── Clone history (snapshot used by "Undo last clone") ─

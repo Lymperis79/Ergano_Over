@@ -187,6 +187,7 @@ public static class EnglishStrings
         [L.BarcodeId] = "Barcode ID",
         [L.ProfessionCode] = "Profession Code",
         [L.WeeklyWorkdays] = "Weekly Workdays",
+        [L.NormalDailyHours] = "Normal daily hours (for extra-hours review)",
         [L.Branch] = "Branch",
         [L.ImportFromExcel] = "⬆ Import from Excel",
 
@@ -222,6 +223,8 @@ public static class EnglishStrings
         [L.WorkType] = "Work Type",
         [L.StartTime] = "Start time",
         [L.EndTime] = "End time",
+        [L.SplitShift] = "Split shift (add a second work period)",
+        [L.SecondPeriod] = "Second work period",
         [L.Comments] = "Comments (optional)",
         [L.NotSubmitted] = "⏳ Not yet submitted to Ergani",
         [L.SubmittedProtocol] = "✅ Submitted to Ergani — Protocol: {0}",

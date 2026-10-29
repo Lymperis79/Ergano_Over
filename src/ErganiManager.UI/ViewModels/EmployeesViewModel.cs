@@ -59,6 +59,9 @@ public partial class EmployeesViewModel : ViewModelBase, IAdminSectionViewModel
     private int _formWeeklyWorkdays = 5;
 
     [ObservableProperty]
+    private double _formNormalDailyHours = 8;
+
+    [ObservableProperty]
     private BranchDto? _formBranch;
 
     [ObservableProperty]
@@ -175,6 +178,7 @@ public partial class EmployeesViewModel : ViewModelBase, IAdminSectionViewModel
         FormProfessionCode = string.Empty;
 
         FormWeeklyWorkdays = 5;
+        FormNormalDailyHours = 8;
 
         FormBranch =
             AvailableBranches.FirstOrDefault();
@@ -215,6 +219,8 @@ public partial class EmployeesViewModel : ViewModelBase, IAdminSectionViewModel
 
         FormWeeklyWorkdays =
             employee.WeeklyWorkdays;
+
+        FormNormalDailyHours = employee.NormalDailyHours;
 
         FormBranch =
             AvailableBranches.FirstOrDefault(
@@ -299,6 +305,8 @@ public partial class EmployeesViewModel : ViewModelBase, IAdminSectionViewModel
 
                 WeeklyWorkdays =
                     FormWeeklyWorkdays,
+
+                NormalDailyHours = FormNormalDailyHours,
 
                 IsActive =
                     FormIsActive
