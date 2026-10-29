@@ -128,6 +128,7 @@ public static class L
     public const string BarcodeId           = nameof(BarcodeId);
     public const string ProfessionCode      = nameof(ProfessionCode);
     public const string WeeklyWorkdays      = nameof(WeeklyWorkdays);
+    public const string NormalDailyHours    = nameof(NormalDailyHours);
     public const string Branch              = nameof(Branch);
     public const string ImportFromExcel     = nameof(ImportFromExcel);
 
