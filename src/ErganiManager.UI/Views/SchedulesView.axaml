@@ -210,6 +210,10 @@
                                         <TextBlock Text="{Binding OvertimeStatusText}" FontSize="9"
                                                    Foreground="#81C784" TextWrapping="Wrap"
                                                    IsVisible="{Binding HasOvertimeStatusText}" />
+                                        <TextBlock Text="{Binding RestWarningText}" FontSize="9"
+                                                   Foreground="#FF1744" FontWeight="Bold" TextWrapping="Wrap"
+                                                   IsVisible="{Binding HasRestWarning}"
+                                                   ToolTip.Tip="{Binding RestWarningText}" />
                                         <Border IsVisible="{Binding HasOfficialHoliday}"
                                                 Background="#3A2F1B" CornerRadius="3"
                                                 Padding="4,1" Margin="0,2,0,0">
