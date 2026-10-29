@@ -187,6 +187,7 @@ public static class GreekStrings
         [L.BarcodeId] = "Κωδικός Barcode",
         [L.ProfessionCode] = "Κωδικός Ειδικότητας",
         [L.WeeklyWorkdays] = "Εργάσιμες Ημέρες/Εβδ.",
+        [L.NormalDailyHours] = "Κανονικές ώρες ημερησίως (για έλεγχο πρόσθετων ωρών)",
         [L.Branch] = "Παράρτημα",
         [L.ImportFromExcel] = "⬆ Εισαγωγή από Excel",
 
