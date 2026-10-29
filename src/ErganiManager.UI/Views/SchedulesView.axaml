@@ -450,14 +450,6 @@
                                        IsVisible="{Binding EditingOvertimeNote,
                                            Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
 
-                            <StackPanel IsVisible="{Binding HasEditingOvertime}" Spacing="4">
-                                <TextBlock Text="{Binding Loc[OvertimeJustification]}" FontWeight="SemiBold" />
-                                <ComboBox ItemsSource="{Binding AvailableOvertimeJustifications}"
-                                          SelectedItem="{Binding EditingOvertimeJustification, Mode=TwoWay}"
-                                          HorizontalAlignment="Stretch" />
-                                <TextBlock Text="{Binding Loc[ScheduleOvertimeWillBePending]}"
-                                           Foreground="Gray" FontSize="11" TextWrapping="Wrap" />
-                            </StackPanel>
 
                             <TextBlock Text="{Binding Loc[Comments]}" FontWeight="SemiBold" />
                             <TextBox Text="{Binding EditingComments}" />
