@@ -614,7 +614,7 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
         return leave is null ? string.Empty : $"{leave.DeclaredStartTime:HH:mm}–{leave.DeclaredEndTime:HH:mm}";
     }
 
-    /// <summary>Flags the following workday when rest from prior clock-out to next clock-in is below 11 hours.</summary>
+    /// <summary>Flags the workday whose end/start combination creates less than 11 hours of rest before the following workday.</summary>
     private Dictionary<DateOnly, string> BuildRestWarnings(IEnumerable<ScheduleDayDto> scheduleRows)
     {
         var byDate = scheduleRows.GroupBy(s => s.ScheduleDate).ToDictionary(g => g.Key, g => g.First());
@@ -651,7 +651,8 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
                     var basis = actual
                         ? Loc["Rest warning based on actual clock punches."]
                         : Loc["Rest warning based on planned schedule."];
-                    warnings[next.ScheduleDate] = string.Format(
+                    // Show the warning on the preceding workday being edited, not on the following day.
+                    warnings[previous.ScheduleDate] = string.Format(
                         Loc["⚑ REST WARNING: only {0:F1} hours rest (minimum 11). {1}"],
                         Math.Max(0, rest.TotalHours), basis);
                 }
