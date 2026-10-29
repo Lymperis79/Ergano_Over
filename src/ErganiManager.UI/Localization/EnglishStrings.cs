@@ -1757,5 +1757,7 @@ public static class EnglishStrings
         ["Vm.Database deletion blocked: type DELETE exactly to confirm."] = "Database deletion blocked: type DELETE exactly to confirm.",
         ["RestSubmitBlockedTooltip"] = "Submission disabled: this day would leave less than 11 hours of rest between workdays.",
         ["Vm.{0} day(s) blocked: less than 11 hours rest"] = "{0} day(s) blocked because the 11-hour minimum rest would be violated.",
+        ["Vm.This employee was scanned recently."] = "This employee was scanned recently.",
+        ["Vm.Please wait before scanning again."] = "Please wait before scanning again.",
     };
 }
