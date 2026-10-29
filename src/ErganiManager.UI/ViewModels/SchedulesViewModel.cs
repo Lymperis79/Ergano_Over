@@ -548,6 +548,15 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
 
     /// <summary>The overtime line of a calendar cell. Saved overtime records win; for a manual day
     /// longer than 8 hours the part past the normal day is shown (that is what gets submitted).</summary>
+    private static (TimeOnly From, TimeOnly To)? GetScheduledOvertimeRange(ScheduleDayDto day)
+    {
+        var periods = day.WorkingPeriods?.OrderBy(p => p.PeriodNumber)
+            .Select(p => (p.StartTime, p.EndTime)).ToList() ?? new List<(TimeOnly StartTime, TimeOnly EndTime)>();
+        if (periods.Count == 0 && day.StartTime is TimeOnly start && day.EndTime is TimeOnly end)
+            periods.Add((start, end));
+        return ScheduleHours.GetOvertimeRange(periods.Select(p => (p.StartTime, p.EndTime)));
+    }
+
     private static string BuildOvertimeText(ScheduleDayDto? sched, List<OvertimeDto>? records)
     {
         if (records is { Count: > 0 })
@@ -572,16 +581,7 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
         }
 
         if (sched is { WorkType: AppWorkType.Office or AppWorkType.Home } &&
-            ScheduleHours.GetOvertimeRange(
-                sched.WorkingPeriods?.OrderBy(p => p.PeriodNumber)
-                    .Select(p => (p.StartTime, p.EndTime))
-                    .DefaultIfEmpty()
-                    .Where(p => p != default)
-                    .ToList() is { Count: > 0 } periods
-                    ? periods
-                    : sched.StartTime is TimeOnly start && sched.EndTime is TimeOnly end
-                        ? new[] { (start, end) }
-                        : Array.Empty<(TimeOnly Start, TimeOnly End)>()) is { } ot)
+            GetScheduledOvertimeRange(sched) is { } ot)
             return $"⏱ {ot.From:HH:mm}–{ot.To:HH:mm}";
 
         return string.Empty;
@@ -910,12 +910,8 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
     {
         if (_session?.CompanyId is not int companyId) return;
         await using var db = new AppDbContext(_connectionState.GetDbOptions());
-        var schedulePeriods = schedule.WorkingPeriods?.OrderBy(p => p.PeriodNumber)
-            .Select(p => (p.StartTime, p.EndTime)).ToList() ?? new List<(TimeOnly StartTime, TimeOnly EndTime)>();
-        if (schedulePeriods.Count == 0 && schedule.StartTime is TimeOnly legacyStart && schedule.EndTime is TimeOnly legacyEnd)
-            schedulePeriods.Add((legacyStart, legacyEnd));
         var range = schedule.WorkType is AppWorkType.Office or AppWorkType.Home
-            ? ScheduleHours.GetOvertimeRange(schedulePeriods.Select(p => (p.StartTime, p.EndTime))) : null;
+            ? GetScheduledOvertimeRange(schedule) : null;
 
         if (range is null)
         {
@@ -2246,11 +2242,7 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
                 var employeeDays = await _scheduleService.GetMonthAsync(employee.Id, year, month);
                 var withOvertime = employeeDays
                     .Where(d => d.WorkType is AppWorkType.Office or AppWorkType.Home)
-                    .Where(d => ErganiManager.Core.Models.ScheduleHours.GetOvertimeRange(
-                        d.WorkingPeriods?.OrderBy(p => p.PeriodNumber).Select(p => (p.StartTime, p.EndTime))
-                            ?? (d.StartTime is TimeOnly s && d.EndTime is TimeOnly e
-                                ? new[] { (s, e) }
-                                : Array.Empty<(TimeOnly StartTime, TimeOnly EndTime)>())) is { } r &&
+                    .Where(d => GetScheduledOvertimeRange(d) is { } r &&
                                 !alreadySent.Contains((d.EmployeeId, d.ScheduleDate, r.From, r.To)))
                     .OrderBy(d => d.ScheduleDate)
                     .ToList();
