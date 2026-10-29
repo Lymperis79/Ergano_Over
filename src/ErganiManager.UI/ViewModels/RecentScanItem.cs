@@ -6,6 +6,10 @@ public sealed class RecentScanItem
     public string TimeText { get; init; } = string.Empty;
     public string EmployeeName { get; init; } = "—";
     public string MovementText { get; init; } = string.Empty;
+
+    /// <summary>Arrival/departure direction styling for the terminal list.</summary>
+    public bool IsArrival { get; init; }
+    public bool IsDeparture { get; init; }
     public string StatusText { get; init; } = string.Empty;
 
     /// <summary>Accepted scan (green).</summary>
