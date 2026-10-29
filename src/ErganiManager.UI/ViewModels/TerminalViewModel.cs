@@ -2,7 +2,9 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using ErganiManager.Core.Interfaces;
 using ErganiManager.Core.Models;
+using ErganiManager.Data;
 using ErganiManager.Data.Entities;
+using ErganiManager.ErganiApi.Models;
 using ErganiManager.ErganiApi.Services;
 using ErganiManager.LocalCache;
 using ErganiManager.LocalCache.Entities;
@@ -33,12 +35,16 @@ public partial class TerminalViewModel : ViewModelBase
     private readonly ErganiRetryService _retryService;
     private readonly IEmailAlertService _emailAlertService;
     private readonly ICacheSyncService _cacheSync;
+    private readonly IErganiHealthCheckService _erganiHealthCheck;
+    private readonly ICredentialProtector _credentialProtector;
     /// <summary>How long the result window of a scan stays on screen.</summary>
     private const int PopupSeconds = 2;
 
     private readonly System.Timers.Timer _clockTimer;
     private readonly System.Timers.Timer _popupAutoCloseTimer;
     private readonly System.Timers.Timer _internetStatusTimer;
+    private readonly System.Timers.Timer _erganiStatusTimer;
+    private int _erganiCheckInProgress;
     private static readonly HttpClient InternetHttpClient = new() { Timeout = TimeSpan.FromSeconds(4) };
 
     private UserSession? _session;
@@ -117,6 +123,7 @@ public partial class TerminalViewModel : ViewModelBase
         _clockTimer.Stop();
         _popupAutoCloseTimer.Stop();
         _internetStatusTimer.Stop();
+        _erganiStatusTimer.Stop();
         _retryService.QueuedScanUpdated -= OnQueuedScanUpdated;
     }
 
@@ -124,12 +131,16 @@ public partial class TerminalViewModel : ViewModelBase
         IConnectionStateService connectionState,
         ErganiRetryService retryService,
         IEmailAlertService emailAlertService,
-        ICacheSyncService cacheSync)
+        ICacheSyncService cacheSync,
+        IErganiHealthCheckService erganiHealthCheck,
+        ICredentialProtector credentialProtector)
     {
         _connectionState = connectionState;
         _retryService = retryService;
         _emailAlertService = emailAlertService;
         _cacheSync = cacheSync;
+        _erganiHealthCheck = erganiHealthCheck;
+        _credentialProtector = credentialProtector;
 
         _clockTimer = new System.Timers.Timer(1000);
         _clockTimer.Elapsed += (_, _) => UpdateClock();
@@ -142,6 +153,9 @@ public partial class TerminalViewModel : ViewModelBase
         _internetStatusTimer = new System.Timers.Timer(15000) { AutoReset = true };
         _internetStatusTimer.Elapsed += async (_, _) => await CheckInternetStatusAsync();
         _internetStatusTimer.Start();
+        _erganiStatusTimer = new System.Timers.Timer(60000) { AutoReset = true };
+        _erganiStatusTimer.Elapsed += async (_, _) => await CheckErganiStatusAsync();
+        _erganiStatusTimer.Start();
         _ = CheckInternetStatusAsync();
         _retryService.QueuedScanUpdated += OnQueuedScanUpdated;
 
@@ -157,6 +171,7 @@ public partial class TerminalViewModel : ViewModelBase
         _ = Logo.RefreshAsync(session.CompanyId);
 
         _ = LoadRecentScansAsync(session.CompanyId);
+        _ = CheckErganiStatusAsync();
 
         // Sync offline cache so scan lookups have fresh employee/schedule data
         if (session.CompanyId.HasValue)
@@ -217,26 +232,115 @@ public partial class TerminalViewModel : ViewModelBase
         }
         catch { online = false; }
 
+        bool wasOnline = HasInternet;
         Dispatcher.UIThread.Post(() =>
         {
             HasInternet = online;
             InternetStatusText = online ? "Internet: connected" : "Internet: unavailable";
 
-            // Ergani cannot be reached when the device has no internet. Do not leave
-            // a stale green/connected status displayed after the network is unplugged.
+            // Internet loss immediately overrides the last API result. When it returns,
+            // perform an actual Ergani authentication health check instead of waiting for a scan.
             if (!online)
             {
                 ErganiConnected = false;
                 ErganiStatusKnown = true;
                 ErganiStatusText = "Ergani: unavailable (no internet)";
             }
-            else if (!ErganiStatusKnown)
+            else if (!ErganiStatusKnown || !wasOnline)
             {
-                // Internet access does not prove the Ergani service itself is reachable.
-                // Keep this neutral until a real submission response gives us a result.
-                ErganiStatusText = "Ergani: not checked";
+                _ = CheckErganiStatusAsync();
             }
         });
+    }
+
+    /// <summary>
+    /// Checks the selected company's Ergani API using the same JWT authentication health
+    /// check used by the background retry service. This runs at startup and every minute,
+    /// so the indicator does not depend on a clock-in/out submission.
+    /// </summary>
+    private async Task CheckErganiStatusAsync()
+    {
+        if (_session?.CompanyId is not int companyId ||
+            System.Threading.Interlocked.Exchange(ref _erganiCheckInProgress, 1) == 1)
+            return;
+
+        try
+        {
+            if (!HasInternet)
+            {
+                Dispatcher.UIThread.Post(() =>
+                {
+                    ErganiConnected = false;
+                    ErganiStatusKnown = true;
+                    ErganiStatusText = "Ergani: unavailable (no internet)";
+                });
+                return;
+            }
+
+            var state = await _connectionState.EvaluateAsync();
+            if (state != AppConnectionState.Normal)
+            {
+                Dispatcher.UIThread.Post(() =>
+                {
+                    ErganiConnected = false;
+                    ErganiStatusKnown = true;
+                    ErganiStatusText = "Ergani: not checked (database unavailable)";
+                });
+                return;
+            }
+
+            Company? company;
+            await using (var db = new AppDbContext(_connectionState.GetDbOptions()))
+                company = await db.Companies.AsNoTracking().FirstOrDefaultAsync(x => x.Id == companyId);
+
+            if (company == null || string.IsNullOrWhiteSpace(company.ErganiUsername) ||
+                string.IsNullOrWhiteSpace(company.ErganiPasswordEncrypted) ||
+                string.IsNullOrWhiteSpace(company.ErganiBaseUrl))
+            {
+                Dispatcher.UIThread.Post(() =>
+                {
+                    ErganiConnected = false;
+                    ErganiStatusKnown = true;
+                    ErganiStatusText = "Ergani: not configured";
+                });
+                return;
+            }
+
+            var credentials = new ErganiCredentials
+            {
+                Username = company.ErganiUsername,
+                Password = _credentialProtector.Unprotect(company.ErganiPasswordEncrypted),
+                Usertype = company.ErganiUsertype,
+                BaseUrl = company.ErganiBaseUrl
+            };
+
+            var status = await _erganiHealthCheck.CheckAsync(credentials);
+            Dispatcher.UIThread.Post(() =>
+            {
+                ErganiConnected = status == ErganiServiceStatus.Online;
+                ErganiStatusKnown = status != ErganiServiceStatus.Unknown;
+                ErganiStatusText = status switch
+                {
+                    ErganiServiceStatus.Online => "Ergani: connected",
+                    ErganiServiceStatus.Offline => "Ergani: unavailable",
+                    _ => "Ergani: checking"
+                };
+            });
+        }
+        catch (Exception ex)
+        {
+            Serilog.Log.Warning(ex, "Could not check Ergani status for terminal company {CompanyId}.", companyId);
+            Dispatcher.UIThread.Post(() =>
+            {
+                ErganiConnected = false;
+                ErganiStatusKnown = true;
+                ErganiStatusText = "Ergani: unavailable";
+            });
+        }
+        finally
+        {
+            System.Threading.Interlocked.Exchange(ref _erganiCheckInProgress, 0);
+        }
     }
 
     private void OnQueuedScanUpdated(object? sender, QueuedScanUpdate update)
