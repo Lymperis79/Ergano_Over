@@ -21,6 +21,7 @@
         <Style Selector="TextBlock.popupTitle.ok"><Setter Property="Foreground" Value="#66BB6A" /></Style>
         <Style Selector="TextBlock.popupTitle.warn"><Setter Property="Foreground" Value="#FFB74D" /></Style>
         <Style Selector="TextBlock.popupTitle.bad"><Setter Property="Foreground" Value="#EF5350" /></Style>
+        <Style Selector="TextBlock.popupTitle.departure"><Setter Property="Foreground" Value="#EF5350" /></Style>
         <Style Selector="TextBlock.status"><Setter Property="Foreground" Value="#BBBBBB" /></Style>
         <Style Selector="TextBlock.status.ok"><Setter Property="Foreground" Value="#66BB6A" /></Style>
         <Style Selector="TextBlock.status.warn"><Setter Property="Foreground" Value="#FFB74D" /></Style>
@@ -127,6 +128,7 @@
                     <TextBlock Text="{Binding PopupTitle}" FontSize="32" FontWeight="Bold"
                                Classes="popupTitle" Classes.ok="{Binding IsPopupOk}"
                                Classes.warn="{Binding IsPopupWarn}" Classes.bad="{Binding IsPopupBad}"
+                               Classes.departure="{Binding IsPopupDeparture}"
                                HorizontalAlignment="Center" TextWrapping="Wrap" />
                     <TextBlock Text="{Binding PopupEmployeeName}" FontSize="28" FontWeight="SemiBold"
                                Foreground="#DDDDDD" HorizontalAlignment="Center"
