@@ -342,7 +342,9 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
     public bool BulkShowTimeFields => BulkWorkType    is AppWorkType.Office or AppWorkType.Home;
     public bool IsEditingExisting  => EditingScheduleId != 0;
     /// <summary>Only Office/Home days that are not yet at Ergani can be submitted from the day dialog.</summary>
-    public bool CanSubmitEditingDay => ShowTimeFields && !EditingSubmitted;
+    public bool CanSubmitEditingDay => ShowTimeFields && !EditingSubmitted &&
+        !Cells.Any(c => c.Date == EditingDate && c.HasRestWarning) &&
+        !Cells.Any(c => c.Date == EditingDate.AddDays(-1) && c.HasRestWarning);
     public bool HasEditingOvertime => PotentialExtraHours > 0;
     public double EditingTotalHours => GetEditingPeriods()
         .Where(p => p.End > p.Start).Sum(p => (p.End - p.Start).TotalHours);
@@ -615,6 +617,53 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
     }
 
     /// <summary>Flags the workday whose end/start combination creates less than 11 hours of rest before the following workday.</summary>
+    /// <summary>Returns true when this day participates in a planned rest gap below 11 hours.</summary>
+    private async Task<bool> HasInsufficientRestAsync(ScheduleDayDto day)
+    {
+        static TimeOnly? FirstStart(ScheduleDayDto? row)
+        {
+            if (row is null) return null;
+            var periods = row.WorkingPeriods?.OrderBy(p => p.PeriodNumber).ToList() ?? new();
+            return periods.Count > 0 ? periods[0].StartTime : row.StartTime;
+        }
+
+        static TimeOnly? LastEnd(ScheduleDayDto? row)
+        {
+            if (row is null) return null;
+            var periods = row.WorkingPeriods?.OrderBy(p => p.PeriodNumber).ToList() ?? new();
+            return periods.Count > 0 ? periods[^1].EndTime : row.EndTime;
+        }
+
+        async Task<ScheduleDayDto?> GetScheduledDay(DateOnly date)
+        {
+            var row = await _scheduleService.GetByDateAsync(day.EmployeeId, date);
+            return row is { Id: > 0 } ? row : null;
+        }
+
+        var previous = await GetScheduledDay(day.ScheduleDate.AddDays(-1));
+        var next = await GetScheduledDay(day.ScheduleDate.AddDays(1));
+        var start = FirstStart(day);
+        var end = LastEnd(day);
+
+        if (previous is not null && start.HasValue)
+        {
+            var previousEnd = LastEnd(previous);
+            if (previousEnd.HasValue &&
+                day.ScheduleDate.ToDateTime(start.Value) - previous.ScheduleDate.ToDateTime(previousEnd.Value) < TimeSpan.FromHours(11))
+                return true;
+        }
+
+        if (next is not null && end.HasValue)
+        {
+            var nextStart = FirstStart(next);
+            if (nextStart.HasValue &&
+                next.ScheduleDate.ToDateTime(nextStart.Value) - day.ScheduleDate.ToDateTime(end.Value) < TimeSpan.FromHours(11))
+                return true;
+        }
+
+        return false;
+    }
+
     private Dictionary<DateOnly, string> BuildRestWarnings(IEnumerable<ScheduleDayDto> scheduleRows)
     {
         var byDate = scheduleRows.GroupBy(s => s.ScheduleDate).ToDictionary(g => g.Key, g => g.First());
@@ -935,6 +984,9 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
 
     partial void OnEditingScheduleIdChanged(int value) =>
         OnPropertyChanged(nameof(IsEditingExisting));
+
+    partial void OnEditingDateChanged(DateOnly value) =>
+        OnPropertyChanged(nameof(CanSubmitEditingDay));
 
     partial void OnEditingSubmittedChanged(bool value) =>
         OnPropertyChanged(nameof(CanSubmitEditingDay));
@@ -2140,8 +2192,14 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
                                   (day.WorkType is AppWorkType.Office or AppWorkType.Home))
                     .OrderBy(day => day.ScheduleDate)
                     .ToList();
-                if (eligible.Count > 0)
-                    pending.Add((employee, eligible));
+                var safe = new List<ScheduleDayDto>();
+                foreach (var day in eligible)
+                {
+                    if (!await HasInsufficientRestAsync(day))
+                        safe.Add(day);
+                }
+                if (safe.Count > 0)
+                    pending.Add((employee, safe));
             }
 
             _pendingBulkSubmit = pending;
@@ -2435,13 +2493,19 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
                 {
                     var latest = await _scheduleService.GetMonthAsync(item.Employee.Id, _pendingBulkSubmitYear, _pendingBulkSubmitMonth);
                     var latestByDate = latest.ToDictionary(x => x.ScheduleDate);
-                    var toSubmit = item.Days
+                    var candidates = item.Days
                         .Where(old => latestByDate.TryGetValue(old.ScheduleDate, out var current) &&
                                       !current.SubmittedToErgani &&
                                       (current.WorkType is AppWorkType.Office or AppWorkType.Home))
                         .Select(old => latestByDate[old.ScheduleDate])
                         .OrderBy(day => day.ScheduleDate)
                         .ToList();
+                    var toSubmit = new List<ScheduleDayDto>();
+                    foreach (var day in candidates)
+                    {
+                        if (!await HasInsufficientRestAsync(day))
+                            toSubmit.Add(day);
+                    }
 
                     if (toSubmit.Count > 0)
                         toSendByEmployee.Add((item.Employee, toSubmit));
@@ -2554,9 +2618,16 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
 
     private async Task SubmitDaysAsync(int companyId, List<ScheduleDayDto> candidates, int? pickedCount)
     {
-        var toSubmit = candidates
+        var eligible = candidates
             .Where(c => !c.SubmittedToErgani && (c.WorkType is AppWorkType.Office or AppWorkType.Home))
             .ToList();
+        var blockedForRest = new List<ScheduleDayDto>();
+        foreach (var day in eligible)
+        {
+            if (await HasInsufficientRestAsync(day))
+                blockedForRest.Add(day);
+        }
+        var toSubmit = eligible.Except(blockedForRest).ToList();
 
         var notes = new List<string>();
         var alreadySent = candidates.Count(c => c.SubmittedToErgani);
@@ -2564,6 +2635,7 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
         var noSchedule  = pickedCount.HasValue ? pickedCount.Value - candidates.Count : 0;
         if (alreadySent > 0) notes.Add(string.Format(Loc["Vm.{0} already submitted"], alreadySent));
         if (restAbsent  > 0) notes.Add(string.Format(Loc["Vm.{0} rest/absent (not sent to Ergani)"], restAbsent));
+        if (blockedForRest.Count > 0) notes.Add(string.Format(Loc["Vm.{0} day(s) blocked: less than 11 hours rest"], blockedForRest.Count));
         if (noSchedule  > 0) notes.Add(string.Format(Loc["Vm.{0} without a schedule"], noSchedule));
         var skipped = notes.Count > 0 ? string.Format(Loc["Vm. Skipped: {0}."], string.Join(", ", notes)) : string.Empty;
 
