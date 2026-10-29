@@ -646,19 +646,29 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
         var start = FirstStart(day);
         var end = LastEnd(day);
 
-        if (previous is not null && start.HasValue)
+        if (previous is not null)
         {
+            var useActual = previous.ActualDeparture.HasValue && day.ActualArrival.HasValue;
             var previousEnd = LastEnd(previous);
-            if (previousEnd.HasValue &&
-                day.ScheduleDate.ToDateTime(start.Value) - previous.ScheduleDate.ToDateTime(previousEnd.Value) < TimeSpan.FromHours(11))
+            var rest = useActual
+                ? day.ActualArrival!.Value - previous.ActualDeparture!.Value
+                : previousEnd.HasValue && start.HasValue
+                    ? day.ScheduleDate.ToDateTime(start.Value) - previous.ScheduleDate.ToDateTime(previousEnd.Value)
+                    : (TimeSpan?)null;
+            if (rest.HasValue && rest.Value < TimeSpan.FromHours(11))
                 return true;
         }
 
-        if (next is not null && end.HasValue)
+        if (next is not null)
         {
+            var useActual = day.ActualDeparture.HasValue && next.ActualArrival.HasValue;
             var nextStart = FirstStart(next);
-            if (nextStart.HasValue &&
-                next.ScheduleDate.ToDateTime(nextStart.Value) - day.ScheduleDate.ToDateTime(end.Value) < TimeSpan.FromHours(11))
+            var rest = useActual
+                ? next.ActualArrival!.Value - day.ActualDeparture!.Value
+                : end.HasValue && nextStart.HasValue
+                    ? next.ScheduleDate.ToDateTime(nextStart.Value) - day.ScheduleDate.ToDateTime(end.Value)
+                    : (TimeSpan?)null;
+            if (rest.HasValue && rest.Value < TimeSpan.FromHours(11))
                 return true;
         }
 
