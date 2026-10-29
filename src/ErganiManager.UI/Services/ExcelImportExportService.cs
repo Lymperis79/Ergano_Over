@@ -265,6 +265,9 @@ public class ExcelImportExportService
         public AppWorkType WorkType { get; init; }
         public TimeOnly? StartTime { get; init; }
         public TimeOnly? EndTime { get; init; }
+        /// <summary>Every continuous "ΕΡΓΑΣΙΑ hh:mm-hh:mm" interval in the downloaded Ergani grid row.</summary>
+        public IReadOnlyList<(TimeOnly Start, TimeOnly End)> WorkingPeriods { get; init; }
+            = Array.Empty<(TimeOnly, TimeOnly)>();
         public bool HasOvertime => OvertimeRanges.Count > 0;
         public bool HasLeave { get; init; }
         public string? LeaveDescription { get; init; }
@@ -354,7 +357,9 @@ public class ExcelImportExportService
             // Keyword matching ignores accents and case ("Υπερωρία" = "ΥΠΕΡΩΡΙΑ").
             var folded = NormalizeHeader(employment);
 
-            var (start, end) = ParseWorkRange(folded);
+            var workingPeriods = ParseWorkRanges(folded);
+            var start = workingPeriods.Count > 0 ? workingPeriods[0].Start : (TimeOnly?)null;
+            var end = workingPeriods.Count > 0 ? workingPeriods[^1].End : (TimeOnly?)null;
             var overtimeRanges = ParseOvertimeRanges(folded);
             if (overtimeRanges.Count == 0 && Regex.IsMatch(folded, @"ΥΠΕΡΩΡΙΑ", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant))
                 result.Warnings.Add(string.Format(Tr.Loc["Vm.Excel row {0}: overtime mentioned but no hh:mm-hh:mm range found ({1})."], r, employment));
@@ -390,6 +395,7 @@ public class ExcelImportExportService
                 WorkType = workType,
                 StartTime = start,
                 EndTime = end,
+                WorkingPeriods = workingPeriods,
                 OvertimeRanges = overtimeRanges,
                 HasLeave = hasLeave,
                 LeaveDescription = hasLeave ? employment : null,
@@ -467,15 +473,22 @@ public class ExcelImportExportService
         return ("ΑΔΑΛ", year); // "Άδεια Άλλη" — an unrecognised leave text
     }
 
-    private static (TimeOnly? Start, TimeOnly? End) ParseWorkRange(string text)
+    private static List<(TimeOnly Start, TimeOnly End)> ParseWorkRanges(string text)
     {
-        var m = Regex.Match(text, @"\b(?:ΕΡΓΑΣΙΑ|ΕΡΓΑΣΙΑΣ)\s+(?<start>\d{1,2}:\d{2})\s*-\s*(?<end>\d{1,2}:\d{2})",
-            RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
-        if (!m.Success) return (null, null);
+        var periods = new List<(TimeOnly Start, TimeOnly End)>();
+        foreach (Match m in Regex.Matches(text,
+                     @"\b(?:ΕΡΓΑΣΙΑ|ΕΡΓΑΣΙΑΣ)\s+(?<start>\d{1,2}:\d{2})\s*-\s*(?<end>\d{1,2}:\d{2})",
+                     RegexOptions.IgnoreCase | RegexOptions.CultureInvariant))
+        {
+            if (TimeOnly.TryParse(m.Groups["start"].Value, out var start) &&
+                TimeOnly.TryParse(m.Groups["end"].Value, out var end) &&
+                end > start)
+                periods.Add((start, end));
+        }
 
-        return (
-            TimeOnly.TryParse(m.Groups["start"].Value, out var start) ? start : null,
-            TimeOnly.TryParse(m.Groups["end"].Value, out var end) ? end : null);
+        // Keep intervals in the order shown in the Ergani export. Warn rather than silently
+        // merge intervals; the import workflow can preserve each separate work period.
+        return periods;
     }
 
     // Backwards-compatible parser for the application's own simple export format.
