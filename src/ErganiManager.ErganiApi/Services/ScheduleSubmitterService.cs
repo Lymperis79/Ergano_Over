@@ -159,12 +159,7 @@ public class ScheduleSubmitterService : IScheduleSubmitter
             {
                 var dayResult = AddDayResult(outcome, day, success, response?.Protocol, error);
 
-                // Hours over 8: schedule carries the first 8h; send the rest as overtime.
-                if (success && ScheduleHours.GetOvertimeRange(day.StartTime, day.EndTime) is { } range
-                    && day.WorkType is AppWorkType.Office or AppWorkType.Home)
-                {
-                    await PrepareOvertimeAsync(db, companyId, day, range, dayResult, outcome, overtimeJustification);
-                }
+                // Potential extra hours are reviewed explicitly; schedule submission never classifies them as overtime.
             }
 
             if (!success)
@@ -460,26 +455,30 @@ public class ScheduleSubmitterService : IScheduleSubmitter
 
     private static List<WorkdayDetails> BuildWorkdayDetails(ScheduleDayDto day)
     {
-        if (day.StartTime == null || day.EndTime == null) return new();
+        var periods = day.WorkingPeriods?.OrderBy(p => p.PeriodNumber)
+            .Select(p => (Start: (TimeOnly?)p.StartTime, End: (TimeOnly?)p.EndTime)).ToList()
+            ?? new List<(TimeOnly? Start, TimeOnly? End)>();
 
-        // Over 8 hours: the schedule carries the first 8h only, the rest goes in as overtime.
-        var endTime = ScheduleHours.GetOvertimeRange(day.StartTime, day.EndTime)?.From ?? day.EndTime.Value;
+        // Compatibility for callers and older records that still supply only the original pair.
+        if (periods.Count == 0 && day.StartTime is TimeOnly start && day.EndTime is TimeOnly end)
+            periods.Add((start, end));
 
-        return new()
+        var workDayType = day.WorkType switch
         {
-            new()
-            {
-                WorkDayType = day.WorkType switch
-                {
-                    AppWorkType.Home   => "ΤΗΛ",
-                    AppWorkType.Office => "ΕΡΓ",
-                    AppWorkType.Rest   => "ΑΝ",
-                    AppWorkType.Absent => "ΜΕ",
-                    _                  => "ΕΡΓ"
-                },
-                StartTime = day.StartTime.Value,
-                EndTime   = endTime
-            }
+            AppWorkType.Home => "ΤΗΛ",
+            AppWorkType.Office => "ΕΡΓ",
+            AppWorkType.Rest => "ΑΝ",
+            AppWorkType.Absent => "ΜΕ",
+            _ => "ΕΡΓ"
         };
-    }
-}
+
+        return periods
+            .Where(p => p.Start.HasValue && p.End.HasValue && p.End.Value > p.Start.Value)
+            .Select(p => new WorkdayDetails
+            {
+                WorkDayType = workDayType,
+                StartTime = p.Start!.Value,
+                EndTime = p.End!.Value
+            })
+            .ToList();
+    }}
