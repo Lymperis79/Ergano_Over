@@ -587,12 +587,13 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
     /// the rest is the overtime line.</summary>
     private static string WorkRangeText(ScheduleDayDto? sched)
     {
-        if (sched is not { StartTime: not null, EndTime: not null }) return string.Empty;
-        var end = sched.EndTime.Value;
-        if (sched.WorkType is AppWorkType.Office or AppWorkType.Home &&
-            ScheduleHours.GetOvertimeRange(sched.StartTime, sched.EndTime) is { } ot)
-            end = ot.From;
-        return $"{sched.StartTime:HH:mm}–{end:HH:mm}";
+        if (sched == null) return string.Empty;
+        var periods = sched.WorkingPeriods?.OrderBy(p => p.PeriodNumber).ToList() ?? new();
+        if (periods.Count > 0)
+            return string.Join(" / ", periods.Select(p => $"{p.StartTime:HH:mm}–{p.EndTime:HH:mm}"));
+        return sched.StartTime is TimeOnly start && sched.EndTime is TimeOnly end
+            ? $"{start:HH:mm}–{end:HH:mm}"
+            : string.Empty;
     }
 
     private static string DeclaredLeaveRangeText(List<LeaveDto>? leaves)
