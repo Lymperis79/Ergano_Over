@@ -164,6 +164,8 @@ public static class L
     public const string WorkType            = nameof(WorkType);
     public const string StartTime           = nameof(StartTime);
     public const string EndTime             = nameof(EndTime);
+    public const string SplitShift           = nameof(SplitShift);
+    public const string SecondPeriod         = nameof(SecondPeriod);
     public const string Comments            = nameof(Comments);
     public const string NotSubmitted        = nameof(NotSubmitted);
     public const string SubmittedProtocol   = nameof(SubmittedProtocol);
