@@ -856,18 +856,6 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
         OnPropertyChanged(nameof(HasEditingOvertime));
     }
 
-    partial void OnEditingStartTimeChanged(TimeSpan? value)
-    {
-        OnPropertyChanged(nameof(EditingOvertimeNote));
-        OnPropertyChanged(nameof(HasEditingOvertime));
-    }
-
-    partial void OnEditingEndTimeChanged(TimeSpan? value)
-    {
-        OnPropertyChanged(nameof(EditingOvertimeNote));
-        OnPropertyChanged(nameof(HasEditingOvertime));
-    }
-
     partial void OnEditingScheduleIdChanged(int value) =>
         OnPropertyChanged(nameof(IsEditingExisting));
 
