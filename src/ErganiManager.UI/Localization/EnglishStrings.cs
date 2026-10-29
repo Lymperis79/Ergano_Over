@@ -1755,5 +1755,7 @@ public static class EnglishStrings
         ["Vm.Last backup verified at {0}"] = "Last backup verified at {0}. This timestamp reflects the latest verified backup in this session.",
         ["Vm.Type DELETE to confirm database deletion."] = "To continue, type DELETE in the box below. This permanently removes the configured database.",
         ["Vm.Database deletion blocked: type DELETE exactly to confirm."] = "Database deletion blocked: type DELETE exactly to confirm.",
+        ["RestSubmitBlockedTooltip"] = "Submission disabled: this day would leave less than 11 hours of rest between workdays.",
+        ["Vm.{0} day(s) blocked: less than 11 hours rest"] = "{0} day(s) blocked because the 11-hour minimum rest would be violated.",
     };
 }
