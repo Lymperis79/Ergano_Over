@@ -25,6 +25,8 @@
         <Style Selector="TextBlock.status.ok"><Setter Property="Foreground" Value="#66BB6A" /></Style>
         <Style Selector="TextBlock.status.warn"><Setter Property="Foreground" Value="#FFB74D" /></Style>
         <Style Selector="TextBlock.status.bad"><Setter Property="Foreground" Value="#EF5350" /></Style>
+        <Style Selector="TextBlock.movement.arrival"><Setter Property="Foreground" Value="#66BB6A" /></Style>
+        <Style Selector="TextBlock.movement.departure"><Setter Property="Foreground" Value="#EF5350" /></Style>
     </Window.Styles>
 
     <Grid Background="#0F1115" RowDefinitions="2*,*">
@@ -70,7 +72,7 @@
 
         <!-- Today's scans: scrollable and sized by the available screen area.
              No fixed "last 10" limit; larger displays show more rows at once. -->
-        <Border Grid.Row="1" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Margin="16,0,16,28"
+        <Border Grid.Row="1" Width="1000" MaxWidth="1100" HorizontalAlignment="Center" VerticalAlignment="Stretch" Margin="16,0,16,28"
                 Background="{DynamicResource CardBrush}" CornerRadius="10" Padding="16,10"
                 IsVisible="{Binding HasRecentScans}">
             <Grid RowDefinitions="Auto,*">
@@ -80,11 +82,12 @@
                     <ItemsControl ItemsSource="{Binding RecentScans}">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate x:DataType="vm:RecentScanItem">
-                                <Grid ColumnDefinitions="95,*,120,240" Margin="0,2">
+                                <Grid ColumnDefinitions="95,*,150,240" Margin="0,2">
                                     <TextBlock Grid.Column="0" Text="{Binding TimeText}" Foreground="#888888" FontSize="14" />
                                     <TextBlock Grid.Column="1" Text="{Binding EmployeeName}" Foreground="White"
                                                FontSize="14" TextTrimming="CharacterEllipsis" />
-                                    <TextBlock Grid.Column="2" Text="{Binding MovementText}" Foreground="#CCCCCC" FontSize="13" />
+                                    <TextBlock Grid.Column="2" Text="{Binding MovementText}" FontSize="13" Classes="movement"
+                                               Classes.arrival="{Binding IsArrival}" Classes.departure="{Binding IsDeparture}" />
                                     <TextBlock Grid.Column="3" Text="{Binding StatusText}" Classes="status" FontSize="13"
                                                Classes.ok="{Binding IsOk}" Classes.warn="{Binding IsWarn}"
                                                Classes.bad="{Binding IsBad}" TextTrimming="CharacterEllipsis" />
