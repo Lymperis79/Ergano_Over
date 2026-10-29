@@ -224,6 +224,39 @@ public static class DbSchemaUpdater
             changes.Add($"{ModelSchemaSync.FailedPrefix}automatic schema sync: {ex.Message}");
         }
 
+        // 1b. Backfill existing single-interval schedules into the new child table.
+        // This is idempotent and never removes or rewrites the legacy StartTime/EndTime values.
+        try
+        {
+            var legacyDays = await db.Schedules
+                .Include(s => s.WorkingPeriods)
+                .Where(s => s.StartTime != null && s.EndTime != null)
+                .ToListAsync();
+            var migrated = 0;
+            foreach (var day in legacyDays)
+            {
+                if (day.WorkingPeriods.Count != 0) continue;
+                if (day.EndTime <= day.StartTime) continue;
+                db.ScheduleWorkingPeriods.Add(new Entities.ScheduleWorkingPeriod
+                {
+                    ScheduleId = day.Id,
+                    PeriodNumber = 1,
+                    StartTime = day.StartTime!.Value,
+                    EndTime = day.EndTime!.Value
+                });
+                migrated++;
+            }
+            if (migrated > 0)
+            {
+                await db.SaveChangesAsync();
+                changes.Add($"Migrated {migrated} legacy schedule interval(s) into ScheduleWorkingPeriods");
+            }
+        }
+        catch (Exception ex)
+        {
+            changes.Add($"{ModelSchemaSync.FailedPrefix}legacy schedule-period migration: {ex.Message}");
+        }
+
         // 2. Hand-written patches (kept for special cases). Each one is isolated.
         foreach (var table in TablePatches)
         {
