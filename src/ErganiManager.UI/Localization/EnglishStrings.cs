@@ -187,6 +187,7 @@ public static class EnglishStrings
         [L.BarcodeId] = "Barcode ID",
         [L.ProfessionCode] = "Profession Code",
         [L.WeeklyWorkdays] = "Weekly Workdays",
+        [L.NormalDailyHours] = "Normal daily hours (for extra-hours review)",
         [L.Branch] = "Branch",
         [L.ImportFromExcel] = "⬆ Import from Excel",
 
