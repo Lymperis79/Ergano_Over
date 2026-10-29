@@ -864,6 +864,29 @@ public partial class WorkCardScanViewModel :
              * next person can scan. The background service sends it to Ergani and keeps
              * retrying while the connection is down.
              */
+            // Durable duplicate prevention: the in-memory cooldown alone is lost on restart.
+            // Check every recent queue row, including already-synced rows, so a restart or
+            // successful background upload cannot make the same scan immediately repeatable.
+            var duplicateSince = scanTime - ScanCooldown;
+            var recentDuplicate = await cache.PendingSubmissions.AnyAsync(p =>
+                p.CompanyId == companyId.Value &&
+                p.EmployeeId == employee.Id &&
+                p.ScannedAt >= duplicateSince &&
+                p.ScannedAt <= scanTime.AddSeconds(1));
+
+            if (recentDuplicate)
+            {
+                Serilog.Log.Warning(
+                    "Blocked scan: Source={ScanSource}, EmployeeId={EmployeeId}, CompanyId={CompanyId}, Movement={Movement}, Reason={Reason}, Time={ScanTime}",
+                    "WorkCardScanView", employee.Id, companyId.Value, movement,
+                    "Persistent duplicate scan prevention", scanTime);
+                ShowResponse(false, Loc["Vm.⏳ Already Scanned"],
+                    Loc["Vm.This employee was scanned recently."] + "\n" +
+                    Loc["Vm.Please wait before scanning again."]);
+                BarcodeInput = string.Empty;
+                return;
+            }
+
             var queued = new PendingSubmission
             {
                 EmployeeId = employee.Id,
