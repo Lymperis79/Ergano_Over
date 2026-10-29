@@ -157,7 +157,9 @@ public partial class TerminalViewModel : ViewModelBase
                 {
                     TimeText = TimeLabel(s.ScannedAt),
                     EmployeeName = names.TryGetValue(s.EmployeeId, out var n) ? n : "—",
-                    MovementText = s.MovementType == "Arrival" ? Loc[L.Arrival] : Loc[L.Departure],
+                    MovementText = (s.MovementType == "Arrival" ? "→ " + Loc[L.Arrival] : "← " + Loc[L.Departure]),
+                    IsArrival = s.MovementType == "Arrival",
+                    IsDeparture = s.MovementType == "Departure",
                     StatusText = s.Synced ? Loc[L.ScanSent] : Loc[L.ScanWaiting],
                     IsOk = s.Synced,
                     IsWarn = !s.Synced
@@ -582,7 +584,9 @@ public partial class TerminalViewModel : ViewModelBase
         {
             TimeText = DateTime.Now.ToString("HH:mm:ss"),
             EmployeeName = string.IsNullOrWhiteSpace(employeeName) ? "—" : employeeName,
-            MovementText = _currentMovementText,
+            MovementText = (_currentMovementText == Loc[L.Arrival] ? "→ " : _currentMovementText == Loc[L.Departure] ? "← " : "") + _currentMovementText,
+            IsArrival = _currentMovementText == Loc[L.Arrival],
+            IsDeparture = _currentMovementText == Loc[L.Departure],
             StatusText = title,
             IsOk = kind == ScanPopupKind.Success,
             IsWarn = kind == ScanPopupKind.EarlyDepartureWarning,
