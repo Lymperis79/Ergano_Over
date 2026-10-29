@@ -81,6 +81,7 @@ public partial class TerminalViewModel : ViewModelBase
     [ObservableProperty] private string _popupDetailLine3 = string.Empty;
     
     [ObservableProperty] private bool _isArrival = true;
+    [ObservableProperty] private bool _isPopupDeparture;
     [ObservableProperty] private bool _isExitConfirmVisible;
 
     // Colour of the result window / list lines
@@ -809,6 +810,7 @@ public partial class TerminalViewModel : ViewModelBase
     {
         AddRecentScan(kind, title, employeeName);
 
+        IsPopupDeparture = _currentMovementText == Loc[L.Departure];
         PopupKind = kind;
         PopupTitle = title;
         PopupEmployeeName = employeeName;
