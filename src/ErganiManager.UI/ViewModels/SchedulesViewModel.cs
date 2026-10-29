@@ -1597,7 +1597,7 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
             _pendingSkippedRows = unmatched.Count;
             _pendingImportOrigin = autoConfirm ? "Portal" : "Manual";
 
-            var workDays = _pendingErganiRows.Count(r => r.StartTime.HasValue && r.EndTime.HasValue);
+            var workDays = _pendingErganiRows.Count(r => r.WorkingPeriods.Count > 0);
             var leaveDays = _pendingErganiRows.Count(r => r.IsLeaveOnly);
             var overtimeDays = _pendingErganiRows.Count(r => r.HasOvertime);
             var overtimeRecords = _pendingErganiRows.Sum(r => r.OvertimeRanges.Count);
@@ -1793,9 +1793,20 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
             return null;
         }
 
-        if (existing != null &&
-            !(existing.WorkType == row.WorkType && existing.StartTime == row.StartTime && existing.EndTime == row.EndTime))
-            return Tr.Loc["Vm.a different schedule exists"];
+        if (existing != null)
+        {
+            var existingPeriods = existing.WorkingPeriods?.OrderBy(p => p.PeriodNumber)
+                .Select(p => (p.StartTime, p.EndTime)).ToList() ?? new List<(TimeOnly StartTime, TimeOnly EndTime)>();
+            if (existingPeriods.Count == 0 && existing.StartTime.HasValue && existing.EndTime.HasValue)
+                existingPeriods.Add((existing.StartTime.Value, existing.EndTime.Value));
+
+            var importedPeriods = row.WorkingPeriods.ToList();
+            if (importedPeriods.Count == 0 && row.StartTime.HasValue && row.EndTime.HasValue)
+                importedPeriods.Add((row.StartTime.Value, row.EndTime.Value));
+
+            if (existing.WorkType != row.WorkType || !existingPeriods.SequenceEqual(importedPeriods))
+                return Tr.Loc["Vm.a different schedule exists"];
+        }
 
         var fileOvertime = row.OvertimeRanges.Select(r => (r.Start, r.End)).ToHashSet();
         var dbOvertime   = overtime.Select(o => (o.StartTime, o.EndTime)).ToHashSet();
@@ -1923,6 +1934,12 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
                     Source       = ScheduleSource.ErganiImported,
                     StartTime    = row.StartTime,
                     EndTime      = row.EndTime,
+                    WorkingPeriods = row.WorkingPeriods.Select((p, i) => new ScheduleWorkingPeriodDto
+                    {
+                        PeriodNumber = i + 1,
+                        StartTime = p.Start,
+                        EndTime = p.End
+                    }).ToList(),
                     Comments     = row.Employment,
                     SubmittedToErgani = true // already declared at Ergani: must not be submitted again
                 }).ConfigureAwait(false);
