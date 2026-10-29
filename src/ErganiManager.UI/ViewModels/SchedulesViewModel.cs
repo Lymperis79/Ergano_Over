@@ -134,7 +134,7 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
         new(Enum.GetValues<ErganiManager.Data.Entities.OvertimeJustification>());
     [ObservableProperty] private ErganiManager.Data.Entities.OvertimeJustification _editingOvertimeJustification =
         ErganiManager.Data.Entities.OvertimeJustification.ExceptionalWorkload;
-    [ObservableProperty] private EmployeeDto? _selectedEmployee;
+    [ObservableProperty, NotifyPropertyChangedFor(nameof(PotentialExtraHours)), NotifyPropertyChangedFor(nameof(EditingOvertimeNote))] private EmployeeDto? _selectedEmployee;
 
     [ObservableProperty] private int _year  = DateTime.Today.Year;
     [ObservableProperty] private int _month = DateTime.Today.Month;
@@ -342,9 +342,10 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
     /// <summary>Only Office/Home days that are not yet at Ergani can be submitted from the day dialog.</summary>
     public bool CanSubmitEditingDay => ShowTimeFields && !EditingSubmitted;
     public bool HasEditingOvertime => PotentialExtraHours > 0;
-    public double EditingTotalHours => ScheduleHours.GetTotalHours(GetEditingPeriods());
+    public double EditingTotalHours => GetEditingPeriods()
+        .Where(p => p.End > p.Start).Sum(p => (p.End - p.Start).TotalHours);
     public double PotentialExtraHours => SelectedEmployee == null ? 0 :
-        ScheduleHours.GetPotentialExtraHours(GetEditingPeriods(), SelectedEmployee.NormalDailyHours);
+        Math.Max(0, EditingTotalHours - SelectedEmployee.NormalDailyHours);
     public string EditingOvertimeNote => !ShowTimeFields || PotentialExtraHours <= 0 ? string.Empty :
         string.Format(Loc["Vm.⚠ Planned time totals {0:0.##} hours; this is {1:0.##} hour(s) above the employee's normal {2:0.##} hours. Review the correct declaration type in the Overtime form; nothing is automatically classified as overtime."],
             EditingTotalHours, PotentialExtraHours, SelectedEmployee?.NormalDailyHours ?? 8);
@@ -873,19 +874,26 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
     partial void OnEditingSubmittedChanged(bool value) =>
         OnPropertyChanged(nameof(CanSubmitEditingDay));
 
-    private ScheduleDayDto BuildEditingDto() => new()
+    private ScheduleDayDto BuildEditingDto()
     {
-        Id           = EditingScheduleId,
-        EmployeeId   = SelectedEmployee!.Id,
-        BranchId     = EditingBranch!.Id,
-        ScheduleDate = EditingDate,
-        WorkType     = EditingWorkType,
-        StartTime    = EditingStartTime.HasValue ? TimeOnly.FromTimeSpan(EditingStartTime.Value) : null,
-        EndTime      = EditingSplitShift && EditingSecondEndTime.HasValue ? TimeOnly.FromTimeSpan(EditingSecondEndTime.Value)
-                      : EditingEndTime.HasValue ? TimeOnly.FromTimeSpan(EditingEndTime.Value) : null,
-        WorkingPeriods = GetEditingPeriods().Select((p, i) => new ScheduleWorkingPeriodDto { PeriodNumber = i + 1, StartTime = p.Start, EndTime = p.End }).ToList(),
-        Comments     = EditingComments
-    };
+        if (EditingSplitShift && (!EditingSecondStartTime.HasValue || !EditingSecondEndTime.HasValue))
+            throw new InvalidOperationException(Loc["Vm.Please enter both times for the second work period."]);
+        var periods = GetEditingPeriods();
+        return new ScheduleDayDto
+        {
+            Id = EditingScheduleId,
+            EmployeeId = SelectedEmployee!.Id,
+            BranchId = EditingBranch!.Id,
+            ScheduleDate = EditingDate,
+            WorkType = EditingWorkType,
+            StartTime = EditingStartTime.HasValue ? TimeOnly.FromTimeSpan(EditingStartTime.Value) : null,
+            EndTime = EditingSplitShift && EditingSecondEndTime.HasValue ? TimeOnly.FromTimeSpan(EditingSecondEndTime.Value)
+                : EditingEndTime.HasValue ? TimeOnly.FromTimeSpan(EditingEndTime.Value) : null,
+            WorkingPeriods = periods.Select((p, i) => new ScheduleWorkingPeriodDto
+                { PeriodNumber = i + 1, StartTime = p.Start, EndTime = p.End }).ToList(),
+            Comments = EditingComments
+        };
+    }
 
     [RelayCommand]
     private async Task SaveDayAsync()
