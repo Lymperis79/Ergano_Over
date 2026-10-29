@@ -222,6 +222,8 @@ public static class GreekStrings
         [L.WorkType] = "Τύπος Εργασίας",
         [L.StartTime] = "Ώρα έναρξης",
         [L.EndTime] = "Ώρα λήξης",
+        [L.SplitShift] = "Σπαστό ωράριο (προσθήκη δεύτερης περιόδου)",
+        [L.SecondPeriod] = "Δεύτερη περίοδος εργασίας",
         [L.Comments] = "Σχόλια (προαιρετικό)",
         [L.NotSubmitted] = "⏳ Δεν έχει υποβληθεί στην Εργάνη",
         [L.SubmittedProtocol] = "✅ Υποβλήθηκε στην Εργάνη — Πρωτόκολλο: {0}",
