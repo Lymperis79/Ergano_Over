@@ -2184,6 +2184,7 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
             var targetYear = Year;
             var targetMonth = Month;
             var pending = new List<(EmployeeDto Employee, List<ScheduleDayDto> Days)>();
+            var blockedRestCount = 0;
 
             foreach (var employee in AvailableEmployees)
             {
@@ -2196,7 +2197,9 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
                 var safe = new List<ScheduleDayDto>();
                 foreach (var day in eligible)
                 {
-                    if (!await HasInsufficientRestAsync(day))
+                    if (await HasInsufficientRestAsync(day))
+                        blockedRestCount++;
+                    else
                         safe.Add(day);
                 }
                 if (safe.Count > 0)
@@ -2212,12 +2215,16 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
                 IsBulkSubmitDialogOpen = false;
                 StatusMessage = string.Format(Loc["Vm.No pending schedule changes found for {0}."],
                     new DateOnly(targetYear, targetMonth, 1).ToString("MMMM yyyy"));
+                if (blockedRestCount > 0)
+                    StatusMessage += " " + string.Format(Loc["Vm.{0} day(s) blocked: less than 11 hours rest"], blockedRestCount);
                 return;
             }
 
             BulkSubmitSummary = string.Format(
                 Loc["Vm.This will submit {0} pending day(s) for {1} employee(s) in {2}."],
                 dayCount, pending.Count, new DateOnly(targetYear, targetMonth, 1).ToString("MMMM yyyy"));
+            if (blockedRestCount > 0)
+                BulkSubmitSummary += "\n" + string.Format(Loc["Vm.{0} day(s) blocked: less than 11 hours rest"], blockedRestCount);
             IsBulkSubmitDialogOpen = true;
             StatusMessage = string.Empty;
         }
