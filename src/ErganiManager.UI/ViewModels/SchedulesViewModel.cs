@@ -342,9 +342,10 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
     /// <summary>Only Office/Home days that are not yet at Ergani can be submitted from the day dialog.</summary>
     public bool CanSubmitEditingDay => ShowTimeFields && !EditingSubmitted;
     public bool HasEditingOvertime => PotentialExtraHours > 0;
-    public double EditingTotalHours => ScheduleHours.GetTotalHours(GetEditingPeriods());
+    public double EditingTotalHours => GetEditingPeriods()
+        .Where(p => p.End > p.Start).Sum(p => (p.End - p.Start).TotalHours);
     public double PotentialExtraHours => SelectedEmployee == null ? 0 :
-        ScheduleHours.GetPotentialExtraHours(GetEditingPeriods(), SelectedEmployee.NormalDailyHours);
+        Math.Max(0, EditingTotalHours - SelectedEmployee.NormalDailyHours);
     public string EditingOvertimeNote => !ShowTimeFields || PotentialExtraHours <= 0 ? string.Empty :
         string.Format(Loc["Vm.⚠ Planned time totals {0:0.##} hours; this is {1:0.##} hour(s) above the employee's normal {2:0.##} hours. Review the correct declaration type in the Overtime form; nothing is automatically classified as overtime."],
             EditingTotalHours, PotentialExtraHours, SelectedEmployee?.NormalDailyHours ?? 8);
