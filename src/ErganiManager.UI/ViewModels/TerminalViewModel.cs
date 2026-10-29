@@ -54,7 +54,8 @@ public partial class TerminalViewModel : ViewModelBase
     [ObservableProperty] private bool _isOfflineMode;
     [ObservableProperty] private bool _hasInternet;
     [ObservableProperty] private bool _erganiConnected;
-    [ObservableProperty] private string _erganiStatusText = "Ergani: waiting for status";
+    [ObservableProperty] private bool _erganiStatusKnown;
+    [ObservableProperty] private string _erganiStatusText = "Ergani: not checked";
     [ObservableProperty] private string _internetStatusText = "Internet: checking";
 
     // Popup state
@@ -213,6 +214,21 @@ public partial class TerminalViewModel : ViewModelBase
         {
             HasInternet = online;
             InternetStatusText = online ? "Internet: connected" : "Internet: unavailable";
+
+            // Ergani cannot be reached when the device has no internet. Do not leave
+            // a stale green/connected status displayed after the network is unplugged.
+            if (!online)
+            {
+                ErganiConnected = false;
+                ErganiStatusKnown = true;
+                ErganiStatusText = "Ergani: unavailable (no internet)";
+            }
+            else if (!ErganiStatusKnown)
+            {
+                // Internet access does not prove the Ergani service itself is reachable.
+                // Keep this neutral until a real submission response gives us a result.
+                ErganiStatusText = "Ergani: not checked";
+            }
         });
     }
 
@@ -244,6 +260,7 @@ public partial class TerminalViewModel : ViewModelBase
                 }
             }
 
+            ErganiStatusKnown = true;
             if (update.Status == QueuedScanStatus.Sent)
             {
                 ErganiConnected = true;
