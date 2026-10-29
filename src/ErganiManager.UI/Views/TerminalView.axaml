@@ -29,6 +29,7 @@
         <Style Selector="TextBlock.movement.departure"><Setter Property="Foreground" Value="#EF5350" /></Style>
         <Style Selector="TextBlock.connection.online"><Setter Property="Foreground" Value="#66BB6A" /></Style>
         <Style Selector="TextBlock.connection.offline"><Setter Property="Foreground" Value="#EF5350" /></Style>
+        <Style Selector="TextBlock.connection.unknown"><Setter Property="Foreground" Value="#B0B0B0" /></Style>
     </Window.Styles>
 
     <Grid Background="#0F1115" RowDefinitions="2*,*">
@@ -58,7 +59,7 @@
                     <TextBlock Text="{Binding InternetStatusText}" FontSize="13" Foreground="#CCCCCC" VerticalAlignment="Center" />
                 </StackPanel>
                 <StackPanel Orientation="Horizontal" Spacing="7">
-                    <TextBlock Text="●" FontSize="16" Classes="connection" Classes.online="{Binding ErganiConnected}" Classes.offline="{Binding !ErganiConnected}" VerticalAlignment="Center" />
+                    <TextBlock Text="●" FontSize="16" Classes="connection" Classes.online="{Binding ErganiConnected}" Classes.offline="{Binding ErganiUnavailable}" Classes.unknown="{Binding !ErganiStatusKnown}" VerticalAlignment="Center" />
                     <TextBlock Text="{Binding ErganiStatusText}" FontSize="13" Foreground="#CCCCCC" VerticalAlignment="Center" />
                 </StackPanel>
             </StackPanel>
