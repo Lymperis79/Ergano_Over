@@ -351,8 +351,6 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
 
     private List<(TimeOnly Start, TimeOnly End)> GetEditingPeriods()
     {
-        if (EditingSplitShift && (!EditingSecondStartTime.HasValue || !EditingSecondEndTime.HasValue))
-            throw new InvalidOperationException(Loc["Vm.Please enter both times for the second work period."]);
         var periods = new List<(TimeOnly Start, TimeOnly End)>();
         if (EditingStartTime is TimeSpan start && EditingEndTime is TimeSpan end)
             periods.Add((TimeOnly.FromTimeSpan(start), TimeOnly.FromTimeSpan(end)));
@@ -877,6 +875,8 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
 
     private ScheduleDayDto BuildEditingDto()
     {
+        if (EditingSplitShift && (!EditingSecondStartTime.HasValue || !EditingSecondEndTime.HasValue))
+            throw new InvalidOperationException(Loc["Vm.Please enter both times for the second work period."]);
         var periods = GetEditingPeriods();
         return new ScheduleDayDto
         {
