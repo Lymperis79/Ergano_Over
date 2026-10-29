@@ -236,7 +236,7 @@ public static class DbSchemaUpdater
             foreach (var day in legacyDays)
             {
                 if (day.WorkingPeriods.Count != 0) continue;
-                if (day.EndTime <= day.StartTime) continue;
+                if (day.EndTime.Value <= day.StartTime.Value) continue;
                 db.ScheduleWorkingPeriods.Add(new Entities.ScheduleWorkingPeriod
                 {
                     ScheduleId = day.Id,
