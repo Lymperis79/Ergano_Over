@@ -478,7 +478,9 @@
                                 Foreground="#EF9A9A" />
                         <Button Content="{Binding Loc[SaveSubmit]}"
                                 Command="{Binding SaveAndSubmitDayCommand}"
-                                IsVisible="{Binding CanSubmitEditingDay}" />
+                                IsVisible="{Binding CanShowSubmitEditingDay}"
+                                IsEnabled="{Binding CanSubmitEditingDay}"
+                                ToolTip.Tip="{Binding Loc[RestSubmitBlockedTooltip]}" />
                         <Button Content="{Binding Loc[Save]}"
                                 Command="{Binding SaveDayCommand}" Classes="accent" />
                     </StackPanel>
