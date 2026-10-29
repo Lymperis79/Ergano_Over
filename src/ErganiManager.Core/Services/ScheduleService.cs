@@ -341,6 +341,14 @@ public class ScheduleService : IScheduleService
         public string? Comments { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime? UpdatedAt { get; set; }
+        public List<SchedulePeriodSnapshot> WorkingPeriods { get; set; } = new();
+    }
+
+    private sealed class SchedulePeriodSnapshot
+    {
+        public int PeriodNumber { get; set; }
+        public TimeOnly StartTime { get; set; }
+        public TimeOnly EndTime { get; set; }
     }
 
     /// <summary>An unsent overtime record as it was before a clone removed it.</summary>
@@ -422,6 +430,7 @@ public class ScheduleService : IScheduleService
         await using var db = OpenDb();
 
         var sourceDays = await db.Schedules.AsNoTracking()
+            .Include(s => s.WorkingPeriods)
             .Where(s => s.EmployeeId == sourceEmployeeId && dateSet.Contains(s.ScheduleDate))
             .ToListAsync();
         var sourceLeaves = includeHolidays
@@ -441,6 +450,7 @@ public class ScheduleService : IScheduleService
         // Everything the clone is about to replace. It is saved in the history (together with the
         // Ergani status / protocol / submission id / import source) so Undo can put it back as it was.
         var replaced = await db.Schedules
+            .Include(s => s.WorkingPeriods)
             .Where(s => targetIds.Contains(s.EmployeeId) && dateSet.Contains(s.ScheduleDate))
             .ToListAsync();
         var snapshot = replaced.Select(r => new SnapshotRow
@@ -449,7 +459,8 @@ public class ScheduleService : IScheduleService
             WorkType = r.WorkType, ScheduleType = r.ScheduleType, Source = r.Source,
             StartTime = r.StartTime, EndTime = r.EndTime,
             SubmittedToErgani = r.SubmittedToErgani, SubmissionId = r.SubmissionId, Protocol = r.Protocol,
-            Comments = r.Comments, CreatedAt = r.CreatedAt, UpdatedAt = r.UpdatedAt
+            Comments = r.Comments, CreatedAt = r.CreatedAt, UpdatedAt = r.UpdatedAt,
+            WorkingPeriods = r.WorkingPeriods.OrderBy(p => p.PeriodNumber).Select(p => new SchedulePeriodSnapshot { PeriodNumber = p.PeriodNumber, StartTime = p.StartTime, EndTime = p.EndTime }).ToList()
         }).ToList();
 
         db.Schedules.RemoveRange(replaced);
@@ -531,10 +542,8 @@ public class ScheduleService : IScheduleService
         }
 
         int written = 0;
-        var pendingOvertimeItems = new List<(Overtime Overtime, EmployeeSchedule Schedule, ApiSubmissionLog Log)>();
         foreach (var targetId in targetIds)
         {
-            var targetEmployee = targets.FirstOrDefault(e => e.Id == targetId);
             foreach (var src in sourceDays)
             {
                 var copiedSchedule = new EmployeeSchedule
@@ -542,49 +551,17 @@ public class ScheduleService : IScheduleService
                     EmployeeId = targetId, BranchId = src.BranchId, ScheduleDate = src.ScheduleDate,
                     WorkType = src.WorkType, Source = Data.Entities.ScheduleSource.Manual,
                     StartTime = src.StartTime, EndTime = src.EndTime, Comments = src.Comments,
+                    WorkingPeriods = src.WorkingPeriods.Count > 0
+                        ? src.WorkingPeriods.OrderBy(p => p.PeriodNumber).Select(p => new ScheduleWorkingPeriod
+                            { PeriodNumber = p.PeriodNumber, StartTime = p.StartTime, EndTime = p.EndTime }).ToList()
+                        : src.StartTime.HasValue && src.EndTime.HasValue && src.EndTime > src.StartTime
+                            ? new List<ScheduleWorkingPeriod> { new() { PeriodNumber = 1, StartTime = src.StartTime.Value, EndTime = src.EndTime.Value } }
+                            : new List<ScheduleWorkingPeriod>(),
                     SubmittedToErgani = false, CreatedAt = cloneTime
                 };
                 db.Schedules.Add(copiedSchedule);
                 written++;
 
-                if (targetEmployee == null ||
-                    src.WorkType is not (WorkType.Office or WorkType.Home))
-                    continue;
-
-                var overtimeRange = ScheduleHours.GetOvertimeRange(src.StartTime, src.EndTime);
-                if (overtimeRange is not { } range)
-                    continue;
-
-                // Carry over the source day's reason when a matching source overtime exists;
-                // otherwise use the normal default. Weekly workdays belong to the destination employee.
-                var sourceOvertime = await db.Overtimes.AsNoTracking().FirstOrDefaultAsync(o =>
-                    o.EmployeeId == sourceEmployeeId && o.OvertimeDate == src.ScheduleDate &&
-                    o.StartTime == range.From && o.EndTime == range.To && !o.IsCancelled);
-                var overtime = new Overtime
-                {
-                    EmployeeId = targetId,
-                    BranchId = src.BranchId,
-                    OvertimeDate = src.ScheduleDate,
-                    StartTime = range.From,
-                    EndTime = range.To,
-                    Justification = sourceOvertime?.Justification ?? OvertimeJustification.ExceptionalWorkload,
-                    WeeklyWorkdaysNumber = targetEmployee.WeeklyWorkdays,
-                    CreatedAt = cloneTime
-                };
-                db.Overtimes.Add(overtime);
-
-                // Link the schedule, overtime and log after SaveChanges assigns their primary keys.
-                pendingOvertimeItems.Add((overtime, copiedSchedule, new ApiSubmissionLog
-                {
-                    CompanyId = source.CompanyId,
-                    EmployeeId = targetId,
-                    EmployeeIdsJson = JsonSerializer.Serialize(new[] { targetId }),
-                    SubmissionType = "Overtime",
-                    ScheduleDate = src.ScheduleDate,
-                    SubmissionDate = cloneTime,
-                    Success = false,
-                    ErrorMessage = "PENDING_OVERTIME"
-                }));
             }
         }
 
@@ -629,24 +606,6 @@ public class ScheduleService : IScheduleService
         // written together or not at all. Save once to assign overtime IDs, then attach their log rows.
         await db.SaveChangesAsync();
 
-        if (pendingOvertimeItems.Count > 0)
-        {
-            foreach (var item in pendingOvertimeItems)
-            {
-                item.Overtime.RequestPayloadJson = JsonSerializer.Serialize(new
-                {
-                    source = "schedule",
-                    scheduleId = item.Schedule.Id
-                });
-                item.Log.RequestPayloadJson = JsonSerializer.Serialize(new
-                {
-                    overtimeId = item.Overtime.Id,
-                    source = "schedule"
-                });
-                db.ApiSubmissionLogs.Add(item.Log);
-            }
-            await db.SaveChangesAsync();
-        }
 
         return written + copiedLeaves;
     }
@@ -833,7 +792,9 @@ public class ScheduleService : IScheduleService
                 WorkType = r.WorkType, ScheduleType = r.ScheduleType, Source = r.Source,
                 StartTime = r.StartTime, EndTime = r.EndTime,
                 SubmittedToErgani = r.SubmittedToErgani, SubmissionId = r.SubmissionId, Protocol = r.Protocol,
-                Comments = r.Comments, CreatedAt = r.CreatedAt, UpdatedAt = r.UpdatedAt
+                Comments = r.Comments, CreatedAt = r.CreatedAt, UpdatedAt = r.UpdatedAt,
+                WorkingPeriods = r.WorkingPeriods.Select(p => new ScheduleWorkingPeriod
+                    { PeriodNumber = p.PeriodNumber, StartTime = p.StartTime, EndTime = p.EndTime }).ToList()
             });
         }
 
