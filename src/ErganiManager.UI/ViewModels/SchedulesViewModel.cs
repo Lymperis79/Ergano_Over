@@ -2241,6 +2241,14 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
     /// Prepares a company-wide submission for the currently selected month. Only saved,
     /// eligible schedule rows that have not already been submitted are included.
     /// </summary>
+    private static string FormatScheduleForDetails(AppWorkType workType, IReadOnlyCollection<ScheduleWorkingPeriodDto>? periods, TimeOnly? start, TimeOnly? end)
+    {
+        var times = periods != null && periods.Count > 0
+            ? string.Join(", ", periods.OrderBy(p => p.PeriodNumber).Select(p => $"{p.StartTime:HH:mm}–{p.EndTime:HH:mm}"))
+            : start.HasValue && end.HasValue ? $"{start:HH:mm}–{end:HH:mm}" : "—";
+        return workType is AppWorkType.Rest or AppWorkType.Absent ? workType.ToString() : $"{workType}: {times}";
+    }
+
     [RelayCommand]
     private async Task PrepareSubmitAllPendingSchedulesAsync()
     {
@@ -2284,16 +2292,22 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
             BulkSubmitDetails.Clear();
             foreach (var item in pending.OrderBy(x => x.Employee.FullName))
             foreach (var day in item.Days.OrderBy(x => x.ScheduleDate))
+            {
+                var currentText = FormatScheduleForDetails(day.WorkType, day.WorkingPeriods, day.StartTime, day.EndTime);
+                var previousText = day.HasPendingChange
+                    ? day.PreviousWorkType.HasValue
+                        ? FormatScheduleForDetails(day.PreviousWorkType.Value, day.PreviousWorkingPeriods, null, null)
+                        : "New entry"
+                    : "Previous value unavailable";
                 BulkSubmitDetails.Add(new BulkSubmitDetailRow
                 {
                     EmployeeName = item.Employee.FullName,
                     DateText = day.ScheduleDate.ToString("dd/MM/yyyy"),
-                    Details = day.WorkingPeriods.Count > 0
-                        ? $"{day.WorkType}: {string.Join(", ", day.WorkingPeriods.OrderBy(p => p.PeriodNumber).Select(p => $"{p.StartTime:HH:mm}–{p.EndTime:HH:mm}"))}"
-                        : day.StartTime.HasValue && day.EndTime.HasValue
-                            ? $"{day.WorkType}: {day.StartTime:HH:mm}–{day.EndTime:HH:mm}"
-                            : day.WorkType.ToString()
+                    Details = currentText,
+                    FromDetails = previousText,
+                    ToDetails = currentText
                 });
+            }
 
             _pendingBulkSubmit = pending;
             _pendingBulkSubmitYear = targetYear;
