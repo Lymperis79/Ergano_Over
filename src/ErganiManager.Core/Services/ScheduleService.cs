@@ -258,9 +258,10 @@ public class ScheduleService : IScheduleService
 
             if (existingByDate.TryGetValue(date, out var existing))
             {
+                var auditPreviousSnapshot = JsonSerializer.Serialize(new { WorkType = existing.WorkType.ToString(), Periods = existing.WorkingPeriods.OrderBy(p => p.PeriodNumber).Select(p => new { p.PeriodNumber, StartTime = p.StartTime.ToString("HH:mm"), EndTime = p.EndTime.ToString("HH:mm") }).ToList() });
                 if (existing.SubmittedToErgani || !existing.HasPendingChange)
                 {
-                    existing.PendingPreviousSnapshotJson = JsonSerializer.Serialize(new { WorkType = existing.WorkType.ToString(), Periods = existing.WorkingPeriods.OrderBy(p => p.PeriodNumber).Select(p => new { p.PeriodNumber, StartTime = p.StartTime.ToString("HH:mm"), EndTime = p.EndTime.ToString("HH:mm") }).ToList() });
+                    existing.PendingPreviousSnapshotJson = auditPreviousSnapshot;
                     existing.HasPendingChange = true;
                 }
                 existing.BranchId = branchId;
@@ -279,10 +280,20 @@ public class ScheduleService : IScheduleService
                     existing.SubmissionId = null;
                     existing.Protocol = null;
                 }
+                db.ScheduleChangeHistory.Add(new ScheduleChangeHistory
+                {
+                    EmployeeId = employeeId,
+                    ScheduleDate = date,
+                    ChangeSource = "Bulk",
+                    PreviousSnapshotJson = auditPreviousSnapshot,
+                    NewWorkType = existing.WorkType.ToString(),
+                    NewPeriodsJson = JsonSerializer.Serialize(existing.WorkingPeriods.OrderBy(w => w.PeriodNumber).Select(w => new { w.PeriodNumber, StartTime = w.StartTime.ToString("HH:mm"), EndTime = w.EndTime.ToString("HH:mm") }).ToList()),
+                    ChangedAtUtc = DateTime.UtcNow
+                });
             }
             else
             {
-                db.Schedules.Add(new EmployeeSchedule
+                var created = new EmployeeSchedule
                 {
                     EmployeeId = employeeId,
                     BranchId = branchId,
@@ -296,6 +307,17 @@ public class ScheduleService : IScheduleService
                         : new List<ScheduleWorkingPeriod>(),
                     HasPendingChange = true,
                     CreatedAt = DateTime.UtcNow
+                };
+                db.Schedules.Add(created);
+                db.ScheduleChangeHistory.Add(new ScheduleChangeHistory
+                {
+                    EmployeeId = employeeId,
+                    ScheduleDate = date,
+                    ChangeSource = "Bulk",
+                    PreviousSnapshotJson = null,
+                    NewWorkType = created.WorkType.ToString(),
+                    NewPeriodsJson = JsonSerializer.Serialize(created.WorkingPeriods.Select(w => new { w.PeriodNumber, StartTime = w.StartTime.ToString("HH:mm"), EndTime = w.EndTime.ToString("HH:mm") }).ToList()),
+                    ChangedAtUtc = DateTime.UtcNow
                 });
             }
             count++;
