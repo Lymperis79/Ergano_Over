@@ -1771,5 +1771,13 @@ public static class GreekStrings
         ["Dashboard.ReconciliationNotRun"] = "Δεν έχει δημιουργηθεί ακόμη αναφορά ελέγχου. Η εργασία παρασκηνίου θα ελέγξει την προηγούμενη ημέρα.",
         ["Dashboard.ReconciliationSummary"] = "Ευρήματα: {0} · Μη υποβληθείσες σαρώσεις: {1} · Αποτυχημένες υποβολές: {2}",
         ["Dashboard.ReconciliationLastRun"] = "Ημερομηνία εργασίας: {0} · Δημιουργήθηκε: {1}",
+
+        ["Vm.View employee details"] = "Προβολή αναλυτικών στοιχείων εργαζομένων",
+        ["Vm.Schedule submission details"] = "Εκκρεμείς αλλαγές προγράμματος",
+        ["Vm.Overtime submission details"] = "Αναλυτικά στοιχεία εκκρεμών υπερωριών",
+        ["Vm.Holiday submission details"] = "Αναλυτικά στοιχεία εκκρεμών αδειών",
+        ["Vm.Details"] = "Λεπτομέρειες",
+        ["Vm.Holiday"] = "Άδεια",
+        ["Vm.Overtime over 8 hours"] = "Υπερωρία άνω των 8 ωρών",
     };
 }
