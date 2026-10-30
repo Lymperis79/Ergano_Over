@@ -1767,5 +1767,9 @@ public static class GreekStrings
         ["Dashboard.HealthLastChecked"] = "Έλεγχος: {0}",
         ["Dashboard.EmailQueueSummary"] = "Σε αναμονή: {0} · Αποτυχίες: {1}",
         ["Dashboard.NotChecked"] = "Δεν έχει ελεγχθεί",
+        ["Dashboard.Reconciliation"] = "Ημερήσιος έλεγχος παρουσιών",
+        ["Dashboard.ReconciliationNotRun"] = "Δεν έχει δημιουργηθεί ακόμη αναφορά ελέγχου. Η εργασία παρασκηνίου θα ελέγξει την προηγούμενη ημέρα.",
+        ["Dashboard.ReconciliationSummary"] = "Ευρήματα: {0} · Μη υποβληθείσες σαρώσεις: {1} · Αποτυχημένες υποβολές: {2}",
+        ["Dashboard.ReconciliationLastRun"] = "Ημερομηνία εργασίας: {0} · Δημιουργήθηκε: {1}",
     };
 }
