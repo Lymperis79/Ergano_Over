@@ -35,6 +35,9 @@ public class ScheduleDayDto
     /// <summary>Continuous work periods for this day. Empty on old callers means use StartTime/EndTime.</summary>
     public List<ScheduleWorkingPeriodDto> WorkingPeriods { get; set; } = new();
     public bool SubmittedToErgani { get; set; }
+    public bool HasPendingChange { get; set; }
+    public AppWorkType? PreviousWorkType { get; set; }
+    public List<ScheduleWorkingPeriodDto> PreviousWorkingPeriods { get; set; } = new();
     public string? Protocol { get; set; }
     public string? Comments { get; set; }
 
