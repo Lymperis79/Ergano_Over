@@ -1766,5 +1766,6 @@ public static class GreekStrings
         ["Dashboard.NotConfigured"] = "Δεν έχει ρυθμιστεί",
         ["Dashboard.HealthLastChecked"] = "Έλεγχος: {0}",
         ["Dashboard.EmailQueueSummary"] = "Σε αναμονή: {0} · Αποτυχίες: {1}",
+        ["Dashboard.NotChecked"] = "Δεν έχει ελεγχθεί",
     };
 }
