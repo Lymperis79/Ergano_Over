@@ -818,7 +818,7 @@
                 IsVisible="{Binding IsBulkSubmitDetailsOpen}"
                 Background="#CC000000" ZIndex="75">
             <Border Background="{DynamicResource PanelBrush}" CornerRadius="12" Padding="20"
-                    Width="760" MaxWidth="950" Height="620" MaxHeight="90%"
+                    Width="760" MaxWidth="950" Height="620" MaxHeight="700"
                     VerticalAlignment="Center" HorizontalAlignment="Center">
                 <Grid RowDefinitions="Auto,*,Auto" RowSpacing="12">
                     <Grid Grid.Row="0" ColumnDefinitions="*,Auto">
