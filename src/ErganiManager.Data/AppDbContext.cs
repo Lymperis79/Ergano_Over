@@ -12,6 +12,7 @@ public class AppDbContext : DbContext
     public DbSet<AppUser> Users => Set<AppUser>();
     public DbSet<Employee> Employees => Set<Employee>();
     public DbSet<EmployeeSchedule> Schedules => Set<EmployeeSchedule>();
+    public DbSet<ScheduleChangeHistory> ScheduleChangeHistory => Set<ScheduleChangeHistory>();
     public DbSet<ScheduleWorkingPeriod> ScheduleWorkingPeriods => Set<ScheduleWorkingPeriod>();
     public DbSet<WorkCard> WorkCards => Set<WorkCard>();
     public DbSet<Overtime> Overtimes => Set<Overtime>();
@@ -136,6 +137,13 @@ public class AppDbContext : DbContext
             e.Property(s => s.WorkType).HasConversion<string>();
             e.Property(s => s.ScheduleType).HasConversion<string>();
             e.Property(s => s.Source).HasConversion<string>();
+        });
+
+        modelBuilder.Entity<ScheduleChangeHistory>(e =>
+        {
+            e.HasIndex(h => new { h.EmployeeId, h.ScheduleDate, h.ChangedAtUtc });
+            e.Property(h => h.ChangeSource).HasMaxLength(30);
+            e.Property(h => h.NewWorkType).HasMaxLength(30);
         });
 
         // ── Schedule working periods (split shifts) ────────────────────────
