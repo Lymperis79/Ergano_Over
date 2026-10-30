@@ -43,6 +43,16 @@ public sealed class DailyReconciliationService
         _cts.Dispose(); _cts = null; _loop = null;
     }
 
+    public DailyReconciliationReport? GetLatestReport(int companyId)
+    {
+        if (!Directory.Exists(Folder)) return null;
+        var path = Directory.GetFiles(Folder, $"company-{companyId}-*.json")
+            .OrderByDescending(x => x, StringComparer.Ordinal).FirstOrDefault();
+        if (path == null) return null;
+        try { return JsonSerializer.Deserialize<DailyReconciliationReport>(File.ReadAllText(path)); }
+        catch (Exception ex) { _logger.LogWarning(ex, "Could not read latest reconciliation report."); return null; }
+    }
+
     private async Task RunAsync(CancellationToken token)
     {
         using var timer = new PeriodicTimer(TimeSpan.FromMinutes(5));
