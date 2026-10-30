@@ -117,13 +117,24 @@ public class ScheduleService : IScheduleService
                 CreatedAt = DateTime.UtcNow
             };
             db.Schedules.Add(entity);
+            db.ScheduleChangeHistory.Add(new ScheduleChangeHistory
+            {
+                EmployeeId = dto.EmployeeId,
+                ScheduleDate = dto.ScheduleDate,
+                ChangeSource = "Manual",
+                PreviousSnapshotJson = null,
+                NewWorkType = entity.WorkType.ToString(),
+                NewPeriodsJson = JsonSerializer.Serialize(entity.WorkingPeriods.Select(w => new { w.PeriodNumber, StartTime = w.StartTime.ToString("HH:mm"), EndTime = w.EndTime.ToString("HH:mm") }).ToList()),
+                ChangedAtUtc = DateTime.UtcNow
+            });
             await db.SaveChangesAsync();
             return entity.Id;
         }
 
+        var auditPreviousSnapshot = JsonSerializer.Serialize(new { WorkType = existing.WorkType.ToString(), Periods = existing.WorkingPeriods.OrderBy(p => p.PeriodNumber).Select(p => new { p.PeriodNumber, StartTime = p.StartTime.ToString("HH:mm"), EndTime = p.EndTime.ToString("HH:mm") }).ToList() });
         if (!alreadyAtErgani && (existing.SubmittedToErgani || !existing.HasPendingChange))
         {
-            existing.PendingPreviousSnapshotJson = JsonSerializer.Serialize(new { WorkType = existing.WorkType.ToString(), Periods = existing.WorkingPeriods.OrderBy(p => p.PeriodNumber).Select(p => new { p.PeriodNumber, StartTime = p.StartTime.ToString("HH:mm"), EndTime = p.EndTime.ToString("HH:mm") }).ToList() });
+            existing.PendingPreviousSnapshotJson = auditPreviousSnapshot;
             existing.HasPendingChange = true;
         }
 
@@ -148,6 +159,16 @@ public class ScheduleService : IScheduleService
             existing.Protocol = null;
         }
 
+        db.ScheduleChangeHistory.Add(new ScheduleChangeHistory
+        {
+            EmployeeId = existing.EmployeeId,
+            ScheduleDate = existing.ScheduleDate,
+            ChangeSource = "Manual",
+            PreviousSnapshotJson = auditPreviousSnapshot,
+            NewWorkType = existing.WorkType.ToString(),
+            NewPeriodsJson = JsonSerializer.Serialize(existing.WorkingPeriods.OrderBy(w => w.PeriodNumber).Select(w => new { w.PeriodNumber, StartTime = w.StartTime.ToString("HH:mm"), EndTime = w.EndTime.ToString("HH:mm") }).ToList()),
+            ChangedAtUtc = DateTime.UtcNow
+        });
         await db.SaveChangesAsync();
         return existing.Id;
     }
