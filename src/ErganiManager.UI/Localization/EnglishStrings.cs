@@ -7,6 +7,9 @@ public static class EnglishStrings
     public static readonly Dictionary<string, string> Strings = new()
     {
         // ── Navigation ────────────────────────────────────────
+        [L.ScheduleActionsMenu] = "Schedule Actions",
+        [L.SubmissionActionsMenu] = "Submissions",
+        [L.LogsMenu] = "Logs",
         [L.NavCompanies] = "🏢 Companies",
         [L.NavBranches] = "🏬 Branches",
         [L.NavEmployees] = "👥 Employees",
