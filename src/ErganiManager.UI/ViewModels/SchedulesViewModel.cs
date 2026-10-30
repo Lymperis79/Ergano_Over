@@ -2286,7 +2286,11 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
                 {
                     EmployeeName = item.Employee.FullName,
                     DateText = day.ScheduleDate.ToString("dd/MM/yyyy"),
-                    Details = day.WorkType.ToString()
+                    Details = day.WorkingPeriods.Count > 0
+                        ? $"{day.WorkType}: {string.Join(", ", day.WorkingPeriods.OrderBy(p => p.PeriodNumber).Select(p => $"{p.StartTime:HH:mm}–{p.EndTime:HH:mm}"))}"
+                        : day.StartTime.HasValue && day.EndTime.HasValue
+                            ? $"{day.WorkType}: {day.StartTime:HH:mm}–{day.EndTime:HH:mm}"
+                            : day.WorkType.ToString()
                 });
 
             _pendingBulkSubmit = pending;
@@ -2378,9 +2382,14 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
                     {
                         EmployeeName = employee.FullName,
                         DateText = leave.LeaveDate.ToString("dd/MM/yyyy"),
-                        Details = string.IsNullOrWhiteSpace(leave.LeaveTypeCode)
-                            ? Loc["Vm.Holiday"]
-                            : leave.LeaveTypeCode
+                        Details = string.Join(" · ", new[]
+                        {
+                            string.IsNullOrWhiteSpace(leave.LeaveTypeCode) ? Loc["Vm.Holiday"] : leave.LeaveTypeCode,
+                            leave.StartTime.HasValue && leave.EndTime.HasValue
+                                ? $"{leave.StartTime:HH:mm}–{leave.EndTime:HH:mm}"
+                                : string.Empty,
+                            !string.IsNullOrWhiteSpace(leave.Comments) ? leave.Comments : string.Empty
+                        }.Where(value => !string.IsNullOrWhiteSpace(value)))
                     });
                 ids.AddRange(unsent.Select(l => l.Id));
                 employeeCount++;
