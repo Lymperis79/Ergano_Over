@@ -1767,5 +1767,6 @@ public static class EnglishStrings
         ["Dashboard.NotConfigured"] = "Not configured",
         ["Dashboard.HealthLastChecked"] = "Checked: {0}",
         ["Dashboard.EmailQueueSummary"] = "Queued: {0} · Failed: {1}",
+        ["Dashboard.NotChecked"] = "Not checked",
     };
 }
