@@ -24,6 +24,7 @@ public partial class DashboardViewModel : ViewModelBase, IAdminSectionViewModel
     private readonly IInternetCheckService _internetCheck;
     private readonly IErganiHealthCheckService _erganiHealth;
     private readonly ICredentialProtector _credentialProtector;
+    private readonly DailyReconciliationService _reconciliation;
     private UserSession? _session;
 
     [ObservableProperty] private string _companyName = string.Empty;
@@ -50,6 +51,8 @@ public partial class DashboardViewModel : ViewModelBase, IAdminSectionViewModel
     [ObservableProperty] private string _healthLastCheckedText = string.Empty;
     [ObservableProperty] private int _queuedEmailCount;
     [ObservableProperty] private int _failedEmailCount;
+    [ObservableProperty] private string _reconciliationSummary = string.Empty;
+    [ObservableProperty] private string _reconciliationLastRun = string.Empty;
 
     public bool CanRefresh => !IsLoading;
     public bool HasCategories => Categories.Count > 0;
@@ -69,13 +72,15 @@ public partial class DashboardViewModel : ViewModelBase, IAdminSectionViewModel
         AutomaticDatabaseBackupService automaticBackup,
         IInternetCheckService internetCheck,
         IErganiHealthCheckService erganiHealth,
-        ICredentialProtector credentialProtector)
+        ICredentialProtector credentialProtector,
+        DailyReconciliationService reconciliation)
     {
         _connectionState = connectionState;
         _automaticBackup = automaticBackup;
         _internetCheck = internetCheck;
         _erganiHealth = erganiHealth;
         _credentialProtector = credentialProtector;
+        _reconciliation = reconciliation;
         PeriodText = Loc["Dashboard.CurrentMonth"];
         RefreshBackupSummary();
     }
@@ -131,6 +136,19 @@ public partial class DashboardViewModel : ViewModelBase, IAdminSectionViewModel
             var company = await db.Companies.AsNoTracking()
                 .FirstOrDefaultAsync(c => c.Id == companyId.Value);
             CompanyName = company?.Name ?? Loc["Dashboard.UnknownCompany"];
+            var reconciliation = _reconciliation.GetLatestReport(companyId.Value);
+            if (reconciliation == null)
+            {
+                ReconciliationSummary = Loc["Dashboard.ReconciliationNotRun"];
+                ReconciliationLastRun = string.Empty;
+            }
+            else
+            {
+                ReconciliationSummary = string.Format(Loc["Dashboard.ReconciliationSummary"],
+                    reconciliation.Findings.Count, reconciliation.UnsubmittedScans, reconciliation.FailedSubmissions);
+                ReconciliationLastRun = string.Format(Loc["Dashboard.ReconciliationLastRun"],
+                    reconciliation.WorkDate.ToString("dd/MM/yyyy"), reconciliation.GeneratedAtLocal.ToString("dd/MM/yyyy HH:mm"));
+            }
             DatabaseHealthText = "✓ " + Loc["Dashboard.Success"];
 
             var monthStart = new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, 1, 0, 0, 0, DateTimeKind.Utc);
