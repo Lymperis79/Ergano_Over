@@ -38,9 +38,8 @@
                             <TextBlock Text="▾" Opacity="0.8" />
                         </StackPanel>
                     </MenuItem.Header>
-                    <MenuItem Header="{Binding Loc[AllPendingSchedulesAllEmployees]}" Command="{Binding PrepareSubmitAllPendingSchedulesCommand}" IsEnabled="{Binding HasActiveCompany}" />
-                    <Separator />
                     <MenuItem Header="{Binding Loc[ScheduleSubmission]}" Command="{Binding SubmitScheduleToErganiCommand}" IsEnabled="{Binding HasActiveCompany}" />
+                    <MenuItem Header="{Binding Loc[AllPendingSchedulesAllEmployees]}" Command="{Binding PrepareSubmitAllPendingSchedulesCommand}" IsEnabled="{Binding HasActiveCompany}" />                   
                     <Separator />
                     <MenuItem Header="{Binding Loc[OvertimeSubmission]}" Command="{Binding SubmitOvertimesCommand}" IsEnabled="{Binding HasActiveCompany}" />
                     <MenuItem Header="{Binding Loc[AllOvertimes]}" Command="{Binding PrepareSubmitAllOvertimesCommand}" IsEnabled="{Binding HasActiveCompany}" />
