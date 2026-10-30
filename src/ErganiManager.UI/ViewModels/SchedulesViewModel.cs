@@ -119,6 +119,8 @@ public sealed class BulkSubmitDetailRow
     public string EmployeeName { get; init; } = string.Empty;
     public string DateText { get; init; } = string.Empty;
     public string Details { get; init; } = string.Empty;
+    public string FromDetails { get; init; } = string.Empty;
+    public string ToDetails { get; init; } = string.Empty;
 }
 
 public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
@@ -2515,13 +2517,25 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
                 var employeeName = AvailableEmployees.FirstOrDefault(e => e.Id == day.EmployeeId)?.FullName
                     ?? $"Employee #{day.EmployeeId}";
                 var range = GetScheduledOvertimeRange(day);
+                var previousOvertime = existing
+                    .Where(o => o.EmployeeId == day.EmployeeId &&
+                                o.OvertimeDate == day.ScheduleDate &&
+                                !o.IsCancelled)
+                    .OrderBy(o => o.StartTime)
+                    .ToList();
+                var previousText = previousOvertime.Count == 0
+                    ? "—"
+                    : string.Join(", ", previousOvertime.Select(o => $"{o.StartTime:HH:mm}–{o.EndTime:HH:mm}"));
+                var targetText = range is { } overtimeRange
+                    ? $"{overtimeRange.From:HH:mm}–{overtimeRange.To:HH:mm}"
+                    : Loc["Vm.Overtime over 8 hours"];
                 BulkSubmitDetails.Add(new BulkSubmitDetailRow
                 {
                     EmployeeName = employeeName,
                     DateText = day.ScheduleDate.ToString("dd/MM/yyyy"),
-                    Details = range is { } overtimeRange
-                        ? $"{overtimeRange.From:hh\\\\:mm}–{overtimeRange.To:hh\\\\:mm}"
-                        : Loc["Vm.Overtime over 8 hours"]
+                    Details = targetText,
+                    FromDetails = previousText,
+                    ToDetails = targetText
                 });
             }
 
