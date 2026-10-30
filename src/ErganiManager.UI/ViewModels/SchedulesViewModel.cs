@@ -114,6 +114,13 @@ public class ScheduleLogRow
     }
 }
 
+public sealed class BulkSubmitDetailRow
+{
+    public string EmployeeName { get; init; } = string.Empty;
+    public string DateText { get; init; } = string.Empty;
+    public string Details { get; init; } = string.Empty;
+}
+
 public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
 {
     private readonly IScheduleService   _scheduleService;
@@ -252,6 +259,9 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
     private List<ScheduleDayDto> _pendingOvertimeDays = new();
     [ObservableProperty] private bool _isBulkSubmitDialogOpen;
     [ObservableProperty] private string _bulkSubmitSummary = string.Empty;
+    [ObservableProperty] private bool _isBulkSubmitDetailsOpen;
+    [ObservableProperty] private string _bulkSubmitDetailsTitle = string.Empty;
+    public ObservableCollection<BulkSubmitDetailRow> BulkSubmitDetails { get; } = new();
     private List<(EmployeeDto Employee, List<ScheduleDayDto> Days)> _pendingBulkSubmit = new();
     private int _pendingBulkSubmitYear;
     private int _pendingBulkSubmitMonth;
@@ -2269,6 +2279,16 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
                     pending.Add((employee, safe));
             }
 
+            BulkSubmitDetails.Clear();
+            foreach (var item in pending.OrderBy(x => x.Employee.FullName))
+            foreach (var day in item.Days.OrderBy(x => x.ScheduleDate))
+                BulkSubmitDetails.Add(new BulkSubmitDetailRow
+                {
+                    EmployeeName = item.Employee.FullName,
+                    DateText = day.ScheduleDate.ToString("dd/MM/yyyy"),
+                    Details = day.WorkType.ToString()
+                });
+
             _pendingBulkSubmit = pending;
             _pendingBulkSubmitYear = targetYear;
             _pendingBulkSubmitMonth = targetMonth;
@@ -2302,6 +2322,20 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
     }
 
     [RelayCommand]
+    private void ShowBulkSubmitDetails()
+    {
+        BulkSubmitDetailsTitle = _bulkOvertimeMode
+            ? Loc["Vm.Overtime submission details"]
+            : _bulkHolidayMode
+                ? Loc["Vm.Holiday submission details"]
+                : Loc["Vm.Schedule submission details"];
+        IsBulkSubmitDetailsOpen = true;
+    }
+
+    [RelayCommand]
+    private void CloseBulkSubmitDetails() => IsBulkSubmitDetailsOpen = false;
+
+    [RelayCommand]
     private void CancelBulkSubmitSchedules()
     {
         IsBulkSubmitDialogOpen = false;
@@ -2333,11 +2367,21 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
 
             var ids = new List<int>();
             var employeeCount = 0;
+            BulkSubmitDetails.Clear();
             foreach (var employee in AvailableEmployees)
             {
                 var leaves = await _leaveService.GetByEmployeeDateRangeAsync(companyId, employee.Id, first, last);
-                var unsent = leaves.Where(l => !l.SubmittedToErgani).ToList();
+                var unsent = leaves.Where(l => !l.SubmittedToErgani).OrderBy(l => l.LeaveDate).ToList();
                 if (unsent.Count == 0) continue;
+                foreach (var leave in unsent)
+                    BulkSubmitDetails.Add(new BulkSubmitDetailRow
+                    {
+                        EmployeeName = employee.FullName,
+                        DateText = leave.LeaveDate.ToString("dd/MM/yyyy"),
+                        Details = string.IsNullOrWhiteSpace(leave.LeaveTypeCode)
+                            ? Loc["Vm.Holiday"]
+                            : leave.LeaveTypeCode
+                    });
                 ids.AddRange(unsent.Select(l => l.Id));
                 employeeCount++;
             }
@@ -2454,6 +2498,22 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
                 StatusMessage = string.Format(Loc["Vm.No unsent overtime (over 8 hours) found for {0}."],
                     first.ToString("MMMM yyyy"));
                 return;
+            }
+
+            BulkSubmitDetails.Clear();
+            foreach (var day in days.OrderBy(x => x.EmployeeId).ThenBy(x => x.ScheduleDate))
+            {
+                var employeeName = AvailableEmployees.FirstOrDefault(e => e.Id == day.EmployeeId)?.FullName
+                    ?? $"Employee #{day.EmployeeId}";
+                var range = GetScheduledOvertimeRange(day);
+                BulkSubmitDetails.Add(new BulkSubmitDetailRow
+                {
+                    EmployeeName = employeeName,
+                    DateText = day.ScheduleDate.ToString("dd/MM/yyyy"),
+                    Details = range is { } overtimeRange
+                        ? $"{overtimeRange.From:hh\\\\:mm}–{overtimeRange.To:hh\\\\:mm}"
+                        : Loc["Vm.Overtime over 8 hours"]
+                });
             }
 
             _pendingOvertimeDays = days;
