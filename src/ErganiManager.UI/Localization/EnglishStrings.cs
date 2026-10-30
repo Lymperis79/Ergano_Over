@@ -1772,5 +1772,13 @@ public static class EnglishStrings
         ["Dashboard.ReconciliationNotRun"] = "No reconciliation report has been generated yet. The background job will check the previous day.",
         ["Dashboard.ReconciliationSummary"] = "Findings: {0} · Unsubmitted scans: {1} · Failed submissions: {2}",
         ["Dashboard.ReconciliationLastRun"] = "Work date: {0} · Generated: {1}",
+
+        ["Vm.View employee details"] = "View employee details",
+        ["Vm.Schedule submission details"] = "Pending schedule changes",
+        ["Vm.Overtime submission details"] = "Pending overtime details",
+        ["Vm.Holiday submission details"] = "Pending holiday details",
+        ["Vm.Details"] = "Details",
+        ["Vm.Holiday"] = "Holiday",
+        ["Vm.Overtime over 8 hours"] = "Overtime over 8 hours",
     };
 }
