@@ -113,11 +113,18 @@ public class ScheduleService : IScheduleService
                 WorkingPeriods = periods.Select((p, i) => new ScheduleWorkingPeriod { PeriodNumber = i + 1, StartTime = p.StartTime, EndTime = p.EndTime }).ToList(),
                 Comments = dto.Comments,
                 SubmittedToErgani = alreadyAtErgani,
+                HasPendingChange = !alreadyAtErgani,
                 CreatedAt = DateTime.UtcNow
             };
             db.Schedules.Add(entity);
             await db.SaveChangesAsync();
             return entity.Id;
+        }
+
+        if (!alreadyAtErgani && (existing.SubmittedToErgani || !existing.HasPendingChange))
+        {
+            existing.PendingPreviousSnapshotJson = JsonSerializer.Serialize(new { WorkType = existing.WorkType.ToString(), Periods = existing.WorkingPeriods.OrderBy(p => p.PeriodNumber).Select(p => new { p.PeriodNumber, StartTime = p.StartTime.ToString("HH:mm"), EndTime = p.EndTime.ToString("HH:mm") }).ToList() });
+            existing.HasPendingChange = true;
         }
 
         existing.BranchId = dto.BranchId;
@@ -230,6 +237,11 @@ public class ScheduleService : IScheduleService
 
             if (existingByDate.TryGetValue(date, out var existing))
             {
+                if (existing.SubmittedToErgani || !existing.HasPendingChange)
+                {
+                    existing.PendingPreviousSnapshotJson = JsonSerializer.Serialize(new { WorkType = existing.WorkType.ToString(), Periods = existing.WorkingPeriods.OrderBy(p => p.PeriodNumber).Select(p => new { p.PeriodNumber, StartTime = p.StartTime.ToString("HH:mm"), EndTime = p.EndTime.ToString("HH:mm") }).ToList() });
+                    existing.HasPendingChange = true;
+                }
                 existing.BranchId = branchId;
                 existing.WorkType = ToEntityWorkType(workType);
                 existing.Source = Data.Entities.ScheduleSource.Manual;
@@ -261,6 +273,7 @@ public class ScheduleService : IScheduleService
                     WorkingPeriods = startTime.HasValue && endTime.HasValue && endTime > startTime
                         ? new List<ScheduleWorkingPeriod> { new() { PeriodNumber = 1, StartTime = startTime.Value, EndTime = endTime.Value } }
                         : new List<ScheduleWorkingPeriod>(),
+                    HasPendingChange = true,
                     CreatedAt = DateTime.UtcNow
                 });
             }
@@ -301,6 +314,27 @@ public class ScheduleService : IScheduleService
         _ => Core.Interfaces.ScheduleSource.Manual
     };
 
+    private static AppWorkType? ParsePreviousWorkType(string? json)
+    {
+        if (string.IsNullOrWhiteSpace(json)) return null;
+        try { using var doc = JsonDocument.Parse(json); return Enum.TryParse<AppWorkType>(doc.RootElement.GetProperty("WorkType").GetString(), out var value) ? value : null; }
+        catch { return null; }
+    }
+
+    private static List<ScheduleWorkingPeriodDto> ParsePreviousPeriods(string? json)
+    {
+        var result = new List<ScheduleWorkingPeriodDto>();
+        if (string.IsNullOrWhiteSpace(json)) return result;
+        try
+        {
+            using var doc = JsonDocument.Parse(json);
+            foreach (var item in doc.RootElement.GetProperty("Periods").EnumerateArray())
+                if (TimeOnly.TryParse(item.GetProperty("StartTime").GetString(), out var start) && TimeOnly.TryParse(item.GetProperty("EndTime").GetString(), out var end))
+                    result.Add(new ScheduleWorkingPeriodDto { PeriodNumber = item.GetProperty("PeriodNumber").GetInt32(), StartTime = start, EndTime = end });
+        }
+        catch { }
+        return result;
+    }
     private static ScheduleDayDto ToDto(EmployeeSchedule s, List<WorkCard>? dayCards) => new()
     {
         Id = s.Id,
@@ -313,6 +347,9 @@ public class ScheduleService : IScheduleService
         EndTime = s.WorkingPeriods.Count > 0 ? s.WorkingPeriods.OrderBy(p => p.PeriodNumber).Last().EndTime : s.EndTime,
         WorkingPeriods = s.WorkingPeriods.OrderBy(p => p.PeriodNumber).Select(p => new ScheduleWorkingPeriodDto { PeriodNumber = p.PeriodNumber, StartTime = p.StartTime, EndTime = p.EndTime }).ToList(),
         SubmittedToErgani = s.SubmittedToErgani,
+        HasPendingChange = s.HasPendingChange,
+        PreviousWorkType = ParsePreviousWorkType(s.PendingPreviousSnapshotJson),
+        PreviousWorkingPeriods = ParsePreviousPeriods(s.PendingPreviousSnapshotJson),
         Protocol = s.Protocol,
         Comments = s.Comments,
         ActualArrival = dayCards?.FirstOrDefault(w => w.MovementType == MovementType.Arrival)?.MovementDateTime,
