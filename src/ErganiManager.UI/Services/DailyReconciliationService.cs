@@ -60,7 +60,7 @@ public sealed class DailyReconciliationService
 
     private async Task ReconcileYesterdayIfDueAsync(CancellationToken token)
     {
-        if (DateTime.Now.Hour != 2 || DateTime.Now.Minute >= 10 || !_connection.ConfigExists()) return;
+        if (!_connection.ConfigExists()) return;
         var date = DateOnly.FromDateTime(DateTime.Now).AddDays(-1);
         if (!await _gate.WaitAsync(0, token).ConfigureAwait(false)) return;
         try
@@ -115,17 +115,22 @@ public sealed class DailyReconciliationService
         foreach (var group in cards.GroupBy(c => c.EmployeeId))
         {
             WorkCard? arrival = null;
-            foreach (var card in group.OrderBy(c => c.MovementDateTime).Where(c => c.MovementDateTime >= start && c.MovementDateTime < end))
+            foreach (var card in group.OrderBy(c => c.MovementDateTime)
+                         .Where(c => c.MovementDateTime >= start && c.MovementDateTime < end.AddHours(12)))
             {
                 if (card.MovementType == MovementType.Arrival)
                 {
+                    if (card.MovementDateTime >= end) break;
                     if (arrival != null) Add("Missing clock-out", "Warning", group.Key,
                         $"Arrival at {arrival.MovementDateTime:HH:mm} has no departure before the next arrival.", $"WorkCard #{arrival.Id}");
                     arrival = card;
                 }
                 else if (arrival == null)
-                    Add("Unmatched departure", "Review", group.Key,
-                        $"Departure at {card.MovementDateTime:HH:mm} has no matching arrival.", $"WorkCard #{card.Id}");
+                {
+                    if (card.MovementDateTime < end)
+                        Add("Unmatched departure", "Review", group.Key,
+                            $"Departure at {card.MovementDateTime:HH:mm} has no matching arrival.", $"WorkCard #{card.Id}");
+                }
                 else arrival = null;
             }
             if (arrival != null) Add("Missing clock-out", "Warning", group.Key,
