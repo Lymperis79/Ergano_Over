@@ -828,22 +828,25 @@
                                 ToolTip.Tip="Close" />
                     </Grid>
                     <Grid Grid.Row="1" RowDefinitions="Auto,*" RowSpacing="6">
-                        <Grid ColumnDefinitions="2*,110,2*" Margin="6,0">
+                        <Grid ColumnDefinitions="2*,110,1.5*,1.5*" Margin="6,0" ColumnSpacing="8">
                             <TextBlock Text="{Binding Loc[Employees]}" FontWeight="Bold" />
                             <TextBlock Grid.Column="1" Text="{Binding Loc[Date]}" FontWeight="Bold" />
-                            <TextBlock Grid.Column="2" Text="{Binding Loc[Details]}" FontWeight="Bold" />
+                            <TextBlock Grid.Column="2" Text="From" FontWeight="Bold" />
+                            <TextBlock Grid.Column="3" Text="To" FontWeight="Bold" />
                         </Grid>
-                        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto"
+                        <ScrollViewer Grid.Row="1" MaxHeight="470"
+                                      VerticalScrollBarVisibility="Auto"
                                       HorizontalScrollBarVisibility="Auto">
                             <ItemsControl ItemsSource="{Binding BulkSubmitDetails}">
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate x:CompileBindings="False">
                                         <Border Background="{DynamicResource CardBrush}" CornerRadius="5"
                                                 Padding="8,6" Margin="0,0,0,4">
-                                            <Grid ColumnDefinitions="2*,110,2*" ColumnSpacing="8">
+                                            <Grid ColumnDefinitions="2*,110,1.5*,1.5*" ColumnSpacing="8">
                                                 <TextBlock Text="{Binding EmployeeName}" TextWrapping="Wrap" />
                                                 <TextBlock Grid.Column="1" Text="{Binding DateText}" />
-                                                <TextBlock Grid.Column="2" Text="{Binding Details}" TextWrapping="Wrap" />
+                                                <TextBlock Grid.Column="2" Text="{Binding FromDetails}" TextWrapping="Wrap" />
+                                                <TextBlock Grid.Column="3" Text="{Binding ToDetails}" TextWrapping="Wrap" />
                                             </Grid>
                                         </Border>
                                     </DataTemplate>
