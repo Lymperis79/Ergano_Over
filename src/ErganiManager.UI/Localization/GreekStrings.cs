@@ -1758,5 +1758,13 @@ public static class GreekStrings
         ["Vm.{0} day(s) blocked: less than 11 hours rest"] = "Αποκλείστηκαν {0} ημέρες επειδή παραβιάζεται η ελάχιστη ανάπαυση των 11 ωρών.",
         ["Vm.This employee was scanned recently."] = "Ο εργαζόμενος σαρώθηκε πρόσφατα.",
         ["Vm.Please wait before scanning again."] = "Περιμένετε πριν σαρώσετε ξανά.",
+        ["Dashboard.SystemHealth"] = "Κατάσταση συστήματος",
+        ["Dashboard.Internet"] = "Σύνδεση Internet",
+        ["Dashboard.Database"] = "Βάση δεδομένων",
+        ["Dashboard.ErganiApi"] = "API ΕΡΓΑΝΗ",
+        ["Dashboard.EmailQueue"] = "Αποστολή email",
+        ["Dashboard.NotConfigured"] = "Δεν έχει ρυθμιστεί",
+        ["Dashboard.HealthLastChecked"] = "Έλεγχος: {0}",
+        ["Dashboard.EmailQueueSummary"] = "Σε αναμονή: {0} · Αποτυχίες: {1}",
     };
 }
