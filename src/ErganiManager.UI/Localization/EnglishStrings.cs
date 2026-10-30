@@ -1759,5 +1759,13 @@ public static class EnglishStrings
         ["Vm.{0} day(s) blocked: less than 11 hours rest"] = "{0} day(s) blocked because the 11-hour minimum rest would be violated.",
         ["Vm.This employee was scanned recently."] = "This employee was scanned recently.",
         ["Vm.Please wait before scanning again."] = "Please wait before scanning again.",
+        ["Dashboard.SystemHealth"] = "System health",
+        ["Dashboard.Internet"] = "Internet connection",
+        ["Dashboard.Database"] = "Database",
+        ["Dashboard.ErganiApi"] = "Ergani API",
+        ["Dashboard.EmailQueue"] = "Email delivery",
+        ["Dashboard.NotConfigured"] = "Not configured",
+        ["Dashboard.HealthLastChecked"] = "Checked: {0}",
+        ["Dashboard.EmailQueueSummary"] = "Queued: {0} · Failed: {1}",
     };
 }
