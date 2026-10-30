@@ -12,6 +12,11 @@ public static class L
     public const string NavOvertime     = nameof(NavOvertime);
     public const string NavApiLog       = nameof(NavApiLog);
 
+    // Schedule toolbar groups
+    public const string ScheduleActionsMenu = nameof(ScheduleActionsMenu);
+    public const string SubmissionActionsMenu = nameof(SubmissionActionsMenu);
+    public const string LogsMenu = nameof(LogsMenu);
+
     // Common actions
     public const string Save            = nameof(Save);
     public const string Cancel          = nameof(Cancel);
