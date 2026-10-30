@@ -800,7 +800,7 @@
                             Padding="8,4" />
                     <TextBlock Text="{Binding Loc[ConfirmBulkScheduleSubmission]}" FontSize="16" FontWeight="Bold" />
                     <TextBlock Text="{Binding BulkSubmitSummary}" TextWrapping="Wrap" />
-                    <Button Content="{Binding Loc[Vm.View employee details]}"
+                    <Button Content="{Binding Loc['Vm.View employee details']}"
                             Command="{Binding ShowBulkSubmitDetailsCommand}"
                             HorizontalAlignment="Left" />
                     <TextBlock Text="{Binding Loc[BulkSubmissionSafetyNote]}" TextWrapping="Wrap" Foreground="Gray" FontSize="12" />
