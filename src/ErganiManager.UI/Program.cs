@@ -111,6 +111,8 @@ internal static class Program
             autoClockOutMonitor.Start();
             var automaticDatabaseBackup = Services.GetRequiredService<ErganiManager.UI.Services.AutomaticDatabaseBackupService>();
             automaticDatabaseBackup.Start();
+            var dailyReconciliation = Services.GetRequiredService<ErganiManager.UI.Services.DailyReconciliationService>();
+            dailyReconciliation.Start();
 
             // Pre-warm EF Core model compilation on a background thread.
             // First AppDbContext construction compiles the entity model (300-800ms).
@@ -137,6 +139,7 @@ internal static class Program
             retryService.StopAsync().GetAwaiter().GetResult();
             Services.GetRequiredService<ErganiManager.UI.Services.AutoClockOutMonitor>().StopAsync().GetAwaiter().GetResult();
             Services.GetRequiredService<ErganiManager.UI.Services.AutomaticDatabaseBackupService>().Stop();
+            Services.GetRequiredService<ErganiManager.UI.Services.DailyReconciliationService>().StopAsync().GetAwaiter().GetResult();
         }
         catch (Exception ex)
         {
@@ -184,6 +187,7 @@ internal static class Program
         services.AddSingleton<ErganiManager.UI.Services.CompanyLogoService>();
         services.AddSingleton<ErganiManager.UI.Services.AutoClockOutMonitor>();
         services.AddSingleton<ErganiManager.UI.Services.AutomaticDatabaseBackupService>();
+        services.AddSingleton<ErganiManager.UI.Services.DailyReconciliationService>();
         services.AddErganiApiClient();
 
         // ViewModels are transient — a fresh instance each time a view is requested.
