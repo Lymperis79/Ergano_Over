@@ -1774,6 +1774,7 @@ public static class EnglishStrings
         ["Dashboard.ReconciliationLastRun"] = "Work date: {0} · Generated: {1}",
 
         ["Vm.View employee details"] = "View employee details",
+        ["ViewEmployeeDetails"] = "View employee details",
         ["Vm.Schedule submission details"] = "Pending schedule changes",
         ["Vm.Overtime submission details"] = "Pending overtime details",
         ["Vm.Holiday submission details"] = "Pending holiday details",
