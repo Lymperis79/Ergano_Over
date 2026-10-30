@@ -8,72 +8,56 @@
 
     <Grid RowDefinitions="Auto,Auto,Auto,*">
 
-        <!-- Row 0: Header — title + two lines of buttons.
-             Each line is a WrapPanel, so on a small window the buttons flow onto
-             the next line instead of being cut off. -->
-        <StackPanel Grid.Row="0" Margin="0,0,0,8" Spacing="6">
+        <!-- Compact command bar: primary submission action plus grouped menus. -->
+        <Grid Grid.Row="0" ColumnDefinitions="Auto,Auto,Auto,Auto,*"
+              Margin="0,0,0,8" ColumnSpacing="8" VerticalAlignment="Top">
+            <Button Grid.Column="0"
+                    Content="{Binding Loc[SubmitAllPendingSchedules]}"
+                    Command="{Binding PrepareSubmitAllPendingSchedulesCommand}"
+                    IsEnabled="{Binding HasActiveCompany}"
+                    Classes.accent="True"
+                    Padding="14,8" />
 
-            <TextBlock Text="{Binding Loc[Schedules]}" FontSize="22" FontWeight="Bold" />
+            <Menu Grid.Column="1" VerticalAlignment="Center">
+                <MenuItem Header="{Binding Loc[ScheduleActionsMenu]}">
+                    <MenuItem Header="{Binding Loc[Import2]}" Command="{Binding RequestImportCommand}" IsEnabled="{Binding HasActiveCompany}" />
+                    <MenuItem Header="{Binding Loc[ImportHistory]}" Command="{Binding OpenImportHistoryCommand}" IsEnabled="{Binding HasActiveCompany}" />
+                    <Separator />
+                    <MenuItem Header="{Binding Loc[BulkApply]}" Command="{Binding OpenBulkDialogCommand}" IsEnabled="{Binding HasActiveCompany}" />
+                    <MenuItem Header="{Binding Loc[CloneTo]}" Command="{Binding OpenCloneDialogCommand}" IsEnabled="{Binding HasActiveCompany}" />
+                    <MenuItem Header="{Binding Loc[UndoLastClone]}" Command="{Binding OpenUndoCloneDialogCommand}" IsEnabled="{Binding CanUndoLastClone}" />
+                    <Separator />
+                    <MenuItem Header="{Binding Loc[ExportMonth]}" Command="{Binding ExportMonthCommand}" IsEnabled="{Binding HasActiveCompany}" />
+                    <MenuItem Header="{Binding Loc[Holidays]}" Command="{Binding OpenHolidaysCommand}" IsEnabled="{Binding HasActiveCompany}" />
+                </MenuItem>
+            </Menu>
 
-            <!-- Line 1: working with the schedule data -->
-            <WrapPanel Orientation="Horizontal">
-                <Button Content="{Binding Loc[Import2]}"
-                        Command="{Binding RequestImportCommand}"
-                        Margin="0,0,6,6" IsEnabled="{Binding HasActiveCompany}" />
-                <Button Content="{Binding Loc[ImportHistory]}"
-                        Command="{Binding OpenImportHistoryCommand}"
-                        Margin="0,0,6,6" IsEnabled="{Binding HasActiveCompany}" />
-                <Button Content="{Binding Loc[BulkApply]}"
-                        Command="{Binding OpenBulkDialogCommand}"
-                        Margin="0,0,6,6" IsEnabled="{Binding HasActiveCompany}" />
-                <Button Content="{Binding Loc[CloneTo]}"
-                        Command="{Binding OpenCloneDialogCommand}"
-                        Margin="0,0,6,6" IsEnabled="{Binding HasActiveCompany}" />
-                <Button Content="{Binding Loc[UndoLastClone]}"
-                        Command="{Binding OpenUndoCloneDialogCommand}"
-                        Margin="0,0,6,6" IsEnabled="{Binding CanUndoLastClone}" />
-                <Button Content="{Binding Loc[ExportMonth]}"
-                        Command="{Binding ExportMonthCommand}"
-                        Margin="0,0,6,6" IsEnabled="{Binding HasActiveCompany}" />
-                <Button Content="{Binding Loc[Holidays]}"
-                        Command="{Binding OpenHolidaysCommand}"
-                        Margin="0,0,6,6" IsEnabled="{Binding HasActiveCompany}" />
-                <Button Content="{Binding Loc[Log]}"
-                        Command="{Binding OpenLogCommand}"
-                        Margin="0,0,6,6" IsEnabled="{Binding HasActiveCompany}" />
-                <Button Content="{Binding Loc[OvertimeLog]}"
-                        Command="{Binding OpenOvertimeLogCommand}"
-                        Margin="0,0,6,6" IsEnabled="{Binding HasActiveCompany}" />
-                <Button Content="{Binding Loc[HolidaysLog]}"
-                        Command="{Binding OpenHolidaysLogCommand}"
-                        Margin="0,0,6,6" IsEnabled="{Binding HasActiveCompany}" />
-            </WrapPanel>
+            <Menu Grid.Column="2" VerticalAlignment="Center">
+                <MenuItem Header="{Binding Loc[SubmissionActionsMenu]}">
+                    <MenuItem Header="{Binding SubmitScheduleButtonText}" Command="{Binding SubmitScheduleToErganiCommand}" IsEnabled="{Binding HasActiveCompany}" />
+                    <Separator />
+                    <MenuItem Header="{Binding SubmitOvertimeButtonText}" Command="{Binding SubmitOvertimesCommand}" IsEnabled="{Binding HasActiveCompany}" />
+                    <MenuItem Header="{Binding Loc[SubmitAllOvertimes]}" Command="{Binding PrepareSubmitAllOvertimesCommand}" IsEnabled="{Binding HasActiveCompany}" />
+                    <Separator />
+                    <MenuItem Header="{Binding SubmitHolidaysButtonText}" Command="{Binding SubmitHolidaysCommand}" IsEnabled="{Binding HasActiveCompany}" />
+                    <MenuItem Header="{Binding Loc[SubmitAllHolidays]}" Command="{Binding PrepareSubmitAllHolidaysCommand}" IsEnabled="{Binding HasActiveCompany}" />
+                </MenuItem>
+            </Menu>
 
-            <!-- Line 2: sending to Ergani -->
-            <WrapPanel Orientation="Horizontal">
-                <Button Content="{Binding SubmitScheduleButtonText}"
-                        Command="{Binding SubmitScheduleToErganiCommand}"
-                        Margin="0,0,6,6" IsEnabled="{Binding HasActiveCompany}" />
-                <Button Content="{Binding Loc[SubmitAllPendingSchedules]}"
-                        Command="{Binding PrepareSubmitAllPendingSchedulesCommand}"
-                        Margin="0,0,6,6" IsEnabled="{Binding HasActiveCompany}" />
-                <Button Content="{Binding SubmitOvertimeButtonText}"
-                        Command="{Binding SubmitOvertimesCommand}"
-                        Margin="0,0,6,6" IsEnabled="{Binding HasActiveCompany}" />
-                <Button Content="{Binding Loc[SubmitAllOvertimes]}"
-                        Command="{Binding PrepareSubmitAllOvertimesCommand}"
-                        Margin="0,0,6,6" IsEnabled="{Binding HasActiveCompany}" />
-                <Button Content="{Binding SubmitHolidaysButtonText}"
-                        Command="{Binding SubmitHolidaysCommand}"
-                        Margin="0,0,6,6" IsEnabled="{Binding HasActiveCompany}" />
-                <Button Content="{Binding Loc[SubmitAllHolidays]}"
-                        Command="{Binding PrepareSubmitAllHolidaysCommand}"
-                        Margin="0,0,6,6" IsEnabled="{Binding HasActiveCompany}" />
-                <Button Content="{Binding Loc[OpenErganiPortal]}"
-                        Command="{Binding OpenErganiPortalCommand}"
-                        Margin="0,0,6,6" IsEnabled="{Binding HasActiveCompany}" />
-            </WrapPanel>
-        </StackPanel>
+            <Menu Grid.Column="3" VerticalAlignment="Center">
+                <MenuItem Header="{Binding Loc[LogsMenu]}">
+                    <MenuItem Header="{Binding Loc[Log]}" Command="{Binding OpenLogCommand}" IsEnabled="{Binding HasActiveCompany}" />
+                    <MenuItem Header="{Binding Loc[OvertimeLog]}" Command="{Binding OpenOvertimeLogCommand}" IsEnabled="{Binding HasActiveCompany}" />
+                    <MenuItem Header="{Binding Loc[HolidaysLog]}" Command="{Binding OpenHolidaysLogCommand}" IsEnabled="{Binding HasActiveCompany}" />
+                </MenuItem>
+            </Menu>
+
+            <Button Grid.Column="4" HorizontalAlignment="Left"
+                    Content="{Binding Loc[OpenErganiPortal]}"
+                    Command="{Binding OpenErganiPortalCommand}"
+                    IsEnabled="{Binding HasActiveCompany}"
+                    Padding="12,8" />
+        </Grid>
 
         <!-- Row 1: Controls bar -->
         <Border Grid.Row="1" Background="{DynamicResource CardBrush}" CornerRadius="8" Padding="12" Margin="0,0,0,8">
