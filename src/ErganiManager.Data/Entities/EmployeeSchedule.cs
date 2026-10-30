@@ -45,6 +45,12 @@ public class EmployeeSchedule
     public List<ScheduleWorkingPeriod> WorkingPeriods { get; set; } = new();
 
     public bool SubmittedToErgani { get; set; } = false;
+
+    /// <summary>True once the baseline for the current unsent change has been captured.</summary>
+    public bool HasPendingChange { get; set; }
+
+    /// <summary>JSON snapshot before the first unsent edit; null means no previous schedule.</summary>
+    public string? PendingPreviousSnapshotJson { get; set; }
     [MaxLength(100)]
     public string? SubmissionId { get; set; }
     [MaxLength(100)]
