@@ -371,6 +371,20 @@ public partial class DashboardViewModel : ViewModelBase, IAdminSectionViewModel
         catch (Exception ex)
         {
             DatabaseHealthText = "✕ " + Loc["Dashboard.Failed"];
+            ErganiHealthText = EmailHealthText = Loc["Dashboard.NotChecked"];
+            try
+            {
+                var internetOnline = await _internetCheck.IsOnlineAsync();
+                InternetHealthText = internetOnline
+                    ? "✓ " + Loc["Dashboard.Success"]
+                    : "✕ " + Loc["Dashboard.Failed"];
+            }
+            catch
+            {
+                InternetHealthText = Loc["Dashboard.NotChecked"];
+            }
+            HealthLastCheckedText = string.Format(
+                Loc["Dashboard.HealthLastChecked"], DateTime.Now.ToString("dd/MM/yyyy HH:mm:ss"));
             StatusMessage = string.Format(Loc["Dashboard.LoadFailed"], ex.Message);
             Serilog.Log.Error(ex, "Failed to load company dashboard for company {CompanyId}", _session?.CompanyId);
         }
