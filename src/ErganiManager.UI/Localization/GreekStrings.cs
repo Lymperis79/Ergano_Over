@@ -1773,6 +1773,7 @@ public static class GreekStrings
         ["Dashboard.ReconciliationLastRun"] = "Ημερομηνία εργασίας: {0} · Δημιουργήθηκε: {1}",
 
         ["Vm.View employee details"] = "Προβολή αναλυτικών στοιχείων εργαζομένων",
+        ["ViewEmployeeDetails"] = "Προβολή αναλυτικών στοιχείων εργαζομένων",
         ["Vm.Schedule submission details"] = "Εκκρεμείς αλλαγές προγράμματος",
         ["Vm.Overtime submission details"] = "Αναλυτικά στοιχεία εκκρεμών υπερωριών",
         ["Vm.Holiday submission details"] = "Αναλυτικά στοιχεία εκκρεμών αδειών",
