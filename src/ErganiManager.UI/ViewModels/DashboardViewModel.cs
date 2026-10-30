@@ -12,6 +12,8 @@ using ErganiManager.Data;
 using ErganiManager.Data.Entities;
 using Microsoft.EntityFrameworkCore;
 using ErganiManager.UI.Services;
+using ErganiManager.ErganiApi.Services;
+using ErganiManager.ErganiApi.Models;
 
 namespace ErganiManager.UI.ViewModels;
 
@@ -19,6 +21,9 @@ public partial class DashboardViewModel : ViewModelBase, IAdminSectionViewModel
 {
     private readonly IConnectionStateService _connectionState;
     private readonly AutomaticDatabaseBackupService _automaticBackup;
+    private readonly IInternetCheckService _internetCheck;
+    private readonly IErganiHealthCheckService _erganiHealth;
+    private readonly ICredentialProtector _credentialProtector;
     private UserSession? _session;
 
     [ObservableProperty] private string _companyName = string.Empty;
@@ -38,6 +43,14 @@ public partial class DashboardViewModel : ViewModelBase, IAdminSectionViewModel
     [ObservableProperty] private string _backupLastSuccess = string.Empty;
     [ObservableProperty] private string _backupNextRun = string.Empty;
 
+    [ObservableProperty] private string _internetHealthText = string.Empty;
+    [ObservableProperty] private string _databaseHealthText = string.Empty;
+    [ObservableProperty] private string _erganiHealthText = string.Empty;
+    [ObservableProperty] private string _emailHealthText = string.Empty;
+    [ObservableProperty] private string _healthLastCheckedText = string.Empty;
+    [ObservableProperty] private int _queuedEmailCount;
+    [ObservableProperty] private int _failedEmailCount;
+
     public bool CanRefresh => !IsLoading;
     public bool HasCategories => Categories.Count > 0;
     public bool NoCategories => Categories.Count == 0;
@@ -51,10 +64,18 @@ public partial class DashboardViewModel : ViewModelBase, IAdminSectionViewModel
     public ObservableCollection<DashboardCategoryRow> Categories { get; } = new();
     public ObservableCollection<DashboardActivityRow> RecentActivity { get; } = new();
 
-    public DashboardViewModel(IConnectionStateService connectionState, AutomaticDatabaseBackupService automaticBackup)
+    public DashboardViewModel(
+        IConnectionStateService connectionState,
+        AutomaticDatabaseBackupService automaticBackup,
+        IInternetCheckService internetCheck,
+        IErganiHealthCheckService erganiHealth,
+        ICredentialProtector credentialProtector)
     {
         _connectionState = connectionState;
         _automaticBackup = automaticBackup;
+        _internetCheck = internetCheck;
+        _erganiHealth = erganiHealth;
+        _credentialProtector = credentialProtector;
         PeriodText = Loc["Dashboard.CurrentMonth"];
         RefreshBackupSummary();
     }
@@ -89,6 +110,7 @@ public partial class DashboardViewModel : ViewModelBase, IAdminSectionViewModel
             if (!companyId.HasValue)
             {
                 CompanyName = Loc["Dashboard.NoCompany"];
+                InternetHealthText = DatabaseHealthText = ErganiHealthText = EmailHealthText = Loc["Dashboard.NotConfigured"];
                 BranchCount = EmployeeCount = SubmissionCount = ErrorCount = PendingCount = 0;
                 SuccessfulCount = FailedCount = 0;
                 Categories.Clear();
@@ -107,10 +129,9 @@ public partial class DashboardViewModel : ViewModelBase, IAdminSectionViewModel
             await using var db = new AppDbContext(options);
 
             var company = await db.Companies.AsNoTracking()
-                .Where(c => c.Id == companyId.Value)
-                .Select(c => c.Name)
-                .FirstOrDefaultAsync();
-            CompanyName = company ?? Loc["Dashboard.UnknownCompany"];
+                .FirstOrDefaultAsync(c => c.Id == companyId.Value);
+            CompanyName = company?.Name ?? Loc["Dashboard.UnknownCompany"];
+            DatabaseHealthText = "✓ " + Loc["Dashboard.Success"];
 
             var monthStart = new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, 1, 0, 0, 0, DateTimeKind.Utc);
             var nextMonth = monthStart.AddMonths(1);
@@ -136,6 +157,14 @@ public partial class DashboardViewModel : ViewModelBase, IAdminSectionViewModel
             PendingCount = await pendingSchedules.CountAsync()
                          + await pendingOvertimes.CountAsync()
                          + await pendingLeaves.CountAsync();
+
+            QueuedEmailCount = await db.EmailLogs.CountAsync(e =>
+                e.CompanyId == companyId.Value && e.Status == "Queued");
+            FailedEmailCount = await db.EmailLogs.CountAsync(e =>
+                e.CompanyId == companyId.Value && e.Status == "Failed");
+            EmailHealthText = QueuedEmailCount == 0 && FailedEmailCount == 0
+                ? "✓ " + Loc["Dashboard.Success"]
+                : string.Format(Loc["Dashboard.EmailQueueSummary"], QueuedEmailCount, FailedEmailCount);
 
             Categories.Clear();
             var categoryCounts = await companyLogs
@@ -292,12 +321,56 @@ public partial class DashboardViewModel : ViewModelBase, IAdminSectionViewModel
 
             OnPropertyChanged(nameof(HasRecentActivity));
             OnPropertyChanged(nameof(NoRecentActivity));
+            try
+            {
+                var internetOnline = await _internetCheck.IsOnlineAsync();
+                InternetHealthText = internetOnline
+                    ? "✓ " + Loc["Dashboard.Success"]
+                    : "✕ " + Loc["Dashboard.Failed"];
+            }
+            catch (Exception ex)
+            {
+                InternetHealthText = "✕ " + Loc["Dashboard.Failed"];
+                Serilog.Log.Warning(ex, "Dashboard internet health check failed.");
+            }
+
+            if (company == null || string.IsNullOrWhiteSpace(company.ErganiUsername)
+                || string.IsNullOrWhiteSpace(company.ErganiPasswordEncrypted)
+                || string.IsNullOrWhiteSpace(company.ErganiBaseUrl))
+            {
+                ErganiHealthText = Loc["Dashboard.NotConfigured"];
+            }
+            else
+            {
+                try
+                {
+                    var credentials = new ErganiCredentials
+                    {
+                        Username = company.ErganiUsername,
+                        Password = _credentialProtector.Unprotect(company.ErganiPasswordEncrypted),
+                        BaseUrl = company.ErganiBaseUrl
+                    };
+                    var erganiStatus = await _erganiHealth.CheckAsync(credentials);
+                    ErganiHealthText = erganiStatus == ErganiServiceStatus.Online
+                        ? "✓ " + Loc["Dashboard.Success"]
+                        : "✕ " + Loc["Dashboard.Failed"];
+                }
+                catch (Exception ex)
+                {
+                    ErganiHealthText = "✕ " + Loc["Dashboard.Failed"];
+                    Serilog.Log.Warning(ex, "Dashboard Ergani health check failed.");
+                }
+            }
+
+            HealthLastCheckedText = string.Format(
+                Loc["Dashboard.HealthLastChecked"], DateTime.Now.ToString("dd/MM/yyyy HH:mm:ss"));
             LastUpdatedText = string.Format(Loc["Dashboard.LastUpdated"], DateTime.Now.ToString("dd/MM/yyyy HH:mm:ss"));
             if (Categories.Count == 0)
                 StatusMessage = Loc["Dashboard.NoSubmissionsInPeriod"];
         }
         catch (Exception ex)
         {
+            DatabaseHealthText = "✕ " + Loc["Dashboard.Failed"];
             StatusMessage = string.Format(Loc["Dashboard.LoadFailed"], ex.Message);
             Serilog.Log.Error(ex, "Failed to load company dashboard for company {CompanyId}", _session?.CompanyId);
         }
