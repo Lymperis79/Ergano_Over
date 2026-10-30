@@ -7,6 +7,9 @@ public static class GreekStrings
     public static readonly Dictionary<string, string> Strings = new()
     {
         // ── Navigation ────────────────────────────────────────
+        [L.ScheduleActionsMenu] = "Ενέργειες Προγράμματος",
+        [L.SubmissionActionsMenu] = "Υποβολές",
+        [L.LogsMenu] = "Αρχεία Καταγραφής",
         [L.NavCompanies] = "🏢 Εταιρείες",
         [L.NavBranches] = "🏬 Υποκαταστήματα",
         [L.NavEmployees] = "👥 Εργαζόμενοι",
