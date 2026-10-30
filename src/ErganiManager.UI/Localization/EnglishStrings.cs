@@ -1768,5 +1768,9 @@ public static class EnglishStrings
         ["Dashboard.HealthLastChecked"] = "Checked: {0}",
         ["Dashboard.EmailQueueSummary"] = "Queued: {0} · Failed: {1}",
         ["Dashboard.NotChecked"] = "Not checked",
+        ["Dashboard.Reconciliation"] = "Daily attendance reconciliation",
+        ["Dashboard.ReconciliationNotRun"] = "No reconciliation report has been generated yet. The background job will check the previous day.",
+        ["Dashboard.ReconciliationSummary"] = "Findings: {0} · Unsubmitted scans: {1} · Failed submissions: {2}",
+        ["Dashboard.ReconciliationLastRun"] = "Work date: {0} · Generated: {1}",
     };
 }
