@@ -71,28 +71,28 @@
                                    VerticalAlignment="Center" />
                     </Grid>
                     <Grid ColumnDefinitions="*,*,*,*" ColumnSpacing="10">
-                        <Border Grid.Column="0" Background="{DynamicResource CardBrush}" CornerRadius="8" Padding="12">
+                        <Border Grid.Column="0" Background="{DynamicResource PanelBrush}" CornerRadius="8" Padding="12">
                             <StackPanel Spacing="6">
                                 <TextBlock Text="🌐" FontSize="19" />
                                 <TextBlock Text="{Binding Loc[Dashboard.Internet]}" FontSize="12" Opacity="0.75" />
                                 <TextBlock Text="{Binding InternetHealthText}" FontWeight="SemiBold" TextWrapping="Wrap" />
                             </StackPanel>
                         </Border>
-                        <Border Grid.Column="1" Background="{DynamicResource CardBrush}" CornerRadius="8" Padding="12">
+                        <Border Grid.Column="1" Background="{DynamicResource PanelBrush}" CornerRadius="8" Padding="12">
                             <StackPanel Spacing="6">
                                 <TextBlock Text="🗄" FontSize="19" />
                                 <TextBlock Text="{Binding Loc[Dashboard.Database]}" FontSize="12" Opacity="0.75" />
                                 <TextBlock Text="{Binding DatabaseHealthText}" FontWeight="SemiBold" TextWrapping="Wrap" />
                             </StackPanel>
                         </Border>
-                        <Border Grid.Column="2" Background="{DynamicResource CardBrush}" CornerRadius="8" Padding="12">
+                        <Border Grid.Column="2" Background="{DynamicResource PanelBrush}" CornerRadius="8" Padding="12">
                             <StackPanel Spacing="6">
                                 <TextBlock Text="🏛" FontSize="19" />
                                 <TextBlock Text="{Binding Loc[Dashboard.ErganiApi]}" FontSize="12" Opacity="0.75" />
                                 <TextBlock Text="{Binding ErganiHealthText}" FontWeight="SemiBold" TextWrapping="Wrap" />
                             </StackPanel>
                         </Border>
-                        <Border Grid.Column="3" Background="{DynamicResource CardBrush}" CornerRadius="8" Padding="12">
+                        <Border Grid.Column="3" Background="{DynamicResource PanelBrush}" CornerRadius="8" Padding="12">
                             <StackPanel Spacing="6">
                                 <TextBlock Text="✉" FontSize="19" />
                                 <TextBlock Text="{Binding Loc[Dashboard.EmailQueue]}" FontSize="12" Opacity="0.75" />
