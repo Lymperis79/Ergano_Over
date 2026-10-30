@@ -16,6 +16,13 @@ public static class L
     public const string ScheduleActionsMenu = nameof(ScheduleActionsMenu);
     public const string SubmissionActionsMenu = nameof(SubmissionActionsMenu);
     public const string LogsMenu = nameof(LogsMenu);
+    public const string AddHolidays = nameof(AddHolidays);
+    public const string AllPendingSchedulesAllEmployees = nameof(AllPendingSchedulesAllEmployees);
+    public const string ScheduleSubmission = nameof(ScheduleSubmission);
+    public const string OvertimeSubmission = nameof(OvertimeSubmission);
+    public const string AllOvertimes = nameof(AllOvertimes);
+    public const string HolidaySubmission = nameof(HolidaySubmission);
+    public const string AllHolidays = nameof(AllHolidays);
 
     // Common actions
     public const string Save            = nameof(Save);
