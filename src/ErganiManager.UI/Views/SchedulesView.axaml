@@ -800,6 +800,9 @@
                             Padding="8,4" />
                     <TextBlock Text="{Binding Loc[ConfirmBulkScheduleSubmission]}" FontSize="16" FontWeight="Bold" />
                     <TextBlock Text="{Binding BulkSubmitSummary}" TextWrapping="Wrap" />
+                    <Button Content="{Binding Loc[Vm.View employee details]}"
+                            Command="{Binding ShowBulkSubmitDetailsCommand}"
+                            HorizontalAlignment="Left" />
                     <TextBlock Text="{Binding Loc[BulkSubmissionSafetyNote]}" TextWrapping="Wrap" Foreground="Gray" FontSize="12" />
                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8">
                         <Button Content="{Binding Loc[Cancel]}" Command="{Binding CancelBulkSubmitSchedulesCommand}" />
@@ -807,6 +810,51 @@
                                 Classes="accent" />
                     </StackPanel>
                 </StackPanel>
+            </Border>
+        </Border>
+
+        <!-- Detailed employee list for the pending bulk submission. -->
+        <Border Grid.Row="0" Grid.RowSpan="4"
+                IsVisible="{Binding IsBulkSubmitDetailsOpen}"
+                Background="#CC000000" ZIndex="75">
+            <Border Background="{DynamicResource PanelBrush}" CornerRadius="12" Padding="20"
+                    Width="760" MaxWidth="950" Height="620" MaxHeight="90%"
+                    VerticalAlignment="Center" HorizontalAlignment="Center">
+                <Grid RowDefinitions="Auto,*,Auto" RowSpacing="12">
+                    <Grid Grid.Row="0" ColumnDefinitions="*,Auto">
+                        <TextBlock Text="{Binding BulkSubmitDetailsTitle}" FontSize="17" FontWeight="Bold"
+                                   VerticalAlignment="Center" />
+                        <Button Grid.Column="1" Content="✕" Command="{Binding CloseBulkSubmitDetailsCommand}"
+                                ToolTip.Tip="Close" />
+                    </Grid>
+                    <Grid Grid.Row="1" RowDefinitions="Auto,*" RowSpacing="6">
+                        <Grid ColumnDefinitions="2*,110,2*" Margin="6,0">
+                            <TextBlock Text="{Binding Loc[Employees]}" FontWeight="Bold" />
+                            <TextBlock Grid.Column="1" Text="{Binding Loc[Date]}" FontWeight="Bold" />
+                            <TextBlock Grid.Column="2" Text="{Binding Loc[Details]}" FontWeight="Bold" />
+                        </Grid>
+                        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto"
+                                      HorizontalScrollBarVisibility="Auto">
+                            <ItemsControl ItemsSource="{Binding BulkSubmitDetails}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate x:CompileBindings="False">
+                                        <Border Background="{DynamicResource CardBrush}" CornerRadius="5"
+                                                Padding="8,6" Margin="0,0,0,4">
+                                            <Grid ColumnDefinitions="2*,110,2*" ColumnSpacing="8">
+                                                <TextBlock Text="{Binding EmployeeName}" TextWrapping="Wrap" />
+                                                <TextBlock Grid.Column="1" Text="{Binding DateText}" />
+                                                <TextBlock Grid.Column="2" Text="{Binding Details}" TextWrapping="Wrap" />
+                                            </Grid>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </ScrollViewer>
+                    </Grid>
+                    <Button Grid.Row="2" Content="{Binding Loc[Close]}"
+                            Command="{Binding CloseBulkSubmitDetailsCommand}"
+                            HorizontalAlignment="Right" Width="100" />
+                </Grid>
             </Border>
         </Border>
 
