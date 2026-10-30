@@ -123,6 +123,7 @@
 
                 <!-- Selection actions occupy their own second line, never competing with calendar navigation. -->
                 <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="8"
+                            HorizontalAlignment="Right"
                             IsVisible="{Binding HasSelection}">
                     <Border Background="#2D4A2D" CornerRadius="6" Padding="8,4">
                         <TextBlock Text="{Binding SelectionLabel}" Foreground="#81C784" FontSize="12"
