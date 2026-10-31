@@ -25,27 +25,25 @@
         </Border>
         <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
             <StackPanel Spacing="18" Margin="18">
-<Border HorizontalAlignment="Right" Width="390" MaxWidth="520" Padding="20,16" Margin="0,0,0,2"
-                    Background="#E8202B38" BorderBrush="#668CB6D8" BorderThickness="1"
-                    CornerRadius="18" IsVisible="{Binding HasWeather}">
-                <Grid RowDefinitions="Auto,Auto,Auto,Auto" ColumnDefinitions="64,*" ColumnSpacing="16" RowSpacing="5">
-                    <TextBlock Grid.Row="0" Grid.ColumnSpan="2" Text="{Binding WeatherLocationText}"
-                               Foreground="#C8D9EA" FontSize="16" FontWeight="SemiBold"
+<!-- Compact weather status row, styled like the other dashboard panels. -->
+            <Border Background="{DynamicResource PanelBrush}" CornerRadius="10" Padding="14,12"
+                    IsVisible="{Binding HasWeather}">
+                <StackPanel Orientation="Horizontal" Spacing="18" VerticalAlignment="Center">
+                    <TextBlock Text="{Binding WeatherLocationText}" FontSize="14" FontWeight="SemiBold"
+                               VerticalAlignment="Center"
                                IsVisible="{Binding WeatherLocationText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
-                    <TextBlock Grid.Row="1" Grid.Column="0" Text="{Binding WeatherIconText}"
-                               FontSize="48" VerticalAlignment="Center"
+                    <TextBlock Text="{Binding WeatherIconText}" FontSize="25" VerticalAlignment="Center"
                                IsVisible="{Binding WeatherIconText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
-                    <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding WeatherTemperatureText}"
-                               Foreground="#FFFFFF" FontSize="42" FontWeight="Bold"
+                    <TextBlock Text="{Binding WeatherTemperatureText}" FontSize="24" FontWeight="Bold"
                                VerticalAlignment="Center"
                                IsVisible="{Binding WeatherTemperatureText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
-                    <TextBlock Grid.Row="2" Grid.ColumnSpan="2" Text="{Binding WeatherConditionText}"
-                               Foreground="#F3F8FF" FontSize="18" FontWeight="SemiBold"
+                    <TextBlock Text="{Binding WeatherConditionText}" FontSize="14" FontWeight="SemiBold"
+                               VerticalAlignment="Center"
                                IsVisible="{Binding WeatherConditionText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
-                    <TextBlock Grid.Row="3" Grid.ColumnSpan="2" Text="{Binding WeatherDetailsText}"
-                               Foreground="#C8D9EA" FontSize="14" TextWrapping="Wrap" Margin="0,6,0,0"
+                    <TextBlock Text="{Binding WeatherDetailsText}" FontSize="13" Opacity="0.8"
+                               VerticalAlignment="Center" TextWrapping="NoWrap"
                                IsVisible="{Binding WeatherDetailsText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
-                </Grid>
+                </StackPanel>
             </Border>
             <Grid ColumnDefinitions="*,*,*,*,*" ColumnSpacing="10">
                 <Border Grid.Column="0" Background="{DynamicResource PanelBrush}" CornerRadius="10" Padding="14">
