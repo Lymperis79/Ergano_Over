@@ -156,8 +156,7 @@
 
         <!-- ── Raw Ergani response ── -->
         <Border Background="#AA000000" IsVisible="{Binding IsResponseOpen}">
-            <Border Background="{DynamicResource PanelBrush}" CornerRadius="12" Padding="20"
-                    Width="Auto" Height="520"
+            <Border Background="{DynamicResource PanelBrush}" CornerRadius="12" Padding="20" Height="520"
                     VerticalAlignment="Center" HorizontalAlignment="Center" MaxWidth="800">
                 <Grid RowDefinitions="Auto,*,Auto" RowSpacing="12">
                     <Button Content="✕" Command="{Binding CloseResponseCommand}" ToolTip.Tip="Close"
