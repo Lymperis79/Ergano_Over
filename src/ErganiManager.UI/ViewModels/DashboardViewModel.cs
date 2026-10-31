@@ -55,6 +55,11 @@ public partial class DashboardViewModel : ViewModelBase, IAdminSectionViewModel
     [ObservableProperty] private string _reconciliationSummary = string.Empty;
     [ObservableProperty] private string _reconciliationLastRun = string.Empty;
     [ObservableProperty] private string _weatherText = string.Empty;
+    [ObservableProperty] private string _weatherLocationText = string.Empty;
+    [ObservableProperty] private string _weatherTemperatureText = string.Empty;
+    [ObservableProperty] private string _weatherConditionText = string.Empty;
+    [ObservableProperty] private string _weatherIconText = string.Empty;
+    [ObservableProperty] private string _weatherDetailsText = string.Empty;
 
     private static readonly HttpClient DashboardWeatherHttpClient = new() { Timeout = TimeSpan.FromSeconds(8) };
 
@@ -117,7 +122,7 @@ public partial class DashboardViewModel : ViewModelBase, IAdminSectionViewModel
         {
             var companyId = _session?.CompanyId;
             if (companyId.HasValue)
-                _ = RefreshDashboardWeatherAsync(companyId.Value, _session?.BranchId);
+                await RefreshDashboardWeatherAsync(companyId.Value, _session?.BranchId);
             if (!companyId.HasValue)
             {
                 CompanyName = Loc["Dashboard.NoCompany"];
@@ -514,14 +519,24 @@ public partial class DashboardViewModel : ViewModelBase, IAdminSectionViewModel
                 71 or 73 or 75 or 77 or 85 or 86 => "❄", _ => "⛈"
             };
             var parts = new List<string>();
-            if (branch.WeatherShowLocation && !string.IsNullOrWhiteSpace(placeName ?? branch.Name))
-                parts.Add($"📍 {placeName ?? branch.Name}");
+            var displayLocation = placeName ?? branch.Name;
+            if (branch.WeatherShowLocation && !string.IsNullOrWhiteSpace(displayLocation))
+                parts.Add($"📍 {displayLocation}");
             if (branch.WeatherShowTemperature) parts.Add($"🌡️ {temp:0}°C");
             if (branch.WeatherShowCondition) parts.Add($"{icon} {condition}");
             if (branch.WeatherShowFeelsLike) parts.Add($"🥵 {feels:0}°");
             if (branch.WeatherShowHumidity) parts.Add($"💧 {humidity}%");
             if (branch.WeatherShowWind) parts.Add($"💨 {wind:0} km/h");
             WeatherText = parts.Count == 0 ? string.Empty : string.Join("  ·  ", parts);
+            WeatherLocationText = branch.WeatherShowLocation ? displayLocation : string.Empty;
+            WeatherTemperatureText = branch.WeatherShowTemperature ? $"{temp:0}°" : string.Empty;
+            WeatherConditionText = branch.WeatherShowCondition ? condition : string.Empty;
+            WeatherIconText = branch.WeatherShowCondition ? icon : string.Empty;
+            var detailParts = new List<string>();
+            if (branch.WeatherShowFeelsLike) detailParts.Add($"Feels like {feels:0}°");
+            if (branch.WeatherShowHumidity) detailParts.Add($"💧 {humidity}%");
+            if (branch.WeatherShowWind) detailParts.Add($"💨 {wind:0} km/h");
+            WeatherDetailsText = string.Join("   ·   ", detailParts);
         }
         catch (Exception ex)
         {
