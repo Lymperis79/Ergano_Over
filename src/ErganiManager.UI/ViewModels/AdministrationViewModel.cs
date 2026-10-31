@@ -81,14 +81,14 @@ public partial class AdministrationViewModel : ViewModelBase, IAdminSectionViewM
     {
         if (_activeCompanyId is not int companyId)
         {
-            TerminalAnnouncementsStatus = Loc["Select a company in the main window first."];
+            TerminalAnnouncementsStatus = Loc[L.SelectCompanyForAnnouncement];
             return;
         }
 
         var message = NewTerminalAnnouncement.Trim();
         if (message.Length == 0)
         {
-            TerminalAnnouncementsStatus = Loc["Enter an announcement before saving."];
+            TerminalAnnouncementsStatus = Loc[L.EnterAnnouncement];
             return;
         }
 
@@ -105,7 +105,7 @@ public partial class AdministrationViewModel : ViewModelBase, IAdminSectionViewM
             await db.SaveChangesAsync();
             NewTerminalAnnouncement = string.Empty;
             await LoadTerminalAnnouncementsAsync();
-            TerminalAnnouncementsStatus = Loc["Announcement saved. It will appear on the company terminals shortly."];
+            TerminalAnnouncementsStatus = Loc[L.AnnouncementSaved];
         }
         catch (Exception ex)
         {
@@ -125,7 +125,7 @@ public partial class AdministrationViewModel : ViewModelBase, IAdminSectionViewM
             row.IsActive = !row.IsActive;
             await db.SaveChangesAsync();
             item.IsActive = row.IsActive;
-            TerminalAnnouncementsStatus = Loc["Announcement status updated."];
+            TerminalAnnouncementsStatus = Loc[L.AnnouncementStatusUpdated];
         }
         catch (Exception ex) { TerminalAnnouncementsStatus = "❌ " + ex.Message; }
     }
@@ -142,7 +142,7 @@ public partial class AdministrationViewModel : ViewModelBase, IAdminSectionViewM
             db.TerminalAnnouncements.Remove(row);
             await db.SaveChangesAsync();
             TerminalAnnouncements.Remove(item);
-            TerminalAnnouncementsStatus = Loc["Announcement deleted."];
+            TerminalAnnouncementsStatus = Loc[L.AnnouncementDeleted];
         }
         catch (Exception ex) { TerminalAnnouncementsStatus = "❌ " + ex.Message; }
     }
