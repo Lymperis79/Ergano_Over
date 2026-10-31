@@ -183,19 +183,72 @@ public partial class AdministrationViewModel : ViewModelBase, IAdminSectionViewM
     }
 
     [RelayCommand]
-    private void TestWeatherLocation()
+    private async Task TestWeatherLocationAsync()
     {
         if (double.TryParse(WeatherLatitude, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var lat) &&
-            double.TryParse(WeatherLongitude, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var lon) &&
-            lat is >= -90 and <= 90 && lon is >= -180 and <= 180)
+            double.TryParse(WeatherLongitude, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var lon))
         {
-            WeatherSettingsStatus = Loc["Vm.Coordinates look valid; save settings to use this location"];
+            if (lat is >= -90 and <= 90 && lon is >= -180 and <= 180)
+            {
+                WeatherSettingsStatus = Loc["Vm.Coordinates look valid; save settings to use this location"];
+                return;
+            }
+            WeatherSettingsStatus = Loc["Vm.Enter valid coordinates"];
             return;
         }
-        if (!string.IsNullOrWhiteSpace(WeatherManualAddress))
-            WeatherSettingsStatus = Loc["Vm.Manual address entered; save settings and the terminal will resolve it online"];
-        else
+
+        var address = WeatherManualAddress.Trim();
+        if (address.Length == 0)
+        {
+            var branch = WeatherBranches.FirstOrDefault(x => x.Id == SelectedWeatherBranchId);
+            address = branch?.Address ?? string.Empty;
+        }
+        if (string.IsNullOrWhiteSpace(address))
+        {
             WeatherSettingsStatus = Loc["Vm.Enter a manual address or both coordinates"];
+            return;
+        }
+
+        try
+        {
+            WeatherSettingsStatus = Loc["Vm.Checking weather location"];
+            var client = _httpClientFactory.CreateClient();
+            client.Timeout = TimeSpan.FromSeconds(10);
+            var url = "https://geocoding-api.open-meteo.com/v1/search?name=" +
+                Uri.EscapeDataString(address) + "&count=3&language=en&format=json&countryCode=GR";
+            using var response = await client.GetAsync(url);
+            response.EnsureSuccessStatusCode();
+            using var json = System.Text.Json.JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+            if (json.RootElement.TryGetProperty("results", out var results) && results.GetArrayLength() > 0)
+            {
+                var found = results[0];
+                var name = found.TryGetProperty("name", out var n) ? n.GetString() : address;
+                WeatherSettingsStatus = string.Format(Loc["Vm.Location found: {0}"], name);
+                return;
+            }
+
+            // Open-Meteo may not recognize street addresses. Nominatim is the fallback.
+            using var request = new HttpRequestMessage(HttpMethod.Get,
+                "https://nominatim.openstreetmap.org/search?q=" +
+                Uri.EscapeDataString(address + ", Greece") + "&format=jsonv2&limit=1&countrycodes=gr");
+            request.Headers.UserAgent.ParseAdd("ErganiManager/1.0 (weather location test)");
+            using var fallback = await client.SendAsync(request);
+            fallback.EnsureSuccessStatusCode();
+            using var fallbackJson = System.Text.Json.JsonDocument.Parse(await fallback.Content.ReadAsStringAsync());
+            if (fallbackJson.RootElement.GetArrayLength() > 0)
+            {
+                var display = fallbackJson.RootElement[0].GetProperty("display_name").GetString();
+                WeatherSettingsStatus = string.Format(Loc["Vm.Location found: {0}"], display);
+            }
+            else
+            {
+                WeatherSettingsStatus = Loc["Vm.Location could not be found. Enter a nearby town or coordinates."];
+            }
+        }
+        catch (Exception ex)
+        {
+            WeatherSettingsStatus = Loc["Vm.Location test failed: "] + ex.Message;
+        }
     }
 
     private async Task LoadWeatherBranchesAsync()
