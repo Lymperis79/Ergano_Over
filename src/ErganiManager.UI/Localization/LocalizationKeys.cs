@@ -177,6 +177,11 @@ public static class L
     public const string SavedAnnouncements = nameof(SavedAnnouncements);
     public const string EnableDisableAnnouncement = nameof(EnableDisableAnnouncement);
     public const string DeleteAnnouncement = nameof(DeleteAnnouncement);
+    public const string ShowTerminalAnnouncements = nameof(ShowTerminalAnnouncements);
+    public const string ShowTerminalWeather = nameof(ShowTerminalWeather);
+    public const string TerminalDisplaySettings = nameof(TerminalDisplaySettings);
+    public const string TerminalDisplaySettingsSaved = nameof(TerminalDisplaySettingsSaved);
+    public const string TerminalDisplaySettingsDescription = nameof(TerminalDisplaySettingsDescription);
     public const string AnnouncementActive = nameof(AnnouncementActive);
     public const string AnnouncementCreated = nameof(AnnouncementCreated);
     public const string AnnouncementSaved = nameof(AnnouncementSaved);
