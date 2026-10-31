@@ -118,12 +118,14 @@
         <Border Grid.Row="2" Background="#171D27" BorderBrush="#303846" BorderThickness="0,1,0,0"
                 Padding="18,9" IsVisible="{Binding HasTerminalInformation}">
             <Grid ColumnDefinitions="*,Auto" ColumnSpacing="24">
-                <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
-                    <TextBlock Text="📢" FontSize="17" VerticalAlignment="Center" />
-                    <TextBlock Text="{Binding AnnouncementTickerText}" Foreground="#F2F2F2"
-                               FontSize="15" FontWeight="SemiBold" VerticalAlignment="Center"
-                               TextTrimming="CharacterEllipsis" />
-                </StackPanel>
+                <Grid Grid.Column="0" ColumnDefinitions="Auto,*" ColumnSpacing="12"
+                      VerticalAlignment="Center" ClipToBounds="True">
+                    <TextBlock Grid.Column="0" Text="📢" FontSize="17" VerticalAlignment="Center" />
+                    <TextBlock Grid.Column="1" Text="{Binding AnnouncementTickerText}"
+                               Foreground="#F2F2F2" FontSize="15" FontWeight="SemiBold"
+                               VerticalAlignment="Center" HorizontalAlignment="Stretch"
+                               TextWrapping="NoWrap" TextTrimming="None" />
+                </Grid>
 
             </Grid>
         </Border>
