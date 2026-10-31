@@ -109,7 +109,7 @@
                     <Panel Grid.Row="4">
                         <TextBlock Text="{Binding Loc[NoHolidaysRecordedForThisEmployee]}"
                                    Foreground="Gray" IsVisible="{Binding !HasRows}" />
-                        <ScrollViewer IsVisible="{Binding HasRows}" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
+                        <ScrollViewer Classes="popup-scroll" IsVisible="{Binding HasRows}" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
                             <ItemsControl ItemsSource="{Binding Rows}">
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate x:DataType="vm:HolidayRow">
