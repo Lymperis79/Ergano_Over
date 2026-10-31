@@ -4,6 +4,7 @@ using System.Collections.ObjectModel;
 using System.Linq;
 using System.Text.Json;
 using System.Threading.Tasks;
+using System.Net.Http;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using ErganiManager.Core.Interfaces;
@@ -53,6 +54,9 @@ public partial class DashboardViewModel : ViewModelBase, IAdminSectionViewModel
     [ObservableProperty] private int _failedEmailCount;
     [ObservableProperty] private string _reconciliationSummary = string.Empty;
     [ObservableProperty] private string _reconciliationLastRun = string.Empty;
+    [ObservableProperty] private string _weatherText = string.Empty;
+
+    private static readonly HttpClient DashboardWeatherHttpClient = new() { Timeout = TimeSpan.FromSeconds(8) };
 
     public bool CanRefresh => !IsLoading;
     public bool HasCategories => Categories.Count > 0;
@@ -98,6 +102,8 @@ public partial class DashboardViewModel : ViewModelBase, IAdminSectionViewModel
     {
         _session = session;
         HasCompany = session.CompanyId.HasValue;
+        if (session.CompanyId.HasValue)
+            _ = RefreshDashboardWeatherAsync(session.CompanyId.Value, session.BranchId);
         _ = RefreshAsync();
     }
 
@@ -125,6 +131,7 @@ public partial class DashboardViewModel : ViewModelBase, IAdminSectionViewModel
                 OnPropertyChanged(nameof(HasRecentActivity));
                 OnPropertyChanged(nameof(NoRecentActivity));
                 HasCompany = false;
+                WeatherText = string.Empty;
                 StatusMessage = Loc["Dashboard.SelectCompany"];
                 return;
             }
@@ -447,4 +454,100 @@ public sealed class DashboardActivityRow
     public string StatusText { get; set; } = string.Empty;
     public string DetailText { get; set; } = string.Empty;
     public bool IsSuccess { get; set; }
+    /// <summary>Loads the same branch-configured Open-Meteo summary used by the terminal.</summary>
+    private async Task RefreshDashboardWeatherAsync(int companyId, int? branchId)
+    {
+        try
+        {
+            await using var db = new AppDbContext(_connectionState.GetDbOptions());
+            var branch = branchId.HasValue
+                ? await db.Branches.AsNoTracking().FirstOrDefaultAsync(b => b.Id == branchId.Value && b.CompanyId == companyId)
+                : null;
+
+            bool HasLocation(BusinessBranch b) =>
+                (b.WeatherLatitude.HasValue && b.WeatherLongitude.HasValue) ||
+                !string.IsNullOrWhiteSpace(b.WeatherManualAddress) ||
+                !string.IsNullOrWhiteSpace(b.Address);
+
+            if (branch == null || !HasLocation(branch))
+            {
+                var branches = await db.Branches.AsNoTracking()
+                    .Where(b => b.CompanyId == companyId && b.IsActive)
+                    .OrderBy(b => b.BranchNumber).ToListAsync();
+                branch = branches.FirstOrDefault(HasLocation);
+            }
+            if (branch == null) { WeatherText = string.Empty; return; }
+
+            double? latitude = branch.WeatherLatitude;
+            double? longitude = branch.WeatherLongitude;
+            string? placeName = branch.WeatherShowLocation ? branch.Name : null;
+            var address = !string.IsNullOrWhiteSpace(branch.WeatherManualAddress)
+                ? branch.WeatherManualAddress!.Trim() : branch.Address?.Trim();
+
+            if ((!latitude.HasValue || !longitude.HasValue) && !string.IsNullOrWhiteSpace(address))
+            {
+                var candidates = new[] { address }.Concat(address!.Split(new[] { ',', ';', '\\n' },
+                    StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries).Reverse());
+                foreach (var candidate in candidates.Distinct(StringComparer.OrdinalIgnoreCase))
+                {
+                    var url = "https://geocoding-api.open-meteo.com/v1/search?name=" +
+                        Uri.EscapeDataString(candidate) + "&count=5&language=en&format=json&countryCode=GR";
+                    using var geoResponse = await DashboardWeatherHttpClient.GetAsync(url);
+                    if (!geoResponse.IsSuccessStatusCode) continue;
+                    using var geoJson = JsonDocument.Parse(await geoResponse.Content.ReadAsStringAsync());
+                    if (!geoJson.RootElement.TryGetProperty("results", out var results) || results.GetArrayLength() == 0) continue;
+                    var selected = results.EnumerateArray().FirstOrDefault(item =>
+                        item.TryGetProperty("country_code", out var country) &&
+                        string.Equals(country.GetString(), "GR", StringComparison.OrdinalIgnoreCase));
+                    if (selected.ValueKind == JsonValueKind.Undefined) selected = results[0];
+                    latitude = selected.GetProperty("latitude").GetDouble();
+                    longitude = selected.GetProperty("longitude").GetDouble();
+                    if (branch.WeatherShowLocation && selected.TryGetProperty("name", out var name))
+                        placeName = name.GetString();
+                    break;
+                }
+            }
+            if (!latitude.HasValue || !longitude.HasValue) { WeatherText = string.Empty; return; }
+
+            var weatherUrl = $"https://api.open-meteo.com/v1/forecast?latitude={latitude.Value.ToString(System.Globalization.CultureInfo.InvariantCulture)}&longitude={longitude.Value.ToString(System.Globalization.CultureInfo.InvariantCulture)}&current=temperature_2m,relative_humidity_2m,apparent_temperature,weather_code,wind_speed_10m&timezone=auto";
+            using var response = await DashboardWeatherHttpClient.GetAsync(weatherUrl);
+            response.EnsureSuccessStatusCode();
+            using var json = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+            var current = json.RootElement.GetProperty("current");
+            var temp = current.GetProperty("temperature_2m").GetDouble();
+            var feels = current.GetProperty("apparent_temperature").GetDouble();
+            var humidity = current.GetProperty("relative_humidity_2m").GetInt32();
+            var wind = current.GetProperty("wind_speed_10m").GetDouble();
+            var code = current.GetProperty("weather_code").GetInt32();
+            var condition = code switch
+            {
+                0 => "Clear", 1 or 2 => "Partly cloudy", 3 => "Overcast",
+                45 or 48 => "Fog", 51 or 53 or 55 or 56 or 57 => "Drizzle",
+                61 or 63 or 65 or 66 or 67 => "Rain", 71 or 73 or 75 or 77 => "Snow",
+                80 or 81 or 82 => "Showers", 85 or 86 => "Snow showers",
+                95 or 96 or 99 => "Thunderstorm", _ => "Weather"
+            };
+            var icon = code switch
+            {
+                0 => "☀", 1 or 2 => "🌤", 3 => "☁", 45 or 48 => "🌫",
+                51 or 53 or 55 or 56 or 57 => "🌦",
+                61 or 63 or 65 or 66 or 67 or 80 or 81 or 82 => "🌧",
+                71 or 73 or 75 or 77 or 85 or 86 => "❄", _ => "⛈"
+            };
+            var parts = new List<string>();
+            if (branch.WeatherShowLocation && !string.IsNullOrWhiteSpace(placeName ?? branch.Name))
+                parts.Add($"📍 {placeName ?? branch.Name}");
+            if (branch.WeatherShowTemperature) parts.Add($"🌡️ {temp:0}°C");
+            if (branch.WeatherShowCondition) parts.Add($"{icon} {condition}");
+            if (branch.WeatherShowFeelsLike) parts.Add($"🥵 {feels:0}°");
+            if (branch.WeatherShowHumidity) parts.Add($"💧 {humidity}%");
+            if (branch.WeatherShowWind) parts.Add($"💨 {wind:0} km/h");
+            WeatherText = parts.Count == 0 ? string.Empty : string.Join("  ·  ", parts);
+        }
+        catch (Exception ex)
+        {
+            Serilog.Log.Warning(ex, "Could not load dashboard weather for company {CompanyId}", companyId);
+        }
+    }
+
 }
