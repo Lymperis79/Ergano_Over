@@ -274,8 +274,7 @@
         <Border Grid.Row="0" Grid.RowSpan="4"
                 IsVisible="{Binding IsImportDialogOpen}"
                 Background="#BB000000" ZIndex="80">
-            <Border Background="{DynamicResource PanelBrush}" CornerRadius="12" Padding="24"
-                    Width="Auto" MaxHeight="620"
+            <Border Background="{DynamicResource PanelBrush}" CornerRadius="12" Padding="24" MaxHeight="620"
                     VerticalAlignment="Center" HorizontalAlignment="Center" MaxWidth="620">
                 <Grid RowDefinitions="Auto,*,Auto" RowSpacing="12">
                     <Button Content="✕" Command="{Binding CancelImportCommand}" ToolTip.Tip="Close"
@@ -320,8 +319,7 @@
         <Border Grid.Row="0" Grid.RowSpan="4"
                 IsVisible="{Binding IsImportHistoryOpen}"
                 Background="#BB000000" ZIndex="85">
-            <Border Background="{DynamicResource PanelBrush}" CornerRadius="12" Padding="24"
-                    Width="Auto" MaxHeight="560"
+            <Border Background="{DynamicResource PanelBrush}" CornerRadius="12" Padding="24" MaxHeight="560"
                     VerticalAlignment="Center" HorizontalAlignment="Center" MaxWidth="680">
                 <Grid RowDefinitions="Auto,*,Auto" RowSpacing="12">
                     <Button Content="✕" Command="{Binding CloseImportHistoryCommand}" ToolTip.Tip="Close"
@@ -358,8 +356,7 @@
         <Border Grid.Row="0" Grid.RowSpan="4"
                 IsVisible="{Binding IsConflictDialogOpen}"
                 Background="#BB000000" ZIndex="95">
-            <Border Background="{DynamicResource PanelBrush}" CornerRadius="12" Padding="24"
-                    Width="Auto" MaxHeight="620"
+            <Border Background="{DynamicResource PanelBrush}" CornerRadius="12" Padding="24" MaxHeight="620"
                     VerticalAlignment="Center" HorizontalAlignment="Center" MaxWidth="620">
                 <Grid RowDefinitions="Auto,*,Auto" RowSpacing="12">
                     <Button Content="✕" Command="{Binding CancelImportCommand}" ToolTip.Tip="Close"
@@ -387,7 +384,6 @@
                 IsVisible="{Binding IsPortalImportPromptOpen}"
                 Background="#BB000000" ZIndex="90">
             <Border Background="{DynamicResource PanelBrush}" CornerRadius="12" Padding="24"
-                    Width="Auto"
                     VerticalAlignment="Center" HorizontalAlignment="Center" MaxWidth="460">
                 <StackPanel Spacing="16">
                     <Button Content="✕" Command="{Binding DismissPortalImportCommand}" ToolTip.Tip="Close"
@@ -413,8 +409,7 @@
         <Border Grid.Row="0" Grid.RowSpan="4"
                 IsVisible="{Binding IsDayDialogOpen}"
                 Background="#BB000000" ZIndex="50">
-            <Border Background="{DynamicResource PanelBrush}" CornerRadius="12" Padding="24"
-                    Width="Auto" MaxHeight="520"
+            <Border Background="{DynamicResource PanelBrush}" CornerRadius="12" Padding="24" MaxHeight="520"
                     VerticalAlignment="Center" HorizontalAlignment="Center" MaxWidth="500">
                 <Grid RowDefinitions="*,Auto">
                     <Button Content="✕" Command="{Binding CloseDayDialogCommand}" ToolTip.Tip="Close"
@@ -511,8 +506,7 @@
         <Border Grid.Row="0" Grid.RowSpan="4"
                 IsVisible="{Binding IsBulkDialogOpen}"
                 Background="#BB000000" ZIndex="50">
-            <Border Background="{DynamicResource PanelBrush}" CornerRadius="12" Padding="24"
-                    Width="Auto" MaxHeight="620"
+            <Border Background="{DynamicResource PanelBrush}" CornerRadius="12" Padding="24" MaxHeight="620"
                     VerticalAlignment="Center" HorizontalAlignment="Center" MaxWidth="420">
                 <Grid RowDefinitions="Auto,*,Auto" RowSpacing="10">
                     <Grid Grid.Row="0" ColumnDefinitions="*,Auto">
@@ -591,8 +585,7 @@
         <Border Grid.Row="0" Grid.RowSpan="4"
                 IsVisible="{Binding IsCloneDialogOpen}"
                 Background="#BB000000" ZIndex="50">
-            <Border Background="{DynamicResource PanelBrush}" CornerRadius="12" Padding="24"
-                    Width="Auto" Height="620"
+            <Border Background="{DynamicResource PanelBrush}" CornerRadius="12" Padding="24" Height="620"
                     VerticalAlignment="Center" HorizontalAlignment="Center" MaxWidth="460">
                 <Grid RowDefinitions="Auto,Auto,Auto,*,Auto">
                     <Button Content="✕" Command="{Binding CloseCloneDialogCommand}" ToolTip.Tip="Close"
@@ -656,8 +649,7 @@
         <Border Grid.Row="0" Grid.RowSpan="4"
                 IsVisible="{Binding IsUndoCloneDialogOpen}"
                 Background="#BB000000" ZIndex="50">
-            <Border Background="{DynamicResource PanelBrush}" CornerRadius="12" Padding="24"
-                    Width="Auto" MaxHeight="620"
+            <Border Background="{DynamicResource PanelBrush}" CornerRadius="12" Padding="24" MaxHeight="620"
                     VerticalAlignment="Center" HorizontalAlignment="Center" MaxWidth="500">
                 <Grid RowDefinitions="Auto,Auto,*,Auto,Auto" RowSpacing="10">
                     <Button Content="✕" Command="{Binding CloseUndoCloneDialogCommand}" ToolTip.Tip="Close"
@@ -736,8 +728,7 @@
         <Border Grid.Row="0" Grid.RowSpan="4"
                 IsVisible="{Binding IsLogOpen}"
                 Background="#BB000000" ZIndex="50">
-            <Border Background="{DynamicResource PanelBrush}" CornerRadius="12" Padding="20"
-                    Width="Auto" Height="560"
+            <Border Background="{DynamicResource PanelBrush}" CornerRadius="12" Padding="20" Height="560"
                     VerticalAlignment="Center" HorizontalAlignment="Center" MaxWidth="900">
                 <Grid RowDefinitions="Auto,*,Auto,Auto" RowSpacing="10">
                     <Button Content="✕" Command="{Binding CloseLogCommand}" ToolTip.Tip="Close"
@@ -789,8 +780,7 @@
         <Border Grid.Row="0" Grid.RowSpan="4"
                 IsVisible="{Binding IsResponseOpen}"
                 Background="#AA000000" ZIndex="60">
-            <Border Background="{DynamicResource PanelBrush}" CornerRadius="12" Padding="20"
-                    Width="Auto" Height="560"
+            <Border Background="{DynamicResource PanelBrush}" CornerRadius="12" Padding="20" Height="560"
                     VerticalAlignment="Center" HorizontalAlignment="Center" MaxWidth="800">
                 <Grid RowDefinitions="Auto,*,Auto" RowSpacing="12">
                     <Button Content="✕" Command="{Binding CloseResponseCommand}" ToolTip.Tip="Close"
@@ -811,8 +801,7 @@
         <Border Grid.Row="0" Grid.RowSpan="4"
                 IsVisible="{Binding IsBulkSubmitDialogOpen}"
                 Background="#BB000000" ZIndex="65">
-            <Border Background="{DynamicResource PanelBrush}" CornerRadius="12" Padding="24"
-                    Width="Auto" VerticalAlignment="Center" HorizontalAlignment="Center" MaxWidth="520">
+            <Border Background="{DynamicResource PanelBrush}" CornerRadius="12" Padding="24" VerticalAlignment="Center" HorizontalAlignment="Center" MaxWidth="520">
                 <StackPanel Spacing="16">
                     <Button Content="✕" Command="{Binding CancelBulkSubmitSchedulesCommand}" ToolTip.Tip="Close"
                             HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,-14,-14,0"
@@ -836,8 +825,7 @@
         <Border Grid.Row="0" Grid.RowSpan="4"
                 IsVisible="{Binding IsBulkSubmitDetailsOpen}"
                 Background="#CC000000" ZIndex="75">
-            <Border Background="{DynamicResource PanelBrush}" CornerRadius="12" Padding="20"
-                    Width="Auto" MaxWidth="950" Height="620" MaxHeight="700"
+            <Border Background="{DynamicResource PanelBrush}" CornerRadius="12" Padding="20" MaxWidth="950" Height="620" MaxHeight="700"
                     VerticalAlignment="Center" HorizontalAlignment="Center">
                 <Grid RowDefinitions="Auto,*,Auto" RowSpacing="12">
                     <Grid Grid.Row="0" ColumnDefinitions="*,Auto">
@@ -884,8 +872,7 @@
         <Border Grid.Row="0" Grid.RowSpan="4"
                 IsVisible="{Binding IsConfirmDeleteOpen}"
                 Background="#BB000000" ZIndex="70">
-            <Border Background="{DynamicResource PanelBrush}" CornerRadius="12" Padding="24"
-                    Width="Auto" VerticalAlignment="Center" HorizontalAlignment="Center" MaxWidth="440">
+            <Border Background="{DynamicResource PanelBrush}" CornerRadius="12" Padding="24" VerticalAlignment="Center" HorizontalAlignment="Center" MaxWidth="440">
                 <StackPanel Spacing="16">
                     <Button Content="✕" Command="{Binding CancelDeleteCommand}" ToolTip.Tip="Close"
                             HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,-14,-14,0"
