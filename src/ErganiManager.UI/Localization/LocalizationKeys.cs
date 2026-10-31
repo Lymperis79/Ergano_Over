@@ -170,6 +170,21 @@ public static class L
     public const string CloseAppQuestion    = nameof(CloseAppQuestion);
     public const string ShiftLabel          = nameof(ShiftLabel);
     public const string PleaseReturnIn      = nameof(PleaseReturnIn);
+    public const string TerminalAnnouncements = nameof(TerminalAnnouncements);
+    public const string TerminalAnnouncementsDescription = nameof(TerminalAnnouncementsDescription);
+    public const string NewAnnouncement = nameof(NewAnnouncement);
+    public const string PublishAnnouncement = nameof(PublishAnnouncement);
+    public const string SavedAnnouncements = nameof(SavedAnnouncements);
+    public const string EnableDisableAnnouncement = nameof(EnableDisableAnnouncement);
+    public const string DeleteAnnouncement = nameof(DeleteAnnouncement);
+    public const string AnnouncementActive = nameof(AnnouncementActive);
+    public const string AnnouncementCreated = nameof(AnnouncementCreated);
+    public const string AnnouncementSaved = nameof(AnnouncementSaved);
+    public const string AnnouncementStatusUpdated = nameof(AnnouncementStatusUpdated);
+    public const string AnnouncementDeleted = nameof(AnnouncementDeleted);
+    public const string EnterAnnouncement = nameof(EnterAnnouncement);
+    public const string SelectCompanyForAnnouncement = nameof(SelectCompanyForAnnouncement);
+
 
     // Schedules
     public const string Schedules           = nameof(Schedules);
