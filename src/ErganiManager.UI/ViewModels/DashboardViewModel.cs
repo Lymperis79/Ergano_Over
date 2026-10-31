@@ -432,28 +432,7 @@ public partial class DashboardViewModel : ViewModelBase, IAdminSectionViewModel
             _ => type!
         };
     }
-}
 
-public sealed class DashboardCategoryRow
-{
-    public string Name { get; set; } = string.Empty;
-    public int Total { get; set; }
-    public int Successful { get; set; }
-    public string SuccessfulText => $"✓ {Successful}";
-    public int Failed { get; set; }
-    public bool HasFailures => Failed > 0;
-    public string FailedText => $"✕ {Failed}";
-    public int MaxCount { get; set; }
-}
-
-public sealed class DashboardActivityRow
-{
-    public string DateText { get; set; } = string.Empty;
-    public string TypeText { get; set; } = string.Empty;
-    public string SubjectText { get; set; } = string.Empty;
-    public string StatusText { get; set; } = string.Empty;
-    public string DetailText { get; set; } = string.Empty;
-    public bool IsSuccess { get; set; }
     /// <summary>Loads the same branch-configured Open-Meteo summary used by the terminal.</summary>
     private async Task RefreshDashboardWeatherAsync(int companyId, int? branchId)
     {
@@ -549,5 +528,28 @@ public sealed class DashboardActivityRow
             Serilog.Log.Warning(ex, "Could not load dashboard weather for company {CompanyId}", companyId);
         }
     }
+}
+
+public sealed class DashboardCategoryRow
+{
+    public string Name { get; set; } = string.Empty;
+    public int Total { get; set; }
+    public int Successful { get; set; }
+    public string SuccessfulText => $"✓ {Successful}";
+    public int Failed { get; set; }
+    public bool HasFailures => Failed > 0;
+    public string FailedText => $"✕ {Failed}";
+    public int MaxCount { get; set; }
+}
+
+public sealed class DashboardActivityRow
+{
+    public string DateText { get; set; } = string.Empty;
+    public string TypeText { get; set; } = string.Empty;
+    public string SubjectText { get; set; } = string.Empty;
+    public string StatusText { get; set; } = string.Empty;
+    public string DetailText { get; set; } = string.Empty;
+    public bool IsSuccess { get; set; }
+
 
 }
