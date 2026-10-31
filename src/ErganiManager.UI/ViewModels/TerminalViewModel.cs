@@ -357,7 +357,7 @@ public partial class TerminalViewModel : ViewModelBase
                 .Where(x => !string.IsNullOrWhiteSpace(x) &&
                     !string.Equals(x, "Greece", StringComparison.OrdinalIgnoreCase) &&
                     !string.Equals(x, "Ελλάδα", StringComparison.OrdinalIgnoreCase) &&
-                    !System.Text.RegularExpressions.Regex.IsMatch(x, @"^\\d{4,6}$"))
+                    !System.Text.RegularExpressions.Regex.IsMatch(x, @"^\d{4,6}$"))
                 .Distinct(StringComparer.OrdinalIgnoreCase)
                 .ToList();
 
