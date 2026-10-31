@@ -60,6 +60,7 @@ public partial class DashboardViewModel : ViewModelBase, IAdminSectionViewModel
     [ObservableProperty] private string _weatherConditionText = string.Empty;
     [ObservableProperty] private string _weatherIconText = string.Empty;
     [ObservableProperty] private string _weatherDetailsText = string.Empty;
+    [ObservableProperty] private bool _hasWeather;
 
     private static readonly HttpClient DashboardWeatherHttpClient = new() { Timeout = TimeSpan.FromSeconds(8) };
 
@@ -137,6 +138,7 @@ public partial class DashboardViewModel : ViewModelBase, IAdminSectionViewModel
                 OnPropertyChanged(nameof(NoRecentActivity));
                 HasCompany = false;
                 WeatherText = string.Empty;
+                HasWeather = false;
                 StatusMessage = Loc["Dashboard.SelectCompany"];
                 return;
             }
@@ -460,7 +462,7 @@ public partial class DashboardViewModel : ViewModelBase, IAdminSectionViewModel
                     .OrderBy(b => b.BranchNumber).ToListAsync();
                 branch = branches.FirstOrDefault(HasLocation);
             }
-            if (branch == null) { WeatherText = string.Empty; return; }
+            if (branch == null) { WeatherText = string.Empty; HasWeather = false; return; }
 
             double? latitude = branch.WeatherLatitude;
             double? longitude = branch.WeatherLongitude;
@@ -491,7 +493,7 @@ public partial class DashboardViewModel : ViewModelBase, IAdminSectionViewModel
                     break;
                 }
             }
-            if (!latitude.HasValue || !longitude.HasValue) { WeatherText = string.Empty; return; }
+            if (!latitude.HasValue || !longitude.HasValue) { WeatherText = string.Empty; HasWeather = false; return; }
 
             var weatherUrl = $"https://api.open-meteo.com/v1/forecast?latitude={latitude.Value.ToString(System.Globalization.CultureInfo.InvariantCulture)}&longitude={longitude.Value.ToString(System.Globalization.CultureInfo.InvariantCulture)}&current=temperature_2m,relative_humidity_2m,apparent_temperature,weather_code,wind_speed_10m&timezone=auto";
             using var response = await DashboardWeatherHttpClient.GetAsync(weatherUrl);
@@ -537,9 +539,12 @@ public partial class DashboardViewModel : ViewModelBase, IAdminSectionViewModel
             if (branch.WeatherShowHumidity) detailParts.Add($"💧 {humidity}%");
             if (branch.WeatherShowWind) detailParts.Add($"💨 {wind:0} km/h");
             WeatherDetailsText = string.Join("   ·   ", detailParts);
+            HasWeather = !string.IsNullOrWhiteSpace(WeatherText);
         }
         catch (Exception ex)
         {
+            HasWeather = false;
+            WeatherText = string.Empty;
             Serilog.Log.Warning(ex, "Could not load dashboard weather for company {CompanyId}", companyId);
         }
     }
