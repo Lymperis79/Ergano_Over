@@ -51,6 +51,10 @@ public static class EnglishStrings
         ["Vm.Manual address entered; save settings and the terminal will resolve it online"] = "Manual address entered. Save settings and the terminal will resolve it online.",
         ["Vm.Enter a manual address or both coordinates"] = "Enter a manual address or both coordinates.",
 
+        ["Vm.Checking weather location"] = "Checking weather location…",
+        ["Vm.Location found: {0}"] = "Location found: {0}",
+        ["Vm.Location could not be found. Enter a nearby town or coordinates."] = "Location could not be found. Enter a nearby town or coordinates.",
+        ["Vm.Location test failed: "] = "Location test failed: ",
         // ── Common actions ────────────────────────────────────
         [L.Save] = "Save",
         [L.Cancel] = "Cancel",
