@@ -79,6 +79,8 @@ public partial class TerminalViewModel : ViewModelBase
     [ObservableProperty] private string _announcementTickerText = string.Empty;
     [ObservableProperty] private string _weatherText = string.Empty;
     [ObservableProperty] private bool _hasTerminalInformation;
+    [ObservableProperty] private bool _showAnnouncementTicker = true;
+    [ObservableProperty] private bool _showWeatherInformation = true;
 
     // Popup state
     [ObservableProperty] private bool _isPopupVisible;
@@ -253,37 +255,56 @@ public partial class TerminalViewModel : ViewModelBase
         try
         {
             await using var db = new AppDbContext(_connectionState.GetDbOptions());
-            var now = DateTime.UtcNow;
-            var messages = await db.TerminalAnnouncements.AsNoTracking()
-                .Where(a => a.CompanyId == companyId && a.IsActive &&
-                    (a.ExpiresAtUtc == null || a.ExpiresAtUtc > now))
-                .OrderBy(a => a.CreatedAtUtc)
-                .Select(a => a.Message)
-                .ToListAsync();
+            var company = await db.Companies.AsNoTracking()
+                .FirstOrDefaultAsync(c => c.Id == companyId);
+            if (company == null) return;
 
-            var branch = _session.BranchId is int branchId
+            var showAnnouncements = company.ShowTerminalAnnouncements;
+            var showWeather = company.ShowTerminalWeather;
+            var now = DateTime.UtcNow;
+            var messages = showAnnouncements
+                ? await db.TerminalAnnouncements.AsNoTracking()
+                    .Where(a => a.CompanyId == companyId && a.IsActive &&
+                        (a.ExpiresAtUtc == null || a.ExpiresAtUtc > now))
+                    .OrderBy(a => a.CreatedAtUtc)
+                    .Select(a => a.Message)
+                    .ToListAsync()
+                : new List<string>();
+
+            var branch = showWeather && _session.BranchId is int branchId
                 ? await db.Branches.AsNoTracking().FirstOrDefaultAsync(b => b.Id == branchId)
                 : null;
 
             await Dispatcher.UIThread.InvokeAsync(() =>
             {
+                ShowAnnouncementTicker = showAnnouncements;
+                ShowWeatherInformation = showWeather;
                 _tickerFullText = messages.Count == 0
                     ? string.Empty
                     : string.Join("     ◆     ", messages) + "     ◆     ";
                 _tickerOffset = 0;
                 UpdateAnnouncementTicker();
-                HasTerminalInformation = !string.IsNullOrWhiteSpace(_tickerFullText) ||
-                    !string.IsNullOrWhiteSpace(WeatherText);
+                if (!showWeather) WeatherText = string.Empty;
+                HasTerminalInformation =
+                    (showAnnouncements && !string.IsNullOrWhiteSpace(_tickerFullText)) ||
+                    (showWeather && !string.IsNullOrWhiteSpace(WeatherText));
             });
 
-            if (branch != null && !string.IsNullOrWhiteSpace(branch.Address))
+            if (showWeather && branch != null && !string.IsNullOrWhiteSpace(branch.Address))
             {
                 if (DateTime.UtcNow - _lastWeatherRefreshUtc >= TimeSpan.FromMinutes(20))
                     await RefreshBranchWeatherAsync(branch.Address);
             }
             else
             {
-                await Dispatcher.UIThread.InvokeAsync(() => WeatherText = string.Empty);
+                await Dispatcher.UIThread.InvokeAsync(() =>
+                {
+                    if (!showWeather || branch == null || string.IsNullOrWhiteSpace(branch.Address))
+                        WeatherText = string.Empty;
+                    HasTerminalInformation =
+                        (ShowAnnouncementTicker && !string.IsNullOrWhiteSpace(AnnouncementTickerText)) ||
+                        (ShowWeatherInformation && !string.IsNullOrWhiteSpace(WeatherText));
+                });
             }
         }
         catch
