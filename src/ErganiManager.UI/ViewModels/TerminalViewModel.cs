@@ -78,6 +78,11 @@ public partial class TerminalViewModel : ViewModelBase
     [ObservableProperty] private string _internetStatusText = "Internet: checking";
     [ObservableProperty] private string _announcementTickerText = string.Empty;
     [ObservableProperty] private string _weatherText = string.Empty;
+    [ObservableProperty] private string _weatherLocationText = string.Empty;
+    [ObservableProperty] private string _weatherTemperatureText = string.Empty;
+    [ObservableProperty] private string _weatherConditionText = string.Empty;
+    [ObservableProperty] private string _weatherIconText = string.Empty;
+    [ObservableProperty] private string _weatherDetailsText = string.Empty;
     [ObservableProperty] private bool _hasTerminalInformation;
 
     // Popup state
@@ -470,6 +475,15 @@ public partial class TerminalViewModel : ViewModelBase
             await Dispatcher.UIThread.InvokeAsync(() =>
             {
                 WeatherText = weatherParts.Count == 0 ? string.Empty : string.Join("  ·  ", weatherParts);
+                WeatherLocationText = branch.WeatherShowLocation ? label : string.Empty;
+                WeatherTemperatureText = branch.WeatherShowTemperature ? $"{temp:0}°" : string.Empty;
+                WeatherConditionText = branch.WeatherShowCondition ? condition : string.Empty;
+                WeatherIconText = branch.WeatherShowCondition ? icon : string.Empty;
+                var detailParts = new List<string>();
+                if (branch.WeatherShowFeelsLike) detailParts.Add($"Feels like {feels:0}°");
+                if (branch.WeatherShowHumidity) detailParts.Add($"💧 {humidity}%");
+                if (branch.WeatherShowWind) detailParts.Add($"💨 {wind:0} km/h");
+                WeatherDetailsText = string.Join("   ·   ", detailParts);
                 HasTerminalInformation = !string.IsNullOrWhiteSpace(_tickerFullText) ||
                     !string.IsNullOrWhiteSpace(WeatherText);
             });
