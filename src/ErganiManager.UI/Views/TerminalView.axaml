@@ -125,7 +125,8 @@
                                TextTrimming="CharacterEllipsis" />
                 </StackPanel>
                 <TextBlock Grid.Column="1" Text="{Binding WeatherText}" Foreground="#B8D7F5"
-                           FontSize="13" VerticalAlignment="Center" />
+                           FontSize="14" VerticalAlignment="Center" TextAlignment="Right"
+                           TextWrapping="Wrap" MaxWidth="620" />
             </Grid>
         </Border>
 
