@@ -118,6 +118,8 @@ public partial class DashboardViewModel : ViewModelBase, IAdminSectionViewModel
         try
         {
             var companyId = _session?.CompanyId;
+            if (companyId.HasValue)
+                _ = RefreshDashboardWeatherAsync(companyId.Value, _session?.BranchId);
             if (!companyId.HasValue)
             {
                 CompanyName = Loc["Dashboard.NoCompany"];
