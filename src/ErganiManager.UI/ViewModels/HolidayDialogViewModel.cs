@@ -133,7 +133,10 @@ public partial class HolidayDialogViewModel : ViewModelBase
     private void FilterLeaveTypes()
     {
         var query = LeaveTypeSearchText?.Trim() ?? string.Empty;
-        var matches = string.IsNullOrEmpty(query)
+        // Keep the full list available when the text is simply the currently selected label.
+        // Typing a new query clears the selection and narrows the list immediately.
+        var matches = string.IsNullOrEmpty(query) ||
+            (SelectedType != null && string.Equals(query, SelectedType.Label, StringComparison.CurrentCultureIgnoreCase))
             ? LeaveTypes.All
             : LeaveTypes.All.Where(type =>
                 type.Label.Contains(query, StringComparison.CurrentCultureIgnoreCase) ||
