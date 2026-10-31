@@ -447,10 +447,13 @@
                                         <StackPanel Spacing="9">
                                             <TextBlock Text="{Binding Loc[Vm.Weather display settings]}" FontSize="15" FontWeight="SemiBold"/>
                                             <TextBlock Text="{Binding Loc[Vm.Select branch and choose what the terminal weather bar displays.]}" Foreground="Gray" TextWrapping="Wrap"/>
-                                            <ComboBox ItemsSource="{Binding WeatherBranches}" SelectedValue="{Binding SelectedWeatherBranchId}" SelectedValueBinding="{Binding Id}" PlaceholderText="{Binding Loc[Vm.Select branch]}">
+                                            <ComboBox ItemsSource="{Binding WeatherBranches}" SelectedValue="{Binding SelectedWeatherBranchId}" SelectedValueBinding="{Binding Id}">
                                                 <ComboBox.ItemTemplate>
                                                     <DataTemplate>
-                                                        <TextBlock Text="{Binding Name}" />
+                                                        <StackPanel Orientation="Horizontal" Spacing="6">
+                                                            <TextBlock Text="{Binding BranchNumber, StringFormat='#{0}'}" />
+                                                            <TextBlock Text="{Binding Name}" />
+                                                        </StackPanel>
                                                     </DataTemplate>
                                                 </ComboBox.ItemTemplate>
                                             </ComboBox>
