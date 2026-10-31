@@ -55,6 +55,7 @@ public static class EnglishStrings
         ["Vm.Location found: {0}"] = "Location found: {0}",
         ["Vm.Location could not be found. Enter a nearby town or coordinates."] = "Location could not be found. Enter a nearby town or coordinates.",
         ["Vm.Location test failed: "] = "Location test failed: ",
+        ["Vm.Branch location"] = "Branch location",
         // ── Common actions ────────────────────────────────────
         [L.Save] = "Save",
         [L.Cancel] = "Cancel",
