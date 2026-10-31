@@ -172,7 +172,7 @@ public partial class TerminalViewModel : ViewModelBase
         _internetStatusTimer.Start();
         _erganiStatusTimer = new System.Timers.Timer(60000) { AutoReset = true };
         _terminalInfoTimer = new System.Timers.Timer(60000) { AutoReset = true };
-        _tickerTimer = new System.Timers.Timer(100) { AutoReset = true };
+        _tickerTimer = new System.Timers.Timer(150) { AutoReset = true };
         _tickerTimer.Elapsed += (_, _) => Dispatcher.UIThread.Post(UpdateAnnouncementTicker);
         _tickerTimer.Start();
         _terminalInfoTimer.Elapsed += async (_, _) => await RefreshTerminalInformationAsync();
@@ -294,12 +294,12 @@ public partial class TerminalViewModel : ViewModelBase
                 // kiosk displays. The ticker advances through this gap before the text
                 // enters, then carries the complete announcement across the viewport.
                 const int tickerVisibleLength = 110;
-                const int tickerEntryGap = 400;
+                const int tickerEntryGap = 170;
                 _tickerFullText = messages.Count == 0
                     ? string.Empty
                     : new string('\u00A0', tickerEntryGap) +
                       string.Join("     ◆     ", messages) + "     ◆     ";
-                _tickerOffset = 0;
+                _tickerOffset = 1; // first character starts at the far right edge
                 UpdateAnnouncementTicker();
                 HasTerminalInformation = !string.IsNullOrWhiteSpace(_tickerFullText) ||
                     !string.IsNullOrWhiteSpace(WeatherText);
@@ -335,7 +335,7 @@ public partial class TerminalViewModel : ViewModelBase
             return;
         }
 
-        const int visibleLength = 110;
+        const int visibleLength = 170;
         var text = _tickerFullText + "     ";
         if (text.Length <= visibleLength)
         {
