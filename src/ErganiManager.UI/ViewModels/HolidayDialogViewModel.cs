@@ -67,7 +67,7 @@ public partial class HolidayDialogViewModel : ViewModelBase
         _documentService  = documentService;
     }
 
-    public IReadOnlyList<LeaveTypeInfo> LeaveTypeOptions => LeaveTypes.All;
+    public ObservableCollection<LeaveTypeInfo> FilteredLeaveTypeOptions { get; } = new();
     public ObservableCollection<BranchDto> Branches { get; } = new();
     public ObservableCollection<HolidayRow> Rows { get; } = new();
 
@@ -76,6 +76,7 @@ public partial class HolidayDialogViewModel : ViewModelBase
 
     // ── Form ──
     [ObservableProperty] private LeaveTypeInfo? _selectedType;
+    [ObservableProperty] private string _leaveTypeSearchText = string.Empty;
     [ObservableProperty] private BranchDto? _selectedBranch;
     [ObservableProperty] private DateTimeOffset? _fromDate = DateTimeOffset.Now;
     [ObservableProperty] private DateTimeOffset? _toDate = DateTimeOffset.Now;
@@ -100,7 +101,48 @@ public partial class HolidayDialogViewModel : ViewModelBase
     public int UnsentCount => Rows.Count(r => r.IsUnsent);
     public string SubmitUnsentText => string.Format(Loc["Vm.📤 Submit unsent ({0})"], UnsentCount);
 
-    partial void OnSelectedTypeChanged(LeaveTypeInfo? value) => OnPropertyChanged(nameof(IsHourlyType));
+    private bool _updatingLeaveTypeSearch;
+
+    partial void OnSelectedTypeChanged(LeaveTypeInfo? value)
+    {
+        OnPropertyChanged(nameof(IsHourlyType));
+        if (value == null || _updatingLeaveTypeSearch) return;
+
+        _updatingLeaveTypeSearch = true;
+        LeaveTypeSearchText = value.Label;
+        _updatingLeaveTypeSearch = false;
+        FilterLeaveTypes();
+    }
+
+    partial void OnLeaveTypeSearchTextChanged(string value)
+    {
+        if (!_updatingLeaveTypeSearch && SelectedType != null &&
+            !string.Equals(value, SelectedType.Label, StringComparison.CurrentCultureIgnoreCase))
+            SelectedType = null;
+
+        FilterLeaveTypes();
+    }
+
+    private void RefreshLeaveTypeOptions()
+    {
+        FilteredLeaveTypeOptions.Clear();
+        foreach (var type in LeaveTypes.All)
+            FilteredLeaveTypeOptions.Add(type);
+    }
+
+    private void FilterLeaveTypes()
+    {
+        var query = LeaveTypeSearchText?.Trim() ?? string.Empty;
+        var matches = string.IsNullOrEmpty(query)
+            ? LeaveTypes.All
+            : LeaveTypes.All.Where(type =>
+                type.Label.Contains(query, StringComparison.CurrentCultureIgnoreCase) ||
+                type.Code.Contains(query, StringComparison.CurrentCultureIgnoreCase)).ToList();
+
+        FilteredLeaveTypeOptions.Clear();
+        foreach (var type in matches)
+            FilteredLeaveTypeOptions.Add(type);
+    }
 
     /// <summary>Opens the form for the employee. When days were selected on the calendar and they form
     /// one continuous block, the dates are pre-filled with that block.</summary>
@@ -109,6 +151,7 @@ public partial class HolidayDialogViewModel : ViewModelBase
         DateOnly? prefillFrom, DateOnly? prefillTo)
     {
         LeaveTypes.Refresh(); // Pick up administrator changes made on another PC.
+        RefreshLeaveTypeOptions();
         _companyId = companyId;
         _employee  = employee;
 
@@ -118,6 +161,8 @@ public partial class HolidayDialogViewModel : ViewModelBase
 
         Title          = string.Format(Loc["Vm.🏖 Holidays — {0}"], employee.FullName);
         SelectedType   = null;
+        LeaveTypeSearchText = string.Empty;
+        FilterLeaveTypes();
         _editingLeaveId = null;
         IsEditingExisting = false;
         ReferenceYear  = string.Empty;
