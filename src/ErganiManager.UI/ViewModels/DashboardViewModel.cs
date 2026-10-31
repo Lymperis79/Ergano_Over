@@ -488,7 +488,7 @@ public sealed class DashboardActivityRow
 
             if ((!latitude.HasValue || !longitude.HasValue) && !string.IsNullOrWhiteSpace(address))
             {
-                var candidates = new[] { address }.Concat(address!.Split(new[] { ',', ';', '\\n' },
+                var candidates = new[] { address }.Concat(address!.Split(new[] { ',', ';', '\n' },
                     StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries).Reverse());
                 foreach (var candidate in candidates.Distinct(StringComparer.OrdinalIgnoreCase))
                 {
