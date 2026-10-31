@@ -76,6 +76,143 @@ public partial class AdministrationViewModel : ViewModelBase, IAdminSectionViewM
     [ObservableProperty] private string _newTerminalAnnouncement = string.Empty;
     [ObservableProperty] private string _terminalAnnouncementsStatus = string.Empty;
 
+    // Weather configuration is stored on each branch so each terminal can use its own location.
+    public ObservableCollection<BusinessBranch> WeatherBranches { get; } = new();
+    [ObservableProperty] private int? _selectedWeatherBranchId;
+    [ObservableProperty] private bool _weatherShowTemperature = true;
+    [ObservableProperty] private bool _weatherShowCondition = true;
+    [ObservableProperty] private bool _weatherShowHumidity = true;
+    [ObservableProperty] private bool _weatherShowWind;
+    [ObservableProperty] private bool _weatherShowFeelsLike;
+    [ObservableProperty] private bool _weatherShowLocation = true;
+    [ObservableProperty] private string _weatherManualAddress = string.Empty;
+    [ObservableProperty] private string _weatherLatitude = string.Empty;
+    [ObservableProperty] private string _weatherLongitude = string.Empty;
+    [ObservableProperty] private string _weatherPreviewText = string.Empty;
+    [ObservableProperty] private string _weatherSettingsStatus = string.Empty;
+
+    partial void OnSelectedWeatherBranchIdChanged(int? value)
+    {
+        var branch = WeatherBranches.FirstOrDefault(x => x.Id == value);
+        if (branch == null) return;
+        _loadingWeatherSettings = true;
+        try
+        {
+            WeatherShowTemperature = branch.WeatherShowTemperature;
+            WeatherShowCondition = branch.WeatherShowCondition;
+            WeatherShowHumidity = branch.WeatherShowHumidity;
+            WeatherShowWind = branch.WeatherShowWind;
+            WeatherShowFeelsLike = branch.WeatherShowFeelsLike;
+            WeatherShowLocation = branch.WeatherShowLocation;
+            WeatherManualAddress = branch.WeatherManualAddress ?? string.Empty;
+            WeatherLatitude = branch.WeatherLatitude?.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? string.Empty;
+            WeatherLongitude = branch.WeatherLongitude?.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? string.Empty;
+            UpdateWeatherPreview();
+        }
+        finally { _loadingWeatherSettings = false; }
+    }
+
+    private bool _loadingWeatherSettings;
+    partial void OnWeatherShowTemperatureChanged(bool value) => UpdateWeatherPreview();
+    partial void OnWeatherShowConditionChanged(bool value) => UpdateWeatherPreview();
+    partial void OnWeatherShowHumidityChanged(bool value) => UpdateWeatherPreview();
+    partial void OnWeatherShowWindChanged(bool value) => UpdateWeatherPreview();
+    partial void OnWeatherShowFeelsLikeChanged(bool value) => UpdateWeatherPreview();
+    partial void OnWeatherShowLocationChanged(bool value) => UpdateWeatherPreview();
+
+    private void UpdateWeatherPreview()
+    {
+        var parts = new List<string>();
+        if (WeatherShowLocation) parts.Add("Athens");
+        if (WeatherShowTemperature) parts.Add("22°C");
+        if (WeatherShowCondition) parts.Add("Partly cloudy");
+        if (WeatherShowFeelsLike) parts.Add("Feels 23°");
+        if (WeatherShowHumidity) parts.Add("Humidity 58%");
+        if (WeatherShowWind) parts.Add("Wind 12 km/h");
+        WeatherPreviewText = parts.Count == 0 ? Loc["Vm.No weather details selected"] : string.Join("  ·  ", parts);
+    }
+
+    [RelayCommand]
+    private async Task SaveWeatherSettingsAsync()
+    {
+        if (SelectedWeatherBranchId is not int branchId || _activeCompanyId is not int companyId)
+        {
+            WeatherSettingsStatus = Loc["Vm.Select a branch first"];
+            return;
+        }
+        double? latitude = null, longitude = null;
+        if (!string.IsNullOrWhiteSpace(WeatherLatitude) &&
+            !double.TryParse(WeatherLatitude, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var lat))
+        {
+            WeatherSettingsStatus = Loc["Vm.Enter valid coordinates"];
+            return;
+        }
+        else if (!string.IsNullOrWhiteSpace(WeatherLatitude)) latitude = double.Parse(WeatherLatitude, System.Globalization.CultureInfo.InvariantCulture);
+        if (!string.IsNullOrWhiteSpace(WeatherLongitude) &&
+            !double.TryParse(WeatherLongitude, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var lon))
+        {
+            WeatherSettingsStatus = Loc["Vm.Enter valid coordinates"];
+            return;
+        }
+        else if (!string.IsNullOrWhiteSpace(WeatherLongitude)) longitude = double.Parse(WeatherLongitude, System.Globalization.CultureInfo.InvariantCulture);
+        if (latitude.HasValue != longitude.HasValue || (latitude is < -90 or > 90) || (longitude is < -180 or > 180))
+        {
+            WeatherSettingsStatus = Loc["Vm.Enter valid coordinates"];
+            return;
+        }
+        try
+        {
+            await using var db = new AppDbContext(_connectionState.GetDbOptions());
+            var branch = await db.Branches.FirstOrDefaultAsync(x => x.Id == branchId && x.CompanyId == companyId);
+            if (branch == null) return;
+            branch.WeatherShowTemperature = WeatherShowTemperature;
+            branch.WeatherShowCondition = WeatherShowCondition;
+            branch.WeatherShowHumidity = WeatherShowHumidity;
+            branch.WeatherShowWind = WeatherShowWind;
+            branch.WeatherShowFeelsLike = WeatherShowFeelsLike;
+            branch.WeatherShowLocation = WeatherShowLocation;
+            branch.WeatherManualAddress = string.IsNullOrWhiteSpace(WeatherManualAddress) ? null : WeatherManualAddress.Trim();
+            branch.WeatherLatitude = latitude;
+            branch.WeatherLongitude = longitude;
+            await db.SaveChangesAsync();
+            WeatherSettingsStatus = Loc["Vm.Weather settings saved"];
+            await LoadWeatherBranchesAsync();
+            SelectedWeatherBranchId = branchId;
+        }
+        catch (Exception ex) { WeatherSettingsStatus = "❌ " + ex.Message; }
+    }
+
+    [RelayCommand]
+    private void TestWeatherLocation()
+    {
+        if (double.TryParse(WeatherLatitude, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var lat) &&
+            double.TryParse(WeatherLongitude, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var lon) &&
+            lat is >= -90 and <= 90 && lon is >= -180 and <= 180)
+        {
+            WeatherSettingsStatus = Loc["Vm.Coordinates look valid; save settings to use this location"];
+            return;
+        }
+        if (!string.IsNullOrWhiteSpace(WeatherManualAddress))
+            WeatherSettingsStatus = Loc["Vm.Manual address entered; save settings and the terminal will resolve it online"];
+        else
+            WeatherSettingsStatus = Loc["Vm.Enter a manual address or both coordinates"];
+    }
+
+    private async Task LoadWeatherBranchesAsync()
+    {
+        WeatherBranches.Clear();
+        if (_activeCompanyId is not int companyId) return;
+        try
+        {
+            await using var db = new AppDbContext(_connectionState.GetDbOptions());
+            var rows = await db.Branches.AsNoTracking().Where(x => x.CompanyId == companyId)
+                .OrderBy(x => x.BranchNumber).ToListAsync();
+            foreach (var branch in rows) WeatherBranches.Add(branch);
+            if (SelectedWeatherBranchId == null && rows.Count > 0) SelectedWeatherBranchId = rows[0].Id;
+        }
+        catch (Exception ex) { WeatherSettingsStatus = "❌ " + ex.Message; }
+    }
+
     [RelayCommand]
     private async Task AddTerminalAnnouncementAsync()
     {
@@ -1019,6 +1156,7 @@ public partial class AdministrationViewModel : ViewModelBase, IAdminSectionViewM
             _ = LoadCompanySettingsAsync();
         _ = LoadOfficialHolidaysAsync();
         _ = LoadTerminalAnnouncementsAsync();
+        _ = LoadWeatherBranchesAsync();
     }
 
     private async Task LoadOfficialHolidaysAsync(bool synchronize = true)
