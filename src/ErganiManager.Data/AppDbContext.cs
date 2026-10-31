@@ -38,6 +38,10 @@ public class AppDbContext : DbContext
         modelBuilder.Entity<TerminalAnnouncement>(e =>
         {
             e.Property(a => a.Message).HasMaxLength(200).IsRequired();
+            e.HasOne<Company>()
+                .WithMany(c => c.TerminalAnnouncements)
+                .HasForeignKey(a => a.CompanyId)
+                .OnDelete(DeleteBehavior.Cascade);
             e.HasIndex(a => new { a.CompanyId, a.IsActive, a.ExpiresAtUtc });
         });
 
