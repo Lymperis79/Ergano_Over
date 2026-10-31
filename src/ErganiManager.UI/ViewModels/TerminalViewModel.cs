@@ -290,13 +290,14 @@ public partial class TerminalViewModel : ViewModelBase
 
             await Dispatcher.UIThread.InvokeAsync(() =>
             {
-                // Start each announcement cycle with an empty ticker-width gap.
-                // This makes the first message enter from the right edge instead of
-                // appearing abruptly in the middle/left of the ticker.
+                // Use non-breaking spaces: ordinary leading spaces are collapsed or
+                // trimmed by text layout, making the announcement appear in the middle.
+                // A full ticker-width NBSP gap places the first character just beyond
+                // the right edge; the timer then scrolls it smoothly into view.
                 const int tickerVisibleLength = 110;
                 _tickerFullText = messages.Count == 0
                     ? string.Empty
-                    : new string(' ', tickerVisibleLength) +
+                    : new string('\u00A0', tickerVisibleLength) +
                       string.Join("     ◆     ", messages) + "     ◆     ";
                 _tickerOffset = 0;
                 UpdateAnnouncementTicker();
