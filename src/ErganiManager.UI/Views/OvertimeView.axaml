@@ -91,7 +91,7 @@
 
         <!-- Ergani response viewer -->
         <Border IsVisible="{Binding IsResponseOpen}" Background="#AA000000" ZIndex="100">
-            <Border Background="{DynamicResource PanelBrush}" CornerRadius="12" Padding="20" Width="800" Height="600" VerticalAlignment="Center" HorizontalAlignment="Center">
+            <Border Background="{DynamicResource PanelBrush}" CornerRadius="12" Padding="20" Width="Auto" Height="600" VerticalAlignment="Center" HorizontalAlignment="Center" MaxWidth="800">
                 <Grid RowDefinitions="Auto,*,Auto" RowSpacing="12">
                     <Button Content="✕" Command="{Binding CloseResponseCommand}" ToolTip.Tip="Close"
                             HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,-14,-14,0"
@@ -106,7 +106,7 @@
         <!-- New overtime form overlay -->
         <Border IsVisible="{Binding IsCreating}" Background="#AA000000">
             <Border Background="{DynamicResource PanelBrush}" CornerRadius="12" Padding="24"
-                    Width="760" MaxWidth="900" MaxHeight="900" VerticalAlignment="Center" HorizontalAlignment="Center"
+                    Width="Auto" MaxWidth="900" MaxHeight="900" VerticalAlignment="Center" HorizontalAlignment="Center"
                     BorderBrush="{DynamicResource LineBrush}" BorderThickness="1">
                 <ScrollViewer MaxHeight="850" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
                 <StackPanel Spacing="12">
