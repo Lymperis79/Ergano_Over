@@ -266,10 +266,22 @@ public partial class TerminalViewModel : ViewModelBase
             var branch = _session.BranchId is int branchId
                 ? await db.Branches.AsNoTracking().FirstOrDefaultAsync(b => b.Id == branchId && b.CompanyId == companyId)
                 : null;
-            branch ??= await db.Branches.AsNoTracking()
-                .Where(b => b.CompanyId == companyId && b.IsActive && !string.IsNullOrWhiteSpace(b.Address))
+
+            // An assigned branch may exist without a configured address. Fall back to
+            // another active branch with usable coordinates or an address in that case.
+            bool HasWeatherLocation(BusinessBranch b) =>
+                (b.WeatherLatitude.HasValue && b.WeatherLongitude.HasValue) ||
+                !string.IsNullOrWhiteSpace(b.WeatherManualAddress) ||
+                !string.IsNullOrWhiteSpace(b.Address);
+
+            if (branch == null || !HasWeatherLocation(branch))
+            {
+                var fallbackBranches = await db.Branches.AsNoTracking()
+                    .Where(b => b.CompanyId == companyId && b.IsActive)
                     .OrderBy(b => b.BranchNumber)
-                .FirstOrDefaultAsync();
+                    .ToListAsync();
+                branch = fallbackBranches.FirstOrDefault(HasWeatherLocation) ?? branch;
+            }
 
             await Dispatcher.UIThread.InvokeAsync(() =>
             {
@@ -282,16 +294,19 @@ public partial class TerminalViewModel : ViewModelBase
                     !string.IsNullOrWhiteSpace(WeatherText);
             });
 
-            if (branch != null && (branch.WeatherLatitude.HasValue && branch.WeatherLongitude.HasValue ||
-                !string.IsNullOrWhiteSpace(branch.WeatherManualAddress) || !string.IsNullOrWhiteSpace(branch.Address)))
+            if (branch != null && HasWeatherLocation(branch))
             {
                 if (DateTime.UtcNow - _lastWeatherRefreshUtc >= TimeSpan.FromMinutes(20))
                     await RefreshBranchWeatherAsync(branch);
             }
             else
             {
-                await Dispatcher.UIThread.InvokeAsync(() => WeatherText = string.Empty);
-                Serilog.Log.Warning("Terminal weather skipped: no active branch/address for company {CompanyId}", companyId);
+                await Dispatcher.UIThread.InvokeAsync(() =>
+                {
+                    WeatherText = string.Empty;
+                    HasTerminalInformation = !string.IsNullOrWhiteSpace(_tickerFullText);
+                });
+                Serilog.Log.Warning("Terminal weather skipped: no active branch/address or coordinates for company {CompanyId}", companyId);
             }
         }
         catch (Exception ex)
@@ -438,13 +453,14 @@ public partial class TerminalViewModel : ViewModelBase
                 _ => "⛈"
             };
             var label = string.IsNullOrWhiteSpace(placeName) ? BranchName : placeName;
+            // Distinct symbols make every weather value easy to scan at a glance.
             var weatherParts = new List<string>();
-            if (branch.WeatherShowLocation && !string.IsNullOrWhiteSpace(label)) weatherParts.Add(label);
-            if (branch.WeatherShowTemperature) weatherParts.Add($"{temp:0}°C");
+            if (branch.WeatherShowLocation && !string.IsNullOrWhiteSpace(label)) weatherParts.Add($"📍 {label}");
+            if (branch.WeatherShowTemperature) weatherParts.Add($"🌡️ {temp:0}°C");
             if (branch.WeatherShowCondition) weatherParts.Add($"{icon} {condition}");
-            if (branch.WeatherShowFeelsLike) weatherParts.Add($"Feels {feels:0}°");
-            if (branch.WeatherShowHumidity) weatherParts.Add($"Humidity {humidity}%");
-            if (branch.WeatherShowWind) weatherParts.Add($"Wind {wind:0} km/h");
+            if (branch.WeatherShowFeelsLike) weatherParts.Add($"🥵 {feels:0}°");
+            if (branch.WeatherShowHumidity) weatherParts.Add($"💧 {humidity}%");
+            if (branch.WeatherShowWind) weatherParts.Add($"💨 {wind:0} km/h");
             await Dispatcher.UIThread.InvokeAsync(() =>
             {
                 WeatherText = weatherParts.Count == 0 ? string.Empty : string.Join("  ·  ", weatherParts);
