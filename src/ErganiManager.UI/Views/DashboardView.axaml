@@ -25,10 +25,10 @@
         </Border>
         <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
             <StackPanel Spacing="18" Margin="18">
-<Border HorizontalAlignment="Right" Width="390" MaxWidth="520" Padding="20,16"
-                    Background="#E8202B38" BorderBrush="#557DA6C9" BorderThickness="1"
-                    CornerRadius="18" IsVisible="{Binding WeatherText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
-                <Grid RowDefinitions="Auto,Auto,Auto,Auto" ColumnDefinitions="Auto,*" ColumnSpacing="14" RowSpacing="3">
+<Border HorizontalAlignment="Right" Width="390" MaxWidth="520" Padding="20,16" Margin="0,0,0,2"
+                    Background="#E8202B38" BorderBrush="#668CB6D8" BorderThickness="1"
+                    CornerRadius="18" IsVisible="{Binding HasWeather}">
+                <Grid RowDefinitions="Auto,Auto,Auto,Auto" ColumnDefinitions="64,*" ColumnSpacing="16" RowSpacing="5">
                     <TextBlock Grid.Row="0" Grid.ColumnSpan="2" Text="{Binding WeatherLocationText}"
                                Foreground="#C8D9EA" FontSize="16" FontWeight="SemiBold"
                                IsVisible="{Binding WeatherLocationText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
