@@ -172,7 +172,7 @@ public partial class TerminalViewModel : ViewModelBase
         _internetStatusTimer.Start();
         _erganiStatusTimer = new System.Timers.Timer(60000) { AutoReset = true };
         _terminalInfoTimer = new System.Timers.Timer(60000) { AutoReset = true };
-        _tickerTimer = new System.Timers.Timer(150) { AutoReset = true };
+        _tickerTimer = new System.Timers.Timer(40) { AutoReset = true };
         _tickerTimer.Elapsed += (_, _) => Dispatcher.UIThread.Post(UpdateAnnouncementTicker);
         _tickerTimer.Start();
         _terminalInfoTimer.Elapsed += async (_, _) => await RefreshTerminalInformationAsync();
@@ -290,16 +290,14 @@ public partial class TerminalViewModel : ViewModelBase
 
             await Dispatcher.UIThread.InvokeAsync(() =>
             {
-                // Keep the first announcement well beyond the right edge on wide
-                // kiosk displays. The ticker advances through this gap before the text
-                // enters, then carries the complete announcement across the viewport.
-                const int tickerVisibleLength = 110;
-                const int tickerEntryGap = 170;
+                // Keep the repeating ticker content free of a large blank prefix.
+                // A one-time entry gap is handled by the offset below; after the first
+                // pass, announcements repeat with only a short separator between them.
+                const int tickerEntryGap = 110;
                 _tickerFullText = messages.Count == 0
                     ? string.Empty
-                    : new string('\u00A0', tickerEntryGap) +
-                      string.Join("     ◆     ", messages) + "     ◆     ";
-                _tickerOffset = 1; // first character starts at the far right edge
+                    : string.Join("     ◆     ", messages) + "     ◆     ";
+                _tickerOffset = -tickerEntryGap;
                 UpdateAnnouncementTicker();
                 HasTerminalInformation = !string.IsNullOrWhiteSpace(_tickerFullText) ||
                     !string.IsNullOrWhiteSpace(WeatherText);
@@ -336,17 +334,32 @@ public partial class TerminalViewModel : ViewModelBase
         }
 
         const int visibleLength = 170;
-        var text = _tickerFullText + "     ";
-        if (text.Length <= visibleLength)
+        const int entryGapLength = 110;
+        const char entryGapCharacter = '\u3000'; // full-width space: reliably occupies visible width
+
+        // During the first pass, move the message in from beyond the right edge.
+        // The gap is not part of the repeating text, so it cannot cause a long blank
+        // pause after the announcement has crossed the screen.
+        if (_tickerOffset < 0)
         {
-            AnnouncementTickerText = text;
+            var gap = Math.Min(entryGapLength, -_tickerOffset);
+            var contentLength = visibleLength - gap;
+            var content = _tickerFullText;
+            if (content.Length < contentLength)
+                content = string.Concat(Enumerable.Repeat(content + "     ", (contentLength / (content.Length + 5)) + 2));
+
+            AnnouncementTickerText = new string(entryGapCharacter, gap) +
+                content.Substring(0, contentLength);
+            _tickerOffset++;
             return;
         }
 
-        var doubled = text + text;
-        var start = _tickerOffset % text.Length;
-        AnnouncementTickerText = doubled.Substring(start, visibleLength);
-        _tickerOffset = (_tickerOffset + 1) % text.Length;
+        // Normal loop: repeat the announcement text with only a short separator.
+        var cycle = _tickerFullText + "     ";
+        var repeated = string.Concat(Enumerable.Repeat(cycle, (visibleLength / cycle.Length) + 2));
+        var position = _tickerOffset % cycle.Length;
+        AnnouncementTickerText = repeated.Substring(position, visibleLength);
+        _tickerOffset = (position + 1) % cycle.Length;
     }
 
     private async Task RefreshBranchWeatherAsync(BusinessBranch branch)
