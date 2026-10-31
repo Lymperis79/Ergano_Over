@@ -445,8 +445,8 @@
                                     <TextBlock Text="{Binding Loc[TerminalAnnouncementsDescription]}" Foreground="Gray" TextWrapping="Wrap" />
                                     <Border Background="{DynamicResource PanelBrush}" BorderBrush="{DynamicResource LineBrush}" BorderThickness="1" CornerRadius="8" Padding="14">
                                         <StackPanel Spacing="9">
-                                            <TextBlock Text="{Binding Loc['Vm.Weather display settings']}" FontSize="15" FontWeight="SemiBold"/>
-                                            <TextBlock Text="{Binding Loc['Vm.Select branch and choose what the terminal weather bar displays.']}" Foreground="Gray" TextWrapping="Wrap"/>
+                                            <TextBlock Text="{Binding Loc[Vm.WeatherDisplaySettings]}" FontSize="15" FontWeight="SemiBold"/>
+                                            <TextBlock Text="{Binding Loc[Vm.SelectBranchWeatherOptions]}" Foreground="Gray" TextWrapping="Wrap"/>
                                             <ComboBox ItemsSource="{Binding WeatherBranches}" SelectedValue="{Binding SelectedWeatherBranchId}" SelectedValueBinding="{Binding Id}">
                                                 <ComboBox.ItemTemplate>
                                                     <DataTemplate>
@@ -458,27 +458,27 @@
                                                 </ComboBox.ItemTemplate>
                                             </ComboBox>
                                             <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto,Auto">
-                                                <CheckBox Grid.Row="0" Grid.Column="0" Content="{Binding Loc['Vm.Show temperature']}" IsChecked="{Binding WeatherShowTemperature}"/>
-                                                <CheckBox Grid.Row="0" Grid.Column="1" Content="{Binding Loc['Vm.Show weather condition']}" IsChecked="{Binding WeatherShowCondition}"/>
-                                                <CheckBox Grid.Row="1" Grid.Column="0" Content="{Binding Loc['Vm.Show humidity']}" IsChecked="{Binding WeatherShowHumidity}"/>
-                                                <CheckBox Grid.Row="1" Grid.Column="1" Content="{Binding Loc['Vm.Show wind speed']}" IsChecked="{Binding WeatherShowWind}"/>
-                                                <CheckBox Grid.Row="2" Grid.Column="0" Content="{Binding Loc['Vm.Show feels-like temperature']}" IsChecked="{Binding WeatherShowFeelsLike}"/>
-                                                <CheckBox Grid.Row="2" Grid.Column="1" Content="{Binding Loc['Vm.Show location name']}" IsChecked="{Binding WeatherShowLocation}"/>
+                                                <CheckBox Grid.Row="0" Grid.Column="0" Content="{Binding Loc[Vm.ShowTemperature]}" IsChecked="{Binding WeatherShowTemperature}"/>
+                                                <CheckBox Grid.Row="0" Grid.Column="1" Content="{Binding Loc[Vm.ShowWeatherCondition]}" IsChecked="{Binding WeatherShowCondition}"/>
+                                                <CheckBox Grid.Row="1" Grid.Column="0" Content="{Binding Loc[Vm.ShowHumidity]}" IsChecked="{Binding WeatherShowHumidity}"/>
+                                                <CheckBox Grid.Row="1" Grid.Column="1" Content="{Binding Loc[Vm.ShowWindSpeed]}" IsChecked="{Binding WeatherShowWind}"/>
+                                                <CheckBox Grid.Row="2" Grid.Column="0" Content="{Binding Loc[Vm.ShowFeelsLikeTemperature]}" IsChecked="{Binding WeatherShowFeelsLike}"/>
+                                                <CheckBox Grid.Row="2" Grid.Column="1" Content="{Binding Loc[Vm.ShowLocationName]}" IsChecked="{Binding WeatherShowLocation}"/>
                                             </Grid>
-                                            <TextBlock Text="{Binding Loc['Vm.Manual location override (optional)']}" FontWeight="SemiBold"/>
-                                            <TextBox Text="{Binding WeatherManualAddress}" PlaceholderText="{Binding Loc['Vm.Manual address, town or city']}"/>
+                                            <TextBlock Text="{Binding Loc[Vm.ManualLocationOverride]}" FontWeight="SemiBold"/>
+                                            <TextBox Text="{Binding WeatherManualAddress}" PlaceholderText="{Binding Loc[Vm.ManualAddressPlaceholder]}"/>
                                             <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
-                                                <TextBox Grid.Column="0" Text="{Binding WeatherLatitude}" PlaceholderText="{Binding Loc['Vm.Latitude (optional)']}"/>
-                                                <TextBox Grid.Column="1" Text="{Binding WeatherLongitude}" PlaceholderText="{Binding Loc['Vm.Longitude (optional)']}"/>
+                                                <TextBox Grid.Column="0" Text="{Binding WeatherLatitude}" PlaceholderText="{Binding Loc[Vm.LatitudeOptional]}"/>
+                                                <TextBox Grid.Column="1" Text="{Binding WeatherLongitude}" PlaceholderText="{Binding Loc[Vm.LongitudeOptional]}"/>
                                             </Grid>
-                                            <TextBlock Text="{Binding Loc['Vm.Coordinates take priority over the manual address. Leave both empty to use the branch address.']}" Foreground="Gray" TextWrapping="Wrap" FontSize="11"/>
-                                            <TextBlock Text="{Binding Loc['Vm.Terminal preview']}" FontWeight="SemiBold"/>
+                                            <TextBlock Text="{Binding Loc[Vm.CoordinatesPriorityHint]}" Foreground="Gray" TextWrapping="Wrap" FontSize="11"/>
+                                            <TextBlock Text="{Binding Loc[Vm.TerminalPreview]}" FontWeight="SemiBold"/>
                                             <Border Background="#171D27" CornerRadius="6" Padding="12">
                                                 <TextBlock Text="{Binding WeatherPreviewText}" Foreground="#B8D7F5" TextWrapping="Wrap"/>
                                             </Border>
                                             <StackPanel Orientation="Horizontal" Spacing="8">
-                                                <Button Content="{Binding Loc['Vm.Test location']}" Command="{Binding TestWeatherLocationCommand}"/>
-                                                <Button Content="{Binding Loc['Vm.Save weather settings']}" Command="{Binding SaveWeatherSettingsCommand}" Classes="accent"/>
+                                                <Button Content="{Binding Loc[Vm.TestLocation]}" Command="{Binding TestWeatherLocationCommand}"/>
+                                                <Button Content="{Binding Loc[Vm.SaveWeatherSettings]}" Command="{Binding SaveWeatherSettingsCommand}" Classes="accent"/>
                                             </StackPanel>
                                             <TextBlock Text="{Binding WeatherSettingsStatus}" TextWrapping="Wrap"/>
                                         </StackPanel>
