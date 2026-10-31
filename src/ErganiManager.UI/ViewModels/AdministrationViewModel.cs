@@ -95,7 +95,6 @@ public partial class AdministrationViewModel : ViewModelBase, IAdminSectionViewM
     {
         var branch = WeatherBranches.FirstOrDefault(x => x.Id == value);
         if (branch == null) return;
-        _loadingWeatherSettings = true;
         try
         {
             WeatherShowTemperature = branch.WeatherShowTemperature;
@@ -109,10 +108,8 @@ public partial class AdministrationViewModel : ViewModelBase, IAdminSectionViewM
             WeatherLongitude = branch.WeatherLongitude?.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? string.Empty;
             UpdateWeatherPreview();
         }
-        finally { _loadingWeatherSettings = false; }
     }
 
-    private bool _loadingWeatherSettings;
     partial void OnWeatherShowTemperatureChanged(bool value) => UpdateWeatherPreview();
     partial void OnWeatherShowConditionChanged(bool value) => UpdateWeatherPreview();
     partial void OnWeatherShowHumidityChanged(bool value) => UpdateWeatherPreview();
@@ -142,19 +139,19 @@ public partial class AdministrationViewModel : ViewModelBase, IAdminSectionViewM
         }
         double? latitude = null, longitude = null;
         if (!string.IsNullOrWhiteSpace(WeatherLatitude) &&
-            !double.TryParse(WeatherLatitude, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var lat))
+            !double.TryParse(WeatherLatitude.Replace(',', '.'), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var lat))
         {
             WeatherSettingsStatus = Loc["Vm.Enter valid coordinates"];
             return;
         }
-        else if (!string.IsNullOrWhiteSpace(WeatherLatitude)) latitude = double.Parse(WeatherLatitude, System.Globalization.CultureInfo.InvariantCulture);
+        else if (!string.IsNullOrWhiteSpace(WeatherLatitude)) latitude = double.Parse(WeatherLatitude.Replace(',', '.'), System.Globalization.CultureInfo.InvariantCulture);
         if (!string.IsNullOrWhiteSpace(WeatherLongitude) &&
-            !double.TryParse(WeatherLongitude, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var lon))
+            !double.TryParse(WeatherLongitude.Replace(',', '.'), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var lon))
         {
             WeatherSettingsStatus = Loc["Vm.Enter valid coordinates"];
             return;
         }
-        else if (!string.IsNullOrWhiteSpace(WeatherLongitude)) longitude = double.Parse(WeatherLongitude, System.Globalization.CultureInfo.InvariantCulture);
+        else if (!string.IsNullOrWhiteSpace(WeatherLongitude)) longitude = double.Parse(WeatherLongitude.Replace(',', '.'), System.Globalization.CultureInfo.InvariantCulture);
         if (latitude.HasValue != longitude.HasValue || (latitude is < -90 or > 90) || (longitude is < -180 or > 180))
         {
             WeatherSettingsStatus = Loc["Vm.Enter valid coordinates"];
