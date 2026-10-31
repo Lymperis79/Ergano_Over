@@ -13,6 +13,7 @@ using ErganiManager.UI.Localization;
 using ErganiManager.ErganiApi;
 using ErganiManager.ErganiApi.Services;
 using ErganiManager.Data;
+using ErganiManager.Data.Entities;
 using Microsoft.EntityFrameworkCore;
 
 namespace ErganiManager.UI.ViewModels;
@@ -107,6 +108,10 @@ public partial class AdministrationViewModel : ViewModelBase, IAdminSectionViewM
             WeatherLatitude = branch.WeatherLatitude?.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? string.Empty;
             WeatherLongitude = branch.WeatherLongitude?.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? string.Empty;
             UpdateWeatherPreview();
+        }
+        catch (Exception ex)
+        {
+            WeatherSettingsStatus = "❌ " + ex.Message;
         }
     }
 
