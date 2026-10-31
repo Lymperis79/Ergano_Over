@@ -269,7 +269,7 @@
                                Text="{Binding Loc[ImportDeclaredScheduleFromErgani]}"
                                FontSize="18" FontWeight="Bold" />
 
-                    <ScrollViewer Grid.Row="1">
+                    <ScrollViewer Classes="popup-scroll" Grid.Row="1">
                         <StackPanel Spacing="10">
                             <TextBlock Text="{Binding ImportSummary}"
                                        TextWrapping="Wrap" />
@@ -312,7 +312,7 @@
                             Padding="8,4" />
                     <TextBlock Grid.Row="0" Text="{Binding Loc[ErganiImportHistory]}"
                                FontSize="18" FontWeight="Bold" />
-                    <ScrollViewer Grid.Row="1">
+                    <ScrollViewer Classes="popup-scroll" Grid.Row="1">
                         <ItemsControl ItemsSource="{Binding ImportHistory}">
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate x:DataType="core:ImportLogDto">
@@ -349,7 +349,7 @@
                             Padding="8,4" />
                     <TextBlock Grid.Row="0" Text="{Binding Loc[ExistingDataFound]}"
                                FontSize="18" FontWeight="Bold" Foreground="#FFB74D" />
-                    <ScrollViewer Grid.Row="1">
+                    <ScrollViewer Classes="popup-scroll" Grid.Row="1">
                         <TextBlock Text="{Binding ConflictText}" TextWrapping="Wrap" />
                     </ScrollViewer>
                     <StackPanel Grid.Row="2" Orientation="Horizontal"
@@ -400,7 +400,7 @@
                     <Button Content="✕" Command="{Binding CloseDayDialogCommand}" ToolTip.Tip="Close"
                             HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,-14,-14,0"
                             Padding="8,4" />
-                    <ScrollViewer Grid.Row="0">
+                    <ScrollViewer Classes="popup-scroll" Grid.Row="0">
                         <StackPanel Spacing="10">
                             <TextBlock Text="{Binding EditingDate, StringFormat='Schedule for {0:dd/MM/yyyy}'}"
                                        FontSize="16" FontWeight="Bold" />
@@ -500,7 +500,7 @@
                         <Button Grid.Column="1" Content="✕" Command="{Binding CloseBulkDialogCommand}"
                                 ToolTip.Tip="Close" Padding="8,4" />
                     </Grid>
-                    <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+                    <ScrollViewer Classes="popup-scroll" Grid.Row="1" VerticalScrollBarVisibility="Auto">
                     <StackPanel Spacing="10">
                         <TextBlock Text="{Binding SelectionLabel}" FontSize="12" Foreground="Gray" />
 
@@ -601,7 +601,7 @@
                         <TextBox Grid.Row="0" Text="{Binding CloneTargetSearch, Mode=TwoWay}"
                                  PlaceholderText="Type an employee name to search"
                                  HorizontalAlignment="Stretch" />
-                        <ScrollViewer Grid.Row="1">
+                        <ScrollViewer Classes="popup-scroll" Grid.Row="1">
                         <ItemsControl ItemsSource="{Binding FilteredCloneTargets}">
                             <ItemsControl.ItemsPanel>
                                 <ItemsPanelTemplate><StackPanel Spacing="4" /></ItemsPanelTemplate>
@@ -652,7 +652,7 @@
                         </StackPanel>
                     </Border>
 
-                    <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto">
+                    <ScrollViewer Classes="popup-scroll" Grid.Row="2" VerticalScrollBarVisibility="Auto">
                         <StackPanel Spacing="6">
                             <TextBlock Text="{Binding UndoCloneEffect}" TextWrapping="Wrap" FontSize="12"
                                        IsVisible="{Binding !UndoCloneBlocked}" />
@@ -669,7 +669,7 @@
                         <TextBlock Text="{Binding Loc[CloneHistory]}" FontWeight="SemiBold" />
                         <TextBlock Text="{Binding Loc[NoCloneHistory]}" FontSize="12" Foreground="Gray"
                                    IsVisible="{Binding !HasCloneHistory}" />
-                        <ScrollViewer MaxHeight="170" IsVisible="{Binding HasCloneHistory}">
+                        <ScrollViewer Classes="popup-scroll" MaxHeight="170" IsVisible="{Binding HasCloneHistory}">
                             <ItemsControl ItemsSource="{Binding CloneHistory}">
                                 <ItemsControl.ItemsPanel>
                                     <ItemsPanelTemplate><StackPanel Spacing="4" /></ItemsPanelTemplate>
@@ -724,7 +724,7 @@
                     <Panel Grid.Row="1">
                         <TextBlock Text="{Binding LogEmptyText}"
                                    Foreground="Gray" IsVisible="{Binding !HasLogRows}" />
-                        <ScrollViewer IsVisible="{Binding HasLogRows}">
+                        <ScrollViewer Classes="popup-scroll" IsVisible="{Binding HasLogRows}">
                             <ItemsControl ItemsSource="{Binding LogRows}">
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate x:DataType="vm:ScheduleLogRow">
@@ -826,7 +826,7 @@
                             <TextBlock Grid.Column="2" Text="From" FontWeight="Bold" />
                             <TextBlock Grid.Column="3" Text="To" FontWeight="Bold" />
                         </Grid>
-                        <ScrollViewer Grid.Row="1" MaxHeight="470"
+                        <ScrollViewer Classes="popup-scroll" Grid.Row="1" MaxHeight="470"
                                       VerticalScrollBarVisibility="Auto"
                                       HorizontalScrollBarVisibility="Auto">
                             <ItemsControl ItemsSource="{Binding BulkSubmitDetails}">
