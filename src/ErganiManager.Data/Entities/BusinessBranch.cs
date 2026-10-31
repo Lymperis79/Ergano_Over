@@ -31,6 +31,17 @@ public class BusinessBranch
 
     public bool IsActive { get; set; } = true;
 
+    // Per-branch terminal weather presentation and location override.
+    public bool WeatherShowTemperature { get; set; } = true;
+    public bool WeatherShowCondition { get; set; } = true;
+    public bool WeatherShowHumidity { get; set; } = true;
+    public bool WeatherShowWind { get; set; }
+    public bool WeatherShowFeelsLike { get; set; }
+    public bool WeatherShowLocation { get; set; } = true;
+    public string? WeatherManualAddress { get; set; }
+    public double? WeatherLatitude { get; set; }
+    public double? WeatherLongitude { get; set; }
+
     // Navigation
     public List<Employee> Employees { get; set; } = new();
 }
