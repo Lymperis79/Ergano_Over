@@ -137,11 +137,6 @@
                 HorizontalAlignment="Right" VerticalAlignment="Top" Margin="24"
                 MaxWidth="430" Background="#E8202B38" BorderBrush="#557DA6C9"
                 BorderThickness="1" CornerRadius="18" Padding="20,16">
-            <Border.BoxShadow>
-                <BoxShadows>
-                    <BoxShadow Color="#80000000" Blur="22" Spread="1" OffsetX="0" OffsetY="6" />
-                </BoxShadows>
-            </Border.BoxShadow>
             <TextBlock Text="{Binding WeatherText}" Foreground="#F3F8FF"
                        FontSize="22" FontWeight="SemiBold" TextWrapping="Wrap"
                        TextAlignment="Right" />
