@@ -35,8 +35,8 @@ public class BusinessBranch
     public bool WeatherShowTemperature { get; set; } = true;
     public bool WeatherShowCondition { get; set; } = true;
     public bool WeatherShowHumidity { get; set; } = true;
-    public bool WeatherShowWind { get; set; }
-    public bool WeatherShowFeelsLike { get; set; }
+    public bool WeatherShowWind { get; set; } = true;
+    public bool WeatherShowFeelsLike { get; set; } = true;
     public bool WeatherShowLocation { get; set; } = true;
     public string? WeatherManualAddress { get; set; }
     public double? WeatherLatitude { get; set; }
