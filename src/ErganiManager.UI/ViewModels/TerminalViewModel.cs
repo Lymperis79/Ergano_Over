@@ -45,7 +45,7 @@ public partial class TerminalViewModel : ViewModelBase
     private readonly System.Timers.Timer _internetStatusTimer;
     private readonly System.Timers.Timer _erganiStatusTimer;
     private readonly System.Timers.Timer _terminalInfoTimer;
-    private readonly System.Timers.Timer _tickerTimer;
+    private readonly DispatcherTimer _tickerTimer;
     private DateTime _lastWeatherRefreshUtc = DateTime.MinValue;
     private int _tickerOffset;
     private string _tickerFullText = string.Empty;
@@ -172,8 +172,8 @@ public partial class TerminalViewModel : ViewModelBase
         _internetStatusTimer.Start();
         _erganiStatusTimer = new System.Timers.Timer(60000) { AutoReset = true };
         _terminalInfoTimer = new System.Timers.Timer(60000) { AutoReset = true };
-        _tickerTimer = new System.Timers.Timer(40) { AutoReset = true };
-        _tickerTimer.Elapsed += (_, _) => Dispatcher.UIThread.Post(UpdateAnnouncementTicker);
+        _tickerTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(100) };
+        _tickerTimer.Tick += (_, _) => UpdateAnnouncementTicker();
         _tickerTimer.Start();
         _terminalInfoTimer.Elapsed += async (_, _) => await RefreshTerminalInformationAsync();
         _terminalInfoTimer.Start();
@@ -293,7 +293,7 @@ public partial class TerminalViewModel : ViewModelBase
                 // Keep the repeating ticker content free of a large blank prefix.
                 // A one-time entry gap is handled by the offset below; after the first
                 // pass, announcements repeat with only a short separator between them.
-                const int tickerEntryGap = 110;
+                const int tickerEntryGap = 170;
                 _tickerFullText = messages.Count == 0
                     ? string.Empty
                     : string.Join("     ◆     ", messages) + "     ◆     ";
@@ -334,8 +334,8 @@ public partial class TerminalViewModel : ViewModelBase
         }
 
         const int visibleLength = 170;
-        const int entryGapLength = 110;
-        const char entryGapCharacter = '\u3000'; // full-width space: reliably occupies visible width
+        const int entryGapLength = visibleLength;
+        const char entryGapCharacter = '\u00A0'; // one normal-width non-breaking space per ticker character
 
         // During the first pass, move the message in from beyond the right edge.
         // The gap is not part of the repeating text, so it cannot cause a long blank
