@@ -282,10 +282,11 @@ public partial class TerminalViewModel : ViewModelBase
                     !string.IsNullOrWhiteSpace(WeatherText);
             });
 
-            if (branch != null && !string.IsNullOrWhiteSpace(branch.Address))
+            if (branch != null && (branch.WeatherLatitude.HasValue && branch.WeatherLongitude.HasValue ||
+                !string.IsNullOrWhiteSpace(branch.WeatherManualAddress) || !string.IsNullOrWhiteSpace(branch.Address)))
             {
                 if (DateTime.UtcNow - _lastWeatherRefreshUtc >= TimeSpan.FromMinutes(20))
-                    await RefreshBranchWeatherAsync(branch.Address);
+                    await RefreshBranchWeatherAsync(branch);
             }
             else
             {
@@ -322,8 +323,11 @@ public partial class TerminalViewModel : ViewModelBase
         _tickerOffset = (_tickerOffset + 1) % text.Length;
     }
 
-    private async Task RefreshBranchWeatherAsync(string address)
+    private async Task RefreshBranchWeatherAsync(BusinessBranch branch)
     {
+        var address = !string.IsNullOrWhiteSpace(branch.WeatherManualAddress)
+            ? branch.WeatherManualAddress.Trim()
+            : branch.Address;
         try
         {
             // Open-Meteo's geocoder is a place-name search, not a street-address geocoder.
@@ -338,11 +342,14 @@ public partial class TerminalViewModel : ViewModelBase
                 .Distinct(StringComparer.OrdinalIgnoreCase)
                 .ToList();
 
-            double? latitude = null;
-            double? longitude = null;
-            string? placeName = null;
+            double? latitude = branch.WeatherLatitude;
+            double? longitude = branch.WeatherLongitude;
+            string? placeName = branch.WeatherShowLocation
+                ? (branch.Name ?? BranchName)
+                : null;
 
-            foreach (var candidate in candidates)
+            foreach (var candidate in (latitude.HasValue && longitude.HasValue
+                ? Enumerable.Empty<string>() : candidates))
             {
                 var geoUrl = "https://geocoding-api.open-meteo.com/v1/search?name=" +
                     Uri.EscapeDataString(candidate) + "&count=5&language=en&format=json&countryCode=GR";
@@ -431,10 +438,18 @@ public partial class TerminalViewModel : ViewModelBase
                 _ => "⛈"
             };
             var label = string.IsNullOrWhiteSpace(placeName) ? BranchName : placeName;
+            var weatherParts = new List<string>();
+            if (branch.WeatherShowLocation && !string.IsNullOrWhiteSpace(label)) weatherParts.Add(label);
+            if (branch.WeatherShowTemperature) weatherParts.Add($"{temp:0}°C");
+            if (branch.WeatherShowCondition) weatherParts.Add($"{icon} {condition}");
+            if (branch.WeatherShowFeelsLike) weatherParts.Add($"Feels {feels:0}°");
+            if (branch.WeatherShowHumidity) weatherParts.Add($"Humidity {humidity}%");
+            if (branch.WeatherShowWind) weatherParts.Add($"Wind {wind:0} km/h");
             await Dispatcher.UIThread.InvokeAsync(() =>
             {
-                WeatherText = $"{icon} {label}  {temp:0}°C  {condition}  ·  Feels {feels:0}°  ·  Humidity {humidity}%  ·  Wind {wind:0} km/h";
-                HasTerminalInformation = true;
+                WeatherText = weatherParts.Count == 0 ? string.Empty : string.Join("  ·  ", weatherParts);
+                HasTerminalInformation = !string.IsNullOrWhiteSpace(_tickerFullText) ||
+                    !string.IsNullOrWhiteSpace(WeatherText);
             });
             _lastWeatherRefreshUtc = DateTime.UtcNow;
         }
