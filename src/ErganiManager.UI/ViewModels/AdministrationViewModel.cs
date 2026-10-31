@@ -255,6 +255,7 @@ public partial class AdministrationViewModel : ViewModelBase, IAdminSectionViewM
 
     private async Task LoadWeatherBranchesAsync()
     {
+        SelectedWeatherBranchId = null;
         WeatherBranches.Clear();
         if (_activeCompanyId is not int companyId) return;
         try
