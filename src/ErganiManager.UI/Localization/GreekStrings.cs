@@ -51,6 +51,10 @@ public static class GreekStrings
         ["Vm.Manual address entered; save settings and the terminal will resolve it online"] = "Η χειροκίνητη διεύθυνση καταχωρίστηκε. Αποθηκεύστε και το τερματικό θα εντοπίσει την τοποθεσία online.",
         ["Vm.Enter a manual address or both coordinates"] = "Εισαγάγετε χειροκίνητη διεύθυνση ή και τις δύο συντεταγμένες.",
 
+        ["Vm.Checking weather location"] = "Έλεγχος τοποθεσίας καιρού…",
+        ["Vm.Location found: {0}"] = "Βρέθηκε τοποθεσία: {0}",
+        ["Vm.Location could not be found. Enter a nearby town or coordinates."] = "Δεν βρέθηκε η τοποθεσία. Εισαγάγετε κοντινή πόλη ή συντεταγμένες.",
+        ["Vm.Location test failed: "] = "Αποτυχία ελέγχου τοποθεσίας: ",
         // ── Common actions ────────────────────────────────────
         [L.Save] = "Αποθήκευση",
         [L.Cancel] = "Ακύρωση",
