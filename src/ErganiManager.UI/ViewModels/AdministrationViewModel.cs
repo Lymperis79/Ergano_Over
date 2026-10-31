@@ -75,6 +75,46 @@ public partial class AdministrationViewModel : ViewModelBase, IAdminSectionViewM
     public ObservableCollection<TerminalAnnouncementEdit> TerminalAnnouncements { get; } = new();
     [ObservableProperty] private string _newTerminalAnnouncement = string.Empty;
     [ObservableProperty] private string _terminalAnnouncementsStatus = string.Empty;
+    [ObservableProperty] private bool _showTerminalAnnouncements = true;
+    [ObservableProperty] private bool _showTerminalWeather = true;
+    [ObservableProperty] private string _terminalDisplaySettingsStatus = string.Empty;
+
+    private async Task LoadTerminalDisplaySettingsAsync()
+    {
+        if (_activeCompanyId is not int companyId) return;
+        try
+        {
+            await using var db = new AppDbContext(_connectionState.GetDbOptions());
+            var company = await db.Companies.AsNoTracking().FirstOrDefaultAsync(x => x.Id == companyId);
+            if (company == null) return;
+            ShowTerminalAnnouncements = company.ShowTerminalAnnouncements;
+            ShowTerminalWeather = company.ShowTerminalWeather;
+        }
+        catch (Exception ex) { TerminalDisplaySettingsStatus = "❌ " + ex.Message; }
+    }
+
+    [RelayCommand]
+    private async Task SaveTerminalDisplaySettingsAsync()
+    {
+        if (_activeCompanyId is not int companyId)
+        {
+            TerminalDisplaySettingsStatus = Loc[L.SelectCompanyForAnnouncement];
+            return;
+        }
+
+        try
+        {
+            await using var db = new AppDbContext(_connectionState.GetDbOptions());
+            var company = await db.Companies.FirstOrDefaultAsync(x => x.Id == companyId);
+            if (company == null) throw new InvalidOperationException("Company not found.");
+            company.ShowTerminalAnnouncements = ShowTerminalAnnouncements;
+            company.ShowTerminalWeather = ShowTerminalWeather;
+            await db.SaveChangesAsync();
+            TerminalDisplaySettingsStatus = Loc[L.TerminalDisplaySettingsSaved];
+        }
+        catch (Exception ex) { TerminalDisplaySettingsStatus = "❌ " + ex.Message; }
+    }
+
 
     [RelayCommand]
     private async Task AddTerminalAnnouncementAsync()
@@ -1019,6 +1059,7 @@ public partial class AdministrationViewModel : ViewModelBase, IAdminSectionViewM
             _ = LoadCompanySettingsAsync();
         _ = LoadOfficialHolidaysAsync();
         _ = LoadTerminalAnnouncementsAsync();
+        _ = LoadTerminalDisplaySettingsAsync();
     }
 
     private async Task LoadOfficialHolidaysAsync(bool synchronize = true)
