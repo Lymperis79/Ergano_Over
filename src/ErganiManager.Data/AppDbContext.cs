@@ -79,6 +79,8 @@ public class AppDbContext : DbContext
             e.Property(b => b.WeatherShowTemperature).HasDefaultValue(true).ValueGeneratedNever();
             e.Property(b => b.WeatherShowCondition).HasDefaultValue(true).ValueGeneratedNever();
             e.Property(b => b.WeatherShowHumidity).HasDefaultValue(true).ValueGeneratedNever();
+            e.Property(b => b.WeatherShowWind).HasDefaultValue(true).ValueGeneratedNever();
+            e.Property(b => b.WeatherShowFeelsLike).HasDefaultValue(true).ValueGeneratedNever();
             e.Property(b => b.WeatherShowLocation).HasDefaultValue(true).ValueGeneratedNever();
 
             e.HasOne(b => b.Company)
