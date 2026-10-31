@@ -136,9 +136,9 @@
 <Border Grid.RowSpan="3" IsVisible="{Binding WeatherText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
                 HorizontalAlignment="Right" VerticalAlignment="Top" Margin="24"
                 Width="390" MaxWidth="430" Background="#E8202B38"
-                BorderBrush="#557DA6C9" BorderThickness="1"
+                BorderBrush="#668CB6D8" BorderThickness="1"
                 CornerRadius="18" Padding="20,16">
-            <Grid RowDefinitions="Auto,Auto,Auto,Auto" ColumnDefinitions="Auto,*" ColumnSpacing="14" RowSpacing="3">
+            <Grid RowDefinitions="Auto,Auto,Auto,Auto" ColumnDefinitions="64,*" ColumnSpacing="16" RowSpacing="5">
                 <TextBlock Grid.Row="0" Grid.ColumnSpan="2" Text="{Binding WeatherLocationText}"
                            Foreground="#C8D9EA" FontSize="16" FontWeight="SemiBold"
                            IsVisible="{Binding WeatherLocationText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
