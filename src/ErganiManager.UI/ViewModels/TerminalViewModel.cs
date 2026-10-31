@@ -276,14 +276,15 @@ public partial class TerminalViewModel : ViewModelBase
                     !string.IsNullOrWhiteSpace(WeatherText);
             });
 
-            if (branch != null && !string.IsNullOrWhiteSpace(branch.Address) &&
-                DateTime.UtcNow - _lastWeatherRefreshUtc >= TimeSpan.FromMinutes(20))
+            if (branch != null && !string.IsNullOrWhiteSpace(branch.Address))
             {
-                await RefreshBranchWeatherAsync(branch.Address);
-                _lastWeatherRefreshUtc = DateTime.UtcNow;
+                if (DateTime.UtcNow - _lastWeatherRefreshUtc >= TimeSpan.FromMinutes(20))
+                    await RefreshBranchWeatherAsync(branch.Address);
             }
             else
+            {
                 await Dispatcher.UIThread.InvokeAsync(() => WeatherText = string.Empty);
+            }
         }
         catch
         {
@@ -371,6 +372,7 @@ public partial class TerminalViewModel : ViewModelBase
                 WeatherText = $"{icon} {label}  {temp:0}°C  {condition}  ·  Feels {feels:0}°  ·  Humidity {humidity}%  ·  Wind {wind:0} km/h";
                 HasTerminalInformation = true;
             });
+            _lastWeatherRefreshUtc = DateTime.UtcNow;
         }
         catch
         {
