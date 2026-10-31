@@ -318,16 +318,27 @@ public partial class TerminalViewModel : ViewModelBase
     {
         try
         {
-            // Geocode the address supplied for the terminal's assigned branch.
-            var geoUrl = "https://geocoding-api.open-meteo.com/v1/search?name=" +
-                Uri.EscapeDataString(address) + "&count=1&language=en&format=json";
-            using var geoResponse = await TerminalInfoHttpClient.GetAsync(geoUrl);
-            geoResponse.EnsureSuccessStatusCode();
-            using var geoJson = System.Text.Json.JsonDocument.Parse(await geoResponse.Content.ReadAsStringAsync());
-            if (!geoJson.RootElement.TryGetProperty("results", out var results) ||
-                results.GetArrayLength() == 0) return;
-
-            var place = results[0];
+            // The branch address may include a street and postal code. Try the complete
+            // address first, then progressively broader comma-separated locality parts.
+            System.Text.Json.JsonElement place = default;
+            var candidates = new[] { address }
+                .Concat(address.Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries)
+                    .Reverse())
+                .Distinct(StringComparer.OrdinalIgnoreCase);
+            foreach (var candidate in candidates)
+            {
+                var geoUrl = "https://geocoding-api.open-meteo.com/v1/search?name=" +
+                    Uri.EscapeDataString(candidate) + "&count=1&language=en&format=json";
+                using var geoResponse = await TerminalInfoHttpClient.GetAsync(geoUrl);
+                if (!geoResponse.IsSuccessStatusCode) continue;
+                using var geoJson = System.Text.Json.JsonDocument.Parse(await geoResponse.Content.ReadAsStringAsync());
+                if (geoJson.RootElement.TryGetProperty("results", out var found) && found.GetArrayLength() > 0)
+                {
+                    place = found[0].Clone();
+                    break;
+                }
+            }
+            if (place.ValueKind != System.Text.Json.JsonValueKind.Object) return;
             var latitude = place.GetProperty("latitude").GetDouble();
             var longitude = place.GetProperty("longitude").GetDouble();
             var placeName = place.TryGetProperty("name", out var name) ? name.GetString() : null;
