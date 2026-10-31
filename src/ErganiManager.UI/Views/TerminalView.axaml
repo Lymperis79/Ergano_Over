@@ -133,13 +133,30 @@
                    Foreground="#444444" FontSize="11" Text="{Binding Loc[CtrlShiftLLogOutCtrl]}" />
 
         <!-- Floating weather bubble: stays in the top-right corner without covering the scan controls. -->
-        <Border Grid.RowSpan="3" IsVisible="{Binding WeatherText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+<Border Grid.RowSpan="3" IsVisible="{Binding WeatherText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
                 HorizontalAlignment="Right" VerticalAlignment="Top" Margin="24"
-                MaxWidth="430" Background="#E8202B38" BorderBrush="#557DA6C9"
-                BorderThickness="1" CornerRadius="18" Padding="20,16">
-            <TextBlock Text="{Binding WeatherText}" Foreground="#F3F8FF"
-                       FontSize="22" FontWeight="SemiBold" TextWrapping="Wrap"
-                       TextAlignment="Right" />
+                Width="390" MaxWidth="430" Background="#E8202B38"
+                BorderBrush="#557DA6C9" BorderThickness="1"
+                CornerRadius="18" Padding="20,16">
+            <Grid RowDefinitions="Auto,Auto,Auto,Auto" ColumnDefinitions="Auto,*" ColumnSpacing="14" RowSpacing="3">
+                <TextBlock Grid.Row="0" Grid.ColumnSpan="2" Text="{Binding WeatherLocationText}"
+                           Foreground="#C8D9EA" FontSize="16" FontWeight="SemiBold"
+                           IsVisible="{Binding WeatherLocationText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                <TextBlock Grid.Row="1" Grid.Column="0" Text="{Binding WeatherIconText}"
+                           FontSize="48" VerticalAlignment="Center"
+                           IsVisible="{Binding WeatherIconText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding WeatherTemperatureText}"
+                           Foreground="#FFFFFF" FontSize="42" FontWeight="Bold"
+                           VerticalAlignment="Center"
+                           IsVisible="{Binding WeatherTemperatureText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                <TextBlock Grid.Row="2" Grid.ColumnSpan="2" Text="{Binding WeatherConditionText}"
+                           Foreground="#F3F8FF" FontSize="18" FontWeight="SemiBold"
+                           IsVisible="{Binding WeatherConditionText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                <TextBlock Grid.Row="3" Grid.ColumnSpan="2" Text="{Binding WeatherDetailsText}"
+                           Foreground="#C8D9EA" FontSize="14" TextWrapping="Wrap"
+                           Margin="0,6,0,0"
+                           IsVisible="{Binding WeatherDetailsText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+            </Grid>
         </Border>
 
         <!-- Result popup overlay (closes by itself after 2 seconds) -->
