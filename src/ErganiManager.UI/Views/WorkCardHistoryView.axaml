@@ -191,7 +191,7 @@
 
             <!-- Results list -->
 
-            <ScrollViewer Classes="popup-scroll" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto" MaxHeight="650">
+            <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto" MaxHeight="650">
             <ItemsControl ItemsSource="{Binding Records}">
 
                 <ItemsControl.ItemsPanel>
