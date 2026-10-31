@@ -102,8 +102,6 @@ public partial class DashboardViewModel : ViewModelBase, IAdminSectionViewModel
     {
         _session = session;
         HasCompany = session.CompanyId.HasValue;
-        if (session.CompanyId.HasValue)
-            _ = RefreshDashboardWeatherAsync(session.CompanyId.Value, session.BranchId);
         _ = RefreshAsync();
     }
 
