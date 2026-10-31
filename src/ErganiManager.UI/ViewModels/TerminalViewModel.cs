@@ -352,7 +352,7 @@ public partial class TerminalViewModel : ViewModelBase
             // Open-Meteo's geocoder is a place-name search, not a street-address geocoder.
             // Try the full branch address and its locality components from broadest to narrowest.
             var candidates = address
-                .Split(new[] { ',', ';', '\\n' }, StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries)
+                .Split(new[] { ',', ';', '\n' }, StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries)
                 .Reverse()
                 .Append(address.Trim())
                 .Where(x => !string.IsNullOrWhiteSpace(x))
