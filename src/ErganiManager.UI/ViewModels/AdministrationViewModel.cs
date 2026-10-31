@@ -71,6 +71,99 @@ public partial class AdministrationViewModel : ViewModelBase, IAdminSectionViewM
     [ObservableProperty] private string _newOfficialHolidayName = string.Empty;
 
     public ObservableCollection<OfficialHolidayEdit> OfficialHolidays { get; } = new();
+    // Employee terminal announcements (company-wide, retained in the main database).
+    public ObservableCollection<TerminalAnnouncementEdit> TerminalAnnouncements { get; } = new();
+    [ObservableProperty] private string _newTerminalAnnouncement = string.Empty;
+    [ObservableProperty] private string _terminalAnnouncementsStatus = string.Empty;
+
+    [RelayCommand]
+    private async Task AddTerminalAnnouncementAsync()
+    {
+        if (_activeCompanyId is not int companyId)
+        {
+            TerminalAnnouncementsStatus = Loc[L.SelectCompanyForAnnouncement];
+            return;
+        }
+
+        var message = NewTerminalAnnouncement.Trim();
+        if (message.Length == 0)
+        {
+            TerminalAnnouncementsStatus = Loc[L.EnterAnnouncement];
+            return;
+        }
+
+        try
+        {
+            await using var db = new AppDbContext(_connectionState.GetDbOptions());
+            db.TerminalAnnouncements.Add(new ErganiManager.Data.Entities.TerminalAnnouncement
+            {
+                CompanyId = companyId,
+                Message = message,
+                IsActive = true,
+                CreatedAtUtc = DateTime.UtcNow
+            });
+            await db.SaveChangesAsync();
+            NewTerminalAnnouncement = string.Empty;
+            await LoadTerminalAnnouncementsAsync();
+            TerminalAnnouncementsStatus = Loc[L.AnnouncementSaved];
+        }
+        catch (Exception ex)
+        {
+            TerminalAnnouncementsStatus = "❌ " + ex.Message;
+        }
+    }
+
+    [RelayCommand]
+    private async Task ToggleTerminalAnnouncementAsync(TerminalAnnouncementEdit? item)
+    {
+        if (item == null) return;
+        try
+        {
+            await using var db = new AppDbContext(_connectionState.GetDbOptions());
+            var row = await db.TerminalAnnouncements.FirstOrDefaultAsync(x => x.Id == item.Id && x.CompanyId == _activeCompanyId);
+            if (row == null) return;
+            row.IsActive = !row.IsActive;
+            await db.SaveChangesAsync();
+            item.IsActive = row.IsActive;
+            TerminalAnnouncementsStatus = Loc[L.AnnouncementStatusUpdated];
+        }
+        catch (Exception ex) { TerminalAnnouncementsStatus = "❌ " + ex.Message; }
+    }
+
+    [RelayCommand]
+    private async Task DeleteTerminalAnnouncementAsync(TerminalAnnouncementEdit? item)
+    {
+        if (item == null || _activeCompanyId is not int companyId) return;
+        try
+        {
+            await using var db = new AppDbContext(_connectionState.GetDbOptions());
+            var row = await db.TerminalAnnouncements.FirstOrDefaultAsync(x => x.Id == item.Id && x.CompanyId == companyId);
+            if (row == null) return;
+            db.TerminalAnnouncements.Remove(row);
+            await db.SaveChangesAsync();
+            TerminalAnnouncements.Remove(item);
+            TerminalAnnouncementsStatus = Loc[L.AnnouncementDeleted];
+        }
+        catch (Exception ex) { TerminalAnnouncementsStatus = "❌ " + ex.Message; }
+    }
+
+    private async Task LoadTerminalAnnouncementsAsync()
+    {
+        TerminalAnnouncements.Clear();
+        if (_activeCompanyId is not int companyId) return;
+        try
+        {
+            await using var db = new AppDbContext(_connectionState.GetDbOptions());
+            var rows = await db.TerminalAnnouncements.AsNoTracking()
+                .Where(x => x.CompanyId == companyId)
+                .OrderByDescending(x => x.CreatedAtUtc)
+                .ToListAsync();
+            foreach (var row in rows)
+                TerminalAnnouncements.Add(new TerminalAnnouncementEdit(row.Id, row.Message, row.IsActive, row.CreatedAtUtc));
+        }
+        catch (Exception ex) { TerminalAnnouncementsStatus = "❌ " + ex.Message; }
+    }
+
     [ObservableProperty] private string _officialHolidaysStatus = string.Empty;
 
     // Schedule portal settings
@@ -925,6 +1018,7 @@ public partial class AdministrationViewModel : ViewModelBase, IAdminSectionViewM
         if (previousCompanyId != _activeCompanyId || _loadedCompanySettings == null)
             _ = LoadCompanySettingsAsync();
         _ = LoadOfficialHolidaysAsync();
+        _ = LoadTerminalAnnouncementsAsync();
     }
 
     private async Task LoadOfficialHolidaysAsync(bool synchronize = true)
@@ -1192,5 +1286,23 @@ public partial class LeaveTypeEdit : ObservableObject
     partial void OnSelectedPaymentOptionChanged(LeavePaymentOption? value)
     {
         if (value is not null) PaymentCategory = value.Key;
+    }
+}
+
+
+/// <summary>Editable row shown in the Administration / Announcements tab.</summary>
+public partial class TerminalAnnouncementEdit : ObservableObject
+{
+    public int Id { get; }
+    public string Message { get; }
+    public DateTime CreatedAtUtc { get; }
+    [ObservableProperty] private bool _isActive;
+
+    public TerminalAnnouncementEdit(int id, string message, bool isActive, DateTime createdAtUtc)
+    {
+        Id = id;
+        Message = message;
+        IsActive = isActive;
+        CreatedAtUtc = createdAtUtc;
     }
 }

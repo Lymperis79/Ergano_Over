@@ -44,6 +44,12 @@ public partial class TerminalViewModel : ViewModelBase
     private readonly System.Timers.Timer _popupAutoCloseTimer;
     private readonly System.Timers.Timer _internetStatusTimer;
     private readonly System.Timers.Timer _erganiStatusTimer;
+    private readonly System.Timers.Timer _terminalInfoTimer;
+    private readonly System.Timers.Timer _tickerTimer;
+    private DateTime _lastWeatherRefreshUtc = DateTime.MinValue;
+    private int _tickerOffset;
+    private string _tickerFullText = string.Empty;
+    private static readonly HttpClient TerminalInfoHttpClient = new() { Timeout = TimeSpan.FromSeconds(8) };
     private int _erganiCheckInProgress;
     private static readonly HttpClient InternetHttpClient = new() { Timeout = TimeSpan.FromSeconds(4) };
 
@@ -70,6 +76,9 @@ public partial class TerminalViewModel : ViewModelBase
     partial void OnErganiStatusKnownChanged(bool value) =>
         OnPropertyChanged(nameof(ErganiUnavailable));
     [ObservableProperty] private string _internetStatusText = "Internet: checking";
+    [ObservableProperty] private string _announcementTickerText = string.Empty;
+    [ObservableProperty] private string _weatherText = string.Empty;
+    [ObservableProperty] private bool _hasTerminalInformation;
 
     // Popup state
     [ObservableProperty] private bool _isPopupVisible;
@@ -125,6 +134,8 @@ public partial class TerminalViewModel : ViewModelBase
         _popupAutoCloseTimer.Stop();
         _internetStatusTimer.Stop();
         _erganiStatusTimer.Stop();
+        _terminalInfoTimer.Stop();
+        _tickerTimer.Stop();
         _retryService.QueuedScanUpdated -= OnQueuedScanUpdated;
     }
 
@@ -155,6 +166,12 @@ public partial class TerminalViewModel : ViewModelBase
         _internetStatusTimer.Elapsed += async (_, _) => await CheckInternetStatusAsync();
         _internetStatusTimer.Start();
         _erganiStatusTimer = new System.Timers.Timer(60000) { AutoReset = true };
+        _terminalInfoTimer = new System.Timers.Timer(60000) { AutoReset = true };
+        _tickerTimer = new System.Timers.Timer(250) { AutoReset = true };
+        _tickerTimer.Elapsed += (_, _) => Dispatcher.UIThread.Post(UpdateAnnouncementTicker);
+        _tickerTimer.Start();
+        _terminalInfoTimer.Elapsed += async (_, _) => await RefreshTerminalInformationAsync();
+        _terminalInfoTimer.Start();
         _erganiStatusTimer.Elapsed += async (_, _) => await CheckErganiStatusAsync();
         _erganiStatusTimer.Start();
         _ = CheckInternetStatusAsync();
@@ -172,6 +189,7 @@ public partial class TerminalViewModel : ViewModelBase
         _ = Logo.RefreshAsync(session.CompanyId);
 
         _ = LoadRecentScansAsync(session.CompanyId);
+        _ = RefreshTerminalInformationAsync();
         _ = CheckErganiStatusAsync();
 
         // Sync offline cache so scan lookups have fresh employee/schedule data
@@ -220,6 +238,156 @@ public partial class TerminalViewModel : ViewModelBase
         catch (Exception ex)
         {
             Serilog.Log.Warning(ex, Loc["Vm.Could not load the recent scans for the terminal."]);
+        }
+    }
+
+
+    /// <summary>
+    /// Refreshes company announcements and branch weather without touching the scan pipeline.
+    /// Weather uses Open-Meteo geocoding/forecast endpoints and requires no API key.
+    /// </summary>
+    private async Task RefreshTerminalInformationAsync()
+    {
+        if (_session?.CompanyId is not int companyId) return;
+
+        try
+        {
+            await using var db = new AppDbContext(_connectionState.GetDbOptions());
+            var now = DateTime.UtcNow;
+            var messages = await db.TerminalAnnouncements.AsNoTracking()
+                .Where(a => a.CompanyId == companyId && a.IsActive &&
+                    (a.ExpiresAtUtc == null || a.ExpiresAtUtc > now))
+                .OrderBy(a => a.CreatedAtUtc)
+                .Select(a => a.Message)
+                .ToListAsync();
+
+            var branch = _session.BranchId is int branchId
+                ? await db.Branches.AsNoTracking().FirstOrDefaultAsync(b => b.Id == branchId)
+                : null;
+
+            await Dispatcher.UIThread.InvokeAsync(() =>
+            {
+                _tickerFullText = messages.Count == 0
+                    ? string.Empty
+                    : string.Join("     ◆     ", messages) + "     ◆     ";
+                _tickerOffset = 0;
+                UpdateAnnouncementTicker();
+                HasTerminalInformation = !string.IsNullOrWhiteSpace(_tickerFullText) ||
+                    !string.IsNullOrWhiteSpace(WeatherText);
+            });
+
+            if (branch != null && !string.IsNullOrWhiteSpace(branch.Address))
+            {
+                if (DateTime.UtcNow - _lastWeatherRefreshUtc >= TimeSpan.FromMinutes(20))
+                    await RefreshBranchWeatherAsync(branch.Address);
+            }
+            else
+            {
+                await Dispatcher.UIThread.InvokeAsync(() => WeatherText = string.Empty);
+            }
+        }
+        catch
+        {
+            // Terminal information is optional. Database/network errors must never affect clocking.
+        }
+    }
+
+    private void UpdateAnnouncementTicker()
+    {
+        if (string.IsNullOrEmpty(_tickerFullText))
+        {
+            AnnouncementTickerText = string.Empty;
+            return;
+        }
+
+        const int visibleLength = 110;
+        var text = _tickerFullText + "     ";
+        if (text.Length <= visibleLength)
+        {
+            AnnouncementTickerText = text;
+            return;
+        }
+
+        var doubled = text + text;
+        var start = _tickerOffset % text.Length;
+        AnnouncementTickerText = doubled.Substring(start, visibleLength);
+        _tickerOffset = (_tickerOffset + 1) % text.Length;
+    }
+
+    private async Task RefreshBranchWeatherAsync(string address)
+    {
+        try
+        {
+            // The branch address may include a street and postal code. Try the complete
+            // address first, then progressively broader comma-separated locality parts.
+            System.Text.Json.JsonElement place = default;
+            var candidates = new[] { address }
+                .Concat(address.Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries)
+                    .Reverse())
+                .Distinct(StringComparer.OrdinalIgnoreCase);
+            foreach (var candidate in candidates)
+            {
+                var geoUrl = "https://geocoding-api.open-meteo.com/v1/search?name=" +
+                    Uri.EscapeDataString(candidate) + "&count=1&language=en&format=json";
+                using var geoResponse = await TerminalInfoHttpClient.GetAsync(geoUrl);
+                if (!geoResponse.IsSuccessStatusCode) continue;
+                using var geoJson = System.Text.Json.JsonDocument.Parse(await geoResponse.Content.ReadAsStringAsync());
+                if (geoJson.RootElement.TryGetProperty("results", out var found) && found.GetArrayLength() > 0)
+                {
+                    place = found[0].Clone();
+                    break;
+                }
+            }
+            if (place.ValueKind != System.Text.Json.JsonValueKind.Object) return;
+            var latitude = place.GetProperty("latitude").GetDouble();
+            var longitude = place.GetProperty("longitude").GetDouble();
+            var placeName = place.TryGetProperty("name", out var name) ? name.GetString() : null;
+            var weatherUrl = $"https://api.open-meteo.com/v1/forecast?latitude={latitude.ToString(System.Globalization.CultureInfo.InvariantCulture)}&longitude={longitude.ToString(System.Globalization.CultureInfo.InvariantCulture)}&current=temperature_2m,relative_humidity_2m,apparent_temperature,weather_code,wind_speed_10m&timezone=auto";
+            using var weatherResponse = await TerminalInfoHttpClient.GetAsync(weatherUrl);
+            weatherResponse.EnsureSuccessStatusCode();
+            using var weatherJson = System.Text.Json.JsonDocument.Parse(await weatherResponse.Content.ReadAsStringAsync());
+            var current = weatherJson.RootElement.GetProperty("current");
+            var temp = current.GetProperty("temperature_2m").GetDouble();
+            var feels = current.GetProperty("apparent_temperature").GetDouble();
+            var humidity = current.GetProperty("relative_humidity_2m").GetInt32();
+            var wind = current.GetProperty("wind_speed_10m").GetDouble();
+            var code = current.GetProperty("weather_code").GetInt32();
+            var condition = code switch
+            {
+                0 => "Clear",
+                1 or 2 => "Partly cloudy",
+                3 => "Overcast",
+                45 or 48 => "Fog",
+                51 or 53 or 55 or 56 or 57 => "Drizzle",
+                61 or 63 or 65 or 66 or 67 => "Rain",
+                71 or 73 or 75 or 77 => "Snow",
+                80 or 81 or 82 => "Showers",
+                85 or 86 => "Snow showers",
+                95 or 96 or 99 => "Thunderstorm",
+                _ => "Weather"
+            };
+            var icon = code switch
+            {
+                0 => "☀",
+                1 or 2 => "🌤",
+                3 => "☁",
+                45 or 48 => "🌫",
+                51 or 53 or 55 or 56 or 57 => "🌦",
+                61 or 63 or 65 or 66 or 67 or 80 or 81 or 82 => "🌧",
+                71 or 73 or 75 or 77 or 85 or 86 => "❄",
+                _ => "⛈"
+            };
+            var label = string.IsNullOrWhiteSpace(placeName) ? BranchName : placeName;
+            await Dispatcher.UIThread.InvokeAsync(() =>
+            {
+                WeatherText = $"{icon} {label}  {temp:0}°C  {condition}  ·  Feels {feels:0}°  ·  Humidity {humidity}%  ·  Wind {wind:0} km/h";
+                HasTerminalInformation = true;
+            });
+            _lastWeatherRefreshUtc = DateTime.UtcNow;
+        }
+        catch
+        {
+            // Keep the last successful weather value if the provider is temporarily unavailable.
         }
     }
 

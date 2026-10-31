@@ -72,6 +72,7 @@ public class Company
 
     // Navigation
     public List<BusinessBranch> Branches { get; set; } = new();
+    public List<TerminalAnnouncement> TerminalAnnouncements { get; set; } = new();
     public List<AppUser> Users { get; set; } = new();
     public List<Employee> Employees { get; set; } = new();
 }
