@@ -172,7 +172,7 @@ public partial class TerminalViewModel : ViewModelBase
         _internetStatusTimer.Start();
         _erganiStatusTimer = new System.Timers.Timer(60000) { AutoReset = true };
         _terminalInfoTimer = new System.Timers.Timer(60000) { AutoReset = true };
-        _tickerTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(100) };
+        _tickerTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(250) };
         _tickerTimer.Tick += (_, _) => UpdateAnnouncementTicker();
         _tickerTimer.Start();
         _terminalInfoTimer.Elapsed += async (_, _) => await RefreshTerminalInformationAsync();
