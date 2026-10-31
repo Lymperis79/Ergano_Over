@@ -24,8 +24,10 @@
 
                         <StackPanel Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2" Spacing="4">
                             <TextBlock Text="{Binding Loc[HolidayType]}" FontWeight="SemiBold" />
-                            <ComboBox ItemsSource="{Binding LeaveTypeOptions}"
-                                      SelectedItem="{Binding SelectedType}"
+                            <ComboBox ItemsSource="{Binding FilteredLeaveTypeOptions}"
+                                      SelectedItem="{Binding SelectedType, Mode=TwoWay}"
+                                      Text="{Binding LeaveTypeSearchText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                      IsEditable="True"
                                       PlaceholderText="{Binding Loc[SelectTheHolidayType]}"
                                       HorizontalAlignment="Stretch">
                                 <ComboBox.ItemTemplate>
