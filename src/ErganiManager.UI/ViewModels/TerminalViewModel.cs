@@ -172,7 +172,7 @@ public partial class TerminalViewModel : ViewModelBase
         _internetStatusTimer.Start();
         _erganiStatusTimer = new System.Timers.Timer(60000) { AutoReset = true };
         _terminalInfoTimer = new System.Timers.Timer(60000) { AutoReset = true };
-        _tickerTimer = new System.Timers.Timer(250) { AutoReset = true };
+        _tickerTimer = new System.Timers.Timer(100) { AutoReset = true };
         _tickerTimer.Elapsed += (_, _) => Dispatcher.UIThread.Post(UpdateAnnouncementTicker);
         _tickerTimer.Start();
         _terminalInfoTimer.Elapsed += async (_, _) => await RefreshTerminalInformationAsync();
@@ -290,14 +290,14 @@ public partial class TerminalViewModel : ViewModelBase
 
             await Dispatcher.UIThread.InvokeAsync(() =>
             {
-                // Use non-breaking spaces: ordinary leading spaces are collapsed or
-                // trimmed by text layout, making the announcement appear in the middle.
-                // A full ticker-width NBSP gap places the first character just beyond
-                // the right edge; the timer then scrolls it smoothly into view.
+                // Keep the first announcement well beyond the right edge on wide
+                // kiosk displays. The ticker advances through this gap before the text
+                // enters, then carries the complete announcement across the viewport.
                 const int tickerVisibleLength = 110;
+                const int tickerEntryGap = 400;
                 _tickerFullText = messages.Count == 0
                     ? string.Empty
-                    : new string('\u00A0', tickerVisibleLength) +
+                    : new string('\u00A0', tickerEntryGap) +
                       string.Join("     ◆     ", messages) + "     ◆     ";
                 _tickerOffset = 0;
                 UpdateAnnouncementTicker();
