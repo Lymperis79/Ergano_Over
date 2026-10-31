@@ -55,6 +55,7 @@ public static class GreekStrings
         ["Vm.Location found: {0}"] = "Βρέθηκε τοποθεσία: {0}",
         ["Vm.Location could not be found. Enter a nearby town or coordinates."] = "Δεν βρέθηκε η τοποθεσία. Εισαγάγετε κοντινή πόλη ή συντεταγμένες.",
         ["Vm.Location test failed: "] = "Αποτυχία ελέγχου τοποθεσίας: ",
+        ["Vm.Branch location"] = "Τοποθεσία υποκαταστήματος",
         // ── Common actions ────────────────────────────────────
         [L.Save] = "Αποθήκευση",
         [L.Cancel] = "Ακύρωση",
