@@ -225,7 +225,7 @@ public partial class DashboardViewModel : ViewModelBase, IAdminSectionViewModel
             RecentActivity.Clear();
             var latest = await companyLogs
                 .OrderByDescending(l => l.SubmissionDate)
-                .Take(8)
+                .Take(5)
                 .Select(l => new
                 {
                     l.SubmissionDate,
@@ -493,7 +493,40 @@ public partial class DashboardViewModel : ViewModelBase, IAdminSectionViewModel
                     break;
                 }
             }
-            if (!latitude.HasValue || !longitude.HasValue) { WeatherText = string.Empty; HasWeather = false; return; }
+            // Open-Meteo's name search does not reliably resolve full street addresses.
+            // Match the terminal fallback and geocode the configured branch address with Nominatim.
+            if ((!latitude.HasValue || !longitude.HasValue) && !string.IsNullOrWhiteSpace(address))
+            {
+                using var request = new HttpRequestMessage(HttpMethod.Get,
+                    "https://nominatim.openstreetmap.org/search?q=" +
+                    Uri.EscapeDataString(address + ", Greece") + "&format=jsonv2&limit=1&countrycodes=gr");
+                request.Headers.UserAgent.ParseAdd("ErganiManager/1.0 (dashboard weather)");
+                using var geoResponse = await DashboardWeatherHttpClient.SendAsync(request);
+                if (geoResponse.IsSuccessStatusCode)
+                {
+                    using var geoJson = JsonDocument.Parse(await geoResponse.Content.ReadAsStringAsync());
+                    if (geoJson.RootElement.GetArrayLength() > 0)
+                    {
+                        var result = geoJson.RootElement[0];
+                        latitude = double.Parse(result.GetProperty("lat").GetString()!,
+                            System.Globalization.CultureInfo.InvariantCulture);
+                        longitude = double.Parse(result.GetProperty("lon").GetString()!,
+                            System.Globalization.CultureInfo.InvariantCulture);
+                        if (branch.WeatherShowLocation &&
+                            result.TryGetProperty("display_name", out var displayName))
+                            placeName = displayName.GetString()?.Split(',').FirstOrDefault()?.Trim();
+                    }
+                }
+            }
+
+            if (!latitude.HasValue || !longitude.HasValue)
+            {
+                WeatherText = string.Empty;
+                HasWeather = false;
+                Serilog.Log.Warning("Dashboard weather location could not be resolved for branch {BranchId} ({Address})",
+                    branch.Id, address);
+                return;
+            }
 
             var weatherUrl = $"https://api.open-meteo.com/v1/forecast?latitude={latitude.Value.ToString(System.Globalization.CultureInfo.InvariantCulture)}&longitude={longitude.Value.ToString(System.Globalization.CultureInfo.InvariantCulture)}&current=temperature_2m,relative_humidity_2m,apparent_temperature,weather_code,wind_speed_10m&timezone=auto";
             using var response = await DashboardWeatherHttpClient.GetAsync(weatherUrl);
