@@ -8,16 +8,17 @@
 
     <Grid RowDefinitions="Auto,Auto,Auto,*">
 
-        <!-- Compact command bar with clearly marked dropdown menus. -->
+        <!-- One shared Menu owns all three hover menus. This lets Avalonia close
+             the previously opened submenu when the pointer enters another root item. -->
         <Grid Grid.Row="0" ColumnDefinitions="Auto,Auto,Auto,Auto,Auto,*"
               Margin="0,0,0,8" ColumnSpacing="8" VerticalAlignment="Top">
-            <Menu Grid.Column="0" VerticalAlignment="Center">
+            <Menu Grid.Column="0" Grid.ColumnSpan="3" VerticalAlignment="Center">
                 <Menu.Styles>
-                    <Style Selector="MenuItem:pointerover">
+                    <Style Selector="MenuItem.hover-open-root:pointerover">
                         <Setter Property="IsSubMenuOpen" Value="True" />
                     </Style>
                 </Menu.Styles>
-                <MenuItem>
+                <MenuItem Classes="hover-open-root">
                     <MenuItem.Header>
                         <StackPanel Orientation="Horizontal" Spacing="6">
                             <TextBlock Text="{Binding Loc[ScheduleActionsMenu]}" />
@@ -33,15 +34,7 @@
                     <Separator />
                     <MenuItem Header="{Binding Loc[ExportMonth]}" Command="{Binding ExportMonthCommand}" IsEnabled="{Binding HasActiveCompany}" />
                 </MenuItem>
-            </Menu>
-
-            <Menu Grid.Column="1" VerticalAlignment="Center">
-                <Menu.Styles>
-                    <Style Selector="MenuItem:pointerover">
-                        <Setter Property="IsSubMenuOpen" Value="True" />
-                    </Style>
-                </Menu.Styles>
-                <MenuItem>
+                <MenuItem Classes="hover-open-root">
                     <MenuItem.Header>
                         <StackPanel Orientation="Horizontal" Spacing="6">
                             <TextBlock Text="{Binding Loc[SubmissionActionsMenu]}" />
@@ -49,7 +42,7 @@
                         </StackPanel>
                     </MenuItem.Header>
                     <MenuItem Header="{Binding Loc[ScheduleSubmission]}" Command="{Binding SubmitScheduleToErganiCommand}" IsEnabled="{Binding HasActiveCompany}" />
-                    <MenuItem Header="{Binding Loc[AllPendingSchedulesAllEmployees]}" Command="{Binding PrepareSubmitAllPendingSchedulesCommand}" IsEnabled="{Binding HasActiveCompany}" />                   
+                    <MenuItem Header="{Binding Loc[AllPendingSchedulesAllEmployees]}" Command="{Binding PrepareSubmitAllPendingSchedulesCommand}" IsEnabled="{Binding HasActiveCompany}" />
                     <Separator />
                     <MenuItem Header="{Binding Loc[OvertimeSubmission]}" Command="{Binding SubmitOvertimesCommand}" IsEnabled="{Binding HasActiveCompany}" />
                     <MenuItem Header="{Binding Loc[AllOvertimes]}" Command="{Binding PrepareSubmitAllOvertimesCommand}" IsEnabled="{Binding HasActiveCompany}" />
@@ -57,15 +50,7 @@
                     <MenuItem Header="{Binding Loc[HolidaySubmission]}" Command="{Binding SubmitHolidaysCommand}" IsEnabled="{Binding HasActiveCompany}" />
                     <MenuItem Header="{Binding Loc[AllHolidays]}" Command="{Binding PrepareSubmitAllHolidaysCommand}" IsEnabled="{Binding HasActiveCompany}" />
                 </MenuItem>
-            </Menu>
-
-            <Menu Grid.Column="2" VerticalAlignment="Center">
-                <Menu.Styles>
-                    <Style Selector="MenuItem:pointerover">
-                        <Setter Property="IsSubMenuOpen" Value="True" />
-                    </Style>
-                </Menu.Styles>
-                <MenuItem>
+                <MenuItem Classes="hover-open-root">
                     <MenuItem.Header>
                         <StackPanel Orientation="Horizontal" Spacing="6">
                             <TextBlock Text="{Binding Loc[LogsMenu]}" />
