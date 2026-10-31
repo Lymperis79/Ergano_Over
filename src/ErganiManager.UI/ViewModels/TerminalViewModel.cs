@@ -271,9 +271,16 @@ public partial class TerminalViewModel : ViewModelBase
                     .ToListAsync()
                 : new List<string>();
 
+            // Prefer the terminal's assigned branch; if none is assigned, fall back to
+            // the first active company branch so the weather panel is still useful.
             var branch = showWeather && _session.BranchId is int branchId
-                ? await db.Branches.AsNoTracking().FirstOrDefaultAsync(b => b.Id == branchId)
+                ? await db.Branches.AsNoTracking().FirstOrDefaultAsync(b => b.Id == branchId && b.CompanyId == companyId)
                 : null;
+            if (showWeather && branch == null)
+                branch = await db.Branches.AsNoTracking()
+                    .Where(b => b.CompanyId == companyId && b.IsActive)
+                    .OrderBy(b => b.BranchNumber)
+                    .FirstOrDefaultAsync();
 
             await Dispatcher.UIThread.InvokeAsync(() =>
             {
@@ -305,11 +312,14 @@ public partial class TerminalViewModel : ViewModelBase
                         (ShowAnnouncementTicker && !string.IsNullOrWhiteSpace(AnnouncementTickerText)) ||
                         (ShowWeatherInformation && !string.IsNullOrWhiteSpace(WeatherText));
                 });
+                if (showWeather)
+                    Serilog.Log.Warning("Terminal weather skipped: no active branch/address for company {CompanyId}", companyId);
             }
         }
-        catch
+        catch (Exception ex)
         {
             // Terminal information is optional. Database/network errors must never affect clocking.
+            Serilog.Log.Warning(ex, "Could not refresh terminal announcements/weather for company {CompanyId}", companyId);
         }
     }
 
@@ -339,31 +349,74 @@ public partial class TerminalViewModel : ViewModelBase
     {
         try
         {
-            // The branch address may include a street and postal code. Try the complete
-            // address first, then progressively broader comma-separated locality parts.
-            System.Text.Json.JsonElement place = default;
-            var candidates = new[] { address }
-                .Concat(address.Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries)
-                    .Reverse())
-                .Distinct(StringComparer.OrdinalIgnoreCase);
+            // Open-Meteo's geocoder is a place-name search, not a street-address geocoder.
+            // Try the full branch address and its locality components from broadest to narrowest.
+            var candidates = address
+                .Split(new[] { ',', ';', '\\n' }, StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries)
+                .Reverse()
+                .Append(address.Trim())
+                .Where(x => !string.IsNullOrWhiteSpace(x))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            double? latitude = null;
+            double? longitude = null;
+            string? placeName = null;
+
             foreach (var candidate in candidates)
             {
                 var geoUrl = "https://geocoding-api.open-meteo.com/v1/search?name=" +
-                    Uri.EscapeDataString(candidate) + "&count=1&language=en&format=json";
+                    Uri.EscapeDataString(candidate) + "&count=5&language=en&format=json&countryCode=GR";
                 using var geoResponse = await TerminalInfoHttpClient.GetAsync(geoUrl);
                 if (!geoResponse.IsSuccessStatusCode) continue;
                 using var geoJson = System.Text.Json.JsonDocument.Parse(await geoResponse.Content.ReadAsStringAsync());
-                if (geoJson.RootElement.TryGetProperty("results", out var found) && found.GetArrayLength() > 0)
+                if (!geoJson.RootElement.TryGetProperty("results", out var found) || found.GetArrayLength() == 0)
+                    continue;
+
+                // Prefer a Greek locality/city result, not a similarly named place abroad.
+                var selected = found.EnumerateArray()
+                    .FirstOrDefault(item => item.TryGetProperty("country_code", out var country) &&
+                        string.Equals(country.GetString(), "GR", StringComparison.OrdinalIgnoreCase));
+                if (selected.ValueKind == System.Text.Json.JsonValueKind.Undefined)
+                    selected = found[0];
+
+                latitude = selected.GetProperty("latitude").GetDouble();
+                longitude = selected.GetProperty("longitude").GetDouble();
+                placeName = selected.TryGetProperty("name", out var name) ? name.GetString() : null;
+                break;
+            }
+
+            // Last resort: Nominatim understands full street addresses. This is only used
+            // when Open-Meteo cannot resolve the branch locality.
+            if (latitude == null || longitude == null)
+            {
+                using var request = new HttpRequestMessage(HttpMethod.Get,
+                    "https://nominatim.openstreetmap.org/search?q=" +
+                    Uri.EscapeDataString(address + ", Greece") + "&format=jsonv2&limit=1&countrycodes=gr");
+                request.Headers.UserAgent.ParseAdd("ErganiManager/1.0 (terminal weather)");
+                using var response = await TerminalInfoHttpClient.SendAsync(request);
+                response.EnsureSuccessStatusCode();
+                using var json = System.Text.Json.JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+                if (json.RootElement.GetArrayLength() > 0)
                 {
-                    place = found[0].Clone();
-                    break;
+                    var result = json.RootElement[0];
+                    latitude = double.Parse(result.GetProperty("lat").GetString()!,
+                        System.Globalization.CultureInfo.InvariantCulture);
+                    longitude = double.Parse(result.GetProperty("lon").GetString()!,
+                        System.Globalization.CultureInfo.InvariantCulture);
+                    placeName = result.TryGetProperty("display_name", out var display)
+                        ? display.GetString()?.Split(',').FirstOrDefault()?.Trim()
+                        : null;
                 }
             }
-            if (place.ValueKind != System.Text.Json.JsonValueKind.Object) return;
-            var latitude = place.GetProperty("latitude").GetDouble();
-            var longitude = place.GetProperty("longitude").GetDouble();
-            var placeName = place.TryGetProperty("name", out var name) ? name.GetString() : null;
-            var weatherUrl = $"https://api.open-meteo.com/v1/forecast?latitude={latitude.ToString(System.Globalization.CultureInfo.InvariantCulture)}&longitude={longitude.ToString(System.Globalization.CultureInfo.InvariantCulture)}&current=temperature_2m,relative_humidity_2m,apparent_temperature,weather_code,wind_speed_10m&timezone=auto";
+
+            if (latitude == null || longitude == null)
+            {
+                Serilog.Log.Warning("Terminal weather location could not be resolved from branch address: {BranchAddress}", address);
+                return;
+            }
+
+            var weatherUrl = $"https://api.open-meteo.com/v1/forecast?latitude={latitude.Value.ToString(System.Globalization.CultureInfo.InvariantCulture)}&longitude={longitude.Value.ToString(System.Globalization.CultureInfo.InvariantCulture)}&current=temperature_2m,relative_humidity_2m,apparent_temperature,weather_code,wind_speed_10m&timezone=auto";
             using var weatherResponse = await TerminalInfoHttpClient.GetAsync(weatherUrl);
             weatherResponse.EnsureSuccessStatusCode();
             using var weatherJson = System.Text.Json.JsonDocument.Parse(await weatherResponse.Content.ReadAsStringAsync());
@@ -406,9 +459,10 @@ public partial class TerminalViewModel : ViewModelBase
             });
             _lastWeatherRefreshUtc = DateTime.UtcNow;
         }
-        catch
+        catch (Exception ex)
         {
-            // Keep the last successful weather value if the provider is temporarily unavailable.
+            // Weather is optional; log the reason so a missing bar is diagnosable.
+            Serilog.Log.Warning(ex, "Could not load branch weather for address {BranchAddress}", address);
         }
     }
 
