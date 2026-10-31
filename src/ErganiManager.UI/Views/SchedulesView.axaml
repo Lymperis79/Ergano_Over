@@ -12,6 +12,11 @@
         <Grid Grid.Row="0" ColumnDefinitions="Auto,Auto,Auto,Auto,Auto,*"
               Margin="0,0,0,8" ColumnSpacing="8" VerticalAlignment="Top">
             <Menu Grid.Column="0" VerticalAlignment="Center">
+                <Menu.Styles>
+                    <Style Selector="MenuItem:pointerover">
+                        <Setter Property="IsSubMenuOpen" Value="True" />
+                    </Style>
+                </Menu.Styles>
                 <MenuItem>
                     <MenuItem.Header>
                         <StackPanel Orientation="Horizontal" Spacing="6">
@@ -31,6 +36,11 @@
             </Menu>
 
             <Menu Grid.Column="1" VerticalAlignment="Center">
+                <Menu.Styles>
+                    <Style Selector="MenuItem:pointerover">
+                        <Setter Property="IsSubMenuOpen" Value="True" />
+                    </Style>
+                </Menu.Styles>
                 <MenuItem>
                     <MenuItem.Header>
                         <StackPanel Orientation="Horizontal" Spacing="6">
@@ -50,6 +60,11 @@
             </Menu>
 
             <Menu Grid.Column="2" VerticalAlignment="Center">
+                <Menu.Styles>
+                    <Style Selector="MenuItem:pointerover">
+                        <Setter Property="IsSubMenuOpen" Value="True" />
+                    </Style>
+                </Menu.Styles>
                 <MenuItem>
                     <MenuItem.Header>
                         <StackPanel Orientation="Horizontal" Spacing="6">
