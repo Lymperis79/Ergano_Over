@@ -116,11 +116,16 @@ public partial class AdministrationViewModel : ViewModelBase, IAdminSectionViewM
     partial void OnWeatherShowWindChanged(bool value) => UpdateWeatherPreview();
     partial void OnWeatherShowFeelsLikeChanged(bool value) => UpdateWeatherPreview();
     partial void OnWeatherShowLocationChanged(bool value) => UpdateWeatherPreview();
+    partial void OnWeatherManualAddressChanged(string value) => UpdateWeatherPreview();
 
     private void UpdateWeatherPreview()
     {
         var parts = new List<string>();
-        if (WeatherShowLocation) parts.Add("Athens");
+        var selectedBranch = WeatherBranches.FirstOrDefault(x => x.Id == SelectedWeatherBranchId);
+        var previewLocation = !string.IsNullOrWhiteSpace(WeatherManualAddress)
+            ? WeatherManualAddress.Trim()
+            : selectedBranch?.Name ?? Loc["Vm.Branch location"];
+        if (WeatherShowLocation) parts.Add(previewLocation);
         if (WeatherShowTemperature) parts.Add("22°C");
         if (WeatherShowCondition) parts.Add("Partly cloudy");
         if (WeatherShowFeelsLike) parts.Add("Feels 23°");
