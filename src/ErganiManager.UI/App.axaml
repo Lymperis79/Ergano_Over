@@ -31,6 +31,12 @@
             <Setter Property="Padding" Value="14,7" />
             <Setter Property="Cursor" Value="Hand" />
         </Style>
+        <!-- Popup scroll areas extend to the dialog edge. The right padding reserves
+             a gutter so overlay-style scrollbars never cover the last content column. -->
+        <Style Selector="ScrollViewer.popup-scroll">
+            <Setter Property="Margin" Value="0,0,-20,0" />
+            <Setter Property="Padding" Value="0,0,20,0" />
+        </Style>
         <Style Selector="TextBox">
             <Setter Property="CornerRadius" Value="6" />
         </Style>
