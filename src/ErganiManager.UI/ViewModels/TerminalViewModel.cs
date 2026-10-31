@@ -45,6 +45,8 @@ public partial class TerminalViewModel : ViewModelBase
     private readonly System.Timers.Timer _internetStatusTimer;
     private readonly System.Timers.Timer _erganiStatusTimer;
     private readonly System.Timers.Timer _terminalInfoTimer;
+    private readonly System.Timers.Timer _tickerTimer;
+    private DateTime _lastWeatherRefreshUtc = DateTime.MinValue;
     private int _tickerOffset;
     private string _tickerFullText = string.Empty;
     private static readonly HttpClient TerminalInfoHttpClient = new() { Timeout = TimeSpan.FromSeconds(8) };
@@ -133,6 +135,7 @@ public partial class TerminalViewModel : ViewModelBase
         _internetStatusTimer.Stop();
         _erganiStatusTimer.Stop();
         _terminalInfoTimer.Stop();
+        _tickerTimer.Stop();
         _retryService.QueuedScanUpdated -= OnQueuedScanUpdated;
     }
 
@@ -163,9 +166,11 @@ public partial class TerminalViewModel : ViewModelBase
         _internetStatusTimer.Elapsed += async (_, _) => await CheckInternetStatusAsync();
         _internetStatusTimer.Start();
         _erganiStatusTimer = new System.Timers.Timer(60000) { AutoReset = true };
-        _terminalInfoTimer = new System.Timers.Timer(30000) { AutoReset = true };
+        _terminalInfoTimer = new System.Timers.Timer(60000) { AutoReset = true };
+        _tickerTimer = new System.Timers.Timer(250) { AutoReset = true };
+        _tickerTimer.Elapsed += (_, _) => Dispatcher.UIThread.Post(UpdateAnnouncementTicker);
+        _tickerTimer.Start();
         _terminalInfoTimer.Elapsed += async (_, _) => await RefreshTerminalInformationAsync();
-        _terminalInfoTimer.Elapsed += (_, _) => Dispatcher.UIThread.Post(UpdateAnnouncementTicker);
         _terminalInfoTimer.Start();
         _erganiStatusTimer.Elapsed += async (_, _) => await CheckErganiStatusAsync();
         _erganiStatusTimer.Start();
@@ -271,8 +276,12 @@ public partial class TerminalViewModel : ViewModelBase
                     !string.IsNullOrWhiteSpace(WeatherText);
             });
 
-            if (branch != null && !string.IsNullOrWhiteSpace(branch.Address))
+            if (branch != null && !string.IsNullOrWhiteSpace(branch.Address) &&
+                DateTime.UtcNow - _lastWeatherRefreshUtc >= TimeSpan.FromMinutes(20))
+            {
                 await RefreshBranchWeatherAsync(branch.Address);
+                _lastWeatherRefreshUtc = DateTime.UtcNow;
+            }
             else
                 await Dispatcher.UIThread.InvokeAsync(() => WeatherText = string.Empty);
         }
