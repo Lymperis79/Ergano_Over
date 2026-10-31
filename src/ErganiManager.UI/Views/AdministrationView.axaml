@@ -437,6 +437,39 @@
                         </StackPanel>
                     </TabItem>
 
+                    <TabItem Header="Announcements" IsVisible="{Binding !IsDatabaseOptionsView}">
+                        <StackPanel Spacing="12" Margin="0,12,0,0">
+                            <Border Background="{DynamicResource CardBrush}" CornerRadius="8" Padding="20">
+                                <StackPanel Spacing="10">
+                                    <TextBlock Text="Employee terminal announcements" FontSize="16" FontWeight="SemiBold" />
+                                    <TextBlock Text="Messages are saved for this company and appear on its clock-in/out terminals. Inactive messages remain in the database but are hidden from employees." Foreground="Gray" TextWrapping="Wrap" />
+                                    <TextBox Text="{Binding NewTerminalAnnouncement, Mode=TwoWay}" Watermark="Type an announcement for employees…" AcceptsReturn="True" MinHeight="72" TextWrapping="Wrap" />
+                                    <Button Content="Publish announcement" Command="{Binding AddTerminalAnnouncementCommand}" Classes="accent" HorizontalAlignment="Left" />
+                                    <TextBlock Text="{Binding TerminalAnnouncementsStatus}" TextWrapping="Wrap" />
+                                </StackPanel>
+                            </Border>
+                            <Border Background="{DynamicResource CardBrush}" CornerRadius="8" Padding="16">
+                                <StackPanel Spacing="8">
+                                    <TextBlock Text="Saved announcements" FontSize="15" FontWeight="SemiBold" />
+                                    <ItemsControl ItemsSource="{Binding TerminalAnnouncements}">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate x:DataType="vm:TerminalAnnouncementEdit">
+                                                <Border BorderBrush="{DynamicResource LineBrush}" BorderThickness="0,0,0,1" Padding="4,10">
+                                                    <Grid ColumnDefinitions="*,Auto,Auto" RowDefinitions="Auto,Auto">
+                                                        <TextBlock Grid.Row="0" Grid.Column="0" Text="{Binding Message}" TextWrapping="Wrap" />
+                                                        <TextBlock Grid.Row="1" Grid.Column="0" Text="{Binding CreatedAtUtc, StringFormat='Created: {0:yyyy-MM-dd HH:mm}'}" Foreground="Gray" FontSize="11" />
+                                                        <TextBlock Grid.Row="0" Grid.Column="1" Grid.RowSpan="2" Text="{Binding IsActive, StringFormat='Active: {0}'}" VerticalAlignment="Center" Margin="8,0" />
+                                                        <Button Grid.Row="0" Grid.Column="2" Grid.RowSpan="2" Content="Enable / disable" Command="{Binding $parent[UserControl].((vm:AdministrationViewModel)DataContext).ToggleTerminalAnnouncementCommand}" CommandParameter="{Binding}" Margin="4,0" />
+                                                    </Grid>
+                                                </Border>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </StackPanel>
+                            </Border>
+                        </StackPanel>
+                    </TabItem>
+
                     <TabItem Header="{Binding Loc[AdminDangerZone]}" IsVisible="{Binding IsDatabaseOptionsView}">
                         <Border Background="#2A1A1A" BorderBrush="#EF5350" BorderThickness="1" CornerRadius="8" Padding="20" Margin="0,12,0,0">
                             <StackPanel Spacing="10">
