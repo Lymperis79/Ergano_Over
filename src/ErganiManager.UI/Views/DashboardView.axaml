@@ -28,11 +28,6 @@
             <Border HorizontalAlignment="Right" MaxWidth="520" Padding="20,14"
                     Background="#E8202B38" BorderBrush="#557DA6C9" BorderThickness="1"
                     CornerRadius="18" IsVisible="{Binding WeatherText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
-                <Border.BoxShadow>
-                    <BoxShadows>
-                        <BoxShadow Color="#50000000" Blur="18" Spread="1" OffsetX="0" OffsetY="4" />
-                    </BoxShadows>
-                </Border.BoxShadow>
                 <TextBlock Text="{Binding WeatherText}" FontSize="23" FontWeight="SemiBold"
                            Foreground="#F3F8FF" TextWrapping="Wrap" />
             </Border>
