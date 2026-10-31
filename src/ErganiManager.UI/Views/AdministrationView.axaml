@@ -455,7 +455,7 @@
                                 <StackPanel Spacing="10">
                                     <TextBlock Text="{Binding Loc[TerminalAnnouncements]}" FontSize="16" FontWeight="SemiBold" />
                                     <TextBlock Text="{Binding Loc[TerminalAnnouncementsDescription]}" Foreground="Gray" TextWrapping="Wrap" />
-                                    <TextBox Text="{Binding NewTerminalAnnouncement, Mode=TwoWay}" Watermark="{Binding Loc[NewAnnouncement]}" AcceptsReturn="True" MaxLength="200" MinHeight="72" TextWrapping="Wrap" />
+                                    <TextBox Text="{Binding NewTerminalAnnouncement, Mode=TwoWay}" PlaceholderText="{Binding Loc[NewAnnouncement]}" AcceptsReturn="True" MaxLength="200" MinHeight="72" TextWrapping="Wrap" />
                                     <Button Content="{Binding Loc[PublishAnnouncement]}" Command="{Binding AddTerminalAnnouncementCommand}" Classes="accent" HorizontalAlignment="Left" />
                                     <TextBlock Text="{Binding TerminalAnnouncementsStatus}" TextWrapping="Wrap" />
                                 </StackPanel>
