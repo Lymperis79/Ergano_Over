@@ -340,16 +340,19 @@ public partial class TerminalViewModel : ViewModelBase
 
     private async Task RefreshBranchWeatherAsync(BusinessBranch branch)
     {
-        var address = !string.IsNullOrWhiteSpace(branch.WeatherManualAddress)
-            ? branch.WeatherManualAddress.Trim()
-            : branch.Address;
+        var locationAddresses = new[] { branch.WeatherManualAddress, branch.Address }
+            .Where(x => !string.IsNullOrWhiteSpace(x))
+            .Select(x => x!.Trim())
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+        var address = locationAddresses.FirstOrDefault() ?? string.Empty;
         try
         {
-            // Open-Meteo's geocoder is a place-name search, not a street-address geocoder.
-            // Try the full branch address and its locality components from broadest to narrowest.
-            var candidates = new[] { address.Trim() }
-                .Concat(address.Split(new[] { ',', ';', '\n' },
-                    StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries).Reverse())
+            // Try the manual override first, then the branch address. For each one,
+            // search the full address and its locality components.
+            var candidates = locationAddresses
+                .SelectMany(value => new[] { value }.Concat(value.Split(new[] { ',', ';', '\n' },
+                    StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries).Reverse()))
                 .Where(x => !string.IsNullOrWhiteSpace(x) &&
                     !string.Equals(x, "Greece", StringComparison.OrdinalIgnoreCase) &&
                     !string.Equals(x, "Ελλάδα", StringComparison.OrdinalIgnoreCase) &&
@@ -387,19 +390,21 @@ public partial class TerminalViewModel : ViewModelBase
                 break;
             }
 
-            // Last resort: Nominatim understands full street addresses. This is only used
-            // when Open-Meteo cannot resolve the branch locality.
+            // Last resort: Nominatim understands full street addresses. Try both the
+            // manual override and branch address so a stale override cannot hide weather.
             if (latitude == null || longitude == null)
             {
-                using var request = new HttpRequestMessage(HttpMethod.Get,
-                    "https://nominatim.openstreetmap.org/search?q=" +
-                    Uri.EscapeDataString(address + ", Greece") + "&format=jsonv2&limit=1&countrycodes=gr");
-                request.Headers.UserAgent.ParseAdd("ErganiManager/1.0 (terminal weather)");
-                using var response = await TerminalInfoHttpClient.SendAsync(request);
-                response.EnsureSuccessStatusCode();
-                using var json = System.Text.Json.JsonDocument.Parse(await response.Content.ReadAsStringAsync());
-                if (json.RootElement.GetArrayLength() > 0)
+                foreach (var candidateAddress in locationAddresses)
                 {
+                    using var request = new HttpRequestMessage(HttpMethod.Get,
+                        "https://nominatim.openstreetmap.org/search?q=" +
+                        Uri.EscapeDataString(candidateAddress + ", Greece") + "&format=jsonv2&limit=1&countrycodes=gr");
+                    request.Headers.UserAgent.ParseAdd("ErganiManager/1.0 (terminal weather)");
+                    using var response = await TerminalInfoHttpClient.SendAsync(request);
+                    response.EnsureSuccessStatusCode();
+                    using var json = System.Text.Json.JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+                    if (json.RootElement.GetArrayLength() == 0) continue;
+
                     var result = json.RootElement[0];
                     latitude = double.Parse(result.GetProperty("lat").GetString()!,
                         System.Globalization.CultureInfo.InvariantCulture);
@@ -408,6 +413,7 @@ public partial class TerminalViewModel : ViewModelBase
                     placeName = result.TryGetProperty("display_name", out var display)
                         ? display.GetString()?.Split(',').FirstOrDefault()?.Trim()
                         : null;
+                    break;
                 }
             }
 
