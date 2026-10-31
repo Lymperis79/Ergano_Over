@@ -29,7 +29,7 @@
                 <TextBlock Grid.Row="1" Text="{Binding StatusMessage}" Foreground="Gray" FontSize="12" TextWrapping="Wrap" />
 
                 <!-- Overtime records list -->
-                <ScrollViewer Classes="popup-scroll" Grid.Row="2" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto" VerticalAlignment="Stretch">
+                <ScrollViewer Grid.Row="2" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto" VerticalAlignment="Stretch">
                 <ItemsControl ItemsSource="{Binding Records}">
                     <ItemsControl.ItemsPanel>
                         <ItemsPanelTemplate><StackPanel Spacing="6" /></ItemsPanelTemplate>
