@@ -33,7 +33,7 @@
         <Style Selector="TextBlock.connection.unknown"><Setter Property="Foreground" Value="#B0B0B0" /></Style>
     </Window.Styles>
 
-    <Grid Background="#0F1115" RowDefinitions="2*,*">
+    <Grid Background="#0F1115" RowDefinitions="2*,*,Auto">
 
         <!-- Main terminal content -->
         <StackPanel Grid.Row="0" VerticalAlignment="Center" HorizontalAlignment="Center"
@@ -87,7 +87,7 @@
 
         <!-- Today's scans: scrollable and sized by the available screen area.
              No fixed "last 10" limit; larger displays show more rows at once. -->
-        <Border Grid.Row="1" Width="1000" MaxWidth="1100" HorizontalAlignment="Center" VerticalAlignment="Stretch" Margin="16,0,16,28"
+        <Border Grid.Row="1" Width="1000" MaxWidth="1100" HorizontalAlignment="Center" VerticalAlignment="Stretch" Margin="16,0,16,12"
                 Background="{DynamicResource CardBrush}" CornerRadius="10" Padding="16,10"
                 IsVisible="{Binding HasRecentScans}">
             <Grid RowDefinitions="Auto,*">
@@ -114,12 +114,27 @@
             </Grid>
         </Border>
 
+        <!-- Employee information strip: read-only and never takes scanner focus. -->
+        <Border Grid.Row="2" Background="#171D27" BorderBrush="#303846" BorderThickness="0,1,0,0"
+                Padding="18,9" IsVisible="{Binding HasTerminalInformation}">
+            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="24">
+                <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
+                    <TextBlock Text="📢" FontSize="17" VerticalAlignment="Center" />
+                    <TextBlock Text="{Binding AnnouncementTickerText}" Foreground="#F2F2F2"
+                               FontSize="15" FontWeight="SemiBold" VerticalAlignment="Center"
+                               TextTrimming="CharacterEllipsis" />
+                </StackPanel>
+                <TextBlock Grid.Column="1" Text="{Binding WeatherText}" Foreground="#B8D7F5"
+                           FontSize="13" VerticalAlignment="Center" />
+            </Grid>
+        </Border>
+
         <!-- Key hints (kiosk: no buttons that could be pressed by accident) -->
         <TextBlock Grid.Row="1" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,12,6"
                    Foreground="#444444" FontSize="11" Text="{Binding Loc[CtrlShiftLLogOutCtrl]}" />
 
         <!-- Result popup overlay (closes by itself after 2 seconds) -->
-        <Border Grid.RowSpan="2" IsVisible="{Binding IsPopupVisible}"
+        <Border Grid.RowSpan="3" IsVisible="{Binding IsPopupVisible}"
                 Background="#CC000000">
             <Border Background="{DynamicResource PanelBrush}" CornerRadius="12" Padding="36"
                     Width="640" MaxWidth="900" VerticalAlignment="Center" HorizontalAlignment="Center"
