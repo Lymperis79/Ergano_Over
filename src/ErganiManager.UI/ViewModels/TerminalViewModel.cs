@@ -267,8 +267,8 @@ public partial class TerminalViewModel : ViewModelBase
                 ? await db.Branches.AsNoTracking().FirstOrDefaultAsync(b => b.Id == branchId && b.CompanyId == companyId)
                 : null;
             branch ??= await db.Branches.AsNoTracking()
-                .Where(b => b.CompanyId == companyId && b.IsActive)
-                .OrderBy(b => b.BranchNumber)
+                .Where(b => b.CompanyId == companyId && b.IsActive && !string.IsNullOrWhiteSpace(b.Address))
+                    .OrderBy(b => b.BranchNumber)
                 .FirstOrDefaultAsync();
 
             await Dispatcher.UIThread.InvokeAsync(() =>
@@ -328,11 +328,13 @@ public partial class TerminalViewModel : ViewModelBase
         {
             // Open-Meteo's geocoder is a place-name search, not a street-address geocoder.
             // Try the full branch address and its locality components from broadest to narrowest.
-            var candidates = address
-                .Split(new[] { ',', ';', '\n' }, StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries)
-                .Reverse()
-                .Append(address.Trim())
-                .Where(x => !string.IsNullOrWhiteSpace(x))
+            var candidates = new[] { address.Trim() }
+                .Concat(address.Split(new[] { ',', ';', '\n' },
+                    StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries).Reverse())
+                .Where(x => !string.IsNullOrWhiteSpace(x) &&
+                    !string.Equals(x, "Greece", StringComparison.OrdinalIgnoreCase) &&
+                    !string.Equals(x, "Ελλάδα", StringComparison.OrdinalIgnoreCase) &&
+                    !System.Text.RegularExpressions.Regex.IsMatch(x, @"^\\d{4,6}$"))
                 .Distinct(StringComparer.OrdinalIgnoreCase)
                 .ToList();
 
