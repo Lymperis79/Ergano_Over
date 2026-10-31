@@ -75,6 +75,12 @@ public class AppDbContext : DbContext
         // ── BusinessBranch ───────────────────────────────────
         modelBuilder.Entity<BusinessBranch>(e =>
         {
+            // Preserve the original all-details weather display for branches already in the database.
+            e.Property(b => b.WeatherShowTemperature).HasDefaultValue(true).ValueGeneratedNever();
+            e.Property(b => b.WeatherShowCondition).HasDefaultValue(true).ValueGeneratedNever();
+            e.Property(b => b.WeatherShowHumidity).HasDefaultValue(true).ValueGeneratedNever();
+            e.Property(b => b.WeatherShowLocation).HasDefaultValue(true).ValueGeneratedNever();
+
             e.HasOne(b => b.Company)
                 .WithMany(c => c.Branches)
                 .HasForeignKey(b => b.CompanyId)
