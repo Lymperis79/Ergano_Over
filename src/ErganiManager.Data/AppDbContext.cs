@@ -28,10 +28,18 @@ public class AppDbContext : DbContext
     public DbSet<ErganiImportLog> ErganiImportLogs => Set<ErganiImportLog>();
     public DbSet<ScheduleCloneBatch> ScheduleCloneBatches => Set<ScheduleCloneBatch>();
     public DbSet<OfficialHolidayDefinition> OfficialHolidayDefinitions => Set<OfficialHolidayDefinition>();
+    public DbSet<TerminalAnnouncement> TerminalAnnouncements => Set<TerminalAnnouncement>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
+
+        // ── Terminal announcements ─────────────────────────────
+        modelBuilder.Entity<TerminalAnnouncement>(e =>
+        {
+            e.Property(a => a.Message).HasMaxLength(200).IsRequired();
+            e.HasIndex(a => new { a.CompanyId, a.IsActive, a.ExpiresAtUtc });
+        });
 
         // ── Permanent official holiday catalogue ───────────────
         modelBuilder.Entity<OfficialHolidayDefinition>(e =>
