@@ -28,6 +28,12 @@ public class Company
 
     public bool IsActive { get; set; } = true;
 
+    /// <summary>Controls whether active announcements are shown on employee terminals.</summary>
+    public bool ShowTerminalAnnouncements { get; set; } = true;
+
+    /// <summary>Controls whether branch weather is shown on employee terminals.</summary>
+    public bool ShowTerminalWeather { get; set; } = true;
+
     // Time rules
     public int EarlyClockInBlockMinutes { get; set; } = 15;
     public int EarlyDepartureAlertMinutes { get; set; } = 10;

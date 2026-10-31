@@ -118,13 +118,13 @@
         <Border Grid.Row="2" Background="#171D27" BorderBrush="#303846" BorderThickness="0,1,0,0"
                 Padding="18,9" IsVisible="{Binding HasTerminalInformation}">
             <Grid ColumnDefinitions="*,Auto" ColumnSpacing="24">
-                <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
+                <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="12" VerticalAlignment="Center" IsVisible="{Binding ShowAnnouncementTicker}">
                     <TextBlock Text="📢" FontSize="17" VerticalAlignment="Center" />
                     <TextBlock Text="{Binding AnnouncementTickerText}" Foreground="#F2F2F2"
                                FontSize="15" FontWeight="SemiBold" VerticalAlignment="Center"
                                TextTrimming="CharacterEllipsis" />
                 </StackPanel>
-                <TextBlock Grid.Column="1" Text="{Binding WeatherText}" Foreground="#B8D7F5"
+                <TextBlock Grid.Column="1" IsVisible="{Binding ShowWeatherInformation}" Text="{Binding WeatherText}" Foreground="#B8D7F5"
                            FontSize="13" VerticalAlignment="Center" />
             </Grid>
         </Border>

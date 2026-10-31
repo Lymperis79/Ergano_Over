@@ -441,6 +441,18 @@
                         <StackPanel Spacing="12" Margin="0,12,0,0">
                             <Border Background="{DynamicResource CardBrush}" CornerRadius="8" Padding="20">
                                 <StackPanel Spacing="10">
+                                    <TextBlock Text="{Binding Loc[TerminalDisplaySettings]}" FontSize="16" FontWeight="SemiBold" />
+                                    <TextBlock Text="{Binding Loc[TerminalDisplaySettingsDescription]}" Foreground="Gray" TextWrapping="Wrap" />
+                                    <CheckBox Content="{Binding Loc[ShowTerminalAnnouncements]}" IsChecked="{Binding ShowTerminalAnnouncements, Mode=TwoWay}" />
+                                    <CheckBox Content="{Binding Loc[ShowTerminalWeather]}" IsChecked="{Binding ShowTerminalWeather, Mode=TwoWay}" />
+                                    <StackPanel Orientation="Horizontal" Spacing="12">
+                                        <Button Content="{Binding Loc[Save]}" Command="{Binding SaveTerminalDisplaySettingsCommand}" Classes="accent" />
+                                        <TextBlock Text="{Binding TerminalDisplaySettingsStatus}" VerticalAlignment="Center" TextWrapping="Wrap" />
+                                    </StackPanel>
+                                </StackPanel>
+                            </Border>
+                            <Border Background="{DynamicResource CardBrush}" CornerRadius="8" Padding="20">
+                                <StackPanel Spacing="10">
                                     <TextBlock Text="{Binding Loc[TerminalAnnouncements]}" FontSize="16" FontWeight="SemiBold" />
                                     <TextBlock Text="{Binding Loc[TerminalAnnouncementsDescription]}" Foreground="Gray" TextWrapping="Wrap" />
                                     <TextBox Text="{Binding NewTerminalAnnouncement, Mode=TwoWay}" Watermark="{Binding Loc[NewAnnouncement]}" AcceptsReturn="True" MaxLength="200" MinHeight="72" TextWrapping="Wrap" />
