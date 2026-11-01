@@ -141,6 +141,25 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
 
     // ── Employee / navigation ─────────────────────────────────────────────────
     public ObservableCollection<EmployeeDto> AvailableEmployees { get; } = new();
+    public ObservableCollection<EmployeeDto> FilteredEmployees { get; } = new();
+    [ObservableProperty] private string _employeeSearchText = string.Empty;
+
+    partial void OnEmployeeSearchTextChanged(string value) => RefreshFilteredEmployees();
+
+    private void RefreshFilteredEmployees()
+    {
+        var query = EmployeeSearchText?.Trim();
+        var matches = string.IsNullOrWhiteSpace(query)
+            ? AvailableEmployees.ToList()
+            : AvailableEmployees.Where(e =>
+                    e.FullName.Contains(query, StringComparison.CurrentCultureIgnoreCase) ||
+                    e.Id.ToString().Contains(query, StringComparison.Ordinal))
+                .ToList();
+
+        FilteredEmployees.Clear();
+        foreach (var employee in matches)
+            FilteredEmployees.Add(employee);
+    }
     public ObservableCollection<ErganiManager.Data.Entities.OvertimeJustification> AvailableOvertimeJustifications { get; } =
         new(Enum.GetValues<ErganiManager.Data.Entities.OvertimeJustification>());
     [ObservableProperty] private ErganiManager.Data.Entities.OvertimeJustification _editingOvertimeJustification =
@@ -570,8 +589,12 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
         await RefreshCalendarAsync();
     }
 
-    partial void OnSelectedEmployeeChanged(EmployeeDto? value) =>
+    partial void OnSelectedEmployeeChanged(EmployeeDto? value)
+    {
+        if (value is not null && !string.Equals(EmployeeSearchText, value.FullName, StringComparison.Ordinal))
+            EmployeeSearchText = value.FullName;
         _ = RefreshCalendarAsync();
+    }
 
     // ── Calendar build ────────────────────────────────────────────────────────
 
