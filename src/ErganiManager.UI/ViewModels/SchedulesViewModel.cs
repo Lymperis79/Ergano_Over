@@ -153,9 +153,9 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
             ? AvailableEmployees.ToList()
             : AvailableEmployees.Where(e =>
                     e is not null &&
-                    (!string.IsNullOrWhiteSpace(e.FullName) &&
-                     e.FullName.Contains(query, StringComparison.CurrentCultureIgnoreCase)) ||
-                    e.Id.ToString().Contains(query, StringComparison.Ordinal))
+                    ((!string.IsNullOrWhiteSpace(e.FullName) &&
+                      e.FullName.Contains(query, StringComparison.CurrentCultureIgnoreCase)) ||
+                     e.Id.ToString().Contains(query, StringComparison.Ordinal)))
                 .ToList();
 
         FilteredEmployees.Clear();
@@ -762,8 +762,8 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
             var actual = previous.ActualDeparture.HasValue && next.ActualArrival.HasValue;
             if (actual)
             {
-                clockOut = previous.ActualDeparture.Value;
-                clockIn = next.ActualArrival.Value;
+                clockOut = previous.ActualDeparture.GetValueOrDefault();
+                clockIn = next.ActualArrival.GetValueOrDefault();
             }
             else
             {
