@@ -25,19 +25,23 @@
                         <StackPanel Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2" Spacing="4">
                             <TextBlock Text="{Binding Loc[HolidayType]}" FontWeight="SemiBold" />
                             <Grid>
-                                <ComboBox x:Name="HolidayTypePicker"
-                                          ItemsSource="{Binding FilteredLeaveTypeOptions}"
-                                          SelectedItem="{Binding SelectedType, Mode=TwoWay}"
-                                          Text="{Binding LeaveTypeSearchText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                          IsEditable="True"
-                                          PlaceholderText="{Binding Loc[SelectTheHolidayType]}"
-                                          HorizontalAlignment="Stretch">
-                                    <ComboBox.ItemTemplate>
+                                <AutoCompleteBox x:Name="HolidayTypePicker"
+                                                 ItemsSource="{Binding FilteredLeaveTypeOptions}"
+                                                 SelectedItem="{Binding SelectedType, Mode=TwoWay}"
+                                                 Text="{Binding LeaveTypeSearchText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                 ValueMemberBinding="{Binding Label}"
+                                                 FilterMode="Contains"
+                                                 MinimumPrefixLength="0"
+                                                 IsTextCompletionEnabled="False"
+                                                 ClearSelectionOnLostFocus="False"
+                                                 PlaceholderText="{Binding Loc[SelectTheHolidayType]}"
+                                                 HorizontalAlignment="Stretch">
+                                    <AutoCompleteBox.ItemTemplate>
                                         <DataTemplate x:DataType="cm:LeaveTypeInfo">
                                             <TextBlock Text="{Binding Label}" TextTrimming="CharacterEllipsis" />
                                         </DataTemplate>
-                                    </ComboBox.ItemTemplate>
-                                </ComboBox>
+                                    </AutoCompleteBox.ItemTemplate>
+                                </AutoCompleteBox>
                                 <ToggleButton IsChecked="{Binding #HolidayTypePicker.IsDropDownOpen, Mode=TwoWay}"
                                               Content="▾"
                                               Width="30"
