@@ -82,20 +82,28 @@
 
                 <!-- Employee picker -->
                 <TextBlock Grid.Column="0" Text="{Binding Loc[Employee2]}" VerticalAlignment="Center" Margin="0,0,8,0" />
-                <AutoCompleteBox Grid.Column="1"
+                <Grid Grid.Column="1" ColumnDefinitions="*,32" Width="292">
+                    <AutoCompleteBox Grid.Column="0"
                                  ItemsSource="{Binding AvailableEmployees}"
                                  SelectedItem="{Binding SelectedEmployee, Mode=TwoWay}"
                                  ValueMemberBinding="{Binding FullName}"
                                  FilterMode="Contains"
-                                 MinimumPrefixLength="1"
+                                 MinimumPrefixLength="0"
                                  IsTextCompletionEnabled="False"
                                  ClearSelectionOnLostFocus="False"
-                                 Width="260"
+                                 HorizontalAlignment="Stretch"
                                  ToolTip.Tip="Type an employee name or employee number to filter the list">
                     <AutoCompleteBox.ItemTemplate>
                         <DataTemplate x:DataType="core:EmployeeDto"><TextBlock Text="{Binding FullName}" /></DataTemplate>
                     </AutoCompleteBox.ItemTemplate>
                 </AutoCompleteBox>
+                    <ToggleButton Grid.Column="1"
+                                  IsChecked="{Binding #ScheduleEmployeePicker.IsDropDownOpen, Mode=TwoWay}"
+                                  Content="▾"
+                                  MinWidth="32"
+                                  VerticalAlignment="Stretch"
+                                  ToolTip.Tip="Open employee list" />
+                </Grid>
 
                 <!-- View mode -->
                 <Button Grid.Column="2" Content="{Binding Loc[Month]}"
