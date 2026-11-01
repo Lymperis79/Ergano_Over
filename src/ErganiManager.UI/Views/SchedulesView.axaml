@@ -83,7 +83,7 @@
                 <!-- Employee picker -->
                 <TextBlock Grid.Column="0" Text="{Binding Loc[Employee2]}" VerticalAlignment="Center" Margin="0,0,8,0" />
                 <Grid Grid.Column="1" ColumnDefinitions="*,32" Width="292">
-                    <AutoCompleteBox Grid.Column="0"
+                    <AutoCompleteBox x:Name="ScheduleEmployeePicker" Grid.Column="0"
                                  ItemsSource="{Binding AvailableEmployees}"
                                  SelectedItem="{Binding SelectedEmployee, Mode=TwoWay}"
                                  ValueMemberBinding="{Binding FullName}"
