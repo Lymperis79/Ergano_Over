@@ -41,7 +41,7 @@
                           VerticalAlignment="Stretch">
                         <Border Grid.Row="0" Background="{DynamicResource PanelBrush}" CornerRadius="6"
                                 Padding="0" Margin="0,0,0,4">
-                            <Grid ColumnDefinitions="44,*,170,100,180,150,100,80,100,80">
+                            <Grid ColumnDefinitions="44,*,170,100,180,150,120,100,120,120">
                                 <Button Grid.Column="1" Content="{Binding EmployeeSortLabel}" Command="{Binding SortRecordsCommand}" CommandParameter="Employee" HorizontalAlignment="Stretch" Margin="0" />
                                 <Button Grid.Column="2" Content="{Binding OvertimeDateSortLabel}" Command="{Binding SortRecordsCommand}" CommandParameter="OvertimeDate" HorizontalAlignment="Stretch" Margin="0" />
                                 <Button Grid.Column="3" Content="{Binding EndTimeSortLabel}" Command="{Binding SortRecordsCommand}" CommandParameter="EndTime" HorizontalAlignment="Stretch" Margin="0" />
@@ -59,7 +59,7 @@
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate x:CompileBindings="False">
                                         <Border Background="{DynamicResource CardBrush}" CornerRadius="8" Padding="0">
-                                            <Grid ColumnDefinitions="44,*,170,100,180,150,100,80,100,80">
+                                            <Grid ColumnDefinitions="44,*,170,100,180,150,120,100,120,120">
                                                 <CheckBox Grid.Column="0" Tag="{Binding}" Click="OnSelectionClick"
                                                           IsVisible="{Binding !SubmittedToErgani}" VerticalAlignment="Center"
                                                           HorizontalAlignment="Center" />
