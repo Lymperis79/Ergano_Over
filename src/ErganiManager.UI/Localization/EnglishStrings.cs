@@ -555,6 +555,8 @@ public static class EnglishStrings
         [L.TodayProblemsLabel] = "Problems:",
 
         [L.NavMasterData] = "🗂 Master data",
+        [L.NavWorkingDay] = "🕘 Working Day",
+        [L.NavLogs] = "📋 Logs",
         [L.NavAdminGroup] = "⚙ Administration",
         [L.NavDatabaseTools] = "⚙️ Application Tools",
         [L.NavScan] = "📟 Scan",
