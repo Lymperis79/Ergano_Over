@@ -18,7 +18,7 @@
                         <Setter Property="IsSubMenuOpen" Value="True" />
                     </Style>
                 </Menu.Styles>
-                <MenuItem Classes="hover-open-root">
+                <MenuItem Classes="hover-open-root" PointerEntered="OnRootMenuItemPointerEntered">
                     <MenuItem.Header>
                         <StackPanel Orientation="Horizontal" Spacing="6">
                             <TextBlock Text="{Binding Loc[ScheduleActionsMenu]}" />
@@ -34,7 +34,7 @@
                     <Separator />
                     <MenuItem Header="{Binding Loc[ExportMonth]}" Command="{Binding ExportMonthCommand}" IsEnabled="{Binding HasActiveCompany}" />
                 </MenuItem>
-                <MenuItem Classes="hover-open-root">
+                <MenuItem Classes="hover-open-root" PointerEntered="OnRootMenuItemPointerEntered">
                     <MenuItem.Header>
                         <StackPanel Orientation="Horizontal" Spacing="6">
                             <TextBlock Text="{Binding Loc[SubmissionActionsMenu]}" />
@@ -50,7 +50,7 @@
                     <MenuItem Header="{Binding Loc[HolidaySubmission]}" Command="{Binding SubmitHolidaysCommand}" IsEnabled="{Binding HasActiveCompany}" />
                     <MenuItem Header="{Binding Loc[AllHolidays]}" Command="{Binding PrepareSubmitAllHolidaysCommand}" IsEnabled="{Binding HasActiveCompany}" />
                 </MenuItem>
-                <MenuItem Classes="hover-open-root">
+                <MenuItem Classes="hover-open-root" PointerEntered="OnRootMenuItemPointerEntered">
                     <MenuItem.Header>
                         <StackPanel Orientation="Horizontal" Spacing="6">
                             <TextBlock Text="{Binding Loc[LogsMenu]}" />
