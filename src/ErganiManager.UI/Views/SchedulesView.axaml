@@ -13,14 +13,9 @@
         <Grid Grid.Row="0" ColumnDefinitions="Auto,Auto,Auto,Auto,Auto,*"
               Margin="0,0,0,8" ColumnSpacing="8" VerticalAlignment="Top">
             <Menu Grid.Column="0" Grid.ColumnSpan="3" VerticalAlignment="Center">
-                <Menu.Styles>
-                    <Style Selector="MenuItem.hover-open-root:pointerover">
-                        <Setter Property="IsSubMenuOpen" Value="True" />
-                    </Style>
-                </Menu.Styles>
                 <MenuItem Classes="hover-open-root"
                           PointerEntered="OnRootMenuItemPointerEntered"
-                          PointerExited="OnRootMenuItemPointerExited">
+>
                     <MenuItem.Header>
                         <StackPanel Orientation="Horizontal" Spacing="6">
                             <TextBlock Text="{Binding Loc[ScheduleActionsMenu]}" />
