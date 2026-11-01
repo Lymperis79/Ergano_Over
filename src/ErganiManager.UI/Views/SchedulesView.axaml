@@ -93,7 +93,7 @@
                                  Width="260"
                                  ToolTip.Tip="Type an employee name or employee number to filter the list">
                     <AutoCompleteBox.ItemTemplate>
-                        <DataTemplate><TextBlock Text="{Binding FullName}" /></DataTemplate>
+                        <DataTemplate x:DataType="core:EmployeeDto"><TextBlock Text="{Binding FullName}" /></DataTemplate>
                     </AutoCompleteBox.ItemTemplate>
                 </AutoCompleteBox>
 
