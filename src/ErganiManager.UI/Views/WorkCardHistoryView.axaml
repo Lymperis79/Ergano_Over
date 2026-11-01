@@ -99,14 +99,15 @@
                                        FontSize="12"
                                        Foreground="Gray" />
 
-                            <AutoCompleteBox ItemsSource="{Binding AvailableEmployees}"
+                            <Grid ColumnDefinitions="*,32" MinWidth="292" HorizontalAlignment="Left">
+                                <AutoCompleteBox x:Name="WorkCardEmployeePicker" ItemsSource="{Binding AvailableEmployees}"
                                                SelectedItem="{Binding FilterEmployee, Mode=TwoWay}"
                                                ValueMemberBinding="{Binding FullName}"
                                                FilterMode="Contains"
-                                               MinimumPrefixLength="1"
+                                               MinimumPrefixLength="0"
                                                IsTextCompletionEnabled="False"
                                                ClearSelectionOnLostFocus="False"
-                                               MinWidth="260"
+                                               HorizontalAlignment="Stretch"
                                                HorizontalAlignment="Left"
                                                ToolTip.Tip="Type an employee name or employee number to filter the list">
                                 <AutoCompleteBox.ItemTemplate>
@@ -115,6 +116,13 @@
                                     </DataTemplate>
                                 </AutoCompleteBox.ItemTemplate>
                             </AutoCompleteBox>
+                                <ToggleButton Grid.Column="1"
+                                              IsChecked="{Binding #WorkCardEmployeePicker.IsDropDownOpen, Mode=TwoWay}"
+                                              Content="▾"
+                                              MinWidth="32"
+                                              VerticalAlignment="Stretch"
+                                              ToolTip.Tip="Open employee list" />
+                            </Grid>
 
                         </StackPanel>
 
