@@ -82,8 +82,8 @@
 
                 <!-- Employee picker -->
                 <TextBlock Grid.Column="0" Text="{Binding Loc[Employee2]}" VerticalAlignment="Center" Margin="0,0,8,0" />
-                <Grid Grid.Column="1" ColumnDefinitions="*,32" Width="292">
-                    <AutoCompleteBox x:Name="ScheduleEmployeePicker" Grid.Column="0"
+                <Grid Grid.Column="1" Width="292">
+                    <AutoCompleteBox x:Name="ScheduleEmployeePicker"
                                  ItemsSource="{Binding AvailableEmployees}"
                                  SelectedItem="{Binding SelectedEmployee, Mode=TwoWay}"
                                  ValueMemberBinding="{Binding FullName}"
@@ -97,11 +97,14 @@
                         <DataTemplate x:DataType="core:EmployeeDto"><TextBlock Text="{Binding FullName}" /></DataTemplate>
                     </AutoCompleteBox.ItemTemplate>
                 </AutoCompleteBox>
-                    <ToggleButton Grid.Column="1"
-                                  IsChecked="{Binding #ScheduleEmployeePicker.IsDropDownOpen, Mode=TwoWay}"
+                    <ToggleButton IsChecked="{Binding #ScheduleEmployeePicker.IsDropDownOpen, Mode=TwoWay}"
                                   Content="▾"
-                                  MinWidth="32"
+                                  Width="30"
+                                  HorizontalAlignment="Right"
                                   VerticalAlignment="Stretch"
+                                  Background="Transparent"
+                                  BorderThickness="0"
+                                  Padding="4,0"
                                   ToolTip.Tip="Open employee list" />
                 </Grid>
 
