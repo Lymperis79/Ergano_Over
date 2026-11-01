@@ -191,8 +191,14 @@
 
             <!-- Results list -->
 
-            <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto" MaxHeight="650">
-            <ItemsControl ItemsSource="{Binding Records}">
+            <!-- The outer viewer owns horizontal scrolling; the inner viewer owns vertical scrolling. -->
+            <ScrollViewer HorizontalScrollBarVisibility="Auto"
+                          VerticalScrollBarVisibility="Disabled">
+                <ScrollViewer Width="1320"
+                              MaxHeight="650"
+                              HorizontalScrollBarVisibility="Disabled"
+                              VerticalScrollBarVisibility="Auto">
+            <ItemsControl ItemsSource="{Binding Records}" Width="1320">
 
                 <ItemsControl.ItemsPanel>
 
@@ -326,6 +332,7 @@
                 </ItemsControl.ItemTemplate>
 
             </ItemsControl>
+                </ScrollViewer>
             </ScrollViewer>
 
         </StackPanel>
