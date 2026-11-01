@@ -556,6 +556,8 @@ public static class GreekStrings
         [L.TodayProblemsLabel] = "Προβλήματα:",
 
         [L.NavMasterData] = "🗂 Κύρια δεδομένα",
+        [L.NavWorkingDay] = "🕘 Ημέρα Εργασίας",
+        [L.NavLogs] = "📋 Αρχεία Καταγραφής",
         [L.NavAdminGroup] = "⚙ Διαχείριση",
         [L.NavDatabaseTools] = "⚙️ Εργαλεία εφαρμογής",
         [L.NavScan] = "📟 Σάρωση",
