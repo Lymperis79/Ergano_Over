@@ -119,6 +119,36 @@ public partial class SubmissionLogViewModel
 
     public ObservableCollection<SubmissionLogRow> Rows { get; } = new();
     public ObservableCollection<EmployeeFilterOption> EmployeeOptions { get; } = new();
+    public ObservableCollection<EmployeeFilterOption> FilteredEmployeeOptions { get; } = new();
+
+    [ObservableProperty]
+    private string _employeeSearchText = string.Empty;
+
+    partial void OnEmployeeSearchTextChanged(string value) => RefreshFilteredEmployeeOptions();
+
+    partial void OnSelectedEmployeeIdChanged(int? value)
+    {
+        var selected = EmployeeOptions.FirstOrDefault(e => e.Id == (value ?? 0));
+        if (selected is not null && !string.Equals(EmployeeSearchText, selected.Name, StringComparison.Ordinal))
+            EmployeeSearchText = selected.Name;
+    }
+
+    private void RefreshFilteredEmployeeOptions()
+    {
+        var query = EmployeeSearchText?.Trim();
+        var matches = string.IsNullOrWhiteSpace(query)
+            ? EmployeeOptions.ToList()
+            : EmployeeOptions.Where(e =>
+                    e.Name.Contains(query, StringComparison.CurrentCultureIgnoreCase) ||
+                    e.Id.ToString().Contains(query, StringComparison.Ordinal) ||
+                    (!string.IsNullOrWhiteSpace(e.TaxId) &&
+                     e.TaxId.Contains(query, StringComparison.OrdinalIgnoreCase)))
+                .ToList();
+
+        FilteredEmployeeOptions.Clear();
+        foreach (var employee in matches)
+            FilteredEmployeeOptions.Add(employee);
+    }
 
     public ObservableCollection<FailedSubmissionRow> FailedSubmissions { get; } = new();
 
@@ -490,6 +520,7 @@ public partial class SubmissionLogViewModel
             EmployeeOptions.Clear();
             EmployeeOptions.Add(new EmployeeFilterOption { Id = 0, Name = Loc[L.AllEmployees], TaxId = string.Empty });
             foreach (var employee in employees) EmployeeOptions.Add(employee);
+            RefreshFilteredEmployeeOptions();
 
             var query = db.ApiSubmissionLogs
                 .Where(l =>
