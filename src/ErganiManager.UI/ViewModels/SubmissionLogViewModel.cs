@@ -126,11 +126,25 @@ public partial class SubmissionLogViewModel
 
     partial void OnEmployeeSearchTextChanged(string value) => RefreshFilteredEmployeeOptions();
 
+    [ObservableProperty]
+    private EmployeeFilterOption? _selectedEmployeeOption;
+
+    partial void OnSelectedEmployeeOptionChanged(EmployeeFilterOption? value)
+    {
+        if (value is not null && SelectedEmployeeId != value.Id)
+            SelectedEmployeeId = value.Id;
+    }
+
     partial void OnSelectedEmployeeIdChanged(int? value)
     {
         var selected = EmployeeOptions.FirstOrDefault(e => e.Id == (value ?? 0));
-        if (selected is not null && !string.Equals(EmployeeSearchText, selected.Name, StringComparison.Ordinal))
-            EmployeeSearchText = selected.Name;
+        if (selected is not null)
+        {
+            if (!ReferenceEquals(SelectedEmployeeOption, selected))
+                SelectedEmployeeOption = selected;
+            if (!string.Equals(EmployeeSearchText, selected.Name, StringComparison.Ordinal))
+                EmployeeSearchText = selected.Name;
+        }
     }
 
     private void RefreshFilteredEmployeeOptions()
