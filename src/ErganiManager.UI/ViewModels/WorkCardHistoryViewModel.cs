@@ -52,7 +52,8 @@ public partial class WorkCardHistoryViewModel : ViewModelBase, IAdminSectionView
         var matches = string.IsNullOrWhiteSpace(query)
             ? AvailableEmployees.ToList()
             : AvailableEmployees.Where(e =>
-                    e.FullName.Contains(query, StringComparison.CurrentCultureIgnoreCase) ||
+                    (!string.IsNullOrWhiteSpace(e.FullName) &&
+                     e.FullName.Contains(query, StringComparison.CurrentCultureIgnoreCase)) ||
                     e.Id.ToString().Contains(query, StringComparison.Ordinal))
                 .ToList();
 
