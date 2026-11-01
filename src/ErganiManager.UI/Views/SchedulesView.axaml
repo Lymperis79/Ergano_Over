@@ -82,16 +82,20 @@
 
                 <!-- Employee picker -->
                 <TextBlock Grid.Column="0" Text="{Binding Loc[Employee2]}" VerticalAlignment="Center" Margin="0,0,8,0" />
-                <ComboBox Grid.Column="1" ItemsSource="{Binding FilteredEmployees}"
-                          SelectedItem="{Binding SelectedEmployee}"
-                          IsEditable="True"
-                          Text="{Binding EmployeeSearchText, UpdateSourceTrigger=PropertyChanged}"
-                          Width="260"
-                          ToolTip.Tip="Type an employee name or employee number to filter the list">
-                    <ComboBox.ItemTemplate>
+                <AutoCompleteBox Grid.Column="1"
+                                 ItemsSource="{Binding AvailableEmployees}"
+                                 SelectedItem="{Binding SelectedEmployee, Mode=TwoWay}"
+                                 ValueMemberBinding="{Binding FullName}"
+                                 FilterMode="Contains"
+                                 MinimumPrefixLength="1"
+                                 IsTextCompletionEnabled="False"
+                                 ClearSelectionOnLostFocus="False"
+                                 Width="260"
+                                 ToolTip.Tip="Type an employee name or employee number to filter the list">
+                    <AutoCompleteBox.ItemTemplate>
                         <DataTemplate><TextBlock Text="{Binding FullName}" /></DataTemplate>
-                    </ComboBox.ItemTemplate>
-                </ComboBox>
+                    </AutoCompleteBox.ItemTemplate>
+                </AutoCompleteBox>
 
                 <!-- View mode -->
                 <Button Grid.Column="2" Content="{Binding Loc[Month]}"
