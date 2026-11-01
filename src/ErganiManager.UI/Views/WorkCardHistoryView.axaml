@@ -100,8 +100,9 @@
                                        Foreground="Gray" />
 
                             <Grid ColumnDefinitions="*,32" MinWidth="292" HorizontalAlignment="Left">
-                                <AutoCompleteBox x:Name="WorkCardEmployeePicker" ItemsSource="{Binding AvailableEmployees}"
+                                <AutoCompleteBox x:Name="WorkCardEmployeePicker" ItemsSource="{Binding FilteredEmployees}"
                                                SelectedItem="{Binding FilterEmployee, Mode=TwoWay}"
+                                               Text="{Binding EmployeeSearchText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                                ValueMemberBinding="{Binding FullName}"
                                                FilterMode="Contains"
                                                MinimumPrefixLength="0"
@@ -142,7 +143,7 @@
 
                                     <DataTemplate>
 
-                                        <TextBlock Text="{Binding Name}" />
+                                        <TextBlock Text="{Binding DisplayName}" />
 
                                     </DataTemplate>
 
