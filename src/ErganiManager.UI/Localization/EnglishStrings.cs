@@ -336,6 +336,7 @@ public static class EnglishStrings
         // ── Overtime ─────────────────────────────────────────
         [L.Overtime] = "Overtime",
         [L.OvertimeDate] = "Date",
+        [L.CreatedDate] = "Created",
         [L.Justification] = "Justification",
         [L.OvertimeJustification] = "Overtime justification",
         [L.ScheduleOvertimeWillBePending] = "This overtime will be saved as pending. Submit it from the Overtime page when ready.",
