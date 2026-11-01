@@ -336,6 +336,7 @@ public static class GreekStrings
         // ── Overtime ─────────────────────────────────────────
         [L.Overtime] = "Υπερωρίες",
         [L.OvertimeDate] = "Ημερομηνία",
+        [L.CreatedDate] = "Ημερομηνία δημιουργίας",
         [L.Justification] = "Αιτιολογία",
         [L.OvertimeJustification] = "Αιτιολογία υπερωρίας",
         [L.ScheduleOvertimeWillBePending] = "Η υπερωρία θα αποθηκευτεί σε αναμονή. Υποβάλετέ την από τη σελίδα Υπερωρίες όταν είστε έτοιμοι.",
