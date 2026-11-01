@@ -194,19 +194,22 @@
 
             <StackPanel Margin="0,0,18,0" Spacing="5">
                 <TextBlock Text="{Binding Loc[Employee]}" FontSize="12" Foreground="Gray" />
-                <ComboBox ItemsSource="{Binding FilteredEmployeeOptions}"
-                          SelectedValueBinding="{Binding Id}"
-                          SelectedValue="{Binding SelectedEmployeeId, Mode=TwoWay}"
-                          IsEditable="True"
-                          Text="{Binding EmployeeSearchText, UpdateSourceTrigger=PropertyChanged}"
-                          MinWidth="260"
-                          ToolTip.Tip="Type an employee name, ID or tax number to filter the list">
-                    <ComboBox.ItemTemplate>
+                <AutoCompleteBox ItemsSource="{Binding FilteredEmployeeOptions}"
+                                       SelectedItem="{Binding SelectedEmployeeOption, Mode=TwoWay}"
+                                       Text="{Binding EmployeeSearchText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                       ValueMemberBinding="{Binding Name}"
+                                       FilterMode="Contains"
+                                       MinimumPrefixLength="1"
+                                       IsTextCompletionEnabled="False"
+                                       ClearSelectionOnLostFocus="False"
+                                       MinWidth="260"
+                                       ToolTip.Tip="Type an employee name, ID or tax number to filter the list">
+                    <AutoCompleteBox.ItemTemplate>
                         <DataTemplate x:DataType="vm:EmployeeFilterOption">
                             <TextBlock Text="{Binding Name}" />
                         </DataTemplate>
-                    </ComboBox.ItemTemplate>
-                </ComboBox>
+                    </AutoCompleteBox.ItemTemplate>
+                </AutoCompleteBox>
             </StackPanel>
 
             <!-- Failures only -->
