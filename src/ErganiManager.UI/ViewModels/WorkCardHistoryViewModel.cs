@@ -186,8 +186,7 @@ public partial class WorkCardHistoryViewModel : ViewModelBase, IAdminSectionView
 
         var employees =
             await _employeeService
-                .GetByCompanyAsync(companyId, activeOnly: false)
-                .ConfigureAwait(false);
+                .GetByCompanyAsync(companyId, activeOnly: false);
 
         AvailableEmployees.Clear();
 
@@ -206,8 +205,7 @@ public partial class WorkCardHistoryViewModel : ViewModelBase, IAdminSectionView
 
         var branches =
             await _branchService
-                .GetByCompanyAsync(companyId)
-                .ConfigureAwait(false);
+                .GetByCompanyAsync(companyId);
 
         AvailableBranches.Clear();
 
