@@ -227,6 +227,7 @@ public partial class AdminShellViewModel : ViewModelBase
             SetCompanyText(_companyTextKind, _companyTextName);
         OnPropertyChanged(nameof(MasterDataHeader));
         OnPropertyChanged(nameof(WorkingDayHeader));
+        OnPropertyChanged(nameof(SchedulesHeader));
         OnPropertyChanged(nameof(LogsHeader));
         OnPropertyChanged(nameof(AdminGroupHeader));
     }
@@ -435,26 +436,31 @@ public partial class AdminShellViewModel : ViewModelBase
     // A group is shown only when at least one of its menus is visible for the user.
     [ObservableProperty] private bool _showMasterData = true;
     [ObservableProperty] private bool _showWorkingDay = true;
+    [ObservableProperty] private bool _showSchedulesGroup = true;
     [ObservableProperty] private bool _showLogs = true;
     [ObservableProperty] private bool _showAdminGroup = true;
 
     [ObservableProperty] private bool _isMasterDataExpanded = true;
     [ObservableProperty] private bool _isWorkingDayExpanded = true;
+    [ObservableProperty] private bool _isSchedulesExpanded = true;
     [ObservableProperty] private bool _isLogsExpanded = true;
     [ObservableProperty] private bool _isAdminGroupExpanded = true;
 
     public string MasterDataHeader => (IsMasterDataExpanded ? "▾ " : "▸ ") + Loc["NavMasterData"];
     public string WorkingDayHeader => (IsWorkingDayExpanded ? "▾ " : "▸ ") + Loc["NavWorkingDay"];
+    public string SchedulesHeader => (IsSchedulesExpanded ? "▾ " : "▸ ") + Loc["NavSchedulesGroup"];
     public string LogsHeader => (IsLogsExpanded ? "▾ " : "▸ ") + Loc["NavLogs"];
     public string AdminGroupHeader => (IsAdminGroupExpanded ? "▾ " : "▸ ") + Loc["NavAdminGroup"];
 
     partial void OnIsMasterDataExpandedChanged(bool value) => OnPropertyChanged(nameof(MasterDataHeader));
     partial void OnIsWorkingDayExpandedChanged(bool value) => OnPropertyChanged(nameof(WorkingDayHeader));
+    partial void OnIsSchedulesExpandedChanged(bool value) => OnPropertyChanged(nameof(SchedulesHeader));
     partial void OnIsLogsExpandedChanged(bool value) => OnPropertyChanged(nameof(LogsHeader));
     partial void OnIsAdminGroupExpandedChanged(bool value) => OnPropertyChanged(nameof(AdminGroupHeader));
 
     [RelayCommand] private void ToggleMasterData() => IsMasterDataExpanded = !IsMasterDataExpanded;
     [RelayCommand] private void ToggleWorkingDay() => IsWorkingDayExpanded = !IsWorkingDayExpanded;
+    [RelayCommand] private void ToggleSchedules() => IsSchedulesExpanded = !IsSchedulesExpanded;
     [RelayCommand] private void ToggleLogs() => IsLogsExpanded = !IsLogsExpanded;
     [RelayCommand] private void ToggleAdminGroup() => IsAdminGroupExpanded = !IsAdminGroupExpanded;
 
@@ -483,6 +489,7 @@ public partial class AdminShellViewModel : ViewModelBase
 
         ShowMasterData = ShowCompanies || ShowBranches || ShowEmployees;
         ShowWorkingDay = ShowWorkCards || ShowScan || ShowToday;
+        ShowSchedulesGroup = ShowSchedules || ShowOvertime;
         ShowLogs = ShowApiLog || ShowEmailLog;
         ShowAdminGroup = ShowUsers || ShowAdministration;
     }
