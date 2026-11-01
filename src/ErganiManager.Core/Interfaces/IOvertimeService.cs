@@ -33,6 +33,7 @@ public class OvertimeDto
     public string? ResponseRawJson { get; set; }
     public DateOnly? SubmittedDate { get; set; }
     public DateTime CreatedAt { get; set; }
+    public DateTime CreatedAtLocal => CreatedAt.Kind == DateTimeKind.Utc ? CreatedAt.ToLocalTime() : CreatedAt;
 
     public string JustificationLabel => Justification switch
     {
