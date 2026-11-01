@@ -240,6 +240,7 @@ public static class L
     // Overtime
     public const string Overtime            = nameof(Overtime);
     public const string OvertimeDate        = nameof(OvertimeDate);
+    public const string CreatedDate         = nameof(CreatedDate);
     public const string Justification       = nameof(Justification);
     public const string OvertimeJustification = nameof(OvertimeJustification);
     public const string ScheduleOvertimeWillBePending = nameof(ScheduleOvertimeWillBePending);
