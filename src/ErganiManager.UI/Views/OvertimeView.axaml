@@ -12,7 +12,7 @@
                 <TextBlock Text="{Binding NoCompanyMessage}" TextWrapping="Wrap" />
             </Border>
 
-            <Grid Grid.Row="0" IsVisible="{Binding HasActiveCompany}" RowDefinitions="Auto,Auto,Auto,*" RowSpacing="12">
+            <Grid Grid.Row="0" IsVisible="{Binding HasActiveCompany}" RowDefinitions="Auto,Auto,*" RowSpacing="12">
 
                 <Grid Grid.Row="0" ColumnDefinitions="*,Auto,Auto,Auto">
                     <TextBlock Grid.Column="0" Text="{Binding Loc[Overtime]}" FontSize="22" FontWeight="Bold" />
@@ -29,10 +29,11 @@
                 <TextBlock Grid.Row="1" Text="{Binding StatusMessage}" Foreground="Gray" FontSize="12" TextWrapping="Wrap" />
 
                 <!-- One horizontal viewport keeps the header and every row aligned while scrolling sideways. -->
-                <ScrollViewer Grid.Row="2" Grid.RowSpan="2"
+                <ScrollViewer Grid.Row="2"
                               HorizontalScrollBarVisibility="Auto"
-                              VerticalScrollBarVisibility="Disabled">
-                    <Grid RowDefinitions="Auto,*" Width="1284">
+                              VerticalScrollBarVisibility="Disabled"
+                              VerticalAlignment="Stretch">
+                    <Grid RowDefinitions="Auto,*" Width="1284" VerticalAlignment="Stretch">
                         <Border Grid.Row="0" Background="{DynamicResource PanelBrush}" CornerRadius="6"
                                 Padding="0" Margin="0,0,0,4">
                             <Grid ColumnDefinitions="44,240,170,100,180,190,100,80,100,80">
