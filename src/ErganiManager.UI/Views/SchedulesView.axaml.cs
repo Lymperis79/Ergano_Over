@@ -19,6 +19,12 @@ public partial class SchedulesView : UserControl
         };
     }
 
+    private void OnRootMenuItemPointerEntered(object? sender, PointerEventArgs e)
+    {
+        if (sender is MenuItem menuItem && menuItem.Items.Count > 0)
+            menuItem.IsSubMenuOpen = true;
+    }
+
     private void OnCellPressed(object? sender, PointerPressedEventArgs e)
     {
         if (sender is Border { Tag: CalendarCellViewModel cell }
