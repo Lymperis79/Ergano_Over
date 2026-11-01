@@ -1,6 +1,7 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:ErganiManager.UI.ViewModels"
+             xmlns:core="using:ErganiManager.Core.Interfaces"
              x:Class="ErganiManager.UI.Views.WorkCardHistoryView"
              x:DataType="vm:WorkCardHistoryViewModel">
 
@@ -109,7 +110,7 @@
                                                HorizontalAlignment="Left"
                                                ToolTip.Tip="Type an employee name or employee number to filter the list">
                                 <AutoCompleteBox.ItemTemplate>
-                                    <DataTemplate>
+                                    <DataTemplate x:DataType="core:EmployeeDto">
                                         <TextBlock Text="{Binding FullName}" />
                                     </DataTemplate>
                                 </AutoCompleteBox.ItemTemplate>
