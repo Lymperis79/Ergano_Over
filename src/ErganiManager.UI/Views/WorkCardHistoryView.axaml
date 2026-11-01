@@ -98,10 +98,13 @@
                                        FontSize="12"
                                        Foreground="Gray" />
 
-                            <ComboBox ItemsSource="{Binding AvailableEmployees}"
+                            <ComboBox ItemsSource="{Binding FilteredEmployees}"
                                       SelectedItem="{Binding FilterEmployee}"
-                                      MinWidth="220"
-                                      HorizontalAlignment="Left">
+                                      IsEditable="True"
+                                      Text="{Binding EmployeeSearchText, UpdateSourceTrigger=PropertyChanged}"
+                                      MinWidth="260"
+                                      HorizontalAlignment="Left"
+                                      ToolTip.Tip="Type an employee name or employee number to filter the list">
 
                                 <ComboBox.ItemTemplate>
 
