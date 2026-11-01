@@ -1,17 +1,30 @@
+using System;
+using System.Collections.Generic;
 using System.Linq;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Platform.Storage;
+using Avalonia.Threading;
 using ErganiManager.UI.ViewModels;
 
 namespace ErganiManager.UI.Views;
 
 public partial class SchedulesView : UserControl
 {
+    private readonly DispatcherTimer _menuCloseTimer = new() { Interval = TimeSpan.FromMilliseconds(350) };
+    private MenuItem? _activeHoverMenu;
+
     public SchedulesView()
     {
         InitializeComponent();
+        _menuCloseTimer.Tick += (_, _) =>
+        {
+            _menuCloseTimer.Stop();
+            if (_activeHoverMenu is not null)
+                _activeHoverMenu.IsSubMenuOpen = false;
+            _activeHoverMenu = null;
+        };
         DataContextChanged += (_, _) =>
         {
             if (DataContext is SchedulesViewModel vm)
@@ -21,14 +34,49 @@ public partial class SchedulesView : UserControl
 
     private void OnRootMenuItemPointerEntered(object? sender, PointerEventArgs e)
     {
-        if (sender is MenuItem menuItem && menuItem.Items.Count > 0)
-            menuItem.IsSubMenuOpen = true;
+        if (sender is not MenuItem menuItem || menuItem.Items.Count == 0)
+            return;
+
+        _menuCloseTimer.Stop();
+        _activeHoverMenu = menuItem;
+        menuItem.IsSubMenuOpen = true;
+        AttachSubmenuHoverHandlers(menuItem);
+    }
+
+    private void AttachSubmenuHoverHandlers(MenuItem parent)
+    {
+        foreach (var child in parent.Items.OfType<MenuItem>())
+        {
+            child.PointerEntered -= OnSubmenuItemPointerEntered;
+            child.PointerExited -= OnSubmenuItemPointerExited;
+            child.PointerEntered += OnSubmenuItemPointerEntered;
+            child.PointerExited += OnSubmenuItemPointerExited;
+            AttachSubmenuHoverHandlers(child);
+        }
+    }
+
+    private void OnSubmenuItemPointerEntered(object? sender, PointerEventArgs e)
+    {
+        _menuCloseTimer.Stop();
+    }
+
+    private void OnSubmenuItemPointerExited(object? sender, PointerEventArgs e)
+    {
+        ScheduleHoverMenuClose();
     }
 
     private void OnRootMenuItemPointerExited(object? sender, PointerEventArgs e)
     {
-        if (sender is MenuItem menuItem)
-            menuItem.ClearValue(MenuItem.IsSubMenuOpenProperty);
+        ScheduleHoverMenuClose();
+    }
+
+    private void ScheduleHoverMenuClose()
+    {
+        if (_activeHoverMenu is null)
+            return;
+
+        _menuCloseTimer.Stop();
+        _menuCloseTimer.Start();
     }
 
     private void OnCellPressed(object? sender, PointerPressedEventArgs e)
