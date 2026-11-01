@@ -225,6 +225,10 @@ public partial class AdminShellViewModel : ViewModelBase
             WelcomeText = string.Format(Loc["Vm.Welcome, {0}"], _session.Username);
         if (_companyTextKind != 0)
             SetCompanyText(_companyTextKind, _companyTextName);
+        OnPropertyChanged(nameof(MasterDataHeader));
+        OnPropertyChanged(nameof(WorkingDayHeader));
+        OnPropertyChanged(nameof(LogsHeader));
+        OnPropertyChanged(nameof(AdminGroupHeader));
     }
 
     [RelayCommand]
@@ -430,18 +434,28 @@ public partial class AdminShellViewModel : ViewModelBase
 
     // A group is shown only when at least one of its menus is visible for the user.
     [ObservableProperty] private bool _showMasterData = true;
+    [ObservableProperty] private bool _showWorkingDay = true;
+    [ObservableProperty] private bool _showLogs = true;
     [ObservableProperty] private bool _showAdminGroup = true;
 
     [ObservableProperty] private bool _isMasterDataExpanded = true;
+    [ObservableProperty] private bool _isWorkingDayExpanded = true;
+    [ObservableProperty] private bool _isLogsExpanded = true;
     [ObservableProperty] private bool _isAdminGroupExpanded = true;
 
     public string MasterDataHeader => (IsMasterDataExpanded ? "▾ " : "▸ ") + Loc["NavMasterData"];
+    public string WorkingDayHeader => (IsWorkingDayExpanded ? "▾ " : "▸ ") + Loc["NavWorkingDay"];
+    public string LogsHeader => (IsLogsExpanded ? "▾ " : "▸ ") + Loc["NavLogs"];
     public string AdminGroupHeader => (IsAdminGroupExpanded ? "▾ " : "▸ ") + Loc["NavAdminGroup"];
 
     partial void OnIsMasterDataExpandedChanged(bool value) => OnPropertyChanged(nameof(MasterDataHeader));
+    partial void OnIsWorkingDayExpandedChanged(bool value) => OnPropertyChanged(nameof(WorkingDayHeader));
+    partial void OnIsLogsExpandedChanged(bool value) => OnPropertyChanged(nameof(LogsHeader));
     partial void OnIsAdminGroupExpandedChanged(bool value) => OnPropertyChanged(nameof(AdminGroupHeader));
 
     [RelayCommand] private void ToggleMasterData() => IsMasterDataExpanded = !IsMasterDataExpanded;
+    [RelayCommand] private void ToggleWorkingDay() => IsWorkingDayExpanded = !IsWorkingDayExpanded;
+    [RelayCommand] private void ToggleLogs() => IsLogsExpanded = !IsLogsExpanded;
     [RelayCommand] private void ToggleAdminGroup() => IsAdminGroupExpanded = !IsAdminGroupExpanded;
 
     /// <summary>Raised when the user chooses Log out; the application shows the login screen again.</summary>
@@ -468,6 +482,8 @@ public partial class AdminShellViewModel : ViewModelBase
         ShowAdministration = session.CanSee(MenuKeys.Administration);
 
         ShowMasterData = ShowCompanies || ShowBranches || ShowEmployees;
+        ShowWorkingDay = ShowWorkCards || ShowScan || ShowToday;
+        ShowLogs = ShowApiLog || ShowEmailLog;
         ShowAdminGroup = ShowUsers || ShowAdministration;
     }
 
