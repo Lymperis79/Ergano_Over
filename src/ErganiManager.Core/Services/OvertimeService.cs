@@ -30,7 +30,11 @@ public class OvertimeService : IOvertimeService
         if (fromDate.HasValue) query = query.Where(o => o.OvertimeDate >= fromDate.Value);
         if (toDate.HasValue)   query = query.Where(o => o.OvertimeDate <= toDate.Value);
 
-        var list = await query.OrderByDescending(o => o.OvertimeDate).ToListAsync();
+        // Show the most recently created records first, regardless of their overtime date.
+        var list = await query
+            .OrderByDescending(o => o.CreatedAt)
+            .ThenByDescending(o => o.Id)
+            .ToListAsync();
         return list.Select(ToDto).ToList();
     }
 
