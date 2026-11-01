@@ -174,33 +174,53 @@
                     IsVisible="{Binding ShowSchedules}"
                     Command="{Binding NavigateToCommand}" CommandParameter="Schedules"
                     HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" />
-            <Button Content="{Binding Loc[NavWorkCards]}" Classes="navItem"
-                    IsVisible="{Binding ShowWorkCards}"
-                    Command="{Binding NavigateToCommand}" CommandParameter="WorkCards"
-                    HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" />
-            <Button Content="{Binding Loc[NavScan]}" Classes="navItem"
-                    IsVisible="{Binding ShowScan}"
-                    Command="{Binding NavigateToCommand}" CommandParameter="WorkCardScan"
-                    HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" />
-            <Button Content="{Binding Loc[NavToday]}" Classes="navItem"
-                    IsVisible="{Binding ShowToday}"
-                    Command="{Binding NavigateToCommand}" CommandParameter="Today"
-                    HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" />
+
+            <!-- Working Day: employee attendance and work-card activity -->
+            <StackPanel IsVisible="{Binding ShowWorkingDay}" Spacing="2">
+                <Button Content="{Binding WorkingDayHeader}" Classes="navGroup"
+                        Command="{Binding ToggleWorkingDayCommand}"
+                        HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" />
+                <StackPanel IsVisible="{Binding IsWorkingDayExpanded}" Spacing="2">
+                    <Button Content="{Binding Loc[NavWorkCards]}" Classes="navItem navChild"
+                        IsVisible="{Binding ShowWorkCards}"
+                        Command="{Binding NavigateToCommand}" CommandParameter="WorkCards"
+                        HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" />
+                    <Button Content="{Binding Loc[NavScan]}" Classes="navItem navChild"
+                        IsVisible="{Binding ShowScan}"
+                        Command="{Binding NavigateToCommand}" CommandParameter="WorkCardScan"
+                        HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" />
+                    <Button Content="{Binding Loc[NavToday]}" Classes="navItem navChild"
+                        IsVisible="{Binding ShowToday}"
+                        Command="{Binding NavigateToCommand}" CommandParameter="Today"
+                        HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" />
+                </StackPanel>
+            </StackPanel>
+
             <Button Content="{Binding Loc[NavOvertime]}" Classes="navItem"
                     IsVisible="{Binding ShowOvertime}"
                     Command="{Binding NavigateToCommand}" CommandParameter="Overtime"
                     HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" />
+
+            <!-- Logs are grouped immediately before Reports -->
+            <StackPanel IsVisible="{Binding ShowLogs}" Spacing="2">
+                <Button Content="{Binding LogsHeader}" Classes="navGroup"
+                        Command="{Binding ToggleLogsCommand}"
+                        HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" />
+                <StackPanel IsVisible="{Binding IsLogsExpanded}" Spacing="2">
+                    <Button Content="{Binding Loc[NavApiLog]}" Classes="navItem navChild"
+                        IsVisible="{Binding ShowApiLog}"
+                        Command="{Binding NavigateToCommand}" CommandParameter="SubmissionLog"
+                        HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" />
+                    <Button Content="{Binding Loc[NavEmailLog]}" Classes="navItem navChild"
+                        IsVisible="{Binding ShowEmailLog}"
+                        Command="{Binding NavigateToCommand}" CommandParameter="EmailLog"
+                        HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" />
+                </StackPanel>
+            </StackPanel>
+
             <Button Content="{Binding Loc[NavReports]}" Classes="navItem"
                     IsVisible="{Binding ShowReports}"
                     Command="{Binding NavigateToCommand}" CommandParameter="Reports"
-                    HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" />
-            <Button Content="{Binding Loc[NavApiLog]}" Classes="navItem"
-                    IsVisible="{Binding ShowApiLog}"
-                    Command="{Binding NavigateToCommand}" CommandParameter="SubmissionLog"
-                    HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" />
-            <Button Content="{Binding Loc[NavEmailLog]}" Classes="navItem"
-                    IsVisible="{Binding ShowEmailLog}"
-                    Command="{Binding NavigateToCommand}" CommandParameter="EmailLog"
                     HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" />
            
 
