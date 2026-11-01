@@ -108,7 +108,6 @@
                                                IsTextCompletionEnabled="False"
                                                ClearSelectionOnLostFocus="False"
                                                HorizontalAlignment="Stretch"
-                                               HorizontalAlignment="Left"
                                                ToolTip.Tip="Type an employee name or employee number to filter the list">
                                 <AutoCompleteBox.ItemTemplate>
                                     <DataTemplate x:DataType="core:EmployeeDto">
