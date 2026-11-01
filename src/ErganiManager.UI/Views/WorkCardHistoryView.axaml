@@ -98,25 +98,22 @@
                                        FontSize="12"
                                        Foreground="Gray" />
 
-                            <ComboBox ItemsSource="{Binding FilteredEmployees}"
-                                      SelectedItem="{Binding FilterEmployee}"
-                                      IsEditable="True"
-                                      Text="{Binding EmployeeSearchText, UpdateSourceTrigger=PropertyChanged}"
-                                      MinWidth="260"
-                                      HorizontalAlignment="Left"
-                                      ToolTip.Tip="Type an employee name or employee number to filter the list">
-
-                                <ComboBox.ItemTemplate>
-
+                            <AutoCompleteBox ItemsSource="{Binding AvailableEmployees}"
+                                               SelectedItem="{Binding FilterEmployee, Mode=TwoWay}"
+                                               ValueMemberBinding="{Binding FullName}"
+                                               FilterMode="Contains"
+                                               MinimumPrefixLength="1"
+                                               IsTextCompletionEnabled="False"
+                                               ClearSelectionOnLostFocus="False"
+                                               MinWidth="260"
+                                               HorizontalAlignment="Left"
+                                               ToolTip.Tip="Type an employee name or employee number to filter the list">
+                                <AutoCompleteBox.ItemTemplate>
                                     <DataTemplate>
-
                                         <TextBlock Text="{Binding FullName}" />
-
                                     </DataTemplate>
-
-                                </ComboBox.ItemTemplate>
-
-                            </ComboBox>
+                                </AutoCompleteBox.ItemTemplate>
+                            </AutoCompleteBox>
 
                         </StackPanel>
 
