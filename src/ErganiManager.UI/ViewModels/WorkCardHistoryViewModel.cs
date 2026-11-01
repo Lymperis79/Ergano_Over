@@ -33,6 +33,33 @@ public partial class WorkCardHistoryViewModel : ViewModelBase, IAdminSectionView
     public ObservableCollection<WorkCardHistoryDto> Records { get; } = new();
 
     public ObservableCollection<EmployeeDto> AvailableEmployees { get; } = new();
+    public ObservableCollection<EmployeeDto> FilteredEmployees { get; } = new();
+
+    [ObservableProperty]
+    private string _employeeSearchText = string.Empty;
+
+    partial void OnEmployeeSearchTextChanged(string value) => RefreshFilteredEmployees();
+
+    partial void OnFilterEmployeeChanged(EmployeeDto? value)
+    {
+        if (value is not null && !string.Equals(EmployeeSearchText, value.FullName, StringComparison.Ordinal))
+            EmployeeSearchText = value.FullName;
+    }
+
+    private void RefreshFilteredEmployees()
+    {
+        var query = EmployeeSearchText?.Trim();
+        var matches = string.IsNullOrWhiteSpace(query)
+            ? AvailableEmployees.ToList()
+            : AvailableEmployees.Where(e =>
+                    e.FullName.Contains(query, StringComparison.CurrentCultureIgnoreCase) ||
+                    e.Id.ToString().Contains(query, StringComparison.Ordinal))
+                .ToList();
+
+        FilteredEmployees.Clear();
+        foreach (var employee in matches)
+            FilteredEmployees.Add(employee);
+    }
 
     public ObservableCollection<BranchDto> AvailableBranches { get; } = new();
 
@@ -172,6 +199,8 @@ public partial class WorkCardHistoryViewModel : ViewModelBase, IAdminSectionView
 
         foreach (var employee in employees)
             AvailableEmployees.Add(employee);
+
+        RefreshFilteredEmployees();
 
         var branches =
             await _branchService
