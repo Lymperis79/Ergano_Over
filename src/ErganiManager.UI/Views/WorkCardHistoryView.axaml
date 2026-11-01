@@ -20,12 +20,13 @@
 
         </Border>
 
-        <StackPanel IsVisible="{Binding HasActiveCompany}"
-                    Spacing="14">
+        <Grid IsVisible="{Binding HasActiveCompany}"
+              RowDefinitions="Auto,Auto,*"
+              RowSpacing="14">
 
             <!-- Header -->
 
-            <Grid ColumnDefinitions="*,Auto">
+            <Grid Grid.Row="0" ColumnDefinitions="*,Auto">
 
                 <TextBlock Grid.Column="0"
                            Text="{Binding Loc[WorkCards]}"
@@ -45,7 +46,7 @@
 
             <!-- Filters -->
 
-            <Border Background="{DynamicResource CardBrush}"
+            <Border Grid.Row="1" Background="{DynamicResource CardBrush}"
                     CornerRadius="8"
                     Padding="16">
 
@@ -191,11 +192,12 @@
 
             <!-- Results list -->
 
-            <!-- The outer viewer owns horizontal scrolling; the inner viewer owns vertical scrolling. -->
-            <ScrollViewer HorizontalScrollBarVisibility="Auto"
+            <!-- The grid constrains the viewport to the available window size.
+                 The outer viewer scrolls horizontally only when the rows exceed that width. -->
+            <ScrollViewer Grid.Row="2"
+                          HorizontalScrollBarVisibility="Auto"
                           VerticalScrollBarVisibility="Disabled">
                 <ScrollViewer Width="1320"
-                              MaxHeight="650"
                               HorizontalScrollBarVisibility="Disabled"
                               VerticalScrollBarVisibility="Auto">
             <ItemsControl ItemsSource="{Binding Records}" Width="1320">
@@ -335,7 +337,7 @@
                 </ScrollViewer>
             </ScrollViewer>
 
-        </StackPanel>
+        </Grid>
 
     </StackPanel>
 
