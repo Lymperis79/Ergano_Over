@@ -22,6 +22,17 @@ public partial class OvertimeViewModel : ViewModelBase, IAdminSectionViewModel
     private UserSession? _session;
 
     public ObservableCollection<OvertimeDto> Records { get; } = new();
+
+    private string _sortColumn = "CreatedAt";
+    private bool _sortDescending = true;
+
+    public string EmployeeSortLabel => SortLabel("Employee", Loc["Employee"]);
+    public string OvertimeDateSortLabel => SortLabel("OvertimeDate", Loc["OvertimeDate"]);
+    public string StatusSortLabel => SortLabel("Status", Loc["AttendanceStatus"]);
+    public string CreatedDateSortLabel => SortLabel("CreatedAt", Loc["CreatedDate"]);
+
+    private string SortLabel(string column, string title)
+        => $"{title}{(_sortColumn == column ? (_sortDescending ? " ▼" : " ▲") : string.Empty)}";
     public ObservableCollection<EmployeeDto> AvailableEmployees { get; } = new();
     public ObservableCollection<EmployeeSelectionOption> FormEmployeeOptions { get; } = new();
 
@@ -102,8 +113,52 @@ public partial class OvertimeViewModel : ViewModelBase, IAdminSectionViewModel
     {
         if (_session?.CompanyId is not int companyId) return;
         var list = await _overtimeService.GetByCompanyAsync(companyId, DateOnly.FromDateTime((FilterFrom ?? DateTimeOffset.Now.AddMonths(-1)).LocalDateTime), DateOnly.FromDateTime((FilterTo ?? DateTimeOffset.Now.AddMonths(1)).LocalDateTime));
-        await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() => { Records.Clear(); _selectedIds.Clear(); foreach (var r in list) Records.Add(r); OnPropertyChanged(nameof(HasSelection)); });
+        await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() =>
+        {
+            Records.Clear();
+            _selectedIds.Clear();
+            foreach (var record in ApplyRecordSort(list)) Records.Add(record);
+            OnPropertyChanged(nameof(HasSelection));
+        });
         StatusMessage = string.Format(Loc["Vm.{0} record(s)."], Records.Count);
+    }
+
+    [RelayCommand]
+    private void SortRecords(string? column)
+    {
+        if (string.IsNullOrWhiteSpace(column)) return;
+
+        if (_sortColumn == column)
+            _sortDescending = !_sortDescending;
+        else
+        {
+            _sortColumn = column;
+            _sortDescending = column is "OvertimeDate" or "CreatedAt" or "Status";
+        }
+
+        var sorted = ApplyRecordSort(Records.ToList()).ToList();
+        Records.Clear();
+        foreach (var record in sorted) Records.Add(record);
+
+        OnPropertyChanged(nameof(EmployeeSortLabel));
+        OnPropertyChanged(nameof(OvertimeDateSortLabel));
+        OnPropertyChanged(nameof(StatusSortLabel));
+        OnPropertyChanged(nameof(CreatedDateSortLabel));
+    }
+
+    private IEnumerable<OvertimeDto> ApplyRecordSort(IEnumerable<OvertimeDto> source)
+    {
+        var records = source;
+        IOrderedEnumerable<OvertimeDto> ordered = _sortColumn switch
+        {
+            "Employee" => records.OrderBy(x => x.EmployeeFullName, StringComparer.CurrentCultureIgnoreCase),
+            "OvertimeDate" => records.OrderBy(x => x.OvertimeDate),
+            "Status" => records.OrderBy(x => x.IsCancelled ? 2 : x.SubmittedToErgani ? 1 : 0),
+            _ => records.OrderBy(x => x.CreatedAt)
+        };
+
+        ordered = ordered.ThenBy(x => x.Id);
+        return _sortDescending ? ordered.Reverse() : ordered;
     }
 
     public void SetSelected(OvertimeDto record, bool selected)
