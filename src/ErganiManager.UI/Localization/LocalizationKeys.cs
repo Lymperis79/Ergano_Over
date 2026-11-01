@@ -426,6 +426,8 @@ public static class L
     public const string TodayProblemsLabel     = nameof(TodayProblemsLabel);
 
     public const string NavMasterData          = nameof(NavMasterData);
+    public const string NavWorkingDay          = nameof(NavWorkingDay);
+    public const string NavLogs                 = nameof(NavLogs);
     public const string NavAdminGroup          = nameof(NavAdminGroup);
     public const string NavDatabaseTools       = nameof(NavDatabaseTools);
     public const string NavScan                = nameof(NavScan);
