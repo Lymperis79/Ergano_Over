@@ -95,16 +95,16 @@
                                                            VerticalAlignment="Center" Margin="8,0" FontSize="12" Foreground="Gray" />
                                                 <Button Grid.Column="6" Content="{Binding $parent[UserControl].DataContext.Loc[ResponseLabel]}"
                                                         Tag="{Binding}" Click="OnResponseClick" IsEnabled="{Binding SubmittedToErgani}"
-                                                        Margin="4" HorizontalAlignment="Stretch" />
+                                                        Margin="4" VerticalAlignment="Center" HorizontalAlignment="Center" />
                                                 <Button Grid.Column="7" Content="{Binding $parent[UserControl].DataContext.Loc[PdfLabel]}"
                                                         Tag="{Binding}" Click="OnPdfClick" IsEnabled="{Binding SubmittedToErgani}"
-                                                        Margin="4" HorizontalAlignment="Stretch" />
+                                                        Margin="4" VerticalAlignment="Center" HorizontalAlignment="Center" />
                                                 <Button Grid.Column="8" Content="{Binding $parent[UserControl].DataContext.Loc[CancelOvertimeLabel]}"
                                                         Tag="{Binding}" Click="OnCancelClick" IsEnabled="{Binding !IsCancelled}"
-                                                        Margin="4" HorizontalAlignment="Stretch" />
+                                                        Margin="4" VerticalAlignment="Center" HorizontalAlignment="Center" />
                                                 <Button Grid.Column="9" Content="{Binding $parent[UserControl].DataContext.Loc[Delete]}"
-                                                        Tag="{Binding}" Click="OnDeleteClick" Margin="4"
-                                                        HorizontalAlignment="Stretch" />
+                                                        Tag="{Binding}" Click="OnDeleteClick" Margin="4" VerticalAlignment="Center"
+                                                        HorizontalAlignment="Center" />
                                             </Grid>
                                         </Border>
                                     </DataTemplate>
