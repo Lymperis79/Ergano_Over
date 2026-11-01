@@ -4,13 +4,12 @@
              x:Class="ErganiManager.UI.Views.WorkCardHistoryView"
              x:DataType="vm:WorkCardHistoryViewModel">
 
-    <!-- Keep the page fixed; only the work-card results list scrolls. -->
-    <Grid>
-    <StackPanel Spacing="16" Margin="0,0,0,0">
+    <!-- Header/empty-state and active content share a finite window-sized layout. -->
+    <Grid RowDefinitions="Auto,*">
 
         <!-- No active company -->
 
-        <Border IsVisible="{Binding !HasActiveCompany}"
+        <Border Grid.Row="0" IsVisible="{Binding !HasActiveCompany}"
                 Background="{DynamicResource AccentSoftBrush}"
                 CornerRadius="6"
                 Padding="14">
@@ -20,7 +19,7 @@
 
         </Border>
 
-        <Grid IsVisible="{Binding HasActiveCompany}"
+        <Grid Grid.Row="1" IsVisible="{Binding HasActiveCompany}"
               RowDefinitions="Auto,Auto,*"
               RowSpacing="14">
 
@@ -338,8 +337,6 @@
             </ScrollViewer>
 
         </Grid>
-
-    </StackPanel>
 
     <Border IsVisible="{Binding IsResponseOpen}" Background="#AA000000" ZIndex="100">
         <Border Background="{DynamicResource PanelBrush}" CornerRadius="12" Padding="20" Width="800" Height="600" VerticalAlignment="Center" HorizontalAlignment="Center">
