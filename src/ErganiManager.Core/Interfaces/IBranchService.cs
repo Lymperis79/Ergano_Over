@@ -11,6 +11,7 @@ public class BranchDto
     public string ActivityCode { get; set; } = string.Empty;
     public string KallikratisMunicipalCode { get; set; } = string.Empty;
     public string? Name { get; set; }
+    public string DisplayName => string.IsNullOrWhiteSpace(Name) ? $"Branch {BranchNumber}" : Name;
     public bool IsActive { get; set; } = true;
 }
 
