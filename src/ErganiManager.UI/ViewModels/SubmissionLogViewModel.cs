@@ -535,6 +535,8 @@ public partial class SubmissionLogViewModel
             EmployeeOptions.Add(new EmployeeFilterOption { Id = 0, Name = Loc[L.AllEmployees], TaxId = string.Empty });
             foreach (var employee in employees) EmployeeOptions.Add(employee);
             RefreshFilteredEmployeeOptions();
+            SelectedEmployeeOption = EmployeeOptions.FirstOrDefault(e => e.Id == (SelectedEmployeeId ?? 0))
+                ?? EmployeeOptions.FirstOrDefault();
 
             var query = db.ApiSubmissionLogs
                 .Where(l =>
