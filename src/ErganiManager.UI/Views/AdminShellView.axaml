@@ -170,10 +170,22 @@
                 </StackPanel>
             </StackPanel>
 
-            <Button Content="{Binding Loc[NavSchedules]}" Classes="navItem"
-                    IsVisible="{Binding ShowSchedules}"
-                    Command="{Binding NavigateToCommand}" CommandParameter="Schedules"
-                    HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" />
+            <!-- Schedules: work calendar and overtime -->
+            <StackPanel IsVisible="{Binding ShowSchedulesGroup}" Spacing="2">
+                <Button Content="{Binding SchedulesHeader}" Classes="navGroup"
+                        Command="{Binding ToggleSchedulesCommand}"
+                        HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" />
+                <StackPanel IsVisible="{Binding IsSchedulesExpanded}" Spacing="2">
+                    <Button Content="{Binding Loc[NavSchedules]}" Classes="navItem navChild"
+                        IsVisible="{Binding ShowSchedules}"
+                        Command="{Binding NavigateToCommand}" CommandParameter="Schedules"
+                        HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" />
+                    <Button Content="{Binding Loc[NavOvertime]}" Classes="navItem navChild"
+                        IsVisible="{Binding ShowOvertime}"
+                        Command="{Binding NavigateToCommand}" CommandParameter="Overtime"
+                        HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" />
+                </StackPanel>
+            </StackPanel>
 
             <!-- Working Day: employee attendance and work-card activity -->
             <StackPanel IsVisible="{Binding ShowWorkingDay}" Spacing="2">
@@ -196,10 +208,7 @@
                 </StackPanel>
             </StackPanel>
 
-            <Button Content="{Binding Loc[NavOvertime]}" Classes="navItem"
-                    IsVisible="{Binding ShowOvertime}"
-                    Command="{Binding NavigateToCommand}" CommandParameter="Overtime"
-                    HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" />
+
 
             <!-- Logs are grouped immediately before Reports -->
             <StackPanel IsVisible="{Binding ShowLogs}" Spacing="2">
