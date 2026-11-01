@@ -28,6 +28,7 @@ public partial class OvertimeViewModel : ViewModelBase, IAdminSectionViewModel
 
     public string EmployeeSortLabel => SortLabel("Employee", Loc["Employee"]);
     public string OvertimeDateSortLabel => SortLabel("OvertimeDate", Loc["OvertimeDate"]);
+    public string EndTimeSortLabel => SortLabel("EndTime", Loc["EndTime"]);
     public string StatusSortLabel => SortLabel("Status", Loc["AttendanceStatus"]);
     public string CreatedDateSortLabel => SortLabel("CreatedAt", Loc["CreatedDate"]);
 
@@ -142,6 +143,7 @@ public partial class OvertimeViewModel : ViewModelBase, IAdminSectionViewModel
 
         OnPropertyChanged(nameof(EmployeeSortLabel));
         OnPropertyChanged(nameof(OvertimeDateSortLabel));
+        OnPropertyChanged(nameof(EndTimeSortLabel));
         OnPropertyChanged(nameof(StatusSortLabel));
         OnPropertyChanged(nameof(CreatedDateSortLabel));
     }
@@ -153,6 +155,7 @@ public partial class OvertimeViewModel : ViewModelBase, IAdminSectionViewModel
         {
             "Employee" => records.OrderBy(x => x.EmployeeFullName, StringComparer.CurrentCultureIgnoreCase),
             "OvertimeDate" => records.OrderBy(x => x.OvertimeDate),
+            "EndTime" => records.OrderBy(x => x.EndTime),
             "Status" => records.OrderBy(x => x.IsCancelled ? 2 : x.SubmittedToErgani ? 1 : 0),
             _ => records.OrderBy(x => x.CreatedAt)
         };
