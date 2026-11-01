@@ -99,7 +99,7 @@
                                        FontSize="12"
                                        Foreground="Gray" />
 
-                            <Grid ColumnDefinitions="*,32" MinWidth="292" HorizontalAlignment="Left">
+                            <Grid MinWidth="292" HorizontalAlignment="Left">
                                 <AutoCompleteBox x:Name="WorkCardEmployeePicker" ItemsSource="{Binding FilteredEmployees}"
                                                SelectedItem="{Binding FilterEmployee, Mode=TwoWay}"
                                                Text="{Binding EmployeeSearchText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
@@ -116,11 +116,14 @@
                                     </DataTemplate>
                                 </AutoCompleteBox.ItemTemplate>
                             </AutoCompleteBox>
-                                <ToggleButton Grid.Column="1"
-                                              IsChecked="{Binding #WorkCardEmployeePicker.IsDropDownOpen, Mode=TwoWay}"
+                                <ToggleButton IsChecked="{Binding #WorkCardEmployeePicker.IsDropDownOpen, Mode=TwoWay}"
                                               Content="▾"
-                                              MinWidth="32"
+                                              Width="30"
+                                              HorizontalAlignment="Right"
                                               VerticalAlignment="Stretch"
+                                              Background="Transparent"
+                                              BorderThickness="0"
+                                              Padding="4,0"
                                               ToolTip.Tip="Open employee list" />
                             </Grid>
 
