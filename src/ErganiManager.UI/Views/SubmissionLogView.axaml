@@ -194,10 +194,13 @@
 
             <StackPanel Margin="0,0,18,0" Spacing="5">
                 <TextBlock Text="{Binding Loc[Employee]}" FontSize="12" Foreground="Gray" />
-                <ComboBox ItemsSource="{Binding EmployeeOptions}"
+                <ComboBox ItemsSource="{Binding FilteredEmployeeOptions}"
                           SelectedValueBinding="{Binding Id}"
                           SelectedValue="{Binding SelectedEmployeeId, Mode=TwoWay}"
-                          MinWidth="220">
+                          IsEditable="True"
+                          Text="{Binding EmployeeSearchText, UpdateSourceTrigger=PropertyChanged}"
+                          MinWidth="260"
+                          ToolTip.Tip="Type an employee name, ID or tax number to filter the list">
                     <ComboBox.ItemTemplate>
                         <DataTemplate x:DataType="vm:EmployeeFilterOption">
                             <TextBlock Text="{Binding Name}" />
