@@ -62,6 +62,81 @@ public partial class EmployeesViewModel : ViewModelBase, IAdminSectionViewModel
     private double _formNormalDailyHours = 8;
 
     [ObservableProperty]
+    private string _formFatherName = string.Empty;
+
+    [ObservableProperty]
+    private string _formMotherName = string.Empty;
+
+    [ObservableProperty]
+    private DateTimeOffset? _formBirthDate = null;
+
+    [ObservableProperty]
+    private string _formSex = string.Empty;
+
+    [ObservableProperty]
+    private string _formNationality = string.Empty;
+
+    [ObservableProperty]
+    private string _formMaritalStatus = string.Empty;
+
+    [ObservableProperty]
+    private int? _formNumberOfChildren = null;
+
+    [ObservableProperty]
+    private string _formIdentityDocumentType = string.Empty;
+
+    [ObservableProperty]
+    private string _formIdentityDocumentNumber = string.Empty;
+
+    [ObservableProperty]
+    private DateTimeOffset? _formEmploymentStartDate = null;
+
+    [ObservableProperty]
+    private string _formEmploymentClassification = string.Empty;
+
+    [ObservableProperty]
+    private string _formExperienceYears = string.Empty;
+
+    [ObservableProperty]
+    private string _formEmploymentRelationship = string.Empty;
+
+    [ObservableProperty]
+    private string _formEmploymentStatus = string.Empty;
+
+    [ObservableProperty]
+    private double? _formWeeklyHours = null;
+
+    [ObservableProperty]
+    private string _formWorkScheduleDescription = string.Empty;
+
+    [ObservableProperty]
+    private string _formBreakDescription = string.Empty;
+
+    [ObservableProperty]
+    private string _formEducationLevel = string.Empty;
+
+    [ObservableProperty]
+    private string _formDigitalTimeOrganization = string.Empty;
+
+    [ObservableProperty]
+    private double? _formFullEmploymentHours = null;
+
+    [ObservableProperty]
+    private int? _formBreakMinutes = null;
+
+    [ObservableProperty]
+    private string _formBreakWithinWorkingHours = string.Empty;
+
+    [ObservableProperty]
+    private string _formUsesDigitalWorkCard = string.Empty;
+
+    [ObservableProperty]
+    private int? _formFlexibleScheduleMinutes = null;
+
+    [ObservableProperty]
+    private DateTimeOffset? _formLastModifiedDate = null;
+
+    [ObservableProperty]
     private BranchDto? _formBranch;
 
     [ObservableProperty]
@@ -179,6 +254,31 @@ public partial class EmployeesViewModel : ViewModelBase, IAdminSectionViewModel
 
         FormWeeklyWorkdays = 5;
         FormNormalDailyHours = 8;
+        FormFatherName = string.Empty;
+        FormMotherName = string.Empty;
+        FormBirthDate = null;
+        FormSex = string.Empty;
+        FormNationality = string.Empty;
+        FormMaritalStatus = string.Empty;
+        FormNumberOfChildren = null;
+        FormIdentityDocumentType = string.Empty;
+        FormIdentityDocumentNumber = string.Empty;
+        FormEmploymentStartDate = null;
+        FormEmploymentClassification = string.Empty;
+        FormExperienceYears = string.Empty;
+        FormEmploymentRelationship = string.Empty;
+        FormEmploymentStatus = string.Empty;
+        FormWeeklyHours = null;
+        FormWorkScheduleDescription = string.Empty;
+        FormBreakDescription = string.Empty;
+        FormEducationLevel = string.Empty;
+        FormDigitalTimeOrganization = string.Empty;
+        FormFullEmploymentHours = null;
+        FormBreakMinutes = null;
+        FormBreakWithinWorkingHours = string.Empty;
+        FormUsesDigitalWorkCard = string.Empty;
+        FormFlexibleScheduleMinutes = null;
+        FormLastModifiedDate = null;
 
         FormBranch =
             AvailableBranches.FirstOrDefault();
@@ -221,6 +321,31 @@ public partial class EmployeesViewModel : ViewModelBase, IAdminSectionViewModel
             employee.WeeklyWorkdays;
 
         FormNormalDailyHours = employee.NormalDailyHours;
+        FormFatherName = employee.FatherName;
+        FormMotherName = employee.MotherName;
+        FormBirthDate = employee.BirthDate;
+        FormSex = employee.Sex;
+        FormNationality = employee.Nationality;
+        FormMaritalStatus = employee.MaritalStatus;
+        FormNumberOfChildren = employee.NumberOfChildren;
+        FormIdentityDocumentType = employee.IdentityDocumentType;
+        FormIdentityDocumentNumber = employee.IdentityDocumentNumber;
+        FormEmploymentStartDate = employee.EmploymentStartDate;
+        FormEmploymentClassification = employee.EmploymentClassification;
+        FormExperienceYears = employee.ExperienceYears;
+        FormEmploymentRelationship = employee.EmploymentRelationship;
+        FormEmploymentStatus = employee.EmploymentStatus;
+        FormWeeklyHours = employee.WeeklyHours;
+        FormWorkScheduleDescription = employee.WorkScheduleDescription;
+        FormBreakDescription = employee.BreakDescription;
+        FormEducationLevel = employee.EducationLevel;
+        FormDigitalTimeOrganization = employee.DigitalTimeOrganization;
+        FormFullEmploymentHours = employee.FullEmploymentHours;
+        FormBreakMinutes = employee.BreakMinutes;
+        FormBreakWithinWorkingHours = employee.BreakWithinWorkingHours;
+        FormUsesDigitalWorkCard = employee.UsesDigitalWorkCard;
+        FormFlexibleScheduleMinutes = employee.FlexibleScheduleMinutes;
+        FormLastModifiedDate = employee.LastModifiedDate;
 
         FormBranch =
             AvailableBranches.FirstOrDefault(
@@ -306,6 +431,31 @@ public partial class EmployeesViewModel : ViewModelBase, IAdminSectionViewModel
                 WeeklyWorkdays =
                     FormWeeklyWorkdays,
 
+                FatherName = FormFatherName.Trim(),
+                MotherName = FormMotherName.Trim(),
+                BirthDate = FormBirthDate,
+                Sex = FormSex.Trim(),
+                Nationality = FormNationality.Trim(),
+                MaritalStatus = FormMaritalStatus.Trim(),
+                NumberOfChildren = FormNumberOfChildren,
+                IdentityDocumentType = FormIdentityDocumentType.Trim(),
+                IdentityDocumentNumber = FormIdentityDocumentNumber.Trim(),
+                EmploymentStartDate = FormEmploymentStartDate,
+                EmploymentClassification = FormEmploymentClassification.Trim(),
+                ExperienceYears = FormExperienceYears.Trim(),
+                EmploymentRelationship = FormEmploymentRelationship.Trim(),
+                EmploymentStatus = FormEmploymentStatus.Trim(),
+                WeeklyHours = FormWeeklyHours,
+                WorkScheduleDescription = FormWorkScheduleDescription.Trim(),
+                BreakDescription = FormBreakDescription.Trim(),
+                EducationLevel = FormEducationLevel.Trim(),
+                DigitalTimeOrganization = FormDigitalTimeOrganization.Trim(),
+                FullEmploymentHours = FormFullEmploymentHours,
+                BreakMinutes = FormBreakMinutes,
+                BreakWithinWorkingHours = FormBreakWithinWorkingHours.Trim(),
+                UsesDigitalWorkCard = FormUsesDigitalWorkCard.Trim(),
+                FlexibleScheduleMinutes = FormFlexibleScheduleMinutes,
+                LastModifiedDate = FormLastModifiedDate,
                 NormalDailyHours = FormNormalDailyHours,
 
                 IsActive =
