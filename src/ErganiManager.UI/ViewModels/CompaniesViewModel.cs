@@ -118,6 +118,15 @@ IAdminSectionViewModel
     [ObservableProperty]
     private int _formId;
 
+    public bool CanInitialImport => FormId == 0;
+    public bool CanUpdateCompanyData => FormId > 0;
+
+    partial void OnFormIdChanged(int value)
+    {
+        OnPropertyChanged(nameof(CanInitialImport));
+        OnPropertyChanged(nameof(CanUpdateCompanyData));
+    }
+
     [ObservableProperty]
     private string _formName =
         string.Empty;
@@ -962,6 +971,12 @@ IAdminSectionViewModel
     [RelayCommand]
     private async Task ImportFromErganiAsync()
     {
+        if (FormId > 0)
+        {
+            StatusMessage = Loc["Vm.This company already exists. Use Update from Ergani instead."];
+            return;
+        }
+
         if (string.IsNullOrWhiteSpace(
                 FormErganiUsername))
         {
@@ -1081,6 +1096,59 @@ IAdminSectionViewModel
         {
             IsImporting =
                 false;
+        }
+    }
+
+
+    // ---------------------------------------------------------------------
+    // REFRESH AN EXISTING COMPANY FROM ERGANI
+    // ---------------------------------------------------------------------
+
+    [RelayCommand]
+    private async Task UpdateCompanyDataFromErganiAsync()
+    {
+        if (FormId <= 0)
+        {
+            StatusMessage = Loc["Vm.Save or import the company before updating its data."];
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(FormErganiUsername) || string.IsNullOrWhiteSpace(FormErganiPassword))
+        {
+            StatusMessage = Loc["Vm.Enter the Ergani username and password, then test the connection."];
+            return;
+        }
+
+        IsImporting = true;
+        StatusMessage = Loc["Vm.⏳ Updating company, branches and employees from Ergani..."];
+        try
+        {
+            var result = await _erganiImport.ImportCompanyDataAsync(FormId, BuildCredentials()).ConfigureAwait(false);
+            await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(async () =>
+            {
+                if (!result.Success)
+                {
+                    StatusMessage = string.Format(Loc["Vm.❌ Update failed: {0}"], result.ErrorMessage);
+                    return;
+                }
+
+                if (!string.IsNullOrWhiteSpace(result.CompanyName)) FormName = result.CompanyName;
+                if (!string.IsNullOrWhiteSpace(result.CompanyTaxId)) FormTaxId = result.CompanyTaxId;
+                StatusMessage = string.Format(
+                    Loc["Vm.✅ Company data updated. AFM: {0}. Branches: {1} added/updated. Employees: {2} added/updated."],
+                    result.CompanyTaxId, result.TotalBranches, result.TotalEmployees);
+                if (result.Warnings.Count > 0)
+                    StatusMessage += Environment.NewLine + Environment.NewLine + string.Join(Environment.NewLine, result.Warnings);
+                await LoadAsync();
+            });
+        }
+        catch (Exception ex)
+        {
+            await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() => StatusMessage = $"❌ {ex.Message}");
+        }
+        finally
+        {
+            IsImporting = false;
         }
     }
 
