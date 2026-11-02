@@ -145,8 +145,8 @@ public partial class EmployeeImportViewModel : ViewModelBase
                             BarcodeId = row.BarcodeId,
                             ProfessionCode = row.ProfessionCode,
                             WeeklyWorkdays = row.WeeklyWorkdays,
-                            NormalDailyHours = row.NormalDailyHours,
-                            IsActive = row.IsActive
+                            NormalDailyHours = row.NormalDailyHours ?? 8,
+                            IsActive = row.IsActive ?? true
                         }
                         : CopyEmployee(existing);
 
@@ -159,8 +159,8 @@ public partial class EmployeeImportViewModel : ViewModelBase
                     dto.BarcodeId = row.BarcodeId;
                     if (!string.IsNullOrWhiteSpace(row.ProfessionCode)) dto.ProfessionCode = row.ProfessionCode;
                     dto.WeeklyWorkdays = row.WeeklyWorkdays;
-                    dto.NormalDailyHours = row.NormalDailyHours;
-                    dto.IsActive = row.IsActive;
+                    if (row.NormalDailyHours.HasValue) dto.NormalDailyHours = row.NormalDailyHours.Value;
+                    if (row.IsActive.HasValue) dto.IsActive = row.IsActive.Value;
 
                     // Empty optional cells mean "leave the existing value unchanged".
                     SetIfProvided(row.FatherName, value => dto.FatherName = value);
