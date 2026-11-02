@@ -113,11 +113,20 @@
                                     Margin="8,0,0,0" />
                         </Grid>
 
-                        <!-- Import from Ergani (only shown when saved and test passed) -->
+                        <!-- First-time import is only available before this company has been created/imported. -->
                         <Button Content="{Binding Loc[ImportBranchesEmployeesFromErgani]}"
                                 Command="{Binding ImportFromErganiCommand}"
-                                IsEnabled="{Binding !IsImporting}"
+                                IsEnabled="{Binding CanInitialImport}"
                                 IsVisible="{Binding ErganiTestSuccess}"
+                                HorizontalAlignment="Stretch"
+                                HorizontalContentAlignment="Center"
+                                Margin="0,4,0,0" />
+
+                        <!-- Existing companies use a refresh operation instead of repeating the initial import. -->
+                        <Button Content="{Binding Loc[UpdateCompanyDataFromErgani]}"
+                                Command="{Binding UpdateCompanyDataFromErganiCommand}"
+                                IsEnabled="{Binding !IsImporting}"
+                                IsVisible="{Binding CanUpdateCompanyData}"
                                 HorizontalAlignment="Stretch"
                                 HorizontalContentAlignment="Center"
                                 Margin="0,4,0,0" />
