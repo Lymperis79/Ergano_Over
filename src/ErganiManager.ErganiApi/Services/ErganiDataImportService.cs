@@ -1950,20 +1950,21 @@ public class ErganiDataImportService : IErganiDataImportService
         if (string.IsNullOrWhiteSpace(name))
             return string.Empty;
 
-        var normalized = name.Trim().Normalize(NormalizationForm.FormD);
-        var characters = normalized
-            .Where(ch => CharUnicodeInfo.GetUnicodeCategory(ch) != UnicodeCategory.NonSpacingMark)
-            .ToArray();
+        var normalized = name.Trim().Normalize(System.Text.NormalizationForm.FormD);
+        var builder = new System.Text.StringBuilder();
 
-        return new string(characters)
-            .Normalize(NormalizationForm.FormC)
-            .Where(ch => !char.IsWhiteSpace(ch))
-            .Aggregate(new System.Text.StringBuilder(), (builder, ch) =>
+        foreach (var ch in normalized)
+        {
+            if (CharUnicodeInfo.GetUnicodeCategory(ch) == UnicodeCategory.NonSpacingMark ||
+                char.IsWhiteSpace(ch))
             {
-                builder.Append(char.ToUpperInvariant(ch));
-                return builder;
-            })
-            .ToString();
+                continue;
+            }
+
+            builder.Append(char.ToUpperInvariant(ch));
+        }
+
+        return builder.ToString().Normalize(System.Text.NormalizationForm.FormC);
     }
 
     private static string GetFullExceptionMessage(
