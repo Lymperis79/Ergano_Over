@@ -971,12 +971,12 @@ public class ErganiDataImportService : IErganiDataImportService
                         employeeData.ProfessionCode,
                         DefaultProfessionCode);
 
-                var weeklyWorkdays =
+                int? weeklyWorkdays =
                     employeeData.WeeklyWorkdays.HasValue &&
                     employeeData.WeeklyWorkdays.Value >= 1 &&
                     employeeData.WeeklyWorkdays.Value <= 7
                         ? employeeData.WeeklyWorkdays.Value
-                        : 5;
+                        : null;
 
                 /*
                  * Ergani does not provide our local scanner barcode.
@@ -1018,7 +1018,7 @@ public class ErganiDataImportService : IErganiDataImportService
                                 professionCode,
 
                             WeeklyWorkdays =
-                                weeklyWorkdays,
+                                weeklyWorkdays ?? 5,
 
                             IsActive =
                                 true,
@@ -1084,8 +1084,8 @@ public class ErganiDataImportService : IErganiDataImportService
                             initialBarcode;
                     }
 
-                    existing.WeeklyWorkdays =
-                        weeklyWorkdays;
+                    if (weeklyWorkdays.HasValue)
+                        existing.WeeklyWorkdays = weeklyWorkdays.Value;
 
                     ApplyErganiEmployeeDetails(existing, employeeData);
 
@@ -1474,29 +1474,29 @@ public class ErganiDataImportService : IErganiDataImportService
 
     private static void ApplyErganiEmployeeDetails(Employee employee, EmployeeImportRecord data)
     {
-        if (data.FatherName != null) employee.FatherName = data.FatherName;
-        if (data.MotherName != null) employee.MotherName = data.MotherName;
+        if (!string.IsNullOrWhiteSpace(data.FatherName)) employee.FatherName = data.FatherName;
+        if (!string.IsNullOrWhiteSpace(data.MotherName)) employee.MotherName = data.MotherName;
         if (data.BirthDate != null) employee.BirthDate = data.BirthDate;
-        if (data.Sex != null) employee.Sex = data.Sex;
-        if (data.Nationality != null) employee.Nationality = data.Nationality;
-        if (data.MaritalStatus != null) employee.MaritalStatus = data.MaritalStatus;
+        if (!string.IsNullOrWhiteSpace(data.Sex)) employee.Sex = data.Sex;
+        if (!string.IsNullOrWhiteSpace(data.Nationality)) employee.Nationality = data.Nationality;
+        if (!string.IsNullOrWhiteSpace(data.MaritalStatus)) employee.MaritalStatus = data.MaritalStatus;
         if (data.NumberOfChildren != null) employee.NumberOfChildren = data.NumberOfChildren;
-        if (data.IdentityDocumentType != null) employee.IdentityDocumentType = data.IdentityDocumentType;
-        if (data.IdentityDocumentNumber != null) employee.IdentityDocumentNumber = data.IdentityDocumentNumber;
+        if (!string.IsNullOrWhiteSpace(data.IdentityDocumentType)) employee.IdentityDocumentType = data.IdentityDocumentType;
+        if (!string.IsNullOrWhiteSpace(data.IdentityDocumentNumber)) employee.IdentityDocumentNumber = data.IdentityDocumentNumber;
         if (data.EmploymentStartDate != null) employee.EmploymentStartDate = data.EmploymentStartDate;
-        if (data.EmploymentClassification != null) employee.EmploymentClassification = data.EmploymentClassification;
-        if (data.ExperienceYears != null) employee.ExperienceYears = data.ExperienceYears;
-        if (data.EmploymentRelationship != null) employee.EmploymentRelationship = data.EmploymentRelationship;
-        if (data.EmploymentStatus != null) employee.EmploymentStatus = data.EmploymentStatus;
+        if (!string.IsNullOrWhiteSpace(data.EmploymentClassification)) employee.EmploymentClassification = data.EmploymentClassification;
+        if (!string.IsNullOrWhiteSpace(data.ExperienceYears)) employee.ExperienceYears = data.ExperienceYears;
+        if (!string.IsNullOrWhiteSpace(data.EmploymentRelationship)) employee.EmploymentRelationship = data.EmploymentRelationship;
+        if (!string.IsNullOrWhiteSpace(data.EmploymentStatus)) employee.EmploymentStatus = data.EmploymentStatus;
         if (data.WeeklyHours != null) employee.WeeklyHours = data.WeeklyHours;
-        if (data.WorkScheduleDescription != null) employee.WorkScheduleDescription = data.WorkScheduleDescription;
-        if (data.BreakDescription != null) employee.BreakDescription = data.BreakDescription;
-        if (data.EducationLevel != null) employee.EducationLevel = data.EducationLevel;
-        if (data.DigitalTimeOrganization != null) employee.DigitalTimeOrganization = data.DigitalTimeOrganization;
+        if (!string.IsNullOrWhiteSpace(data.WorkScheduleDescription)) employee.WorkScheduleDescription = data.WorkScheduleDescription;
+        if (!string.IsNullOrWhiteSpace(data.BreakDescription)) employee.BreakDescription = data.BreakDescription;
+        if (!string.IsNullOrWhiteSpace(data.EducationLevel)) employee.EducationLevel = data.EducationLevel;
+        if (!string.IsNullOrWhiteSpace(data.DigitalTimeOrganization)) employee.DigitalTimeOrganization = data.DigitalTimeOrganization;
         if (data.FullEmploymentHours != null) employee.FullEmploymentHours = data.FullEmploymentHours;
         if (data.BreakMinutes != null) employee.BreakMinutes = data.BreakMinutes;
-        if (data.BreakWithinWorkingHours != null) employee.BreakWithinWorkingHours = data.BreakWithinWorkingHours;
-        if (data.UsesDigitalWorkCard != null) employee.UsesDigitalWorkCard = data.UsesDigitalWorkCard;
+        if (!string.IsNullOrWhiteSpace(data.BreakWithinWorkingHours)) employee.BreakWithinWorkingHours = data.BreakWithinWorkingHours;
+        if (!string.IsNullOrWhiteSpace(data.UsesDigitalWorkCard)) employee.UsesDigitalWorkCard = data.UsesDigitalWorkCard;
         if (data.FlexibleScheduleMinutes != null) employee.FlexibleScheduleMinutes = data.FlexibleScheduleMinutes;
         if (data.LastModifiedDate != null) employee.LastModifiedDate = data.LastModifiedDate;
     }
