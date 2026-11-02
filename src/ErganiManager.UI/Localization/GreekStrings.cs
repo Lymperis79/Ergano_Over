@@ -1865,6 +1865,7 @@ public static class GreekStrings
         ["Vm.Holiday submission details"] = "Αναλυτικά στοιχεία εκκρεμών αδειών",
         ["Vm.Details"] = "Λεπτομέρειες",
         ["Vm.Holiday"] = "Άδεια",
+        ["Vm.Row {0}: AMKA and BarcodeId are required for a new employee."] = "Γραμμή {0}: Το ΑΜΚΑ και το BarcodeId είναι υποχρεωτικά για νέο εργαζόμενο.",
         ["Vm.Row {0}: AFM matches an existing employee, but first name or surname differs. Skipped."] = "Γραμμή {0}: Το ΑΦΜ αντιστοιχεί σε υπάρχοντα εργαζόμενο, αλλά το όνομα ή το επώνυμο διαφέρει. Η εγγραφή παραλείφθηκε.",
         ["Vm.Overtime over 8 hours"] = "Υπερωρία άνω των 8 ωρών",
     };
