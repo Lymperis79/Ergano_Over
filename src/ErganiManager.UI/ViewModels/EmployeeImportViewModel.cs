@@ -124,7 +124,18 @@ public partial class EmployeeImportViewModel : ViewModelBase
                         continue;
                     }
 
-                    if (await _employeeService.IsBarcodeTakenAsync(
+                    if (existing == null &&
+                        (string.IsNullOrWhiteSpace(row.SocialSecurityNumber) ||
+                         string.IsNullOrWhiteSpace(row.BarcodeId)))
+                    {
+                        errors.Add(string.Format(
+                            Loc["Vm.Row {0}: AMKA and BarcodeId are required for a new employee."],
+                            row.RowNumber));
+                        continue;
+                    }
+
+                    if (!string.IsNullOrWhiteSpace(row.BarcodeId) &&
+                        await _employeeService.IsBarcodeTakenAsync(
                             _companyId, row.BarcodeId, existing?.Id))
                     {
                         errors.Add(string.Format(
@@ -150,13 +161,16 @@ public partial class EmployeeImportViewModel : ViewModelBase
                         }
                         : CopyEmployee(existing);
 
-                    // Required identity and operational values come from the spreadsheet.
+                    // Identity and operational values from the spreadsheet are applied;
+                    // blank AMKA/barcode cells retain the existing employee values.
                     dto.BranchId = branch.Id;
                     dto.FirstName = row.FirstName;
                     dto.LastName = row.LastName;
                     dto.TaxId = afm;
-                    dto.SocialSecurityNumber = row.SocialSecurityNumber;
-                    dto.BarcodeId = row.BarcodeId;
+                    if (!string.IsNullOrWhiteSpace(row.SocialSecurityNumber))
+                        dto.SocialSecurityNumber = row.SocialSecurityNumber;
+                    if (!string.IsNullOrWhiteSpace(row.BarcodeId))
+                        dto.BarcodeId = row.BarcodeId;
                     if (!string.IsNullOrWhiteSpace(row.ProfessionCode)) dto.ProfessionCode = row.ProfessionCode;
                     dto.WeeklyWorkdays = row.WeeklyWorkdays;
                     if (row.NormalDailyHours.HasValue) dto.NormalDailyHours = row.NormalDailyHours.Value;
