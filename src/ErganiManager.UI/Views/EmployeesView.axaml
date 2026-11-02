@@ -83,6 +83,84 @@
                         <NumericUpDown Value="{Binding FormNormalDailyHours}"
                                        Minimum="0.5" Maximum="24" Increment="0.5" />
 
+                        <TextBlock Text="{Binding Loc[ErganiPersonalDetails]}" FontSize="15" FontWeight="Bold" Margin="0,12,0,0" />
+                        <TextBlock Text="{Binding Loc[FatherName]}" FontWeight="SemiBold" />
+                        <TextBox Text="{Binding FormFatherName}" />
+
+                        <TextBlock Text="{Binding Loc[MotherName]}" FontWeight="SemiBold" />
+                        <TextBox Text="{Binding FormMotherName}" />
+
+                        <TextBlock Text="{Binding Loc[BirthDate]}" FontWeight="SemiBold" />
+                        <DatePicker SelectedDate="{Binding FormBirthDate}" HorizontalAlignment="Stretch" />
+
+                        <TextBlock Text="{Binding Loc[Sex]}" FontWeight="SemiBold" />
+                        <TextBox Text="{Binding FormSex}" />
+
+                        <TextBlock Text="{Binding Loc[Nationality]}" FontWeight="SemiBold" />
+                        <TextBox Text="{Binding FormNationality}" />
+
+                        <TextBlock Text="{Binding Loc[MaritalStatus]}" FontWeight="SemiBold" />
+                        <TextBox Text="{Binding FormMaritalStatus}" />
+
+                        <TextBlock Text="{Binding Loc[NumberOfChildren]}" FontWeight="SemiBold" />
+                        <NumericUpDown Value="{Binding FormNumberOfChildren}" Minimum="0" Maximum="30" Increment="1" />
+
+                        <TextBlock Text="{Binding Loc[IdentityDocumentType]}" FontWeight="SemiBold" />
+                        <TextBox Text="{Binding FormIdentityDocumentType}" />
+
+                        <TextBlock Text="{Binding Loc[IdentityDocumentNumber]}" FontWeight="SemiBold" />
+                        <TextBox Text="{Binding FormIdentityDocumentNumber}" />
+
+                        <TextBlock Text="{Binding Loc[EmploymentStartDate]}" FontWeight="SemiBold" />
+                        <DatePicker SelectedDate="{Binding FormEmploymentStartDate}" HorizontalAlignment="Stretch" />
+
+                        <TextBlock Text="{Binding Loc[EmploymentClassification]}" FontWeight="SemiBold" />
+                        <TextBox Text="{Binding FormEmploymentClassification}" />
+
+                        <TextBlock Text="{Binding Loc[ExperienceYears]}" FontWeight="SemiBold" />
+                        <TextBox Text="{Binding FormExperienceYears}" />
+
+                        <TextBlock Text="{Binding Loc[EmploymentRelationship]}" FontWeight="SemiBold" />
+                        <TextBox Text="{Binding FormEmploymentRelationship}" />
+
+                        <TextBlock Text="{Binding Loc[EmploymentStatus]}" FontWeight="SemiBold" />
+                        <TextBox Text="{Binding FormEmploymentStatus}" />
+
+                        <TextBlock Text="{Binding Loc[WeeklyHours]}" FontWeight="SemiBold" />
+                        <NumericUpDown Value="{Binding FormWeeklyHours}" Minimum="0" Maximum="100" Increment="0.5" />
+
+                        <TextBlock Text="{Binding Loc[WorkScheduleDescription]}" FontWeight="SemiBold" />
+                        <TextBox Text="{Binding FormWorkScheduleDescription}" />
+
+                        <TextBlock Text="{Binding Loc[BreakDescription]}" FontWeight="SemiBold" />
+                        <TextBox Text="{Binding FormBreakDescription}" />
+
+                        <TextBlock Text="{Binding Loc[EducationLevel]}" FontWeight="SemiBold" />
+                        <TextBox Text="{Binding FormEducationLevel}" />
+
+                        <TextBlock Text="{Binding Loc[DigitalTimeOrganization]}" FontWeight="SemiBold" />
+                        <TextBox Text="{Binding FormDigitalTimeOrganization}" />
+
+                        <TextBlock Text="{Binding Loc[FullEmploymentHours]}" FontWeight="SemiBold" />
+                        <NumericUpDown Value="{Binding FormFullEmploymentHours}" Minimum="0" Maximum="100" Increment="0.5" />
+
+                        <TextBlock Text="{Binding Loc[BreakMinutes]}" FontWeight="SemiBold" />
+                        <NumericUpDown Value="{Binding FormBreakMinutes}" Minimum="0" Maximum="1440" Increment="1" />
+
+                        <TextBlock Text="{Binding Loc[BreakWithinWorkingHours]}" FontWeight="SemiBold" />
+                        <TextBox Text="{Binding FormBreakWithinWorkingHours}" />
+
+                        <TextBlock Text="{Binding Loc[UsesDigitalWorkCard]}" FontWeight="SemiBold" />
+                        <TextBox Text="{Binding FormUsesDigitalWorkCard}" />
+
+                        <TextBlock Text="{Binding Loc[FlexibleScheduleMinutes]}" FontWeight="SemiBold" />
+                        <NumericUpDown Value="{Binding FormFlexibleScheduleMinutes}" Minimum="0" Maximum="1440" Increment="1" />
+
+                        <TextBlock Text="{Binding Loc[LastModifiedDate]}" FontWeight="SemiBold" />
+                        <DatePicker SelectedDate="{Binding FormLastModifiedDate}" HorizontalAlignment="Stretch" />
+
+                        <TextBlock Text="{Binding Loc[ErganiEmploymentDetails]}" FontSize="15" FontWeight="Bold" Margin="0,12,0,0" />
+
                         <TextBlock Text="{Binding Loc[Branch]}" FontWeight="SemiBold" />
                         <ComboBox ItemsSource="{Binding AvailableBranches}"
                                   SelectedItem="{Binding FormBranch}"
