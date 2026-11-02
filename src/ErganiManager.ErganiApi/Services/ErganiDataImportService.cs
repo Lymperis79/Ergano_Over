@@ -891,7 +891,21 @@ public class ErganiDataImportService : IErganiDataImportService
                 }
 
                 var employeeTaxId =
-                    employeeData.TaxId.Trim();
+                    NormalizeTaxId(employeeData.TaxId);
+
+                var firstName = EmptyToNull(employeeData.FirstName);
+                var lastName = EmptyToNull(employeeData.LastName);
+
+                // These three values together are the employee identity key.
+                // Do not update an existing employee if Ergani does not provide
+                // both names or if the AFM/name combination does not match.
+                if (string.IsNullOrWhiteSpace(firstName) ||
+                    string.IsNullOrWhiteSpace(lastName))
+                {
+                    result.Warnings.Add(
+                        $"Employee AFM {employeeTaxId} was skipped because Ergani did not provide both first name and surname.");
+                    continue;
+                }
 
                 BusinessBranch? branch = null;
 
@@ -944,22 +958,28 @@ public class ErganiDataImportService : IErganiDataImportService
                     }
                 }
 
-                var existing =
-                    await db.Employees.FirstOrDefaultAsync(
-                        e =>
-                            e.CompanyId == companyId &&
-                            e.TaxId == employeeTaxId,
-                        ct);
+                var employeesWithAfm =
+                    await db.Employees
+                        .Where(e => e.CompanyId == companyId)
+                        .ToListAsync(ct);
 
-                var firstName =
-                    DefaultIfEmpty(
-                        employeeData.FirstName,
-                        "Unknown");
+                var afmMatches = employeesWithAfm
+                    .Where(e => NormalizeTaxId(e.TaxId) == employeeTaxId)
+                    .ToList();
 
-                var lastName =
-                    DefaultIfEmpty(
-                        employeeData.LastName,
-                        "Unknown");
+                var existing = afmMatches.FirstOrDefault(e =>
+                    NormalizeEmployeeName(e.FirstName) == NormalizeEmployeeName(firstName) &&
+                    NormalizeEmployeeName(e.LastName) == NormalizeEmployeeName(lastName));
+
+                if (existing == null && afmMatches.Count > 0)
+                {
+                    result.Warnings.Add(
+                        $"Employee AFM {employeeTaxId} was not updated because the first name and surname do not match the existing employee record.");
+                    _logger.LogWarning(
+                        "Skipping employee update for AFM={Afm}: first name/surname mismatch. Ergani={FirstName} {LastName}.",
+                        employeeTaxId, firstName, lastName);
+                    continue;
+                }
 
                 var socialSecurityNumber =
                     DefaultIfEmpty(
@@ -1923,6 +1943,27 @@ public class ErganiDataImportService : IErganiDataImportService
 
         return new string(
             taxId.Where(char.IsDigit).ToArray());
+    }
+
+    private static string NormalizeEmployeeName(string? name)
+    {
+        if (string.IsNullOrWhiteSpace(name))
+            return string.Empty;
+
+        var normalized = name.Trim().Normalize(NormalizationForm.FormD);
+        var characters = normalized
+            .Where(ch => CharUnicodeInfo.GetUnicodeCategory(ch) != UnicodeCategory.NonSpacingMark)
+            .ToArray();
+
+        return new string(characters)
+            .Normalize(NormalizationForm.FormC)
+            .Where(ch => !char.IsWhiteSpace(ch))
+            .Aggregate(new System.Text.StringBuilder(), (builder, ch) =>
+            {
+                builder.Append(char.ToUpperInvariant(ch));
+                return builder;
+            })
+            .ToString();
     }
 
     private static string GetFullExceptionMessage(
