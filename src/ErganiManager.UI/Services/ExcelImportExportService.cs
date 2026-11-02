@@ -205,7 +205,7 @@ public class ExcelImportExportService
                 SocialSecurityNumber = DigitsOnly(Read(row, "SocialSecurityNumber", "SocialSecurityNumber (AMKA)", "AMKA")),
                 BarcodeId = Read(row, "BarcodeId", "Barcode ID"),
                 ProfessionCode = Read(row, "ProfessionCode", "Profession Code", Tr.Loc["Vm.Profession Code"]),
-                WeeklyWorkdays = ReadInt(row, "WeeklyWorkdays", "Weekly Workdays") ?? 5,
+                WeeklyWorkdays = ReadInt(row, "WeeklyWorkdays", "Weekly Workdays", Tr.Loc["Vm.Weekly Workdays"]) ?? 5,
                 BranchName = Read(row, "BranchName", "Branch"),
                 NormalDailyHours = ReadDouble(row, "NormalDailyHours", "Normal Daily Hours"),
                 IsActive = ReadBool(row, "IsActive", "Active", Tr.Loc["Vm.Active"]),
