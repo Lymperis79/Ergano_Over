@@ -240,8 +240,7 @@ public class ExcelImportExportService
             if (string.IsNullOrWhiteSpace(item.FirstName)) errors.Add(Tr.Loc["Vm.First name required"]);
             if (string.IsNullOrWhiteSpace(item.LastName)) errors.Add(Tr.Loc["Vm.Last name required"]);
             if (item.TaxId.Length != 9) errors.Add(Tr.Loc["Vm.AFM must be 9 digits"]);
-            if (item.SocialSecurityNumber.Length != 11) errors.Add(Tr.Loc["Vm.AMKA must be 11 digits"]);
-            if (string.IsNullOrWhiteSpace(item.BarcodeId)) errors.Add(Tr.Loc["Vm.Barcode ID required"]);
+            if (!string.IsNullOrWhiteSpace(item.SocialSecurityNumber) && item.SocialSecurityNumber.Length != 11) errors.Add(Tr.Loc["Vm.AMKA must be 11 digits"]);
             if (item.WeeklyWorkdays is not (5 or 6)) errors.Add(Tr.Loc["Vm.Weekly workdays must be 5 or 6"]);
             if (string.IsNullOrWhiteSpace(item.BranchName)) errors.Add(Tr.Loc["Vm.Branch name required"]);
             if (item.NormalDailyHours.HasValue && (item.NormalDailyHours.Value <= 0 || item.NormalDailyHours.Value > 24)) errors.Add("NormalDailyHours must be greater than 0 and no more than 24.");
