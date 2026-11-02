@@ -22,6 +22,33 @@ public class EmployeeImportRow
     public string ProfessionCode { get; set; } = string.Empty;
     public int WeeklyWorkdays { get; set; } = 5;
     public string BranchName { get; set; } = string.Empty;
+    public double NormalDailyHours { get; set; } = 8;
+    public bool IsActive { get; set; } = true;
+    public string FatherName { get; set; } = string.Empty;
+    public string MotherName { get; set; } = string.Empty;
+    public DateTimeOffset? BirthDate { get; set; }
+    public string Sex { get; set; } = string.Empty;
+    public string Nationality { get; set; } = string.Empty;
+    public string MaritalStatus { get; set; } = string.Empty;
+    public int? NumberOfChildren { get; set; }
+    public string IdentityDocumentType { get; set; } = string.Empty;
+    public string IdentityDocumentNumber { get; set; } = string.Empty;
+    public DateTimeOffset? EmploymentStartDate { get; set; }
+    public string EmploymentClassification { get; set; } = string.Empty;
+    public string ExperienceYears { get; set; } = string.Empty;
+    public string EmploymentRelationship { get; set; } = string.Empty;
+    public string EmploymentStatus { get; set; } = string.Empty;
+    public double? WeeklyHours { get; set; }
+    public string WorkScheduleDescription { get; set; } = string.Empty;
+    public string BreakDescription { get; set; } = string.Empty;
+    public string EducationLevel { get; set; } = string.Empty;
+    public string DigitalTimeOrganization { get; set; } = string.Empty;
+    public double? FullEmploymentHours { get; set; }
+    public int? BreakMinutes { get; set; }
+    public string BreakWithinWorkingHours { get; set; } = string.Empty;
+    public string UsesDigitalWorkCard { get; set; } = string.Empty;
+    public int? FlexibleScheduleMinutes { get; set; }
+    public DateTimeOffset? LastModifiedDate { get; set; }
 
     public bool IsValid { get; set; }
     public string? Error { get; set; }
@@ -42,12 +69,16 @@ public class ExcelImportExportService
     {
         using var wb = new XLWorkbook();
         var ws = wb.AddWorksheet("Employees");
-
-        // Headers
         var headers = new[]
         {
-            "FirstName", "LastName", "TaxId (AFM)", "SocialSecurityNumber (AMKA)",
-            "BarcodeId", "ProfessionCode", "WeeklyWorkdays", "BranchName", "IsActive"
+            "FirstName", "LastName", "TaxId", "SocialSecurityNumber", "BarcodeId",
+            "ProfessionCode", "WeeklyWorkdays", "BranchName", "IsActive", "NormalDailyHours",
+            "FatherName", "MotherName", "BirthDate", "Sex", "Nationality", "MaritalStatus",
+            "NumberOfChildren", "IdentityDocumentType", "IdentityDocumentNumber", "EmploymentStartDate",
+            "EmploymentClassification", "ExperienceYears", "EmploymentRelationship", "EmploymentStatus",
+            "WeeklyHours", "WorkScheduleDescription", "BreakDescription", "EducationLevel",
+            "DigitalTimeOrganization", "FullEmploymentHours", "BreakMinutes",
+            "BreakWithinWorkingHours", "UsesDigitalWorkCard", "FlexibleScheduleMinutes", "LastModifiedDate"
         };
 
         for (int i = 0; i < headers.Length; i++)
@@ -58,7 +89,6 @@ public class ExcelImportExportService
             ws.Cell(1, i + 1).Style.Font.FontColor = XLColor.White;
         }
 
-        // One example row
         ws.Cell(2, 1).Value = "Antonis";
         ws.Cell(2, 2).Value = "Papadopoulos";
         ws.Cell(2, 3).Value = "123456789";
@@ -67,54 +97,141 @@ public class ExcelImportExportService
         ws.Cell(2, 6).Value = "251101";
         ws.Cell(2, 7).Value = 5;
         ws.Cell(2, 8).Value = "Main Branch";
-        ws.Cell(2, 9).Value = "TRUE";
-
+        ws.Cell(2, 9).Value = true;
+        ws.Cell(2, 10).Value = 8;
         ws.Columns().AdjustToContents();
+        ws.SheetView.FreezeRows(1);
+        ws.RangeUsed()?.SetAutoFilter();
         wb.SaveAs(filePath);
     }
 
     public static ExcelImportResult ParseEmployeeImportFile(string filePath)
     {
         var result = new ExcelImportResult();
-
         using var wb = new XLWorkbook(filePath);
         var ws = wb.Worksheets.First();
-        var lastRow = ws.LastRowUsed()?.RowNumber() ?? 1;
+        var headerRow = ws.FirstRowUsed()?.RowNumber() ?? 1;
+        var headerMap = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
 
-        // Start from row 2 (skip header)
-        for (int row = 2; row <= lastRow; row++)
+        foreach (var cell in ws.Row(headerRow).CellsUsed())
         {
-            var importRow = new EmployeeImportRow { RowNumber = row };
+            var key = NormalizeHeader(cell.GetString()).Replace(" ", string.Empty);
+            if (!string.IsNullOrWhiteSpace(key))
+                headerMap[key] = cell.Address.ColumnNumber;
+        }
 
-            importRow.FirstName = ws.Cell(row, 1).GetString().Trim();
-            importRow.LastName = ws.Cell(row, 2).GetString().Trim();
-            importRow.TaxId = ws.Cell(row, 3).GetString().Trim();
-            importRow.SocialSecurityNumber = ws.Cell(row, 4).GetString().Trim();
-            importRow.BarcodeId = ws.Cell(row, 5).GetString().Trim();
-            importRow.ProfessionCode = ws.Cell(row, 6).GetString().Trim();
-            importRow.BranchName = ws.Cell(row, 8).GetString().Trim();
+        int Col(params string[] names)
+        {
+            foreach (var name in names)
+            {
+                var key = NormalizeHeader(name).Replace(" ", string.Empty);
+                if (headerMap.TryGetValue(key, out var column))
+                    return column;
+            }
+            return 0;
+        }
 
-            var weeklyDaysStr = ws.Cell(row, 7).GetString().Trim();
-            importRow.WeeklyWorkdays = int.TryParse(weeklyDaysStr, out var wd) ? wd : 5;
+        string Read(int row, params string[] names)
+        {
+            var col = Col(names);
+            return col == 0 ? string.Empty : ws.Cell(row, col).GetString().Trim();
+        }
 
-            // Validate
+        double? ReadDouble(int row, params string[] names)
+        {
+            var raw = Read(row, names);
+            return double.TryParse(raw, NumberStyles.Float | NumberStyles.AllowThousands,
+                CultureInfo.InvariantCulture, out var value) ? value : null;
+        }
+
+        int? ReadInt(int row, params string[] names)
+        {
+            var raw = Read(row, names);
+            return int.TryParse(raw, NumberStyles.Integer, CultureInfo.InvariantCulture, out var value) ? value : null;
+        }
+
+        DateTimeOffset? ReadDate(int row, params string[] names)
+        {
+            var col = Col(names);
+            if (col == 0 || ws.Cell(row, col).IsEmpty()) return null;
+            var cell = ws.Cell(row, col);
+            if (cell.DataType == XLDataType.DateTime)
+                return new DateTimeOffset(DateTime.SpecifyKind(cell.GetDateTime(), DateTimeKind.Unspecified));
+            return DateTimeOffset.TryParse(cell.GetString(), CultureInfo.InvariantCulture,
+                DateTimeStyles.AssumeLocal, out var value) ? value : null;
+        }
+
+        var firstCol = Col("FirstName", "First Name");
+        var lastCol = Col("LastName", "Last Name");
+        var afmCol = Col("TaxId", "Tax ID (AFM)", "AFM");
+        var amkaCol = Col("SocialSecurityNumber", "SocialSecurityNumber (AMKA)", "AMKA");
+        var barcodeCol = Col("BarcodeId", "Barcode ID");
+        var branchCol = Col("BranchName", "Branch");
+        if (firstCol == 0 || lastCol == 0 || afmCol == 0 || amkaCol == 0 ||
+            barcodeCol == 0 || branchCol == 0)
+            throw new InvalidDataException("The employee file is missing one or more required columns: FirstName, LastName, TaxId, SocialSecurityNumber, BarcodeId, BranchName.");
+
+        var lastRow = ws.LastRowUsed()?.RowNumber() ?? headerRow;
+        for (int row = headerRow + 1; row <= lastRow; row++)
+        {
+            if (ws.Row(row).CellsUsed().All(cell => string.IsNullOrWhiteSpace(cell.GetString())))
+                continue;
+
+            var item = new EmployeeImportRow
+            {
+                RowNumber = row,
+                FirstName = Read(row, "FirstName", "First Name"),
+                LastName = Read(row, "LastName", "Last Name"),
+                TaxId = DigitsOnly(Read(row, "TaxId", "Tax ID (AFM)", "AFM")),
+                SocialSecurityNumber = DigitsOnly(Read(row, "SocialSecurityNumber", "SocialSecurityNumber (AMKA)", "AMKA")),
+                BarcodeId = Read(row, "BarcodeId", "Barcode ID"),
+                ProfessionCode = Read(row, "ProfessionCode", "Profession Code"),
+                WeeklyWorkdays = ReadInt(row, "WeeklyWorkdays", "Weekly Workdays") ?? 5,
+                BranchName = Read(row, "BranchName", "Branch"),
+                NormalDailyHours = ReadDouble(row, "NormalDailyHours", "Normal Daily Hours") ?? 8,
+                IsActive = !bool.TryParse(Read(row, "IsActive", "Active"), out var active) || active,
+                FatherName = Read(row, "FatherName"),
+                MotherName = Read(row, "MotherName"),
+                BirthDate = ReadDate(row, "BirthDate"),
+                Sex = Read(row, "Sex"),
+                Nationality = Read(row, "Nationality"),
+                MaritalStatus = Read(row, "MaritalStatus"),
+                NumberOfChildren = ReadInt(row, "NumberOfChildren", "NumChildren"),
+                IdentityDocumentType = Read(row, "IdentityDocumentType", "TyposTaytotitas"),
+                IdentityDocumentNumber = Read(row, "IdentityDocumentNumber", "ArTaytotitas"),
+                EmploymentStartDate = ReadDate(row, "EmploymentStartDate", "DateFrom"),
+                EmploymentClassification = Read(row, "EmploymentClassification", "asXaraktirismos"),
+                ExperienceYears = Read(row, "ExperienceYears", "Proipiresia"),
+                EmploymentRelationship = Read(row, "EmploymentRelationship", "SxesiApasxolisis"),
+                EmploymentStatus = Read(row, "EmploymentStatus", "KathestosApasxolisis"),
+                WeeklyHours = ReadDouble(row, "WeeklyHours", "WeekHours"),
+                WorkScheduleDescription = Read(row, "WorkScheduleDescription", "Orario"),
+                BreakDescription = Read(row, "BreakDescription", "Dialeimma"),
+                EducationLevel = Read(row, "EducationLevel", "EpipedoMorfosis"),
+                DigitalTimeOrganization = Read(row, "DigitalTimeOrganization", "WorkingTimeDigitalOrganization"),
+                FullEmploymentHours = ReadDouble(row, "FullEmploymentHours"),
+                BreakMinutes = ReadInt(row, "BreakMinutes", "DialeimmaMinutes"),
+                BreakWithinWorkingHours = Read(row, "BreakWithinWorkingHours", "DialeimmaEntosWrariou"),
+                UsesDigitalWorkCard = Read(row, "UsesDigitalWorkCard", "WorkingCard"),
+                FlexibleScheduleMinutes = ReadInt(row, "FlexibleScheduleMinutes", "EueliktoWrario"),
+                LastModifiedDate = ReadDate(row, "LastModifiedDate")
+            };
+
             var errors = new List<string>();
-            if (string.IsNullOrWhiteSpace(importRow.FirstName)) errors.Add(Tr.Loc["Vm.First name required"]);
-            if (string.IsNullOrWhiteSpace(importRow.LastName)) errors.Add(Tr.Loc["Vm.Last name required"]);
-            if (importRow.TaxId.Length != 9) errors.Add(Tr.Loc["Vm.AFM must be 9 digits"]);
-            if (importRow.SocialSecurityNumber.Length != 11) errors.Add(Tr.Loc["Vm.AMKA must be 11 digits"]);
-            if (string.IsNullOrWhiteSpace(importRow.BarcodeId)) errors.Add(Tr.Loc["Vm.Barcode ID required"]);
-            if (importRow.WeeklyWorkdays is not (5 or 6)) errors.Add(Tr.Loc["Vm.Weekly workdays must be 5 or 6"]);
-            if (string.IsNullOrWhiteSpace(importRow.BranchName)) errors.Add(Tr.Loc["Vm.Branch name required"]);
+            if (string.IsNullOrWhiteSpace(item.FirstName)) errors.Add(Tr.Loc["Vm.First name required"]);
+            if (string.IsNullOrWhiteSpace(item.LastName)) errors.Add(Tr.Loc["Vm.Last name required"]);
+            if (item.TaxId.Length != 9) errors.Add(Tr.Loc["Vm.AFM must be 9 digits"]);
+            if (item.SocialSecurityNumber.Length != 11) errors.Add(Tr.Loc["Vm.AMKA must be 11 digits"]);
+            if (string.IsNullOrWhiteSpace(item.BarcodeId)) errors.Add(Tr.Loc["Vm.Barcode ID required"]);
+            if (item.WeeklyWorkdays is not (5 or 6)) errors.Add(Tr.Loc["Vm.Weekly workdays must be 5 or 6"]);
+            if (string.IsNullOrWhiteSpace(item.BranchName)) errors.Add(Tr.Loc["Vm.Branch name required"]);
+            if (item.NormalDailyHours <= 0 || item.NormalDailyHours > 24) errors.Add("NormalDailyHours must be greater than 0 and no more than 24.");
 
-            importRow.IsValid = errors.Count == 0;
-            importRow.Error = errors.Count > 0 ? string.Join("; ", errors) : null;
-
+            item.IsValid = errors.Count == 0;
+            item.Error = errors.Count > 0 ? string.Join("; ", errors) : null;
             result.TotalRows++;
-            if (importRow.IsValid)
-                result.ValidRows.Add(importRow);
-            else
-                result.InvalidRows.Add(importRow);
+            if (item.IsValid) result.ValidRows.Add(item);
+            else result.InvalidRows.Add(item);
         }
 
         return result;
@@ -539,45 +656,56 @@ public class ExcelImportExportService
     {
         using var wb = new XLWorkbook();
         var ws = wb.AddWorksheet("Employees");
-
-        // Header
         var headers = new[]
         {
-            Tr.Loc["Vm.Last Name"], Tr.Loc["Vm.First Name"], Tr.Loc["Vm.Tax ID (AFM)"], Tr.Loc["Vm.AMKA"],
-            Tr.Loc["Vm.Barcode ID"], Tr.Loc["Vm.Profession Code"], Tr.Loc["Vm.Weekly Workdays"],
-            Tr.Loc["Vm.Branch"], Tr.Loc["Vm.Active"]
+            "FirstName", "LastName", "TaxId", "SocialSecurityNumber", "BarcodeId",
+            "ProfessionCode", "WeeklyWorkdays", "BranchName", "IsActive", "NormalDailyHours",
+            "FatherName", "MotherName", "BirthDate", "Sex", "Nationality", "MaritalStatus",
+            "NumberOfChildren", "IdentityDocumentType", "IdentityDocumentNumber", "EmploymentStartDate",
+            "EmploymentClassification", "ExperienceYears", "EmploymentRelationship", "EmploymentStatus",
+            "WeeklyHours", "WorkScheduleDescription", "BreakDescription", "EducationLevel",
+            "DigitalTimeOrganization", "FullEmploymentHours", "BreakMinutes",
+            "BreakWithinWorkingHours", "UsesDigitalWorkCard", "FlexibleScheduleMinutes", "LastModifiedDate"
         };
 
-        for (int c = 0; c < headers.Length; c++)
+        for (int col = 0; col < headers.Length; col++)
         {
-            ws.Cell(1, c + 1).Value = headers[c];
-            ws.Cell(1, c + 1).Style.Font.Bold = true;
-            ws.Cell(1, c + 1).Style.Fill.BackgroundColor = XLColor.FromArgb(0x1E, 0x21, 0x28);
-            ws.Cell(1, c + 1).Style.Font.FontColor = XLColor.White;
+            var cell = ws.Cell(1, col + 1);
+            cell.Value = headers[col];
+            cell.Style.Font.Bold = true;
+            cell.Style.Fill.BackgroundColor = XLColor.FromArgb(0x1E, 0x21, 0x28);
+            cell.Style.Font.FontColor = XLColor.White;
         }
 
         int row = 2;
         foreach (var e in employees)
         {
             branchNames.TryGetValue(e.BranchId, out var branchName);
-            ws.Cell(row, 1).Value = e.LastName;
-            ws.Cell(row, 2).Value = e.FirstName;
-            ws.Cell(row, 3).Value = e.TaxId;
-            ws.Cell(row, 4).Value = e.SocialSecurityNumber;
-            ws.Cell(row, 5).Value = e.BarcodeId;
-            ws.Cell(row, 6).Value = e.ProfessionCode;
-            ws.Cell(row, 7).Value = e.WeeklyWorkdays;
-            ws.Cell(row, 8).Value = branchName ?? string.Empty;
-            ws.Cell(row, 9).Value = e.IsActive ? Tr.Loc["Vm.Yes"] : Tr.Loc["Vm.No"];
+            var values = new object?[]
+            {
+                e.FirstName, e.LastName, e.TaxId, e.SocialSecurityNumber, e.BarcodeId,
+                e.ProfessionCode, e.WeeklyWorkdays, branchName ?? string.Empty, e.IsActive, e.NormalDailyHours,
+                e.FatherName, e.MotherName, e.BirthDate?.ToString("O", CultureInfo.InvariantCulture),
+                e.Sex, e.Nationality, e.MaritalStatus, e.NumberOfChildren, e.IdentityDocumentType,
+                e.IdentityDocumentNumber, e.EmploymentStartDate?.ToString("O", CultureInfo.InvariantCulture),
+                e.EmploymentClassification, e.ExperienceYears, e.EmploymentRelationship, e.EmploymentStatus,
+                e.WeeklyHours, e.WorkScheduleDescription, e.BreakDescription, e.EducationLevel,
+                e.DigitalTimeOrganization, e.FullEmploymentHours, e.BreakMinutes,
+                e.BreakWithinWorkingHours, e.UsesDigitalWorkCard, e.FlexibleScheduleMinutes,
+                e.LastModifiedDate?.ToString("O", CultureInfo.InvariantCulture)
+            };
+
+            for (int col = 0; col < values.Length; col++)
+                ws.Cell(row, col + 1).Value = XLCellValue.FromObject(values[col]);
 
             if (!e.IsActive)
-                ws.Range(row, 1, row, 9).Style.Font.FontColor = XLColor.Gray;
-
+                ws.Range(row, 1, row, headers.Length).Style.Font.FontColor = XLColor.Gray;
             row++;
         }
 
         ws.Columns().AdjustToContents();
         ws.SheetView.FreezeRows(1);
+        ws.RangeUsed()?.SetAutoFilter();
 
         var timestamp = DateTime.Now.ToString("yyyyMMdd_HHmm");
         var filePath = Path.Combine(folderPath, $"Employees_{timestamp}.xlsx");
