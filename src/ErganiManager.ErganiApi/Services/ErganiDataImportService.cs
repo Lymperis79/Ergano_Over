@@ -1152,18 +1152,34 @@ public class ErganiDataImportService : IErganiDataImportService
                 return result;
             }
 
-            result.CompanyId =
-                company.Id;
-
-            result.CompanyName =
-                company.Name;
-
-            result.CompanyTaxId =
-                company.TaxId;
+            result.CompanyId = company.Id;
 
             _logger.LogInformation(
-                "Starting branch and employee import for existing CompanyId={CompanyId}.",
+                "Starting company, branch and employee refresh for existing CompanyId={CompanyId}.",
                 companyId);
+
+            // EX_BASE_01 - refresh the company's official identity details first.
+            using (var employerDoc = await _client.ExecuteServiceAsync(
+                credentials, "EX_BASE_01", new List<ErganiServiceParameterValue>(), ct))
+            {
+                var employer = ExtractEmployer(employerDoc.RootElement);
+                if (string.IsNullOrWhiteSpace(employer.TaxId))
+                    throw new InvalidOperationException("Ergani EX_BASE_01 returned no company AFM.");
+
+                var refreshedTaxId = employer.TaxId.Trim();
+                var otherCompanies = await _companyService.GetAllAsync();
+                if (otherCompanies.Any(x => x.Id != companyId &&
+                    string.Equals(NormalizeTaxId(x.TaxId), NormalizeTaxId(refreshedTaxId), StringComparison.OrdinalIgnoreCase)))
+                    throw new InvalidOperationException($"The Ergani AFM {refreshedTaxId} is already assigned to another company.");
+
+                company.TaxId = refreshedTaxId;
+                if (!string.IsNullOrWhiteSpace(employer.Name)) company.Name = employer.Name.Trim();
+                await _companyService.UpdateAsync(company);
+            }
+
+            result.CompanyName = company.Name;
+            result.CompanyTaxId = company.TaxId;
+            result.CompanyUpdated = true;
 
             // EX_BASE_02
             await ImportBranchesAsync(
