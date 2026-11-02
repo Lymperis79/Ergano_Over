@@ -1117,7 +1117,7 @@ IAdminSectionViewModel
 
         if (string.IsNullOrWhiteSpace(FormErganiUsername) || string.IsNullOrWhiteSpace(FormErganiPassword))
         {
-            StatusMessage = Loc["Vm.Enter the Ergani username and password, then test the connection."];
+            StatusMessage = Loc["Vm.Enter the Ergani username and password."];
             return;
         }
 
