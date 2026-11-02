@@ -111,6 +111,8 @@
                         <TextBlock Text="{Binding Loc[IdentityDocumentNumber]}" FontWeight="SemiBold" />
                         <TextBox Text="{Binding FormIdentityDocumentNumber}" />
 
+                        <TextBlock Text="{Binding Loc[ErganiEmploymentDetails]}" FontSize="15" FontWeight="Bold" Margin="0,12,0,0" />
+
                         <TextBlock Text="{Binding Loc[EmploymentStartDate]}" FontWeight="SemiBold" />
                         <DatePicker SelectedDate="{Binding FormEmploymentStartDate}" HorizontalAlignment="Stretch" />
 
@@ -158,8 +160,6 @@
 
                         <TextBlock Text="{Binding Loc[LastModifiedDate]}" FontWeight="SemiBold" />
                         <DatePicker SelectedDate="{Binding FormLastModifiedDate}" HorizontalAlignment="Stretch" />
-
-                        <TextBlock Text="{Binding Loc[ErganiEmploymentDetails]}" FontSize="15" FontWeight="Bold" Margin="0,12,0,0" />
 
                         <TextBlock Text="{Binding Loc[Branch]}" FontWeight="SemiBold" />
                         <ComboBox ItemsSource="{Binding AvailableBranches}"
