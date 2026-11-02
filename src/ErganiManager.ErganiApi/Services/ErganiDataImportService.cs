@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Globalization;
 using System.Net.Http;
 using System.Text.Json;
 using System.Threading;
@@ -1026,6 +1027,7 @@ public class ErganiDataImportService : IErganiDataImportService
                                 DateTime.UtcNow
                         };
 
+                    ApplyErganiEmployeeDetails(employee, employeeData);
                     db.Employees.Add(employee);
 
                     result.EmployeesImported++;
@@ -1084,6 +1086,8 @@ public class ErganiDataImportService : IErganiDataImportService
 
                     existing.WeeklyWorkdays =
                         weeklyWorkdays;
+
+                    ApplyErganiEmployeeDetails(existing, employeeData);
 
                     existing.IsActive =
                         true;
@@ -1468,6 +1472,35 @@ public class ErganiDataImportService : IErganiDataImportService
     // EX_BASE_05 - EMPLOYEES
     // =====================================================================
 
+    private static void ApplyErganiEmployeeDetails(Employee employee, EmployeeImportRecord data)
+    {
+        if (data.FatherName != null) employee.FatherName = data.FatherName;
+        if (data.MotherName != null) employee.MotherName = data.MotherName;
+        if (data.BirthDate != null) employee.BirthDate = data.BirthDate;
+        if (data.Sex != null) employee.Sex = data.Sex;
+        if (data.Nationality != null) employee.Nationality = data.Nationality;
+        if (data.MaritalStatus != null) employee.MaritalStatus = data.MaritalStatus;
+        if (data.NumberOfChildren != null) employee.NumberOfChildren = data.NumberOfChildren;
+        if (data.IdentityDocumentType != null) employee.IdentityDocumentType = data.IdentityDocumentType;
+        if (data.IdentityDocumentNumber != null) employee.IdentityDocumentNumber = data.IdentityDocumentNumber;
+        if (data.EmploymentStartDate != null) employee.EmploymentStartDate = data.EmploymentStartDate;
+        if (data.EmploymentClassification != null) employee.EmploymentClassification = data.EmploymentClassification;
+        if (data.ExperienceYears != null) employee.ExperienceYears = data.ExperienceYears;
+        if (data.EmploymentRelationship != null) employee.EmploymentRelationship = data.EmploymentRelationship;
+        if (data.EmploymentStatus != null) employee.EmploymentStatus = data.EmploymentStatus;
+        if (data.WeeklyHours != null) employee.WeeklyHours = data.WeeklyHours;
+        if (data.WorkScheduleDescription != null) employee.WorkScheduleDescription = data.WorkScheduleDescription;
+        if (data.BreakDescription != null) employee.BreakDescription = data.BreakDescription;
+        if (data.EducationLevel != null) employee.EducationLevel = data.EducationLevel;
+        if (data.DigitalTimeOrganization != null) employee.DigitalTimeOrganization = data.DigitalTimeOrganization;
+        if (data.FullEmploymentHours != null) employee.FullEmploymentHours = data.FullEmploymentHours;
+        if (data.BreakMinutes != null) employee.BreakMinutes = data.BreakMinutes;
+        if (data.BreakWithinWorkingHours != null) employee.BreakWithinWorkingHours = data.BreakWithinWorkingHours;
+        if (data.UsesDigitalWorkCard != null) employee.UsesDigitalWorkCard = data.UsesDigitalWorkCard;
+        if (data.FlexibleScheduleMinutes != null) employee.FlexibleScheduleMinutes = data.FlexibleScheduleMinutes;
+        if (data.LastModifiedDate != null) employee.LastModifiedDate = data.LastModifiedDate;
+    }
+
     private static List<EmployeeImportRecord> ParseEmployees(
         JsonElement root)
     {
@@ -1621,10 +1654,32 @@ public class ErganiDataImportService : IErganiDataImportService
                     "ProfessionCode"),
 
             WeeklyWorkdays =
-                GetNullableInt(
-                    element,
-                    "WeekDays",
-                    "WeeklyWorkdays")
+                GetCodeInt(element, "WeekDays", "WeeklyWorkdays"),
+            FatherName = GetString(element, "OnomaPatera"),
+            MotherName = GetString(element, "OnomaMiteras"),
+            BirthDate = GetNullableDateTimeOffset(element, "BirthDate"),
+            Sex = GetString(element, "Sex"),
+            Nationality = GetString(element, "Nationality"),
+            MaritalStatus = GetString(element, "MaritalStatus"),
+            NumberOfChildren = GetNullableInt(element, "NumChildren"),
+            IdentityDocumentType = GetString(element, "TyposTaytotitas"),
+            IdentityDocumentNumber = GetString(element, "ArTaytotitas"),
+            EmploymentStartDate = GetNullableDateTimeOffset(element, "DateFrom"),
+            EmploymentClassification = GetString(element, "asXaraktirismos"),
+            ExperienceYears = GetString(element, "Proipiresia"),
+            EmploymentRelationship = GetString(element, "SxesiApasxolisis"),
+            EmploymentStatus = GetString(element, "KathestosApasxolisis"),
+            WeeklyHours = GetNullableDouble(element, "WeekHours"),
+            WorkScheduleDescription = GetString(element, "Orario"),
+            BreakDescription = GetString(element, "Dialeimma"),
+            EducationLevel = GetString(element, "EpipedoMorfosis"),
+            DigitalTimeOrganization = GetString(element, "WorkingTimeDigitalOrganization"),
+            FullEmploymentHours = GetNullableDouble(element, "FullEmploymentHours"),
+            BreakMinutes = GetNullableInt(element, "DialeimmaMinutes"),
+            BreakWithinWorkingHours = GetString(element, "DialeimmaEntosWrariou"),
+            UsesDigitalWorkCard = GetString(element, "WorkingCard"),
+            FlexibleScheduleMinutes = GetNullableInt(element, "EueliktoWrario"),
+            LastModifiedDate = GetNullableDateTimeOffset(element, "LastModifiedDate"),
         };
     }
 
@@ -1653,16 +1708,9 @@ public class ErganiDataImportService : IErganiDataImportService
     {
         return HasAnyProperty(
             element,
-            "afm",
-            "AFM",
-            "Afm",
-            "Eponimo",
-            "eponymo",
-            "Eponymo",
-            "Onoma",
-            "Amka",
-            "PararthmaAa",
-            "ParartimaAa");
+            "afm", "AFM", "Afm", "Eponimo", "eponymo", "Eponymo",
+            "Onoma", "Amka", "PararthmaAa", "ParartimaAa",
+            "OnomaPatera", "OnomaMiteras", "BirthDate", "WorkingCard");
     }
 
     private static bool HasAnyProperty(
@@ -1756,6 +1804,32 @@ public class ErganiDataImportService : IErganiDataImportService
         }
 
         return null;
+    }
+
+    private static int? GetCodeInt(JsonElement element, params string[] propertyNames)
+    {
+        foreach (var name in propertyNames)
+        {
+            var raw = GetString(element, name);
+            if (string.IsNullOrWhiteSpace(raw)) continue;
+            if (int.TryParse(raw, out var direct)) return direct;
+            var open = raw.LastIndexOf('(');
+            var close = raw.LastIndexOf(')');
+            if (open >= 0 && close > open && int.TryParse(raw[(open + 1)..close].Trim(), out var coded)) return coded;
+        }
+        return null;
+    }
+
+    private static double? GetNullableDouble(JsonElement element, params string[] propertyNames)
+    {
+        var raw = GetString(element, propertyNames);
+        return double.TryParse(raw, NumberStyles.Float, CultureInfo.InvariantCulture, out var value) ? value : null;
+    }
+
+    private static DateTimeOffset? GetNullableDateTimeOffset(JsonElement element, params string[] propertyNames)
+    {
+        var raw = GetString(element, propertyNames);
+        return DateTimeOffset.TryParse(raw, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out var value) ? value : null;
     }
 
     private static int? GetNullableInt(
@@ -1934,5 +2008,30 @@ public class ErganiDataImportService : IErganiDataImportService
         public string? ProfessionCode { get; set; }
 
         public int? WeeklyWorkdays { get; set; }
+        public string? FatherName { get; set; }
+        public string? MotherName { get; set; }
+        public DateTimeOffset? BirthDate { get; set; }
+        public string? Sex { get; set; }
+        public string? Nationality { get; set; }
+        public string? MaritalStatus { get; set; }
+        public int? NumberOfChildren { get; set; }
+        public string? IdentityDocumentType { get; set; }
+        public string? IdentityDocumentNumber { get; set; }
+        public DateTimeOffset? EmploymentStartDate { get; set; }
+        public string? EmploymentClassification { get; set; }
+        public string? ExperienceYears { get; set; }
+        public string? EmploymentRelationship { get; set; }
+        public string? EmploymentStatus { get; set; }
+        public double? WeeklyHours { get; set; }
+        public string? WorkScheduleDescription { get; set; }
+        public string? BreakDescription { get; set; }
+        public string? EducationLevel { get; set; }
+        public string? DigitalTimeOrganization { get; set; }
+        public double? FullEmploymentHours { get; set; }
+        public int? BreakMinutes { get; set; }
+        public string? BreakWithinWorkingHours { get; set; }
+        public string? UsesDigitalWorkCard { get; set; }
+        public int? FlexibleScheduleMinutes { get; set; }
+        public DateTimeOffset? LastModifiedDate { get; set; }
     }
 }
