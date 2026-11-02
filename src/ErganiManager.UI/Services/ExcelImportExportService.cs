@@ -22,8 +22,8 @@ public class EmployeeImportRow
     public string ProfessionCode { get; set; } = string.Empty;
     public int WeeklyWorkdays { get; set; } = 5;
     public string BranchName { get; set; } = string.Empty;
-    public double NormalDailyHours { get; set; } = 8;
-    public bool IsActive { get; set; } = true;
+    public double? NormalDailyHours { get; set; }
+    public bool? IsActive { get; set; }
     public string FatherName { get; set; } = string.Empty;
     public string MotherName { get; set; } = string.Empty;
     public DateTimeOffset? BirthDate { get; set; }
@@ -161,12 +161,12 @@ public class ExcelImportExportService
                 DateTimeStyles.AssumeLocal, out var value) ? value : null;
         }
 
-        var firstCol = Col("FirstName", "First Name");
-        var lastCol = Col("LastName", "Last Name");
-        var afmCol = Col("TaxId", "Tax ID (AFM)", "AFM");
-        var amkaCol = Col("SocialSecurityNumber", "SocialSecurityNumber (AMKA)", "AMKA");
-        var barcodeCol = Col("BarcodeId", "Barcode ID");
-        var branchCol = Col("BranchName", "Branch");
+        var firstCol = Col("FirstName", "First Name", Tr.Loc["Vm.First Name"]);
+        var lastCol = Col("LastName", "Last Name", Tr.Loc["Vm.Last Name"]);
+        var afmCol = Col("TaxId", "Tax ID (AFM)", "Tax ID", "AFM", Tr.Loc["Vm.Tax ID (AFM)"]);
+        var amkaCol = Col("SocialSecurityNumber", "SocialSecurityNumber (AMKA)", "AMKA", Tr.Loc["Vm.AMKA"]);
+        var barcodeCol = Col("BarcodeId", "Barcode ID", Tr.Loc["Vm.Barcode ID"]);
+        var branchCol = Col("BranchName", "Branch", Tr.Loc["Vm.Branch"]);
         if (firstCol == 0 || lastCol == 0 || afmCol == 0 || amkaCol == 0 ||
             barcodeCol == 0 || branchCol == 0)
             throw new InvalidDataException("The employee file is missing one or more required columns: FirstName, LastName, TaxId, SocialSecurityNumber, BarcodeId, BranchName.");
@@ -188,8 +188,8 @@ public class ExcelImportExportService
                 ProfessionCode = Read(row, "ProfessionCode", "Profession Code"),
                 WeeklyWorkdays = ReadInt(row, "WeeklyWorkdays", "Weekly Workdays") ?? 5,
                 BranchName = Read(row, "BranchName", "Branch"),
-                NormalDailyHours = ReadDouble(row, "NormalDailyHours", "Normal Daily Hours") ?? 8,
-                IsActive = !bool.TryParse(Read(row, "IsActive", "Active"), out var active) || active,
+                NormalDailyHours = ReadDouble(row, "NormalDailyHours", "Normal Daily Hours"),
+                IsActive = bool.TryParse(Read(row, "IsActive", "Active"), out var active) ? active : null,
                 FatherName = Read(row, "FatherName"),
                 MotherName = Read(row, "MotherName"),
                 BirthDate = ReadDate(row, "BirthDate"),
@@ -225,7 +225,7 @@ public class ExcelImportExportService
             if (string.IsNullOrWhiteSpace(item.BarcodeId)) errors.Add(Tr.Loc["Vm.Barcode ID required"]);
             if (item.WeeklyWorkdays is not (5 or 6)) errors.Add(Tr.Loc["Vm.Weekly workdays must be 5 or 6"]);
             if (string.IsNullOrWhiteSpace(item.BranchName)) errors.Add(Tr.Loc["Vm.Branch name required"]);
-            if (item.NormalDailyHours <= 0 || item.NormalDailyHours > 24) errors.Add("NormalDailyHours must be greater than 0 and no more than 24.");
+            if (item.NormalDailyHours.HasValue && (item.NormalDailyHours.Value <= 0 || item.NormalDailyHours.Value > 24)) errors.Add("NormalDailyHours must be greater than 0 and no more than 24.");
 
             item.IsValid = errors.Count == 0;
             item.Error = errors.Count > 0 ? string.Join("; ", errors) : null;
