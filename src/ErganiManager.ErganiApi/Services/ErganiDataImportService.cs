@@ -1829,7 +1829,7 @@ public class ErganiDataImportService : IErganiDataImportService
     private static DateTimeOffset? GetNullableDateTimeOffset(JsonElement element, params string[] propertyNames)
     {
         var raw = GetString(element, propertyNames);
-        return DateTimeOffset.TryParse(raw, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out var value) ? value : null;
+        return DateTimeOffset.TryParse(raw, CultureInfo.InvariantCulture, DateTimeStyles.None, out var value) ? value : null;
     }
 
     private static int? GetNullableInt(
