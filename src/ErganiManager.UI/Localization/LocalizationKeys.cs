@@ -483,6 +483,7 @@ public static class L
     public const string TestEmailSettings = nameof(TestEmailSettings);
     public const string AlertEmailRecipientsCommaSeparated = nameof(AlertEmailRecipientsCommaSeparated);
     public const string ImportBranchesEmployeesFromErgani = nameof(ImportBranchesEmployeesFromErgani);
+    public const string UpdateCompanyDataFromErgani = nameof(UpdateCompanyDataFromErgani);
     public const string TestConnection2 = nameof(TestConnection2);
     public const string CompanyDetails = nameof(CompanyDetails);
     public const string Step3ReviewAndImport = nameof(Step3ReviewAndImport);
