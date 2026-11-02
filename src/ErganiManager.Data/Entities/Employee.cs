@@ -32,6 +32,33 @@ public class Employee
 
     public int WeeklyWorkdays { get; set; } = 5; // 5 or 6
 
+    // Personal and employment information provided by Ergani EX_BASE_05.
+    public string? FatherName { get; set; }
+    public string? MotherName { get; set; }
+    public DateTimeOffset? BirthDate { get; set; }
+    public string? Sex { get; set; }
+    public string? Nationality { get; set; }
+    public string? MaritalStatus { get; set; }
+    public int? NumberOfChildren { get; set; }
+    public string? IdentityDocumentType { get; set; }
+    public string? IdentityDocumentNumber { get; set; }
+    public DateTimeOffset? EmploymentStartDate { get; set; }
+    public string? EmploymentClassification { get; set; }
+    public string? ExperienceYears { get; set; }
+    public string? EmploymentRelationship { get; set; }
+    public string? EmploymentStatus { get; set; }
+    public double? WeeklyHours { get; set; }
+    public string? WorkScheduleDescription { get; set; }
+    public string? BreakDescription { get; set; }
+    public string? EducationLevel { get; set; }
+    public string? DigitalTimeOrganization { get; set; }
+    public double? FullEmploymentHours { get; set; }
+    public int? BreakMinutes { get; set; }
+    public string? BreakWithinWorkingHours { get; set; }
+    public string? UsesDigitalWorkCard { get; set; }
+    public int? FlexibleScheduleMinutes { get; set; }
+    public DateTimeOffset? LastModifiedDate { get; set; }
+
     /// <summary>Contractual/normal daily hours used only to flag potential extra time for review.</summary>
     public double NormalDailyHours { get; set; } = 8;
 
