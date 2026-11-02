@@ -139,15 +139,34 @@ public class ExcelImportExportService
 
         double? ReadDouble(int row, params string[] names)
         {
-            var raw = Read(row, names);
+            var col = Col(names);
+            if (col == 0 || ws.Cell(row, col).IsEmpty()) return null;
+            var cell = ws.Cell(row, col);
+            if (cell.DataType == XLDataType.Number) return cell.GetDouble();
+            var raw = cell.GetString().Trim();
+            if (double.TryParse(raw, NumberStyles.Float | NumberStyles.AllowThousands,
+                    CultureInfo.InvariantCulture, out var invariant)) return invariant;
             return double.TryParse(raw, NumberStyles.Float | NumberStyles.AllowThousands,
-                CultureInfo.InvariantCulture, out var value) ? value : null;
+                CultureInfo.CurrentCulture, out var localized) ? localized : null;
         }
 
         int? ReadInt(int row, params string[] names)
         {
-            var raw = Read(row, names);
+            var col = Col(names);
+            if (col == 0 || ws.Cell(row, col).IsEmpty()) return null;
+            var cell = ws.Cell(row, col);
+            if (cell.DataType == XLDataType.Number) return (int)cell.GetDouble();
+            var raw = cell.GetString().Trim();
             return int.TryParse(raw, NumberStyles.Integer, CultureInfo.InvariantCulture, out var value) ? value : null;
+        }
+
+        bool? ReadBool(int row, params string[] names)
+        {
+            var raw = Read(row, names);
+            if (bool.TryParse(raw, out var value)) return value;
+            if (string.Equals(raw, Tr.Loc["Vm.Yes"], StringComparison.OrdinalIgnoreCase)) return true;
+            if (string.Equals(raw, Tr.Loc["Vm.No"], StringComparison.OrdinalIgnoreCase)) return false;
+            return null;
         }
 
         DateTimeOffset? ReadDate(int row, params string[] names)
@@ -185,11 +204,11 @@ public class ExcelImportExportService
                 TaxId = DigitsOnly(Read(row, "TaxId", "Tax ID (AFM)", "AFM")),
                 SocialSecurityNumber = DigitsOnly(Read(row, "SocialSecurityNumber", "SocialSecurityNumber (AMKA)", "AMKA")),
                 BarcodeId = Read(row, "BarcodeId", "Barcode ID"),
-                ProfessionCode = Read(row, "ProfessionCode", "Profession Code"),
+                ProfessionCode = Read(row, "ProfessionCode", "Profession Code", Tr.Loc["Vm.Profession Code"]),
                 WeeklyWorkdays = ReadInt(row, "WeeklyWorkdays", "Weekly Workdays") ?? 5,
                 BranchName = Read(row, "BranchName", "Branch"),
                 NormalDailyHours = ReadDouble(row, "NormalDailyHours", "Normal Daily Hours"),
-                IsActive = bool.TryParse(Read(row, "IsActive", "Active"), out var active) ? active : null,
+                IsActive = ReadBool(row, "IsActive", "Active", Tr.Loc["Vm.Active"]),
                 FatherName = Read(row, "FatherName"),
                 MotherName = Read(row, "MotherName"),
                 BirthDate = ReadDate(row, "BirthDate"),
