@@ -118,7 +118,7 @@ IAdminSectionViewModel
     [ObservableProperty]
     private int _formId;
 
-    public bool CanInitialImport => FormId == 0;
+    public bool CanInitialImport => FormId == 0 && !IsImporting;
     public bool CanUpdateCompanyData => FormId > 0;
 
     partial void OnFormIdChanged(int value)
@@ -126,6 +126,9 @@ IAdminSectionViewModel
         OnPropertyChanged(nameof(CanInitialImport));
         OnPropertyChanged(nameof(CanUpdateCompanyData));
     }
+
+    partial void OnIsImportingChanged(bool value)
+        => OnPropertyChanged(nameof(CanInitialImport));
 
     [ObservableProperty]
     private string _formName =
@@ -1007,9 +1010,8 @@ IAdminSectionViewModel
                 BuildCredentials();
 
             /*
-             * IMPORTANT:
-             *
-             * We do NOT check FormId here.
+             * This command is reserved for the first import of a company.
+             * Existing companies must use UpdateCompanyDataFromErganiAsync.
              *
              * The import service will:
              *
