@@ -1866,6 +1866,7 @@ public static class EnglishStrings
         ["Vm.Holiday submission details"] = "Pending holiday details",
         ["Vm.Details"] = "Details",
         ["Vm.Holiday"] = "Holiday",
+        ["Vm.Row {0}: AFM matches an existing employee, but first name or surname differs. Skipped."] = "Row {0}: AFM matches an existing employee, but first name or surname differs. Skipped.",
         ["Vm.Overtime over 8 hours"] = "Overtime over 8 hours",
     };
 }
