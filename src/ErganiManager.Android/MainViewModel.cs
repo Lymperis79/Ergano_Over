@@ -21,6 +21,12 @@ public partial class MainViewModel : ObservableObject
     [ObservableProperty] private bool _isCompanySelectionRequired;
     public ObservableCollection<MobileCompany> Companies { get; } = new();
     [ObservableProperty] private bool _isDailyStatusVisible;
+    [ObservableProperty] private bool _isWorkCardsVisible;
+    [ObservableProperty] private string _workCardFromDate = DateOnly.FromDateTime(DateTime.Today.AddDays(-30)).ToString("yyyy-MM-dd");
+    [ObservableProperty] private string _workCardToDate = DateOnly.FromDateTime(DateTime.Today).ToString("yyyy-MM-dd");
+    [ObservableProperty] private MobileEmployee? _selectedWorkCardEmployee;
+    [ObservableProperty] private string _workCardsMessage = "Choose a date range and refresh to load work cards.";
+    public ObservableCollection<MobileWorkCardHistoryItem> WorkCardHistory { get; } = new();
     [ObservableProperty] private bool _isWorkCalendarVisible;
     [ObservableProperty] private MobileEmployee? _selectedCalendarEmployee;
     [ObservableProperty] private string _selectedCalendarMonth = DateOnly.FromDateTime(DateTime.Today).ToString("yyyy-MM");
@@ -119,6 +125,7 @@ public partial class MainViewModel : ObservableObject
     {
         if (_api is not null) { try { await _api.LogoutAsync(); } catch { } _api.Dispose(); _api = null; }
         Employees.Clear();
+        WorkCardHistory.Clear();
         Companies.Clear();
         SelectedCompany = null;
         IsCompanySelectionRequired = false;
@@ -158,7 +165,56 @@ public partial class MainViewModel : ObservableObject
         StatusMessage = $"Connected to {CompanyName}. {Employees.Count} active employees loaded from Ergani II.";
     }
 
-    [RelayCommand] private void OpenWorkCards() => SetPage("Work cards");
+    [RelayCommand]
+    private async Task OpenWorkCardsAsync()
+    {
+        if (!IsAuthenticated || _api is null) { StatusMessage = "Please sign in first."; return; }
+        if (IsCompanySelectionRequired) { StatusMessage = "Select a company before opening work cards."; return; }
+        IsDailyStatusVisible = false;
+        IsWorkCalendarVisible = false;
+        IsWorkCardsVisible = true;
+        PageTitle = "Work cards";
+        await RefreshWorkCardsAsync();
+    }
+
+    [RelayCommand]
+    private async Task RefreshWorkCardsAsync()
+    {
+        if (IsBusy || _api is null) return;
+        if (!DateOnly.TryParseExact(WorkCardFromDate, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var fromDate) ||
+            !DateOnly.TryParseExact(WorkCardToDate, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var toDate))
+        {
+            WorkCardsMessage = "Enter both dates as yyyy-MM-dd.";
+            return;
+        }
+        if (fromDate > toDate)
+        {
+            WorkCardsMessage = "The start date must be on or before the end date.";
+            return;
+        }
+
+        IsBusy = true;
+        try
+        {
+            var rows = await _api.GetWorkCardHistoryAsync(fromDate, toDate, SelectedWorkCardEmployee?.Id);
+            WorkCardHistory.Clear();
+            foreach (var row in rows.OrderByDescending(x => x.MovementDateTime))
+                WorkCardHistory.Add(row);
+            WorkCardsMessage = $"{rows.Count} work card(s) · {fromDate:dd/MM/yyyy} – {toDate:dd/MM/yyyy}";
+        }
+        catch (Exception ex)
+        {
+            WorkCardsMessage = GetFullError(ex);
+        }
+        finally { IsBusy = false; }
+    }
+
+    [RelayCommand]
+    private void BackFromWorkCards()
+    {
+        IsWorkCardsVisible = false;
+        PageTitle = "Overview";
+    }
     [RelayCommand]
     private async Task OpenDailyStatusAsync()
     {
@@ -252,9 +308,52 @@ public partial class MainViewModel : ObservableObject
         }
         IsDailyStatusVisible = false;
         IsWorkCalendarVisible = false;
+        IsWorkCardsVisible = false;
         PageTitle = page;
         StatusMessage = page == "Employees" && IsAuthenticated
             ? $"{Employees.Count} active employees loaded from the existing employee service."
             : $"{page} will be connected through existing Ergani II Core services.";
     }
+}
+
+
+public sealed class MobileWorkCardHistoryItem
+{
+    public int Id { get; set; }
+    public int EmployeeId { get; set; }
+    public string EmployeeFullName { get; set; } = string.Empty;
+    public string EmployeeTaxId { get; set; } = string.Empty;
+    public string BranchName { get; set; } = string.Empty;
+    public string MovementType { get; set; } = string.Empty;
+    public DateTime MovementDateTime { get; set; }
+    public string? LateJustification { get; set; }
+    public bool IsAutomatic { get; set; }
+    public bool SubmittedToErgani { get; set; }
+    public string? Protocol { get; set; }
+    public DateOnly SubmissionDate { get; set; }
+    public bool WasEarlyDeparture { get; set; }
+    public int? EarlyDepartureMinutes { get; set; }
+    public int? LocalPendingId { get; set; }
+    public int? LocalFailedId { get; set; }
+    public bool IsLocalPending { get; set; }
+    public bool IsLocalFailed { get; set; }
+    public int RetryAttempts { get; set; }
+    public string? RetryError { get; set; }
+
+    public string MovementText => MovementType == "Arrival" ? "Arrival" : "Departure";
+    public string DateTimeText => MovementDateTime.ToString("dd/MM/yyyy HH:mm:ss");
+    public string LateReasonText => LateJustification switch
+    {
+        "001" => "Power / telecommunications outage",
+        "002" => "Employer systems problem",
+        "003" => "Problem connecting to ERGANI",
+        _ => string.Empty
+    };
+    public string StatusText =>
+        IsLocalPending ? (RetryAttempts > 0
+            ? $"Waiting to send · attempt {RetryAttempts}" + (string.IsNullOrWhiteSpace(RetryError) ? string.Empty : $" · {RetryError}")
+            : "Waiting to send") :
+        IsLocalFailed ? "Failed — retry pending" :
+        SubmittedToErgani ? "Sent to Ergani" + (string.IsNullOrWhiteSpace(Protocol) ? string.Empty : $" · Protocol: {Protocol}") :
+        "Not submitted";
 }
