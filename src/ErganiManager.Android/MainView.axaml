@@ -56,6 +56,46 @@
         </Border>
 
 
+        <Border Background="#202B3A" CornerRadius="16" Padding="14" IsVisible="{Binding IsWorkCardsVisible}">
+          <StackPanel Spacing="12">
+            <Button Content="← Overview" HorizontalAlignment="Left" Command="{Binding BackFromWorkCardsCommand}" />
+            <TextBlock Text="WORK CARDS · HISTORY" Foreground="#8BBCEB" FontWeight="Bold" FontSize="12" />
+            <TextBox PlaceholderText="From date (yyyy-MM-dd)" Text="{Binding WorkCardFromDate}" />
+            <TextBox PlaceholderText="To date (yyyy-MM-dd)" Text="{Binding WorkCardToDate}" />
+            <ComboBox ItemsSource="{Binding Employees}"
+                      SelectedItem="{Binding SelectedWorkCardEmployee}"
+                      PlaceholderText="All employees"
+                      HorizontalAlignment="Stretch">
+              <ComboBox.ItemTemplate>
+                <DataTemplate x:DataType="vm:MobileEmployee">
+                  <StackPanel Spacing="2">
+                    <TextBlock Text="{Binding FirstName}" Foreground="White" />
+                    <TextBlock Text="{Binding LastName}" Foreground="#AAB7C8" FontSize="12" />
+                  </StackPanel>
+                </DataTemplate>
+              </ComboBox.ItemTemplate>
+            </ComboBox>
+            <Button Content="Refresh work cards" Command="{Binding RefreshWorkCardsCommand}" IsEnabled="{Binding !IsBusy}" />
+            <TextBlock Text="{Binding WorkCardsMessage}" Foreground="#C3CEDB" FontSize="13" TextWrapping="Wrap" />
+            <ItemsControl ItemsSource="{Binding WorkCardHistory}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="vm:MobileWorkCardHistoryItem">
+                  <Border Background="#293749" CornerRadius="10" Padding="12" Margin="0,4">
+                    <StackPanel Spacing="5">
+                      <TextBlock Text="{Binding EmployeeFullName}" Foreground="White" FontWeight="SemiBold" FontSize="16" />
+                      <TextBlock Text="{Binding MovementText}" Foreground="#8BBCEB" FontWeight="SemiBold" />
+                      <TextBlock Text="{Binding DateTimeText}" Foreground="#E0E7EF" />
+                      <TextBlock Text="{Binding BranchName}" Foreground="#AAB7C8" FontSize="12" />
+                      <TextBlock Text="{Binding StatusText}" Foreground="#F0C674" FontSize="12" TextWrapping="Wrap" />
+                      <TextBlock Text="{Binding LateReasonText}" Foreground="#C3CEDB" FontSize="12" TextWrapping="Wrap" IsVisible="{Binding LateJustification}" />
+                    </StackPanel>
+                  </Border>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </StackPanel>
+        </Border>
+
         <Border Background="#202B3A" CornerRadius="16" Padding="14" IsVisible="{Binding IsWorkCalendarVisible}">
           <StackPanel Spacing="12">
             <Button Content="← Overview" HorizontalAlignment="Left" Command="{Binding BackFromWorkCalendarCommand}" />
