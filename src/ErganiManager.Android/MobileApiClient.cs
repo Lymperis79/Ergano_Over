@@ -96,6 +96,29 @@ public sealed class MobileApiClient : IDisposable
             ?? throw new InvalidOperationException("The server returned an empty login response.");
     }
 
+    public async Task<List<MobileCompany>> GetCompaniesAsync(CancellationToken cancellationToken = default)
+    {
+        using var response = await _http.GetAsync("api/mobile/companies", cancellationToken);
+        if (!response.IsSuccessStatusCode)
+        {
+            var body = await response.Content.ReadAsStringAsync(cancellationToken);
+            throw new HttpRequestException($"Companies returned HTTP {(int)response.StatusCode}: {body}");
+        }
+        return await response.Content.ReadFromJsonAsync<List<MobileCompany>>(cancellationToken: cancellationToken) ?? [];
+    }
+
+    public async Task<MobileCompany> SelectCompanyAsync(int companyId, CancellationToken cancellationToken = default)
+    {
+        using var response = await _http.PostAsJsonAsync("api/mobile/company/select", new { companyId }, cancellationToken);
+        if (!response.IsSuccessStatusCode)
+        {
+            var body = await response.Content.ReadAsStringAsync(cancellationToken);
+            throw new HttpRequestException($"Company selection returned HTTP {(int)response.StatusCode}: {body}");
+        }
+        return await response.Content.ReadFromJsonAsync<MobileCompany>(cancellationToken: cancellationToken)
+            ?? throw new InvalidOperationException("The server returned an empty company selection response.");
+    }
+
     public async Task<List<MobileEmployee>> GetEmployeesAsync(CancellationToken cancellationToken = default)
     {
         using var response = await _http.GetAsync("api/mobile/employees", cancellationToken);
@@ -286,6 +309,7 @@ internal static class MdnsResolver
 }
 
 public sealed record MobileLoginResponse(string Username, string Role, int? CompanyId, string? CompanyName, int? BranchId, string? BranchName);
+public sealed record MobileCompany(int Id, string Name, string TaxId);
 public sealed record MobileEmployee(int Id, int BranchId, string FirstName, string LastName, bool IsActive);
 
 
