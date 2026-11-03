@@ -44,18 +44,33 @@ public sealed class MobileApiClient : IDisposable
             // Prefer Android's native resolver. The OS/browser may already have
             // resolved this mDNS hostname even when a raw UDP mDNS query from
             // the app is blocked or handled differently by the Wi-Fi network.
+            string nativeDnsDiagnostic;
             try
             {
                 addresses = await Dns.GetHostAddressesAsync(host, cancellationToken);
+                nativeDnsDiagnostic = addresses.Length == 0
+                    ? "Android/.NET DNS returned no addresses."
+                    : "Android/.NET DNS returned: " + string.Join(", ", addresses.Select(a => a.ToString()));
             }
-            catch (SocketException) when (!cancellationToken.IsCancellationRequested)
+            catch (Exception ex) when (!cancellationToken.IsCancellationRequested)
             {
                 addresses = [];
+                nativeDnsDiagnostic = "Android/.NET DNS failed: " + ex.GetBaseException().GetType().Name +
+                    ": " + ex.GetBaseException().Message;
             }
 
             if (addresses.Length == 0)
             {
-                addresses = await MdnsResolver.ResolveIpv4Async(host, cancellationToken);
+                try
+                {
+                    addresses = await MdnsResolver.ResolveIpv4Async(host, cancellationToken);
+                }
+                catch (Exception ex) when (!cancellationToken.IsCancellationRequested)
+                {
+                    throw new HttpRequestException(
+                        nativeDnsDiagnostic + " Custom mDNS also failed: " +
+                        ex.GetBaseException().GetType().Name + ": " + ex.GetBaseException().Message, ex);
+                }
             }
         }
         else
