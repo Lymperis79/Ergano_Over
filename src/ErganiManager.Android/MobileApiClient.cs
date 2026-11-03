@@ -1,6 +1,7 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Net.Sockets;
+using System.Collections.Concurrent;
 using System.Text;
 
 namespace ErganiManager.Android;
@@ -8,6 +9,8 @@ namespace ErganiManager.Android;
 public sealed class MobileApiClient : IDisposable
 {
     private readonly HttpClient _http;
+    private static readonly ConcurrentDictionary<string, IPAddress[]> ResolvedHostCache =
+        new(StringComparer.OrdinalIgnoreCase);
 
     public MobileApiClient(string baseAddress)
     {
@@ -34,8 +37,16 @@ public sealed class MobileApiClient : IDisposable
     {
         var host = context.DnsEndPoint.Host;
         IPAddress[] addresses;
+        var isLocalHostname = host.EndsWith(".local", StringComparison.OrdinalIgnoreCase);
+        var hasCachedAddress = isLocalHostname && ResolvedHostCache.TryGetValue(host, out addresses!);
 
-        if (IPAddress.TryParse(host, out var literalAddress))
+        if (hasCachedAddress)
+        {
+            // Reuse the address that already passed DNS/mDNS and TCP connection
+            // during the health check. Do not issue a fresh multicast lookup
+            // for every API request on the same HttpClient.
+        }
+        else if (IPAddress.TryParse(host, out var literalAddress))
         {
             addresses = [literalAddress];
         }
@@ -85,12 +96,16 @@ public sealed class MobileApiClient : IDisposable
             try
             {
                 await client.ConnectAsync(address, context.DnsEndPoint.Port, cancellationToken);
+                if (isLocalHostname)
+                    ResolvedHostCache[host] = [address];
                 return client.GetStream();
             }
             catch (Exception ex)
             {
                 client.Dispose();
                 lastError = ex;
+                if (isLocalHostname && hasCachedAddress)
+                    ResolvedHostCache.TryRemove(host, out _);
                 if (ex is OperationCanceledException) throw;
             }
         }
