@@ -4,10 +4,15 @@ using ErganiManager.Core.Interfaces;
 using ErganiManager.Core.Models;
 using ErganiManager.Core.Services;
 using ErganiManager.ErganiApi;
+using ErganiManager.Licensing;
+using ErganiManager.LocalCache;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+
+// The API runs in a separate process from the desktop UI; load the same machine-bound licence before Core checks menu access.
+LoadMobileLicense();
 
 var builder = WebApplication.CreateBuilder(args);
 builder.WebHost.ConfigureKestrel(options =>
@@ -191,3 +196,60 @@ public sealed record MobileSessionResponse(string Username, string Role, int? Co
     string? CompanyName, int? BranchId, string? BranchName);
 public sealed record MobileCompanyResponse(int Id, string Name, string TaxId);
 public sealed record MobileEmployeeResponse(int Id, int BranchId, string FirstName, string LastName, bool IsActive);
+
+
+static void LoadMobileLicense()
+{
+    if (!LicenseState.Enforced)
+    {
+        LicenseState.Current = null;
+        return;
+    }
+
+    try
+    {
+        var appData = AppPaths.GetAppDataFolder();
+        var keyPath = Path.Combine(appData, "license.key");
+        var clockPath = Path.Combine(appData, "license.clock");
+        var key = File.Exists(keyPath) ? File.ReadAllText(keyPath) : null;
+        var today = DateOnly.FromDateTime(DateTime.Now);
+
+        var result = LicenseCodec.Evaluate(
+            key,
+            LicenseKeys.PublicKeyBase64,
+            MachineCode.Get(),
+            today);
+
+        // Apply the same clock rollback protection used by the desktop licence manager.
+        if (result.IsValid && result.Payload?.ExpiresDate is not null && File.Exists(clockPath))
+        {
+            var parts = File.ReadAllText(clockPath).Trim().Split('|');
+            if (parts.Length == 2 &&
+                DateOnly.TryParseExact(parts[0], "yyyy-MM-dd", null,
+                    System.Globalization.DateTimeStyles.None, out var lastDay) &&
+                SignLicenseClock(parts[0]) == parts[1] &&
+                today < lastDay.AddDays(-1))
+            {
+                result = new LicenseResult(LicenseCheck.ClockTampered, result.Payload);
+            }
+        }
+
+        LicenseState.Current = result.IsValid ? result.Payload : null;
+        Console.WriteLine(result.IsValid
+            ? "Mobile API licence validated."
+            : "Mobile API licence validation failed: " + result.Check);
+    }
+    catch (Exception ex)
+    {
+        LicenseState.Current = null;
+        Console.Error.WriteLine("Mobile API licence initialization failed: " + ex.Message);
+    }
+}
+
+static string SignLicenseClock(string value)
+{
+    var machineKey = System.Text.Encoding.UTF8.GetBytes(
+        MachineCode.Normalize(MachineCode.Get()));
+    return Convert.ToHexString(System.Security.Cryptography.HMACSHA256.HashData(
+        machineKey, System.Text.Encoding.UTF8.GetBytes(value)))[..16];
+}
