@@ -21,6 +21,11 @@ public partial class MainViewModel : ObservableObject
     [ObservableProperty] private bool _isCompanySelectionRequired;
     public ObservableCollection<MobileCompany> Companies { get; } = new();
     [ObservableProperty] private bool _isDailyStatusVisible;
+    [ObservableProperty] private bool _isWorkCalendarVisible;
+    [ObservableProperty] private MobileEmployee? _selectedCalendarEmployee;
+    [ObservableProperty] private string _selectedCalendarMonth = DateOnly.FromDateTime(DateTime.Today).ToString("yyyy-MM");
+    [ObservableProperty] private string _workCalendarMessage = "Choose an employee to load the work calendar.";
+    public ObservableCollection<MobileScheduleDay> WorkCalendarDays { get; } = new();
     [ObservableProperty] private string _selectedStatusDate = DateOnly.FromDateTime(DateTime.Today).ToString("yyyy-MM-dd");
     [ObservableProperty] private string _graceMinutes = "10";
     [ObservableProperty] private string _dailyStatusMessage = "Select a date and refresh to load attendance.";
@@ -168,7 +173,52 @@ public partial class MainViewModel : ObservableObject
     [RelayCommand]
     private void BackToOverview() { IsDailyStatusVisible = false; PageTitle = "Overview"; }
     [RelayCommand] private void OpenEmployees() => SetPage("Employees");
-    [RelayCommand] private void OpenSchedules() => SetPage("Work calendar");
+    [RelayCommand]
+    private async Task OpenSchedulesAsync()
+    {
+        if (!IsAuthenticated || _api is null) { StatusMessage = "Please sign in first."; return; }
+        if (IsCompanySelectionRequired) { StatusMessage = "Select a company before opening the work calendar."; return; }
+        IsDailyStatusVisible = false;
+        IsWorkCalendarVisible = true;
+        PageTitle = "Work calendar";
+        SelectedCalendarEmployee ??= Employees.FirstOrDefault();
+        await RefreshWorkCalendarAsync();
+    }
+
+    [RelayCommand]
+    private async Task RefreshWorkCalendarAsync()
+    {
+        if (IsBusy || _api is null) return;
+        if (SelectedCalendarEmployee is null) { WorkCalendarMessage = "No active employee is available."; return; }
+        if (!DateOnly.TryParseExact(SelectedCalendarMonth + "-01", "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var month))
+        { WorkCalendarMessage = "Select a valid month."; return; }
+        IsBusy = true;
+        try
+        {
+            var rows = await _api.GetScheduleMonthAsync(SelectedCalendarEmployee.Id, month.Year, month.Month);
+            WorkCalendarDays.Clear();
+            foreach (var row in rows.OrderBy(x => x.ScheduleDate)) WorkCalendarDays.Add(row);
+            WorkCalendarMessage = $"{SelectedCalendarEmployee.FirstName} {SelectedCalendarEmployee.LastName} · {month.ToString("MMMM yyyy", CultureInfo.CurrentCulture)} · {rows.Count} scheduled day(s)";
+        }
+        catch (Exception ex) { WorkCalendarMessage = GetFullError(ex); }
+        finally { IsBusy = false; }
+    }
+
+    [RelayCommand]
+    private async Task PreviousCalendarMonthAsync()
+    {
+        if (DateOnly.TryParseExact(SelectedCalendarMonth + "-01", "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var month))
+        { SelectedCalendarMonth = month.AddMonths(-1).ToString("yyyy-MM"); await RefreshWorkCalendarAsync(); }
+    }
+
+    [RelayCommand]
+    private async Task NextCalendarMonthAsync()
+    {
+        if (DateOnly.TryParseExact(SelectedCalendarMonth + "-01", "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var month))
+        { SelectedCalendarMonth = month.AddMonths(1).ToString("yyyy-MM"); await RefreshWorkCalendarAsync(); }
+    }
+
+    [RelayCommand] private void BackFromWorkCalendar() { IsWorkCalendarVisible = false; PageTitle = "Overview"; }
     [RelayCommand] private void OpenOvertime() => SetPage("Overtime");
     [RelayCommand] private void OpenSubmissions() => SetPage("API submissions");
     [RelayCommand] private void OpenReports() => SetPage("Reports");
@@ -181,6 +231,7 @@ public partial class MainViewModel : ObservableObject
             return;
         }
         IsDailyStatusVisible = false;
+        IsWorkCalendarVisible = false;
         PageTitle = page;
         StatusMessage = page == "Employees" && IsAuthenticated
             ? $"{Employees.Count} active employees loaded from the existing employee service."
