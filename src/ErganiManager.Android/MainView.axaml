@@ -30,6 +30,35 @@
           </StackPanel>
         </Border>
 
+        <Border Background="#202B3A" CornerRadius="16" Padding="14" IsVisible="{Binding IsDailyStatusVisible}">
+          <StackPanel Spacing="12">
+            <Button Content="← Overview" HorizontalAlignment="Left" Command="{Binding BackToOverviewCommand}" />
+            <TextBlock Text="DAILY ATTENDANCE" Foreground="#8BBCEB" FontWeight="Bold" FontSize="12" />
+            <TextBox PlaceholderText="Date (yyyy-MM-dd)" Text="{Binding SelectedStatusDate}" />
+            <TextBox PlaceholderText="Grace minutes (0–240)" Text="{Binding GraceMinutes}" />
+            <Button Content="Refresh daily status" Command="{Binding RefreshDailyStatusCommand}" IsEnabled="{Binding !IsBusy}" />
+            <TextBlock Text="{Binding DailyStatusMessage}" Foreground="#C3CEDB" FontSize="13" TextWrapping="Wrap" />
+            <ItemsControl ItemsSource="{Binding TodayStatuses}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="vm:MobileTodayEmployeeStatus">
+                  <Border Background="#293749" CornerRadius="10" Padding="12" Margin="0,4">
+                    <StackPanel Spacing="5">
+                      <TextBlock Text="{Binding FullName}" Foreground="White" FontWeight="SemiBold" FontSize="16" />
+                      <TextBlock Text="{Binding BranchName}" Foreground="#AAB7C8" FontSize="12" />
+                      <TextBlock Text="{Binding PresenceText}" Foreground="#8BBCEB" FontWeight="SemiBold" />
+                      <TextBlock Text="{Binding ScheduleText}" Foreground="#E0E7EF" />
+                      <TextBlock Text="{Binding PlannedHours}" Foreground="#C3CEDB" FontSize="12" />
+                      <TextBlock Text="{Binding ClockingText}" Foreground="#C3CEDB" FontSize="12" />
+                      <TextBlock Text="{Binding LevelText}" Foreground="#F0C674" FontSize="12" />
+                      <TextBlock Text="{Binding IssueSummary}" Foreground="#AAB7C8" FontSize="12" />
+                    </StackPanel>
+                  </Border>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </StackPanel>
+        </Border>
+
         <TextBlock Text="WORKING DAY" Foreground="#8BBCEB" FontWeight="Bold"
                    FontSize="12" />
         <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto" ColumnSpacing="12" RowSpacing="12">
