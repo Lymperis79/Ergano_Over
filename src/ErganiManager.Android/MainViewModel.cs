@@ -1,6 +1,7 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using System.Collections.ObjectModel;
+using System.Globalization;
 
 namespace ErganiManager.Android;
 
@@ -16,6 +17,11 @@ public partial class MainViewModel : ObservableObject
     [ObservableProperty] private bool _isBusy;
     [ObservableProperty] private bool _isAuthenticated;
     [ObservableProperty] private string _companyName = string.Empty;
+    [ObservableProperty] private bool _isDailyStatusVisible;
+    [ObservableProperty] private string _selectedStatusDate = DateOnly.FromDateTime(DateTime.Today).ToString("yyyy-MM-dd");
+    [ObservableProperty] private string _graceMinutes = "10";
+    [ObservableProperty] private string _dailyStatusMessage = "Select a date and refresh to load attendance.";
+    public ObservableCollection<MobileTodayEmployeeStatus> TodayStatuses { get; } = new();
     public ObservableCollection<MobileEmployee> Employees { get; } = new();
 
     [RelayCommand]
@@ -78,7 +84,37 @@ public partial class MainViewModel : ObservableObject
     }
 
     [RelayCommand] private void OpenWorkCards() => SetPage("Work cards");
-    [RelayCommand] private void OpenDailyStatus() => SetPage("Daily status");
+    [RelayCommand]
+    private async Task OpenDailyStatusAsync()
+    {
+        if (!IsAuthenticated || _api is null) { StatusMessage = "Please sign in first."; return; }
+        IsDailyStatusVisible = true;
+        PageTitle = "Daily status";
+        await RefreshDailyStatusAsync();
+    }
+
+    [RelayCommand]
+    private async Task RefreshDailyStatusAsync()
+    {
+        if (IsBusy || _api is null) return;
+        if (!DateOnly.TryParseExact(SelectedStatusDate, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var date))
+        { DailyStatusMessage = "Enter date as yyyy-MM-dd."; return; }
+        if (!int.TryParse(GraceMinutes, out var grace) || grace < 0 || grace > 240)
+        { DailyStatusMessage = "Grace minutes must be between 0 and 240."; return; }
+        IsBusy = true;
+        try
+        {
+            var rows = await _api.GetTodayStatusAsync(date, grace);
+            TodayStatuses.Clear();
+            foreach (var row in rows) TodayStatuses.Add(row);
+            DailyStatusMessage = rows.Count + " employees · " + date.ToString("dd/MM/yyyy");
+        }
+        catch (Exception ex) { DailyStatusMessage = GetFullError(ex); }
+        finally { IsBusy = false; }
+    }
+
+    [RelayCommand]
+    private void BackToOverview() { IsDailyStatusVisible = false; PageTitle = "Overview"; }
     [RelayCommand] private void OpenEmployees() => SetPage("Employees");
     [RelayCommand] private void OpenSchedules() => SetPage("Work calendar");
     [RelayCommand] private void OpenOvertime() => SetPage("Overtime");
@@ -87,6 +123,7 @@ public partial class MainViewModel : ObservableObject
     [RelayCommand] private void OpenSettings() => SetPage("Settings");
     private void SetPage(string page)
     {
+        IsDailyStatusVisible = false;
         PageTitle = page;
         StatusMessage = page == "Employees" && IsAuthenticated
             ? $"{Employees.Count} active employees loaded from the existing employee service."
