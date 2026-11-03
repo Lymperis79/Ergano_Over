@@ -168,6 +168,8 @@ public static class DbProviderFactory
 
                 case DatabaseProvider.MariaDb:
                 {
+                    if (string.IsNullOrWhiteSpace(config.ConnectionString))
+                        throw new InvalidOperationException(ErganiManager.Data.UiText.T("ConnectionString must be set for the MariaDB provider."));
                     var cs = new MySqlConnectionStringBuilder(config.ConnectionString) { Database = string.Empty };
                     await using var c = new MySqlConnection(cs.ConnectionString);
                     await c.OpenAsync();
