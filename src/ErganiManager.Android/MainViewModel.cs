@@ -128,14 +128,26 @@ public partial class MainViewModel : ObservableObject
         if (_api is not null) { try { await _api.LogoutAsync(); } catch { } _api.Dispose(); _api = null; }
         Employees.Clear();
         OnPropertyChanged(nameof(HasEmployees));
-        IsEmployeesVisible = false;
         WorkCardHistory.Clear();
+        WorkCalendarDays.Clear();
+        TodayStatuses.Clear();
         Companies.Clear();
         SelectedCompany = null;
+        SelectedWorkCardEmployee = null;
+        SelectedCalendarEmployee = null;
         IsCompanySelectionRequired = false;
+
+        // Reset every authenticated page before returning to the login screen.
+        IsEmployeesVisible = false;
+        IsWorkCardsVisible = false;
+        IsWorkCalendarVisible = false;
+        IsDailyStatusVisible = false;
         IsAuthenticated = false;
+
+        Password = string.Empty;
         CompanyName = string.Empty;
-        PageTitle = "Sign in"; ConnectionMessage = "Signed out.";
+        PageTitle = "Sign in";
+        ConnectionMessage = "Signed out. Sign in again to continue.";
         StatusMessage = "Sign in with your existing Ergani II account.";
     }
 
