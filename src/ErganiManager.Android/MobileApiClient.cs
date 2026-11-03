@@ -216,6 +216,24 @@ public sealed class MobileApiClient : IDisposable
         return await response.Content.ReadFromJsonAsync<List<MobileScheduleDay>>(cancellationToken: cancellationToken) ?? [];
     }
 
+    public async Task<List<MobileWorkCardHistoryItem>> GetWorkCardHistoryAsync(
+        DateOnly fromDate, DateOnly toDate, int? employeeId,
+        CancellationToken cancellationToken = default)
+    {
+        var url = "api/mobile/workcards/history?fromDate=" + fromDate.ToString("yyyy-MM-dd") +
+                  "&toDate=" + toDate.ToString("yyyy-MM-dd");
+        if (employeeId.HasValue) url += "&employeeId=" + employeeId.Value;
+
+        using var response = await _http.GetAsync(url, cancellationToken);
+        if (!response.IsSuccessStatusCode)
+        {
+            var body = await response.Content.ReadAsStringAsync(cancellationToken);
+            throw new HttpRequestException($"Work cards returned HTTP {(int)response.StatusCode}: {body}");
+        }
+        return await response.Content.ReadFromJsonAsync<List<MobileWorkCardHistoryItem>>(
+            cancellationToken: cancellationToken) ?? [];
+    }
+
     public async Task LogoutAsync(CancellationToken cancellationToken = default)
     {
         using var response = await _http.PostAsync("api/mobile/logout", content: null, cancellationToken);
