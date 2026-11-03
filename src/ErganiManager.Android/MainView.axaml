@@ -30,6 +30,28 @@
           </StackPanel>
         </Border>
 
+        <Border Background="#202B3A" CornerRadius="16" Padding="14" IsVisible="{Binding IsCompanySelectionRequired}">
+          <StackPanel Spacing="10">
+            <TextBlock Text="SELECT COMPANY" Foreground="#8BBCEB" FontWeight="Bold" FontSize="12" />
+            <TextBlock Text="Your account can access more than one company. Select the company whose data you want to open."
+                       Foreground="#C3CEDB" FontSize="13" TextWrapping="Wrap" />
+            <ComboBox ItemsSource="{Binding Companies}"
+                      SelectedItem="{Binding SelectedCompany}"
+                      PlaceholderText="Choose a company"
+                      HorizontalAlignment="Stretch">
+              <ComboBox.ItemTemplate>
+                <DataTemplate x:DataType="vm:MobileCompany">
+                  <TextBlock Text="{Binding Name}" />
+                </DataTemplate>
+              </ComboBox.ItemTemplate>
+            </ComboBox>
+            <Button Content="Continue with selected company"
+                    Command="{Binding SelectCompanyCommand}"
+                    IsEnabled="{Binding SelectedCompany, Converter={x:Static ObjectConverters.IsNotNull}}" />
+            <TextBlock Text="{Binding StatusMessage}" Foreground="#C3CEDB" FontSize="12" TextWrapping="Wrap" />
+          </StackPanel>
+        </Border>
+
         <Border Background="#202B3A" CornerRadius="16" Padding="14" IsVisible="{Binding IsDailyStatusVisible}">
           <StackPanel Spacing="12">
             <Button Content="← Overview" HorizontalAlignment="Left" Command="{Binding BackToOverviewCommand}" />
