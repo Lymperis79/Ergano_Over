@@ -50,6 +50,18 @@ public sealed class MobileApiClient : IDisposable
         return await response.Content.ReadFromJsonAsync<List<MobileEmployee>>(cancellationToken: cancellationToken) ?? [];
     }
 
+    public async Task<List<MobileTodayEmployeeStatus>> GetTodayStatusAsync(DateOnly date, int graceMinutes, CancellationToken cancellationToken = default)
+    {
+        var url = "api/mobile/today?date=" + date.ToString("yyyy-MM-dd") + "&graceMinutes=" + graceMinutes;
+        using var response = await _http.GetAsync(url, cancellationToken);
+        if (!response.IsSuccessStatusCode)
+        {
+            var body = await response.Content.ReadAsStringAsync(cancellationToken);
+            throw new HttpRequestException("Daily Status returned HTTP " + (int)response.StatusCode + ": " + body);
+        }
+        return await response.Content.ReadFromJsonAsync<List<MobileTodayEmployeeStatus>>(cancellationToken: cancellationToken) ?? [];
+    }
+
     public async Task LogoutAsync(CancellationToken cancellationToken = default)
     {
         using var response = await _http.PostAsync("api/mobile/logout", content: null, cancellationToken);
@@ -61,3 +73,43 @@ public sealed class MobileApiClient : IDisposable
 
 public sealed record MobileLoginResponse(string Username, string Role, int? CompanyId, string? CompanyName, int? BranchId, string? BranchName);
 public sealed record MobileEmployee(int Id, int BranchId, string FirstName, string LastName, bool IsActive);
+
+
+public sealed class MobileTodayEmployeeStatus
+{
+    public int EmployeeId { get; set; }
+    public string FullName { get; set; } = string.Empty;
+    public string BranchName { get; set; } = string.Empty;
+    public int ScheduleKind { get; set; }
+    public TimeOnly? PlannedStart { get; set; }
+    public TimeOnly? PlannedEnd { get; set; }
+    public bool IsHome { get; set; }
+    public string? LeaveName { get; set; }
+    public TimeOnly? ArrivalTime { get; set; }
+    public TimeOnly? DepartureTime { get; set; }
+    public int Presence { get; set; }
+    public int Level { get; set; }
+    public bool IsOfficialHoliday { get; set; }
+    public List<MobileTodayIssue> Issues { get; set; } = new();
+
+    public string PresenceText => Presence switch
+    {
+        1 => "Working", 2 => "Left", 3 => "On leave", 4 => "Not arrived",
+        5 => "Expected", 6 => "Not working", _ => "No status"
+    };
+    public string ScheduleText => ScheduleKind switch
+    {
+        1 => IsHome ? "Work · Home" : "Work", 2 => "Rest day", 3 => "Absent",
+        4 => LeaveName ?? "Leave", _ => IsOfficialHoliday ? "Official holiday" : "No schedule"
+    };
+    public string PlannedHours => (PlannedStart?.ToString("HH:mm") ?? "—") + " – " + (PlannedEnd?.ToString("HH:mm") ?? "—");
+    public string ClockingText => "In: " + (ArrivalTime?.ToString("HH:mm") ?? "—") + "   Out: " + (DepartureTime?.ToString("HH:mm") ?? "—");
+    public string LevelText => Level switch { 2 => "Error", 1 => "Warning", _ => "OK" };
+    public string IssueSummary => Issues.Count == 0 ? "No issues" : Issues.Count + " issue(s)";
+}
+public sealed class MobileTodayIssue
+{
+    public int Code { get; set; }
+    public int Level { get; set; }
+    public string? Detail { get; set; }
+}
