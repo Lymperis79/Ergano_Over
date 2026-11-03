@@ -16,7 +16,7 @@ namespace ErganiManager.Android;
         | ConfigChanges.ScreenLayout
         | ConfigChanges.SmallestScreenSize
         | ConfigChanges.Density)]
-public class MainActivity : AvaloniaMainActivity<App>
+public class MainActivity : AvaloniaMainActivity
 {
     protected override AppBuilder CustomizeAppBuilder(AppBuilder builder)
         => base.CustomizeAppBuilder(builder)
