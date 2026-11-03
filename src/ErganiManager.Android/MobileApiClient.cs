@@ -36,9 +36,9 @@ public sealed class MobileApiClient : IDisposable
         CancellationToken cancellationToken)
     {
         var host = context.DnsEndPoint.Host;
-        IPAddress[] addresses;
+        IPAddress[] addresses = [];
         var isLocalHostname = host.EndsWith(".local", StringComparison.OrdinalIgnoreCase);
-        var hasCachedAddress = isLocalHostname && ResolvedHostCache.TryGetValue(host, out addresses!);
+        var hasCachedAddress = isLocalHostname && ResolvedHostCache.TryGetValue(host, out addresses);
 
         if (hasCachedAddress)
         {
