@@ -17,6 +17,9 @@ public partial class MainViewModel : ObservableObject
     [ObservableProperty] private bool _isBusy;
     [ObservableProperty] private bool _isAuthenticated;
     [ObservableProperty] private string _companyName = string.Empty;
+    [ObservableProperty] private MobileCompany? _selectedCompany;
+    [ObservableProperty] private bool _isCompanySelectionRequired;
+    public ObservableCollection<MobileCompany> Companies { get; } = new();
     [ObservableProperty] private bool _isDailyStatusVisible;
     [ObservableProperty] private string _selectedStatusDate = DateOnly.FromDateTime(DateTime.Today).ToString("yyyy-MM-dd");
     [ObservableProperty] private string _graceMinutes = "10";
@@ -40,17 +43,30 @@ public partial class MainViewModel : ObservableObject
             ConnectionMessage = "API reachable. Signing in...";
             var session = await _api.LoginAsync(Username, Password);
             IsAuthenticated = true;
-            CompanyName = session.CompanyName ?? "Company selection required";
             Password = string.Empty;
             ConnectionMessage = $"Signed in as {session.Username} ({session.Role}).";
+
+            Companies.Clear();
+            SelectedCompany = null;
+            IsCompanySelectionRequired = false;
+
             if (session.CompanyId.HasValue)
             {
-                var employees = await _api.GetEmployeesAsync();
-                Employees.Clear();
-                foreach (var employee in employees) Employees.Add(employee);
-                StatusMessage = $"Connected to {CompanyName}. {Employees.Count} active employees loaded from Ergani II.";
+                CompanyName = session.CompanyName ?? "Assigned company";
+                await LoadCompanyDataAsync();
             }
-            else StatusMessage = "This administrator has no fixed company. Company selection is the next step.";
+            else
+            {
+                // Super-admin accounts have no fixed CompanyId. Load the companies
+                // they can access and require an explicit selection before tenant data.
+                var companies = await _api.GetCompaniesAsync();
+                foreach (var company in companies) Companies.Add(company);
+                IsCompanySelectionRequired = true;
+                CompanyName = "No company selected";
+                StatusMessage = companies.Count == 0
+                    ? "No active companies are available to this account."
+                    : "Choose a company below before loading employees or daily status.";
+            }
             PageTitle = "Overview";
         }
         catch (Exception ex)
@@ -78,9 +94,44 @@ public partial class MainViewModel : ObservableObject
     private async Task LogoutAsync()
     {
         if (_api is not null) { try { await _api.LogoutAsync(); } catch { } _api.Dispose(); _api = null; }
-        Employees.Clear(); IsAuthenticated = false; CompanyName = string.Empty;
+        Employees.Clear();
+        Companies.Clear();
+        SelectedCompany = null;
+        IsCompanySelectionRequired = false;
+        IsAuthenticated = false;
+        CompanyName = string.Empty;
         PageTitle = "Sign in"; ConnectionMessage = "Signed out.";
         StatusMessage = "Sign in with your existing Ergani II account.";
+    }
+
+    [RelayCommand]
+    private async Task SelectCompanyAsync()
+    {
+        if (IsBusy || _api is null || SelectedCompany is null) return;
+        IsBusy = true;
+        try
+        {
+            var selected = await _api.SelectCompanyAsync(SelectedCompany.Id);
+            CompanyName = selected.Name;
+            IsCompanySelectionRequired = false;
+            await LoadCompanyDataAsync();
+            StatusMessage = $"Connected to {CompanyName}. {Employees.Count} active employees loaded from Ergani II.";
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = GetFullError(ex);
+            IsCompanySelectionRequired = true;
+        }
+        finally { IsBusy = false; }
+    }
+
+    private async Task LoadCompanyDataAsync()
+    {
+        if (_api is null) return;
+        var employees = await _api.GetEmployeesAsync();
+        Employees.Clear();
+        foreach (var employee in employees) Employees.Add(employee);
+        StatusMessage = $"Connected to {CompanyName}. {Employees.Count} active employees loaded from Ergani II.";
     }
 
     [RelayCommand] private void OpenWorkCards() => SetPage("Work cards");
