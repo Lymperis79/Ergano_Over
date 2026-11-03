@@ -121,7 +121,11 @@ public sealed class MobileApiClient : IDisposable
                     : ex;
                 if (isLocalHostname && hasCachedAddress)
                     ResolvedHostCache.TryRemove(host, out _);
-                if (ex is OperationCanceledException) throw;
+                // A timeout created for this individual address is not a
+                // cancellation of the whole HTTP request. Continue to the next
+                // resolved address and report a connection-specific error.
+                if (ex is OperationCanceledException && cancellationToken.IsCancellationRequested)
+                    throw;
             }
         }
 
