@@ -236,13 +236,16 @@ public static class DbSchemaUpdater
             foreach (var day in legacyDays)
             {
                 if (day.WorkingPeriods.Count != 0) continue;
-                if (day.EndTime.Value <= day.StartTime.Value) continue;
+                if (day.StartTime is not TimeOnly startTime ||
+                    day.EndTime is not TimeOnly endTime) continue;
+                if (endTime <= startTime) continue;
+
                 db.ScheduleWorkingPeriods.Add(new Entities.ScheduleWorkingPeriod
                 {
                     ScheduleId = day.Id,
                     PeriodNumber = 1,
-                    StartTime = day.StartTime!.Value,
-                    EndTime = day.EndTime!.Value
+                    StartTime = startTime,
+                    EndTime = endTime
                 });
                 migrated++;
             }
@@ -316,7 +319,8 @@ public static class DbSchemaUpdater
     {
         try
         {
-            await db.Database.ExecuteSqlRawAsync($"SELECT 1 FROM {table} WHERE 1 = 0");
+            ValidateSqlIdentifier(table);
+            await db.Database.ExecuteSqlRawAsync("SELECT 1 FROM " + table + " WHERE 1 = 0");
             return true;
         }
         catch
@@ -330,8 +334,10 @@ public static class DbSchemaUpdater
         try
         {
             // Zero rows returned; fails only if the column (or table) is missing.
+            ValidateSqlIdentifier(patch.Table);
+            ValidateSqlIdentifier(patch.Column);
             await db.Database.ExecuteSqlRawAsync(
-                $"SELECT {patch.Column} FROM {patch.Table} WHERE 1 = 0");
+                "SELECT " + patch.Column + " FROM " + patch.Table + " WHERE 1 = 0");
             return true;
         }
         catch
@@ -339,4 +345,13 @@ public static class DbSchemaUpdater
             return false;
         }
     }
+    private static void ValidateSqlIdentifier(string identifier)
+    {
+        if (string.IsNullOrWhiteSpace(identifier) ||
+            !System.Text.RegularExpressions.Regex.IsMatch(identifier, @"^[A-Za-z_][A-Za-z0-9_]*$"))
+        {
+            throw new ArgumentException("Invalid SQL identifier.", nameof(identifier));
+        }
+    }
+
 }
