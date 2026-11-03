@@ -16,13 +16,15 @@
       <StackPanel Margin="18" Spacing="16">
         <Border Background="#202B3A" CornerRadius="16" Padding="16">
           <StackPanel Spacing="8">
-            <TextBlock Text="Company connection" FontSize="16" FontWeight="SemiBold"
+            <TextBlock Text="Secure connection" FontSize="16" FontWeight="SemiBold"
                        Foreground="White" />
             <TextBlock Text="{Binding ConnectionMessage}" TextWrapping="Wrap"
                        Foreground="#C3CEDB" FontSize="13" />
-            <TextBox Watermark="Server / API address" Text="{Binding ServerAddress}" />
-            <Button Content="Save connection settings" HorizontalAlignment="Stretch"
-                    Command="{Binding SaveConnectionCommand}" />
+            <TextBox Watermark="HTTPS API address" Text="{Binding ServerAddress}" />
+            <TextBox Watermark="Existing Ergani II username" Text="{Binding Username}" />
+            <PasswordBox Watermark="Password" Password="{Binding Password}" />
+            <Button Content="Sign in" HorizontalAlignment="Stretch" Command="{Binding ConnectCommand}" />
+            <Button Content="Sign out" HorizontalAlignment="Stretch" Command="{Binding LogoutCommand}" IsVisible="{Binding IsAuthenticated}" />
           </StackPanel>
         </Border>
 
@@ -58,6 +60,25 @@
             </StackPanel>
           </Button>
         </Grid>
+
+        <TextBlock Text="EMPLOYEES" Foreground="#8BBCEB" FontWeight="Bold" FontSize="12" CharacterSpacing="1.5" />
+        <Border Background="#202B3A" CornerRadius="14" Padding="12">
+          <StackPanel Spacing="8">
+            <TextBlock Text="{Binding Employees.Count, StringFormat='Active employees: {0}'}" Foreground="White" FontWeight="SemiBold" />
+            <ItemsControl ItemsSource="{Binding Employees}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                  <Border Padding="8,7" BorderBrush="#354255" BorderThickness="0,0,0,1">
+                    <StackPanel Spacing="2">
+                      <TextBlock Text="{Binding FirstName}" Foreground="White" />
+                      <TextBlock Text="{Binding LastName}" Foreground="#C3CEDB" FontSize="12" />
+                    </StackPanel>
+                  </Border>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </StackPanel>
+        </Border>
 
         <TextBlock Text="MANAGEMENT" Foreground="#8BBCEB" FontWeight="Bold"
                    FontSize="12" CharacterSpacing="1.5" />
