@@ -27,6 +27,11 @@ public partial class MainViewModel : ObservableObject
         {
             _api?.Dispose();
             _api = new MobileApiClient(ServerAddress);
+
+            ConnectionMessage = "Checking HTTPS connection to the Mobile API...";
+            await _api.CheckHealthAsync();
+
+            ConnectionMessage = "API reachable. Signing in...";
             var session = await _api.LoginAsync(Username, Password);
             IsAuthenticated = true;
             CompanyName = session.CompanyName ?? "Company selection required";
@@ -45,11 +50,22 @@ public partial class MainViewModel : ObservableObject
         catch (Exception ex)
         {
             IsAuthenticated = false;
-            ConnectionMessage = ex.Message;
-            StatusMessage = "Check the HTTPS address, server availability and your existing Ergani II login.";
+            ConnectionMessage = GetFullError(ex);
+            StatusMessage = "Connection diagnostics are shown above. If the API health check succeeds, verify the login response and credentials.";
             _api?.Dispose(); _api = null;
         }
         finally { IsBusy = false; }
+    }
+
+    private static string GetFullError(Exception exception)
+    {
+        var messages = new List<string>();
+        for (var current = exception; current is not null; current = current.InnerException)
+        {
+            if (!string.IsNullOrWhiteSpace(current.Message) && (messages.Count == 0 || messages[^1] != current.Message))
+                messages.Add(current.Message);
+        }
+        return string.Join(" → ", messages);
     }
 
     [RelayCommand]
