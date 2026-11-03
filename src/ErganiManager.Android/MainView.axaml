@@ -5,7 +5,7 @@
              x:DataType="vm:MainViewModel">
   <Grid RowDefinitions="Auto,*" Background="#141820">
     <Border Grid.Row="0" Background="#1D2634" Padding="20,18">
-      <Grid ColumnDefinitions="*,Auto">
+      <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
         <StackPanel Grid.Column="0" Spacing="5">
           <TextBlock Text="ERGANI MANAGER" FontSize="12" FontWeight="Bold"
                      Foreground="#8BBCEB" />
@@ -13,7 +13,9 @@
                      Foreground="White" />
           <TextBlock Text="Mobile workspace" FontSize="13" Foreground="#AAB7C8" />
         </StackPanel>
-        <Button Grid.Column="1" Content="Sign out" Command="{Binding LogoutCommand}"
+        <Button Grid.Column="1" Content="⌂ Overview" Command="{Binding GoToOverviewCommand}"
+                VerticalAlignment="Center" IsVisible="{Binding IsAuthenticated}" />
+        <Button Grid.Column="2" Content="Sign out" Command="{Binding LogoutCommand}"
                 VerticalAlignment="Center" IsVisible="{Binding IsAuthenticated}" />
       </Grid>
     </Border>
@@ -178,7 +180,7 @@
         </Border>
 
         <TextBlock Text="WORKING DAY" Foreground="#8BBCEB" FontWeight="Bold"
-                   FontSize="12" IsVisible="{Binding !IsEmployeesVisible}" />
+                   FontSize="12" IsVisible="{Binding IsOverviewVisible}" />
         <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto" ColumnSpacing="12" RowSpacing="12" IsVisible="{Binding !IsEmployeesVisible}">
           <Button Grid.Row="0" Grid.Column="0" MinHeight="92"
                   Command="{Binding OpenWorkCardsCommand}">
