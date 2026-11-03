@@ -254,10 +254,3 @@ public sealed record MobileSessionResponse(string Username, string Role, int? Co
     string? CompanyName, int? BranchId, string? BranchName);
 public sealed record MobileCompanyResponse(int Id, string Name, string TaxId);
 public sealed record MobileEmployeeResponse(int Id, int BranchId, string FirstName, string LastName, bool IsActive);
-
-
-public sealed record LoginRequest(string Username, string Password);
-public sealed record MobileSessionResponse(string Username, string Role, int? CompanyId,
-    string? CompanyName, int? BranchId, string? BranchName);
-public sealed record MobileCompanyResponse(int Id, string Name, string TaxId);
-public sealed record MobileEmployeeResponse(int Id, int BranchId, string FirstName, string LastName, bool IsActive);
