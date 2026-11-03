@@ -9,7 +9,4 @@ public partial class MainView : UserControl
         InitializeComponent();
         DataContext = new MainViewModel();
     }
-
-    private void InitializeComponent()
-        => AvaloniaXamlLoader.Load(this);
 }
