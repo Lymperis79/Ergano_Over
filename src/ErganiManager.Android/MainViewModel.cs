@@ -1,23 +1,64 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using System.Collections.ObjectModel;
 
 namespace ErganiManager.Android;
 
 public partial class MainViewModel : ObservableObject
 {
-    [ObservableProperty] private string _pageTitle = "Overview";
+    private MobileApiClient? _api;
+    [ObservableProperty] private string _pageTitle = "Sign in";
     [ObservableProperty] private string _serverAddress = string.Empty;
-    [ObservableProperty] private string _connectionMessage =
-        "Configure the secure mobile service endpoint to connect this device to your Ergani Manager data.";
-    [ObservableProperty] private string _statusMessage =
-        "The Android interface foundation is in place. Secure sign-in and live company data are the next integration stage.";
+    [ObservableProperty] private string _username = string.Empty;
+    [ObservableProperty] private string _password = string.Empty;
+    [ObservableProperty] private string _connectionMessage = "Connect to the HTTPS mobile API hosted beside your Ergani II installation.";
+    [ObservableProperty] private string _statusMessage = "Use your existing Ergani II account. No separate mobile user database is created.";
+    [ObservableProperty] private bool _isBusy;
+    [ObservableProperty] private bool _isAuthenticated;
+    [ObservableProperty] private string _companyName = string.Empty;
+    public ObservableCollection<MobileEmployee> Employees { get; } = new();
 
     [RelayCommand]
-    private void SaveConnection()
+    private async Task ConnectAsync()
     {
-        ConnectionMessage = string.IsNullOrWhiteSpace(ServerAddress)
-            ? "Enter the service address before saving."
-            : "Address entered. Secure connection and sign-in will be enabled when the mobile API service is configured.";
+        if (IsBusy) return;
+        IsBusy = true;
+        try
+        {
+            _api?.Dispose();
+            _api = new MobileApiClient(ServerAddress);
+            var session = await _api.LoginAsync(Username, Password);
+            IsAuthenticated = true;
+            CompanyName = session.CompanyName ?? "Company selection required";
+            Password = string.Empty;
+            ConnectionMessage = $"Signed in as {session.Username} ({session.Role}).";
+            if (session.CompanyId.HasValue)
+            {
+                var employees = await _api.GetEmployeesAsync();
+                Employees.Clear();
+                foreach (var employee in employees) Employees.Add(employee);
+                StatusMessage = $"Connected to {CompanyName}. {Employees.Count} active employees loaded from Ergani II.";
+            }
+            else StatusMessage = "This administrator has no fixed company. Company selection is the next step.";
+            PageTitle = "Overview";
+        }
+        catch (Exception ex)
+        {
+            IsAuthenticated = false;
+            ConnectionMessage = ex.Message;
+            StatusMessage = "Check the HTTPS address, server availability and your existing Ergani II login.";
+            _api?.Dispose(); _api = null;
+        }
+        finally { IsBusy = false; }
+    }
+
+    [RelayCommand]
+    private async Task LogoutAsync()
+    {
+        if (_api is not null) { try { await _api.LogoutAsync(); } catch { } _api.Dispose(); _api = null; }
+        Employees.Clear(); IsAuthenticated = false; CompanyName = string.Empty;
+        PageTitle = "Sign in"; ConnectionMessage = "Signed out.";
+        StatusMessage = "Sign in with your existing Ergani II account.";
     }
 
     [RelayCommand] private void OpenWorkCards() => SetPage("Work cards");
@@ -28,10 +69,11 @@ public partial class MainViewModel : ObservableObject
     [RelayCommand] private void OpenSubmissions() => SetPage("API submissions");
     [RelayCommand] private void OpenReports() => SetPage("Reports");
     [RelayCommand] private void OpenSettings() => SetPage("Settings");
-
     private void SetPage(string page)
     {
         PageTitle = page;
-        StatusMessage = $"{page} is part of the mobile navigation. Live records and actions will be connected through the secured mobile API.";
+        StatusMessage = page == "Employees" && IsAuthenticated
+            ? $"{Employees.Count} active employees loaded from the existing employee service."
+            : $"{page} will be connected through existing Ergani II Core services.";
     }
 }
