@@ -1,0 +1,86 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="ErganiManager.Android.MainView">
+  <Grid RowDefinitions="Auto,*" Background="#141820">
+    <Border Grid.Row="0" Background="#1D2634" Padding="20,18">
+      <StackPanel Spacing="5">
+        <TextBlock Text="ERGANI MANAGER" FontSize="12" FontWeight="Bold"
+                   Foreground="#8BBCEB" CharacterSpacing="2" />
+        <TextBlock Text="{Binding PageTitle}" FontSize="25" FontWeight="Bold"
+                   Foreground="White" />
+        <TextBlock Text="Mobile workspace" FontSize="13" Foreground="#AAB7C8" />
+      </StackPanel>
+    </Border>
+
+    <ScrollViewer Grid.Row="1">
+      <StackPanel Margin="18" Spacing="16">
+        <Border Background="#202B3A" CornerRadius="16" Padding="16">
+          <StackPanel Spacing="8">
+            <TextBlock Text="Company connection" FontSize="16" FontWeight="SemiBold"
+                       Foreground="White" />
+            <TextBlock Text="{Binding ConnectionMessage}" TextWrapping="Wrap"
+                       Foreground="#C3CEDB" FontSize="13" />
+            <TextBox Watermark="Server / API address" Text="{Binding ServerAddress}" />
+            <Button Content="Save connection settings" HorizontalAlignment="Stretch"
+                    Command="{Binding SaveConnectionCommand}" />
+          </StackPanel>
+        </Border>
+
+        <TextBlock Text="WORKING DAY" Foreground="#8BBCEB" FontWeight="Bold"
+                   FontSize="12" CharacterSpacing="1.5" />
+        <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto" ColumnSpacing="12" RowSpacing="12">
+          <Button Grid.Row="0" Grid.Column="0" MinHeight="92"
+                  Command="{Binding OpenWorkCardsCommand}">
+            <StackPanel Spacing="6">
+              <TextBlock Text="▣" FontSize="25" HorizontalAlignment="Center" />
+              <TextBlock Text="Work cards" HorizontalAlignment="Center" />
+            </StackPanel>
+          </Button>
+          <Button Grid.Row="0" Grid.Column="1" MinHeight="92"
+                  Command="{Binding OpenDailyStatusCommand}">
+            <StackPanel Spacing="6">
+              <TextBlock Text="◷" FontSize="25" HorizontalAlignment="Center" />
+              <TextBlock Text="Daily status" HorizontalAlignment="Center" />
+            </StackPanel>
+          </Button>
+          <Button Grid.Row="1" Grid.Column="0" MinHeight="92"
+                  Command="{Binding OpenEmployeesCommand}">
+            <StackPanel Spacing="6">
+              <TextBlock Text="♙" FontSize="25" HorizontalAlignment="Center" />
+              <TextBlock Text="Employees" HorizontalAlignment="Center" />
+            </StackPanel>
+          </Button>
+          <Button Grid.Row="1" Grid.Column="1" MinHeight="92"
+                  Command="{Binding OpenSchedulesCommand}">
+            <StackPanel Spacing="6">
+              <TextBlock Text="▦" FontSize="25" HorizontalAlignment="Center" />
+              <TextBlock Text="Work calendar" HorizontalAlignment="Center" />
+            </StackPanel>
+          </Button>
+        </Grid>
+
+        <TextBlock Text="MANAGEMENT" Foreground="#8BBCEB" FontWeight="Bold"
+                   FontSize="12" CharacterSpacing="1.5" />
+        <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto" ColumnSpacing="12" RowSpacing="12">
+          <Button Grid.Row="0" Grid.Column="0" MinHeight="76"
+                  Command="{Binding OpenOvertimeCommand}" Content="Overtime" />
+          <Button Grid.Row="0" Grid.Column="1" MinHeight="76"
+                  Command="{Binding OpenSubmissionsCommand}" Content="API submissions" />
+          <Button Grid.Row="1" Grid.Column="0" MinHeight="76"
+                  Command="{Binding OpenReportsCommand}" Content="Reports" />
+          <Button Grid.Row="1" Grid.Column="1" MinHeight="76"
+                  Command="{Binding OpenSettingsCommand}" Content="Settings" />
+        </Grid>
+
+        <Border Background="#202B3A" CornerRadius="14" Padding="14">
+          <StackPanel Spacing="5">
+            <TextBlock Text="Mobile app preview" Foreground="White"
+                       FontWeight="SemiBold" />
+            <TextBlock Text="{Binding StatusMessage}" Foreground="#C3CEDB"
+                       FontSize="13" TextWrapping="Wrap" />
+          </StackPanel>
+        </Border>
+      </StackPanel>
+    </ScrollViewer>
+  </Grid>
+</UserControl>
