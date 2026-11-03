@@ -52,6 +52,46 @@
           </StackPanel>
         </Border>
 
+
+        <Border Background="#202B3A" CornerRadius="16" Padding="14" IsVisible="{Binding IsWorkCalendarVisible}">
+          <StackPanel Spacing="12">
+            <Button Content="← Overview" HorizontalAlignment="Left" Command="{Binding BackFromWorkCalendarCommand}" />
+            <TextBlock Text="WORK CALENDAR" Foreground="#8BBCEB" FontWeight="Bold" FontSize="12" />
+            <ComboBox ItemsSource="{Binding Employees}"
+                      SelectedItem="{Binding SelectedCalendarEmployee}"
+                      PlaceholderText="Select employee"
+                      HorizontalAlignment="Stretch">
+              <ComboBox.ItemTemplate>
+                <DataTemplate x:DataType="vm:MobileEmployee">
+                  <TextBlock Text="{Binding FirstName}" />
+                </DataTemplate>
+              </ComboBox.ItemTemplate>
+            </ComboBox>
+            <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="8">
+              <Button Grid.Column="0" Content="‹" Command="{Binding PreviousCalendarMonthCommand}" />
+              <TextBox Grid.Column="1" Text="{Binding SelectedCalendarMonth}" Watermark="yyyy-MM" />
+              <Button Grid.Column="2" Content="›" Command="{Binding NextCalendarMonthCommand}" />
+            </Grid>
+            <Button Content="Load month" Command="{Binding RefreshWorkCalendarCommand}" IsEnabled="{Binding !IsBusy}" />
+            <TextBlock Text="{Binding WorkCalendarMessage}" Foreground="#C3CEDB" FontSize="13" TextWrapping="Wrap" />
+            <ItemsControl ItemsSource="{Binding WorkCalendarDays}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="vm:MobileScheduleDay">
+                  <Border Background="#293749" CornerRadius="10" Padding="12" Margin="0,4">
+                    <StackPanel Spacing="5">
+                      <TextBlock Text="{Binding ScheduleDate}" Foreground="White" FontWeight="SemiBold" FontSize="15" />
+                      <TextBlock Text="{Binding WorkTypeText}" Foreground="#8BBCEB" FontWeight="SemiBold" />
+                      <TextBlock Text="{Binding PlannedTimeText}" Foreground="#E0E7EF" />
+                      <TextBlock Text="{Binding ActualTimeText}" Foreground="#C3CEDB" FontSize="12" />
+                      <TextBlock Text="{Binding SubmissionText}" Foreground="#F0C674" FontSize="12" />
+                    </StackPanel>
+                  </Border>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </StackPanel>
+        </Border>
+
         <Border Background="#202B3A" CornerRadius="16" Padding="14" IsVisible="{Binding IsDailyStatusVisible}">
           <StackPanel Spacing="12">
             <Button Content="← Overview" HorizontalAlignment="Left" Command="{Binding BackToOverviewCommand}" />
