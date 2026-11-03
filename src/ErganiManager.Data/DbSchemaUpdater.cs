@@ -320,7 +320,7 @@ public static class DbSchemaUpdater
         try
         {
             ValidateSqlIdentifier(table);
-            await db.Database.ExecuteSqlRawAsync("SELECT 1 FROM " + table + " WHERE 1 = 0");
+            await ExecuteMetadataProbeAsync(db, $"SELECT 1 FROM {table} WHERE 1 = 0");
             return true;
         }
         catch
@@ -336,8 +336,8 @@ public static class DbSchemaUpdater
             // Zero rows returned; fails only if the column (or table) is missing.
             ValidateSqlIdentifier(patch.Table);
             ValidateSqlIdentifier(patch.Column);
-            await db.Database.ExecuteSqlRawAsync(
-                "SELECT " + patch.Column + " FROM " + patch.Table + " WHERE 1 = 0");
+            await ExecuteMetadataProbeAsync(db,
+                $"SELECT {patch.Column} FROM {patch.Table} WHERE 1 = 0");
             return true;
         }
         catch
@@ -345,6 +345,26 @@ public static class DbSchemaUpdater
             return false;
         }
     }
+    private static async Task ExecuteMetadataProbeAsync(AppDbContext db, string sql)
+    {
+        var connection = db.Database.GetDbConnection();
+        var openedHere = connection.State != System.Data.ConnectionState.Open;
+        if (openedHere)
+            await connection.OpenAsync();
+
+        try
+        {
+            await using var command = connection.CreateCommand();
+            command.CommandText = sql;
+            await using var reader = await command.ExecuteReaderAsync();
+        }
+        finally
+        {
+            if (openedHere)
+                await connection.CloseAsync();
+        }
+    }
+
     private static void ValidateSqlIdentifier(string identifier)
     {
         if (string.IsNullOrWhiteSpace(identifier) ||
