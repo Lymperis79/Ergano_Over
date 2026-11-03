@@ -47,7 +47,7 @@
             </ComboBox>
             <Button Content="Continue with selected company"
                     Command="{Binding SelectCompanyCommand}"
-                    IsEnabled="{Binding SelectedCompany, Converter={x:Static ObjectConverters.IsNotNull}}" />
+                    IsEnabled="{Binding !IsBusy}" />
             <TextBlock Text="{Binding StatusMessage}" Foreground="#C3CEDB" FontSize="12" TextWrapping="Wrap" />
           </StackPanel>
         </Border>
