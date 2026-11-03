@@ -139,6 +139,7 @@ public partial class MainViewModel : ObservableObject
     private async Task OpenDailyStatusAsync()
     {
         if (!IsAuthenticated || _api is null) { StatusMessage = "Please sign in first."; return; }
+        if (IsCompanySelectionRequired) { StatusMessage = "Select a company before opening daily status."; return; }
         IsDailyStatusVisible = true;
         PageTitle = "Daily status";
         await RefreshDailyStatusAsync();
@@ -174,6 +175,11 @@ public partial class MainViewModel : ObservableObject
     [RelayCommand] private void OpenSettings() => SetPage("Settings");
     private void SetPage(string page)
     {
+        if (IsCompanySelectionRequired)
+        {
+            StatusMessage = "Select a company before opening " + page + ".";
+            return;
+        }
         IsDailyStatusVisible = false;
         PageTitle = page;
         StatusMessage = page == "Employees" && IsAuthenticated
