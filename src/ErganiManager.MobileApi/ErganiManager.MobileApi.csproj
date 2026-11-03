@@ -7,5 +7,6 @@
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\ErganiManager.Core\ErganiManager.Core.csproj" />
+    <ProjectReference Include="..\ErganiManager.ErganiApi\ErganiManager.ErganiApi.csproj" />
   </ItemGroup>
 </Project>
