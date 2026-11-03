@@ -21,6 +21,8 @@ public partial class MainViewModel : ObservableObject
     [ObservableProperty] private bool _isCompanySelectionRequired;
     public ObservableCollection<MobileCompany> Companies { get; } = new();
     [ObservableProperty] private bool _isDailyStatusVisible;
+    [ObservableProperty] private bool _isEmployeesVisible;
+    public bool HasEmployees => Employees.Count > 0;
     [ObservableProperty] private bool _isWorkCardsVisible;
     [ObservableProperty] private string _workCardFromDate = DateOnly.FromDateTime(DateTime.Today.AddDays(-30)).ToString("yyyy-MM-dd");
     [ObservableProperty] private string _workCardToDate = DateOnly.FromDateTime(DateTime.Today).ToString("yyyy-MM-dd");
@@ -125,6 +127,8 @@ public partial class MainViewModel : ObservableObject
     {
         if (_api is not null) { try { await _api.LogoutAsync(); } catch { } _api.Dispose(); _api = null; }
         Employees.Clear();
+        OnPropertyChanged(nameof(HasEmployees));
+        IsEmployeesVisible = false;
         WorkCardHistory.Clear();
         Companies.Clear();
         SelectedCompany = null;
@@ -162,6 +166,7 @@ public partial class MainViewModel : ObservableObject
         var employees = await _api.GetEmployeesAsync();
         Employees.Clear();
         foreach (var employee in employees) Employees.Add(employee);
+        OnPropertyChanged(nameof(HasEmployees));
         StatusMessage = $"Connected to {CompanyName}. {Employees.Count} active employees loaded from Ergani II.";
     }
 
@@ -171,6 +176,7 @@ public partial class MainViewModel : ObservableObject
         if (!IsAuthenticated || _api is null) { StatusMessage = "Please sign in first."; return; }
         if (IsCompanySelectionRequired) { StatusMessage = "Select a company before opening work cards."; return; }
         IsDailyStatusVisible = false;
+        IsEmployeesVisible = false;
         IsWorkCalendarVisible = false;
         IsWorkCardsVisible = true;
         PageTitle = "Work cards";
@@ -221,6 +227,7 @@ public partial class MainViewModel : ObservableObject
         if (!IsAuthenticated || _api is null) { StatusMessage = "Please sign in first."; return; }
         if (IsCompanySelectionRequired) { StatusMessage = "Select a company before opening daily status."; return; }
         IsWorkCalendarVisible = false;
+        IsEmployeesVisible = false;
         IsDailyStatusVisible = true;
         PageTitle = "Daily status";
         await RefreshDailyStatusAsync();
@@ -255,6 +262,8 @@ public partial class MainViewModel : ObservableObject
         if (!IsAuthenticated || _api is null) { StatusMessage = "Please sign in first."; return; }
         if (IsCompanySelectionRequired) { StatusMessage = "Select a company before opening the work calendar."; return; }
         IsDailyStatusVisible = false;
+        IsEmployeesVisible = false;
+        IsWorkCardsVisible = false;
         IsWorkCalendarVisible = true;
         PageTitle = "Work calendar";
         SelectedCalendarEmployee ??= Employees.FirstOrDefault();
@@ -307,6 +316,7 @@ public partial class MainViewModel : ObservableObject
             return;
         }
         IsDailyStatusVisible = false;
+        IsEmployeesVisible = false;
         IsWorkCalendarVisible = false;
         IsWorkCardsVisible = false;
         PageTitle = page;
