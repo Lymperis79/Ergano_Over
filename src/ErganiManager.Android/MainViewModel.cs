@@ -9,7 +9,7 @@ public partial class MainViewModel : ObservableObject
 {
     private MobileApiClient? _api;
     [ObservableProperty] private string _pageTitle = "Sign in";
-    [ObservableProperty] private string _serverAddress = string.Empty;
+    [ObservableProperty] private string _serverAddress = "https://thinkpad-p16s.local:5001";
     [ObservableProperty] private string _username = string.Empty;
     [ObservableProperty] private string _password = string.Empty;
     [ObservableProperty] private string _connectionMessage = "Connect to the HTTPS mobile API hosted beside your Ergani II installation.";
@@ -31,6 +31,25 @@ public partial class MainViewModel : ObservableObject
     [ObservableProperty] private string _dailyStatusMessage = "Select a date and refresh to load attendance.";
     public ObservableCollection<MobileTodayEmployeeStatus> TodayStatuses { get; } = new();
     public ObservableCollection<MobileEmployee> Employees { get; } = new();
+
+    [RelayCommand]
+    private async Task CheckApiHealthAsync()
+    {
+        if (IsBusy) return;
+        IsBusy = true;
+        try
+        {
+            using var healthClient = new MobileApiClient(ServerAddress);
+            ConnectionMessage = "Checking API health (GET /api/mobile/health)...";
+            await healthClient.CheckHealthAsync();
+            ConnectionMessage = "API HEALTH OK — received HTTP 200 from /api/mobile/health. You can now sign in.";
+        }
+        catch (Exception ex)
+        {
+            ConnectionMessage = "API HEALTH FAILED — " + GetFullError(ex);
+        }
+        finally { IsBusy = false; }
+    }
 
     [RelayCommand]
     private async Task ConnectAsync()
