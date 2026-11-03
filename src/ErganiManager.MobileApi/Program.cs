@@ -254,6 +254,41 @@ app.MapGet("/api/mobile/schedules/{employeeId:int}/{year:int}/{month:int}", asyn
     return Results.Ok(rows);
 }).RequireAuthorization();
 
+app.MapGet("/api/mobile/workcards/history", async Task<IResult> (
+    ICompanyContext context,
+    IWorkCardHistoryService history,
+    IEmployeeService employees,
+    DateOnly? fromDate,
+    DateOnly? toDate,
+    int? employeeId) =>
+{
+    var session = context.CurrentSession!;
+    if (!session.CanSee(MenuKeys.WorkCards)) return Results.Forbid();
+
+    var companyId = context.ActiveCompanyId;
+    if (!companyId.HasValue)
+        return Results.Conflict(new { message = "Select a company before requesting company data." });
+
+    if (fromDate.HasValue && toDate.HasValue && fromDate.Value > toDate.Value)
+        return Results.BadRequest(new { message = "The start date must be on or before the end date." });
+
+    if (employeeId.HasValue)
+    {
+        var employee = await employees.GetByIdAsync(employeeId.Value);
+        if (employee is null || employee.CompanyId != companyId.Value || !employee.IsActive)
+            return Results.NotFound(new { message = "The employee was not found in the active company." });
+    }
+
+    var filter = new WorkCardHistoryFilter
+    {
+        FromDate = fromDate,
+        ToDate = toDate,
+        EmployeeId = employeeId
+    };
+    var rows = await history.GetAsync(companyId.Value, filter);
+    return Results.Ok(rows);
+}).RequireAuthorization();
+
 app.Run();
 
 
