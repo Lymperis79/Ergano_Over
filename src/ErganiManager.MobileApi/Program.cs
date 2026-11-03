@@ -94,6 +94,17 @@ app.Use(async (context, next) =>
             IsOfflineSession = false
         };
         contextService.SetSession(session);
+
+        // Keep a super-admin's identity (CompanyId == null) separate from the
+        // company currently selected for this request.
+        var activeCompanyIdText = context.User.FindFirstValue("active_company_id");
+        var activeCompanyName = context.User.FindFirstValue("active_company_name");
+        if (session.IsSuperAdmin &&
+            int.TryParse(activeCompanyIdText, out var activeCompanyId) &&
+            !string.IsNullOrWhiteSpace(activeCompanyName))
+        {
+            contextService.SwitchCompany(activeCompanyId, activeCompanyName);
+        }
     }
 
     await next();
@@ -162,6 +173,39 @@ app.MapGet("/api/mobile/companies", async Task<IResult> (ICompanyContext context
         ? all.Where(c => c.IsActive)
         : all.Where(c => c.Id == session.CompanyId && c.IsActive);
     return Results.Ok(visible.Select(c => new MobileCompanyResponse(c.Id, c.Name, c.TaxId)));
+}).RequireAuthorization();
+
+app.MapPost("/api/mobile/company/select", async Task<IResult> (
+    SelectMobileCompanyRequest request,
+    ICompanyContext context,
+    ICompanyService companies,
+    HttpContext http) =>
+{
+    var session = context.CurrentSession!;
+    var company = await companies.GetByIdAsync(request.CompanyId);
+    if (company is null || !company.IsActive)
+        return Results.NotFound(new { message = "The selected company does not exist or is inactive." });
+
+    if (session.IsSuperAdmin)
+    {
+        // SwitchCompany enforces the Core super-admin rule. The selected tenant
+        // is stored in separate claims so the user's super-admin identity remains intact.
+        context.SwitchCompany(company.Id, company.Name);
+        var claims = http.User.Claims
+            .Where(c => c.Type is not ("active_company_id" or "active_company_name"))
+            .ToList();
+        claims.Add(new Claim("active_company_id", company.Id.ToString()));
+        claims.Add(new Claim("active_company_name", company.Name));
+        await http.SignInAsync(
+            CookieAuthenticationDefaults.AuthenticationScheme,
+            new ClaimsPrincipal(new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme)));
+    }
+    else if (session.CompanyId != company.Id)
+    {
+        return Results.Forbid();
+    }
+
+    return Results.Ok(new MobileCompanyResponse(company.Id, company.Name, company.TaxId));
 }).RequireAuthorization();
 
 app.MapGet("/api/mobile/employees", async Task<IResult> (ICompanyContext context, IEmployeeService employees) =>
@@ -250,6 +294,7 @@ static string SignLicenseClock(string value)
 
 
 public sealed record LoginRequest(string Username, string Password);
+public sealed record SelectMobileCompanyRequest(int CompanyId);
 public sealed record MobileSessionResponse(string Username, string Role, int? CompanyId,
     string? CompanyName, int? BranchId, string? BranchName);
 public sealed record MobileCompanyResponse(int Id, string Name, string TaxId);
