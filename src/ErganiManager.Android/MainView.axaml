@@ -25,7 +25,10 @@
             <TextBox PlaceholderText="HTTPS API address" Text="{Binding ServerAddress}" />
             <TextBox PlaceholderText="Existing Ergani II username" Text="{Binding Username}" />
             <TextBox PlaceholderText="Password" Text="{Binding Password}" PasswordChar="●" />
-            <Button Content="Sign in" HorizontalAlignment="Stretch" Command="{Binding ConnectCommand}" />
+            <Button Content="Check API health" HorizontalAlignment="Stretch"
+                    Command="{Binding CheckApiHealthCommand}" IsEnabled="{Binding !IsBusy}" />
+            <Button Content="Sign in" HorizontalAlignment="Stretch"
+                    Command="{Binding ConnectCommand}" IsEnabled="{Binding !IsBusy}" />
             <Button Content="Sign out" HorizontalAlignment="Stretch" Command="{Binding LogoutCommand}" IsVisible="{Binding IsAuthenticated}" />
           </StackPanel>
         </Border>
