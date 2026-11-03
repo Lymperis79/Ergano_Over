@@ -191,19 +191,6 @@ app.MapGet("/api/mobile/today", async Task<IResult> (ICompanyContext context, IT
 
 app.Run();
 
-public sealed record LoginRequest(string Username, string Password);
-public sealed record MobileSessionResponse(string Username, string Role, int? CompanyId,
-    string? CompanyName, int? BranchId, string? BranchName);
-public sealed record MobileCompanyResponse(int Id, string Name, string TaxId);
-public sealed record MobileEmployeeResponse(int Id, int BranchId, string FirstName, string LastName, bool IsActive);
-
-
-public sealed record LoginRequest(string Username, string Password);
-public sealed record MobileSessionResponse(string Username, string Role, int? CompanyId,
-    string? CompanyName, int? BranchId, string? BranchName);
-public sealed record MobileCompanyResponse(int Id, string Name, string TaxId);
-public sealed record MobileEmployeeResponse(int Id, int BranchId, string FirstName, string LastName, bool IsActive);
-
 
 static void LoadMobileLicense()
 {
@@ -260,3 +247,17 @@ static string SignLicenseClock(string value)
     return Convert.ToHexString(System.Security.Cryptography.HMACSHA256.HashData(
         machineKey, System.Text.Encoding.UTF8.GetBytes(value)))[..16];
 }
+
+
+public sealed record LoginRequest(string Username, string Password);
+public sealed record MobileSessionResponse(string Username, string Role, int? CompanyId,
+    string? CompanyName, int? BranchId, string? BranchName);
+public sealed record MobileCompanyResponse(int Id, string Name, string TaxId);
+public sealed record MobileEmployeeResponse(int Id, int BranchId, string FirstName, string LastName, bool IsActive);
+
+
+public sealed record LoginRequest(string Username, string Password);
+public sealed record MobileSessionResponse(string Username, string Role, int? CompanyId,
+    string? CompanyName, int? BranchId, string? BranchName);
+public sealed record MobileCompanyResponse(int Id, string Name, string TaxId);
+public sealed record MobileEmployeeResponse(int Id, int BranchId, string FirstName, string LastName, bool IsActive);
