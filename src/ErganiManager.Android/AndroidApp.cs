@@ -6,7 +6,7 @@ using Avalonia.Android;
 namespace ErganiManager.Android;
 
 [Application]
-public sealed class AndroidApp : AvaloniaAndroidApplication<App>
+public class AndroidApp : AvaloniaAndroidApplication<App>
 {
     protected AndroidApp(nint javaReference, JniHandleOwnership transfer)
         : base(javaReference, transfer)
