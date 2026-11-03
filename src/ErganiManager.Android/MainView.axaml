@@ -1,11 +1,13 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             x:Class="ErganiManager.Android.MainView">
+             xmlns:vm="using:ErganiManager.Android"
+             x:Class="ErganiManager.Android.MainView"
+             x:DataType="vm:MainViewModel">
   <Grid RowDefinitions="Auto,*" Background="#141820">
     <Border Grid.Row="0" Background="#1D2634" Padding="20,18">
       <StackPanel Spacing="5">
         <TextBlock Text="ERGANI MANAGER" FontSize="12" FontWeight="Bold"
-                   Foreground="#8BBCEB" CharacterSpacing="2" />
+                   Foreground="#8BBCEB" />
         <TextBlock Text="{Binding PageTitle}" FontSize="25" FontWeight="Bold"
                    Foreground="White" />
         <TextBlock Text="Mobile workspace" FontSize="13" Foreground="#AAB7C8" />
@@ -20,16 +22,16 @@
                        Foreground="White" />
             <TextBlock Text="{Binding ConnectionMessage}" TextWrapping="Wrap"
                        Foreground="#C3CEDB" FontSize="13" />
-            <TextBox Watermark="HTTPS API address" Text="{Binding ServerAddress}" />
-            <TextBox Watermark="Existing Ergani II username" Text="{Binding Username}" />
-            <PasswordBox Watermark="Password" Password="{Binding Password}" />
+            <TextBox PlaceholderText="HTTPS API address" Text="{Binding ServerAddress}" />
+            <TextBox PlaceholderText="Existing Ergani II username" Text="{Binding Username}" />
+            <TextBox PlaceholderText="Password" Text="{Binding Password}" PasswordChar="●" />
             <Button Content="Sign in" HorizontalAlignment="Stretch" Command="{Binding ConnectCommand}" />
             <Button Content="Sign out" HorizontalAlignment="Stretch" Command="{Binding LogoutCommand}" IsVisible="{Binding IsAuthenticated}" />
           </StackPanel>
         </Border>
 
         <TextBlock Text="WORKING DAY" Foreground="#8BBCEB" FontWeight="Bold"
-                   FontSize="12" CharacterSpacing="1.5" />
+                   FontSize="12" />
         <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto" ColumnSpacing="12" RowSpacing="12">
           <Button Grid.Row="0" Grid.Column="0" MinHeight="92"
                   Command="{Binding OpenWorkCardsCommand}">
@@ -61,13 +63,13 @@
           </Button>
         </Grid>
 
-        <TextBlock Text="EMPLOYEES" Foreground="#8BBCEB" FontWeight="Bold" FontSize="12" CharacterSpacing="1.5" />
+        <TextBlock Text="EMPLOYEES" Foreground="#8BBCEB" FontWeight="Bold" FontSize="12" />
         <Border Background="#202B3A" CornerRadius="14" Padding="12">
           <StackPanel Spacing="8">
             <TextBlock Text="{Binding Employees.Count, StringFormat='Active employees: {0}'}" Foreground="White" FontWeight="SemiBold" />
             <ItemsControl ItemsSource="{Binding Employees}">
               <ItemsControl.ItemTemplate>
-                <DataTemplate>
+                <DataTemplate x:DataType="vm:MobileEmployee">
                   <Border Padding="8,7" BorderBrush="#354255" BorderThickness="0,0,0,1">
                     <StackPanel Spacing="2">
                       <TextBlock Text="{Binding FirstName}" Foreground="White" />
@@ -81,7 +83,7 @@
         </Border>
 
         <TextBlock Text="MANAGEMENT" Foreground="#8BBCEB" FontWeight="Bold"
-                   FontSize="12" CharacterSpacing="1.5" />
+                   FontSize="12" />
         <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto" ColumnSpacing="12" RowSpacing="12">
           <Button Grid.Row="0" Grid.Column="0" MinHeight="76"
                   Command="{Binding OpenOvertimeCommand}" Content="Overtime" />
