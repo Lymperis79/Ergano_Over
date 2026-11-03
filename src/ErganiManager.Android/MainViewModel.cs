@@ -40,6 +40,18 @@ public partial class MainViewModel : ObservableObject
     public ObservableCollection<MobileTodayEmployeeStatus> TodayStatuses { get; } = new();
     public ObservableCollection<MobileEmployee> Employees { get; } = new();
 
+    // The Overview menu is shown only when no feature screen is open.
+    public bool IsOverviewVisible => IsAuthenticated && !IsCompanySelectionRequired
+        && !IsDailyStatusVisible && !IsEmployeesVisible
+        && !IsWorkCardsVisible && !IsWorkCalendarVisible;
+
+    partial void OnIsAuthenticatedChanged(bool value) => OnPropertyChanged(nameof(IsOverviewVisible));
+    partial void OnIsCompanySelectionRequiredChanged(bool value) => OnPropertyChanged(nameof(IsOverviewVisible));
+    partial void OnIsDailyStatusVisibleChanged(bool value) => OnPropertyChanged(nameof(IsOverviewVisible));
+    partial void OnIsEmployeesVisibleChanged(bool value) => OnPropertyChanged(nameof(IsOverviewVisible));
+    partial void OnIsWorkCardsVisibleChanged(bool value) => OnPropertyChanged(nameof(IsOverviewVisible));
+    partial void OnIsWorkCalendarVisibleChanged(bool value) => OnPropertyChanged(nameof(IsOverviewVisible));
+
     [RelayCommand]
     private async Task CheckApiHealthAsync()
     {
@@ -333,6 +345,19 @@ public partial class MainViewModel : ObservableObject
     }
 
     [RelayCommand] private void BackFromWorkCalendar() { IsWorkCalendarVisible = false; PageTitle = "Overview"; }
+    [RelayCommand]
+    private void GoToOverview()
+    {
+        if (!IsAuthenticated) return;
+        if (IsCompanySelectionRequired) return;
+
+        IsDailyStatusVisible = false;
+        IsEmployeesVisible = false;
+        IsWorkCardsVisible = false;
+        IsWorkCalendarVisible = false;
+        PageTitle = "Overview";
+    }
+
     [RelayCommand] private void OpenOvertime() => SetPage("Overtime");
     [RelayCommand] private void OpenSubmissions() => SetPage("API submissions");
     [RelayCommand] private void OpenReports() => SetPage("Reports");
