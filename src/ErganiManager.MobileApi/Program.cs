@@ -10,6 +10,17 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 
 var builder = WebApplication.CreateBuilder(args);
+builder.WebHost.ConfigureKestrel(options =>
+{
+    options.ListenAnyIP(5000);
+
+    options.ListenAnyIP(5001, listenOptions =>
+    {
+        listenOptions.UseHttps(
+            @"C:\Users\ThinkPad\ErganiMobileApi.pfx",
+            "ErganiDev2026!");
+    });
+});
 
 // This host is intended to run beside the existing Ergani II installation and
 // use its configured database. It deliberately reuses Core services.
