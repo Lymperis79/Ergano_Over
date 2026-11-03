@@ -5,34 +5,47 @@
              x:DataType="vm:MainViewModel">
   <Grid RowDefinitions="Auto,*" Background="#141820">
     <Border Grid.Row="0" Background="#1D2634" Padding="20,18">
-      <StackPanel Spacing="5">
-        <TextBlock Text="ERGANI MANAGER" FontSize="12" FontWeight="Bold"
-                   Foreground="#8BBCEB" />
-        <TextBlock Text="{Binding PageTitle}" FontSize="25" FontWeight="Bold"
-                   Foreground="White" />
-        <TextBlock Text="Mobile workspace" FontSize="13" Foreground="#AAB7C8" />
-      </StackPanel>
+      <Grid ColumnDefinitions="*,Auto">
+        <StackPanel Grid.Column="0" Spacing="5">
+          <TextBlock Text="ERGANI MANAGER" FontSize="12" FontWeight="Bold"
+                     Foreground="#8BBCEB" />
+          <TextBlock Text="{Binding PageTitle}" FontSize="25" FontWeight="Bold"
+                     Foreground="White" />
+          <TextBlock Text="Mobile workspace" FontSize="13" Foreground="#AAB7C8" />
+        </StackPanel>
+        <Button Grid.Column="1" Content="Sign out" Command="{Binding LogoutCommand}"
+                VerticalAlignment="Center" IsVisible="{Binding IsAuthenticated}" />
+      </Grid>
     </Border>
 
     <ScrollViewer Grid.Row="1">
       <StackPanel Margin="18" Spacing="16">
-        <Border Background="#202B3A" CornerRadius="16" Padding="16">
-          <StackPanel Spacing="8">
-            <TextBlock Text="Secure connection" FontSize="16" FontWeight="SemiBold"
+        <Border Background="#202B3A" CornerRadius="18" Padding="20"
+                IsVisible="{Binding !IsAuthenticated}">
+          <StackPanel Spacing="12">
+            <TextBlock Text="ERGANI MANAGER" FontSize="13" FontWeight="Bold"
+                       Foreground="#8BBCEB" />
+            <TextBlock Text="Sign in to your account" FontSize="22" FontWeight="Bold"
                        Foreground="White" />
-            <TextBlock Text="{Binding ConnectionMessage}" TextWrapping="Wrap"
-                       Foreground="#C3CEDB" FontSize="13" />
+            <TextBlock Text="Use your existing Ergani II account to securely access your company."
+                       TextWrapping="Wrap" Foreground="#C3CEDB" FontSize="13" />
             <TextBox PlaceholderText="HTTPS API address" Text="{Binding ServerAddress}" />
-            <TextBox PlaceholderText="Existing Ergani II username" Text="{Binding Username}" />
+            <TextBox PlaceholderText="Username" Text="{Binding Username}" />
             <TextBox PlaceholderText="Password" Text="{Binding Password}" PasswordChar="●" />
-            <Button Content="Check API health" HorizontalAlignment="Stretch"
-                    Command="{Binding CheckApiHealthCommand}" IsEnabled="{Binding !IsBusy}" />
             <Button Content="Sign in" HorizontalAlignment="Stretch"
                     Command="{Binding ConnectCommand}" IsEnabled="{Binding !IsBusy}" />
-            <Button Content="Sign out" HorizontalAlignment="Stretch" Command="{Binding LogoutCommand}" IsVisible="{Binding IsAuthenticated}" />
+            <Button Content="Check API health" HorizontalAlignment="Stretch"
+                    Command="{Binding CheckApiHealthCommand}" IsEnabled="{Binding !IsBusy}" />
+            <TextBlock Text="{Binding ConnectionMessage}" TextWrapping="Wrap"
+                       Foreground="#C3CEDB" FontSize="12" />
+            <TextBlock Text="{Binding StatusMessage}" TextWrapping="Wrap"
+                       Foreground="#AAB7C8" FontSize="12" />
+            <TextBlock Text="Your password is not saved by the mobile app."
+                       Foreground="#AAB7C8" FontSize="11" />
           </StackPanel>
         </Border>
 
+        <StackPanel Spacing="16" IsVisible="{Binding IsAuthenticated}">
         <Border Background="#202B3A" CornerRadius="16" Padding="14" IsVisible="{Binding IsCompanySelectionRequired}">
           <StackPanel Spacing="10">
             <TextBlock Text="SELECT COMPANY" Foreground="#8BBCEB" FontWeight="Bold" FontSize="12" />
@@ -239,6 +252,7 @@
                        FontSize="13" TextWrapping="Wrap" />
           </StackPanel>
         </Border>
+        </StackPanel>
       </StackPanel>
     </ScrollViewer>
   </Grid>
