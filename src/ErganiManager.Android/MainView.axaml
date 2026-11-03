@@ -181,7 +181,7 @@
 
         <TextBlock Text="WORKING DAY" Foreground="#8BBCEB" FontWeight="Bold"
                    FontSize="12" IsVisible="{Binding IsOverviewVisible}" />
-        <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto" ColumnSpacing="12" RowSpacing="12" IsVisible="{Binding !IsEmployeesVisible}">
+        <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto" ColumnSpacing="12" RowSpacing="12" IsVisible="{Binding IsOverviewVisible}">
           <Button Grid.Row="0" Grid.Column="0" MinHeight="92"
                   Command="{Binding OpenWorkCardsCommand}">
             <StackPanel Spacing="6">
@@ -234,8 +234,8 @@
         </Border>
 
         <TextBlock Text="MANAGEMENT" Foreground="#8BBCEB" FontWeight="Bold"
-                   FontSize="12" IsVisible="{Binding !IsEmployeesVisible}" />
-        <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto" ColumnSpacing="12" RowSpacing="12" IsVisible="{Binding !IsEmployeesVisible}">
+                   FontSize="12" IsVisible="{Binding IsOverviewVisible}" />
+        <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto" ColumnSpacing="12" RowSpacing="12" IsVisible="{Binding IsOverviewVisible}">
           <Button Grid.Row="0" Grid.Column="0" MinHeight="76"
                   Command="{Binding OpenOvertimeCommand}" Content="Overtime" />
           <Button Grid.Row="0" Grid.Column="1" MinHeight="76"
@@ -246,7 +246,7 @@
                   Command="{Binding OpenSettingsCommand}" Content="Settings" />
         </Grid>
 
-        <Border Background="#202B3A" CornerRadius="14" Padding="14" IsVisible="{Binding !IsEmployeesVisible}">
+        <Border Background="#202B3A" CornerRadius="14" Padding="14" IsVisible="{Binding IsOverviewVisible}">
           <StackPanel Spacing="5">
             <TextBlock Text="Mobile app preview" Foreground="White"
                        FontWeight="SemiBold" />
