@@ -79,8 +79,14 @@
         <Border Background="#202B3A" CornerRadius="16" Padding="14" IsVisible="{Binding IsWorkCardsVisible}">
           <StackPanel Spacing="12">
             <TextBlock Text="WORK CARDS · HISTORY" Foreground="#8BBCEB" FontWeight="Bold" FontSize="12" />
-            <TextBox PlaceholderText="From date (yyyy-MM-dd)" Text="{Binding WorkCardFromDate}" />
-            <TextBox PlaceholderText="To date (yyyy-MM-dd)" Text="{Binding WorkCardToDate}" />
+            <CalendarDatePicker SelectedDate="{Binding WorkCardFromDatePicker, Mode=TwoWay}"
+                                PlaceholderText="From date"
+                                SelectedDateFormat="Custom"
+                                CustomDateFormatString="dd/MM/yyyy" />
+            <CalendarDatePicker SelectedDate="{Binding WorkCardToDatePicker, Mode=TwoWay}"
+                                PlaceholderText="To date"
+                                SelectedDateFormat="Custom"
+                                CustomDateFormatString="dd/MM/yyyy" />
             <ComboBox ItemsSource="{Binding Employees}"
                       SelectedItem="{Binding SelectedWorkCardEmployee}"
                       PlaceholderText="All employees"
@@ -130,7 +136,11 @@
             </ComboBox>
             <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="8">
               <Button Grid.Column="0" Content="‹" Command="{Binding PreviousCalendarMonthCommand}" />
-              <TextBox Grid.Column="1" Text="{Binding SelectedCalendarMonth}" Watermark="yyyy-MM" />
+              <CalendarDatePicker Grid.Column="1"
+                                     SelectedDate="{Binding SelectedCalendarDate, Mode=TwoWay}"
+                                     PlaceholderText="Select month"
+                                     SelectedDateFormat="Custom"
+                                     CustomDateFormatString="MMMM yyyy" />
               <Button Grid.Column="2" Content="›" Command="{Binding NextCalendarMonthCommand}" />
             </Grid>
             <Button Content="Load month" Command="{Binding RefreshWorkCalendarCommand}" IsEnabled="{Binding !IsBusy}" />
@@ -156,7 +166,10 @@
         <Border Background="#202B3A" CornerRadius="16" Padding="14" IsVisible="{Binding IsDailyStatusVisible}">
           <StackPanel Spacing="12">
             <TextBlock Text="DAILY ATTENDANCE" Foreground="#8BBCEB" FontWeight="Bold" FontSize="12" />
-            <TextBox PlaceholderText="Date (yyyy-MM-dd)" Text="{Binding SelectedStatusDate}" />
+            <CalendarDatePicker SelectedDate="{Binding SelectedStatusDatePicker, Mode=TwoWay}"
+                                PlaceholderText="Select date"
+                                SelectedDateFormat="Custom"
+                                CustomDateFormatString="dd/MM/yyyy" />
             <TextBox PlaceholderText="Grace minutes (0–240)" Text="{Binding GraceMinutes}" />
             <Button Content="Refresh daily status" Command="{Binding RefreshDailyStatusCommand}" IsEnabled="{Binding !IsBusy}" />
             <TextBlock Text="{Binding DailyStatusMessage}" Foreground="#C3CEDB" FontSize="13" TextWrapping="Wrap" />
