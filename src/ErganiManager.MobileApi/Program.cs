@@ -3,6 +3,7 @@ using ErganiManager.Core;
 using ErganiManager.Core.Interfaces;
 using ErganiManager.Core.Models;
 using ErganiManager.Core.Services;
+using ErganiManager.ErganiApi;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
@@ -14,6 +15,7 @@ var builder = WebApplication.CreateBuilder(args);
 // use its configured database. It deliberately reuses Core services.
 builder.Services.AddLogging();
 builder.Services.AddErganiManagerCore();
+builder.Services.AddErganiApiClient();
 
 // A server can handle many mobile users concurrently. The desktop app uses a
 // process-wide context; the API must instead have one context per HTTP request.
