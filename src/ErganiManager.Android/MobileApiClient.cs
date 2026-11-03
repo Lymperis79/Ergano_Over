@@ -182,14 +182,15 @@ internal static class MdnsResolver
             for (var attempt = 0; attempt < 2; attempt++)
             {
                 await udp.SendAsync(query, query.Length, destination);
-                var attemptDeadline = DateTime.UtcNow.AddMilliseconds(2200);
+                using var attemptTimeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+                attemptTimeout.CancelAfter(TimeSpan.FromMilliseconds(2200));
 
-                while (DateTime.UtcNow < attemptDeadline)
+                while (true)
                 {
                     UdpReceiveResult packet;
                     try
                     {
-                        packet = await udp.ReceiveAsync(timeout.Token);
+                        packet = await udp.ReceiveAsync(attemptTimeout.Token);
                     }
                     catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
                     {
@@ -200,9 +201,6 @@ internal static class MdnsResolver
                     if (addresses.Length > 0)
                         return addresses;
                 }
-
-                if (timeout.IsCancellationRequested)
-                    break;
             }
         }
         catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
