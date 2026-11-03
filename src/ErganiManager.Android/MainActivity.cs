@@ -1,6 +1,5 @@
 using Android.App;
 using Android.Content.PM;
-using Avalonia;
 using Avalonia.Android;
 
 namespace ErganiManager.Android;
@@ -18,8 +17,4 @@ namespace ErganiManager.Android;
         | ConfigChanges.Density)]
 public class MainActivity : AvaloniaMainActivity
 {
-    protected override AppBuilder CustomizeAppBuilder(AppBuilder builder)
-        => base.CustomizeAppBuilder(builder)
-            .WithInterFont()
-            .LogToTrace();
 }
