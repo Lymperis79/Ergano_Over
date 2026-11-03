@@ -3,9 +3,9 @@
              xmlns:vm="using:ErganiManager.Android"
              x:Class="ErganiManager.Android.MainView"
              x:DataType="vm:MainViewModel">
-  <Grid RowDefinitions="Auto,*" Background="#141820">
+  <Grid RowDefinitions="Auto,Auto,*" Background="#141820">
     <Border Grid.Row="0" Background="#1D2634" Padding="20,18">
-      <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
+      <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
         <StackPanel Grid.Column="0" Spacing="5">
           <TextBlock Text="ERGANI MANAGER" FontSize="12" FontWeight="Bold"
                      Foreground="#8BBCEB" />
@@ -13,14 +13,19 @@
                      Foreground="White" />
           <TextBlock Text="Mobile workspace" FontSize="13" Foreground="#AAB7C8" />
         </StackPanel>
-        <Button Grid.Column="1" Content="⌂ Overview" Command="{Binding GoToOverviewCommand}"
-                VerticalAlignment="Center" IsVisible="{Binding IsAuthenticated}" />
-        <Button Grid.Column="2" Content="Sign out" Command="{Binding LogoutCommand}"
+        <Button Grid.Column="1" Content="Sign out" Command="{Binding LogoutCommand}"
                 VerticalAlignment="Center" IsVisible="{Binding IsAuthenticated}" />
       </Grid>
     </Border>
 
-    <ScrollViewer Grid.Row="1">
+    <Border Grid.Row="1" Background="#202B3A" Padding="14,8"
+            IsVisible="{Binding IsAuthenticated}">
+      <Button Content="⌂  Overview" Command="{Binding GoToOverviewCommand}"
+              HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+              MinHeight="42" />
+    </Border>
+
+    <ScrollViewer Grid.Row="2">
       <StackPanel Margin="18" Spacing="16">
         <Border Background="#202B3A" CornerRadius="18" Padding="20"
                 IsVisible="{Binding !IsAuthenticated}">
@@ -73,7 +78,6 @@
 
         <Border Background="#202B3A" CornerRadius="16" Padding="14" IsVisible="{Binding IsWorkCardsVisible}">
           <StackPanel Spacing="12">
-            <Button Content="← Overview" HorizontalAlignment="Left" Command="{Binding BackFromWorkCardsCommand}" />
             <TextBlock Text="WORK CARDS · HISTORY" Foreground="#8BBCEB" FontWeight="Bold" FontSize="12" />
             <TextBox PlaceholderText="From date (yyyy-MM-dd)" Text="{Binding WorkCardFromDate}" />
             <TextBox PlaceholderText="To date (yyyy-MM-dd)" Text="{Binding WorkCardToDate}" />
@@ -113,7 +117,6 @@
 
         <Border Background="#202B3A" CornerRadius="16" Padding="14" IsVisible="{Binding IsWorkCalendarVisible}">
           <StackPanel Spacing="12">
-            <Button Content="← Overview" HorizontalAlignment="Left" Command="{Binding BackFromWorkCalendarCommand}" />
             <TextBlock Text="WORK CALENDAR" Foreground="#8BBCEB" FontWeight="Bold" FontSize="12" />
             <ComboBox ItemsSource="{Binding Employees}"
                       SelectedItem="{Binding SelectedCalendarEmployee}"
@@ -152,7 +155,6 @@
 
         <Border Background="#202B3A" CornerRadius="16" Padding="14" IsVisible="{Binding IsDailyStatusVisible}">
           <StackPanel Spacing="12">
-            <Button Content="← Overview" HorizontalAlignment="Left" Command="{Binding BackToOverviewCommand}" />
             <TextBlock Text="DAILY ATTENDANCE" Foreground="#8BBCEB" FontWeight="Bold" FontSize="12" />
             <TextBox PlaceholderText="Date (yyyy-MM-dd)" Text="{Binding SelectedStatusDate}" />
             <TextBox PlaceholderText="Grace minutes (0–240)" Text="{Binding GraceMinutes}" />
@@ -214,7 +216,6 @@
 
         <Border Background="#202B3A" CornerRadius="14" Padding="14" IsVisible="{Binding IsEmployeesVisible}">
           <StackPanel Spacing="12">
-            <Button Content="← Overview" HorizontalAlignment="Left" Command="{Binding BackFromEmployeesCommand}" />
             <TextBlock Text="EMPLOYEES" Foreground="#8BBCEB" FontWeight="Bold" FontSize="12" />
             <TextBlock Text="{Binding Employees.Count, StringFormat='Active employees: {0}'}" Foreground="White" FontWeight="SemiBold" />
             <ItemsControl ItemsSource="{Binding Employees}">
