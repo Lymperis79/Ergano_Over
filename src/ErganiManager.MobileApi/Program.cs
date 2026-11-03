@@ -72,6 +72,7 @@ app.Use(async (context, next) =>
             CompanyName = context.User.FindFirstValue("company_name"),
             BranchId = int.TryParse(branchIdText, out var bid) ? bid : null,
             BranchName = context.User.FindFirstValue("branch_name"),
+            AllowedMenus = MenuKeys.Parse(context.User.FindFirstValue("allowed_menus")),
             IsOfflineSession = false
         };
         contextService.SetSession(session);
@@ -112,6 +113,7 @@ app.MapPost("/api/mobile/login", async (LoginRequest request, IAuthService auth,
     if (!string.IsNullOrWhiteSpace(session.CompanyName)) claims.Add(new("company_name", session.CompanyName));
     if (session.BranchId.HasValue) claims.Add(new("branch_id", session.BranchId.Value.ToString()));
     if (!string.IsNullOrWhiteSpace(session.BranchName)) claims.Add(new("branch_name", session.BranchName));
+    if (session.AllowedMenus is not null) claims.Add(new("allowed_menus", string.Join(",", session.AllowedMenus)));
 
     var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
     await http.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, new ClaimsPrincipal(identity));
@@ -136,6 +138,7 @@ app.MapGet("/api/mobile/me", (ICompanyContext companyContext) =>
 app.MapGet("/api/mobile/companies", async (ICompanyContext context, ICompanyService companies) =>
 {
     var session = context.CurrentSession!;
+    if (!session.CanSee(MenuKeys.Companies)) return Results.Forbid();
     var all = await companies.GetAllAsync();
     var visible = session.IsSuperAdmin
         ? all.Where(c => c.IsActive)
@@ -145,6 +148,8 @@ app.MapGet("/api/mobile/companies", async (ICompanyContext context, ICompanyServ
 
 app.MapGet("/api/mobile/employees", async (ICompanyContext context, IEmployeeService employees) =>
 {
+    var session = context.CurrentSession!;
+    if (!session.CanSee(MenuKeys.Employees)) return Results.Forbid();
     var companyId = context.ActiveCompanyId;
     if (!companyId.HasValue) return Results.Conflict(new { message = "Select a company before requesting company data." });
 
@@ -155,6 +160,8 @@ app.MapGet("/api/mobile/employees", async (ICompanyContext context, IEmployeeSer
 app.MapGet("/api/mobile/today", async (ICompanyContext context, ITodayStatusService today,
     DateOnly? date, int? graceMinutes) =>
 {
+    var session = context.CurrentSession!;
+    if (!session.CanSee(MenuKeys.Today)) return Results.Forbid();
     var companyId = context.ActiveCompanyId;
     if (!companyId.HasValue) return Results.Conflict(new { message = "Select a company before requesting company data." });
 
