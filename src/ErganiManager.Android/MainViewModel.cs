@@ -349,6 +349,7 @@ public sealed class MobileWorkCardHistoryItem
         "003" => "Problem connecting to ERGANI",
         _ => string.Empty
     };
+    public bool HasLateReason => !string.IsNullOrWhiteSpace(LateJustification);
     public string StatusText =>
         IsLocalPending ? (RetryAttempts > 0
             ? $"Waiting to send · attempt {RetryAttempts}" + (string.IsNullOrWhiteSpace(RetryError) ? string.Empty : $" · {RetryError}")
