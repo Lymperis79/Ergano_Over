@@ -202,6 +202,10 @@ internal static class MdnsResolver
                         return addresses;
                 }
             }
+
+            throw new HttpRequestException(
+                $"Could not resolve '{normalizedHost}' using mDNS after two attempts. " +
+                "Check that the phone and PC are on the same Wi-Fi network and that UDP 5353 multicast is not blocked.");
         }
         catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
         {
