@@ -41,7 +41,22 @@ public sealed class MobileApiClient : IDisposable
         }
         else if (host.EndsWith(".local", StringComparison.OrdinalIgnoreCase))
         {
-            addresses = await MdnsResolver.ResolveIpv4Async(host, cancellationToken);
+            // Prefer Android's native resolver. The OS/browser may already have
+            // resolved this mDNS hostname even when a raw UDP mDNS query from
+            // the app is blocked or handled differently by the Wi-Fi network.
+            try
+            {
+                addresses = await Dns.GetHostAddressesAsync(host, cancellationToken);
+            }
+            catch (SocketException) when (!cancellationToken.IsCancellationRequested)
+            {
+                addresses = [];
+            }
+
+            if (addresses.Length == 0)
+            {
+                addresses = await MdnsResolver.ResolveIpv4Async(host, cancellationToken);
+            }
         }
         else
         {
