@@ -24,7 +24,7 @@ public sealed class MobileApiClient : IDisposable
             UseCookies = true,
             ConnectCallback = ConnectToHostAsync
         };
-        _http = new HttpClient(handler) { BaseAddress = uri, Timeout = TimeSpan.FromSeconds(20) };
+        _http = new HttpClient(handler) { BaseAddress = uri, Timeout = TimeSpan.FromSeconds(30) };
     }
 
     // Android's normal DNS resolver does not consistently resolve .local names.
@@ -52,24 +52,35 @@ public sealed class MobileApiClient : IDisposable
         }
         else if (host.EndsWith(".local", StringComparison.OrdinalIgnoreCase))
         {
-            // Prefer Android's native resolver. The OS/browser may already have
-            // resolved this mDNS hostname even when a raw UDP mDNS query from
-            // the app is blocked or handled differently by the Wi-Fi network.
+            // Do not let Android's native .local resolver consume the complete
+            // HttpClient timeout. Some Android/Wi-Fi combinations leave this
+            // lookup pending even though the browser can resolve the same name.
             string nativeDnsDiagnostic;
-            try
+            using (var dnsTimeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken))
             {
-                addresses = await Dns.GetHostAddressesAsync(host, cancellationToken);
-                nativeDnsDiagnostic = addresses.Length == 0
-                    ? "Android/.NET DNS returned no addresses."
-                    : "Android/.NET DNS returned: " + string.Join(", ", addresses.Select(a => a.ToString()));
-            }
-            catch (Exception ex) when (!cancellationToken.IsCancellationRequested)
-            {
-                addresses = [];
-                nativeDnsDiagnostic = "Android/.NET DNS failed: " + ex.GetBaseException().GetType().Name +
-                    ": " + ex.GetBaseException().Message;
+                dnsTimeout.CancelAfter(TimeSpan.FromSeconds(3));
+                try
+                {
+                    addresses = await Dns.GetHostAddressesAsync(host, dnsTimeout.Token);
+                    nativeDnsDiagnostic = addresses.Length == 0
+                        ? "Android/.NET DNS returned no addresses."
+                        : "Android/.NET DNS returned: " + string.Join(", ", addresses.Select(a => a.ToString()));
+                }
+                catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
+                {
+                    addresses = [];
+                    nativeDnsDiagnostic = "Android/.NET DNS timed out after 3 seconds.";
+                }
+                catch (Exception ex) when (!cancellationToken.IsCancellationRequested)
+                {
+                    addresses = [];
+                    nativeDnsDiagnostic = "Android/.NET DNS failed: " + ex.GetBaseException().GetType().Name +
+                        ": " + ex.GetBaseException().Message;
+                }
             }
 
+            // Fall back promptly to multicast DNS if the native resolver did
+            // not return an address. Keep the original URI hostname for TLS.
             if (addresses.Length == 0)
             {
                 try
@@ -95,7 +106,9 @@ public sealed class MobileApiClient : IDisposable
             var client = new TcpClient(address.AddressFamily);
             try
             {
-                await client.ConnectAsync(address, context.DnsEndPoint.Port, cancellationToken);
+                using var connectTimeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+                connectTimeout.CancelAfter(TimeSpan.FromSeconds(5));
+                await client.ConnectAsync(address, context.DnsEndPoint.Port, connectTimeout.Token);
                 if (isLocalHostname)
                     ResolvedHostCache[host] = [address];
                 return client.GetStream();
@@ -103,7 +116,9 @@ public sealed class MobileApiClient : IDisposable
             catch (Exception ex)
             {
                 client.Dispose();
-                lastError = ex;
+                lastError = ex is OperationCanceledException && !cancellationToken.IsCancellationRequested
+                    ? new TimeoutException($"TCP connection to {address}:{context.DnsEndPoint.Port} timed out after 5 seconds.", ex)
+                    : ex;
                 if (isLocalHostname && hasCachedAddress)
                     ResolvedHostCache.TryRemove(host, out _);
                 if (ex is OperationCanceledException) throw;
