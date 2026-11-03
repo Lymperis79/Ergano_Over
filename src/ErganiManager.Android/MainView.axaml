@@ -87,7 +87,7 @@
                       <TextBlock Text="{Binding DateTimeText}" Foreground="#E0E7EF" />
                       <TextBlock Text="{Binding BranchName}" Foreground="#AAB7C8" FontSize="12" />
                       <TextBlock Text="{Binding StatusText}" Foreground="#F0C674" FontSize="12" TextWrapping="Wrap" />
-                      <TextBlock Text="{Binding LateReasonText}" Foreground="#C3CEDB" FontSize="12" TextWrapping="Wrap" IsVisible="{Binding LateJustification}" />
+                      <TextBlock Text="{Binding LateReasonText}" Foreground="#C3CEDB" FontSize="12" TextWrapping="Wrap" IsVisible="{Binding HasLateReason}" />
                     </StackPanel>
                   </Border>
                 </DataTemplate>
