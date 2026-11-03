@@ -183,6 +183,20 @@ public sealed class MobileApiClient : IDisposable
         return await response.Content.ReadFromJsonAsync<List<MobileTodayEmployeeStatus>>(cancellationToken: cancellationToken) ?? [];
     }
 
+
+    public async Task<List<MobileScheduleDay>> GetScheduleMonthAsync(
+        int employeeId, int year, int month, CancellationToken cancellationToken = default)
+    {
+        using var response = await _http.GetAsync(
+            $"api/mobile/schedules/{employeeId}/{year}/{month}", cancellationToken);
+        if (!response.IsSuccessStatusCode)
+        {
+            var body = await response.Content.ReadAsStringAsync(cancellationToken);
+            throw new HttpRequestException($"Work calendar returned HTTP {(int)response.StatusCode}: {body}");
+        }
+        return await response.Content.ReadFromJsonAsync<List<MobileScheduleDay>>(cancellationToken: cancellationToken) ?? [];
+    }
+
     public async Task LogoutAsync(CancellationToken cancellationToken = default)
     {
         using var response = await _http.PostAsync("api/mobile/logout", content: null, cancellationToken);
@@ -376,6 +390,47 @@ internal static class MdnsResolver
 
     private static ushort ReadUInt16(byte[] packet, int offset)
         => (ushort)((packet[offset] << 8) | packet[offset + 1]);
+}
+
+
+public sealed class MobileScheduleDay
+{
+    public int Id { get; set; }
+    public int EmployeeId { get; set; }
+    public int BranchId { get; set; }
+    public DateOnly ScheduleDate { get; set; }
+    public int WorkType { get; set; }
+    public int Source { get; set; }
+    public TimeOnly? StartTime { get; set; }
+    public TimeOnly? EndTime { get; set; }
+    public List<MobileSchedulePeriod> WorkingPeriods { get; set; } = new();
+    public bool SubmittedToErgani { get; set; }
+    public bool HasPendingChange { get; set; }
+    public string? Protocol { get; set; }
+    public DateTime? ActualArrival { get; set; }
+    public DateTime? ActualDeparture { get; set; }
+    public string WorkTypeText => WorkType switch
+    {
+        0 => "Office", 1 => "Work from home", 2 => "Rest day", 3 => "Absent", _ => "Unknown"
+    };
+    public string PlannedTimeText => WorkingPeriods.Count > 0
+        ? string.Join(" · ", WorkingPeriods.OrderBy(x => x.PeriodNumber)
+            .Select(x => x.StartTime.ToString("HH:mm") + "–" + x.EndTime.ToString("HH:mm")))
+        : StartTime.HasValue && EndTime.HasValue
+            ? StartTime.Value.ToString("HH:mm") + "–" + EndTime.Value.ToString("HH:mm")
+            : "No planned hours";
+    public string ActualTimeText =>
+        "Actual: " + (ActualArrival?.ToString("HH:mm") ?? "—") +
+        " → " + (ActualDeparture?.ToString("HH:mm") ?? "—");
+    public string SubmissionText => SubmittedToErgani
+        ? "Sent to Ergani" + (string.IsNullOrWhiteSpace(Protocol) ? "" : " · " + Protocol)
+        : HasPendingChange ? "Pending change" : "Not submitted";
+}
+public sealed class MobileSchedulePeriod
+{
+    public int PeriodNumber { get; set; }
+    public TimeOnly StartTime { get; set; }
+    public TimeOnly EndTime { get; set; }
 }
 
 public sealed record MobileLoginResponse(string Username, string Role, int? CompanyId, string? CompanyName, int? BranchId, string? BranchName);
