@@ -255,7 +255,24 @@ public partial class MainViewModel : ObservableObject
 
     [RelayCommand]
     private void BackToOverview() { IsDailyStatusVisible = false; PageTitle = "Overview"; }
-    [RelayCommand] private void OpenEmployees() => SetPage("Employees");
+    [RelayCommand]
+    private void OpenEmployees()
+    {
+        if (!IsAuthenticated) { StatusMessage = "Please sign in first."; return; }
+        if (IsCompanySelectionRequired) { StatusMessage = "Select a company before opening employees."; return; }
+        IsDailyStatusVisible = false;
+        IsWorkCardsVisible = false;
+        IsWorkCalendarVisible = false;
+        IsEmployeesVisible = true;
+        PageTitle = "Employees";
+    }
+
+    [RelayCommand]
+    private void BackFromEmployees()
+    {
+        IsEmployeesVisible = false;
+        PageTitle = "Overview";
+    }
     [RelayCommand]
     private async Task OpenSchedulesAsync()
     {
