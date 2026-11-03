@@ -85,7 +85,7 @@ app.UseAuthorization();
 
 app.MapGet("/api/mobile/health", () => Results.Ok(new { status = "ok", service = "ErganiManager.MobileApi" }));
 
-app.MapPost("/api/mobile/login", async (LoginRequest request, IAuthService auth, HttpContext http) =>
+app.MapPost("/api/mobile/login", async Task<IResult> (LoginRequest request, IAuthService auth, HttpContext http) =>
 {
     if (string.IsNullOrWhiteSpace(request.Username) || string.IsNullOrWhiteSpace(request.Password))
         return Results.BadRequest(new { message = "Username and password are required." });
@@ -135,7 +135,7 @@ app.MapGet("/api/mobile/me", (ICompanyContext companyContext) =>
         session.CompanyId, session.CompanyName, session.BranchId, session.BranchName));
 }).RequireAuthorization();
 
-app.MapGet("/api/mobile/companies", async (ICompanyContext context, ICompanyService companies) =>
+app.MapGet("/api/mobile/companies", async Task<IResult> (ICompanyContext context, ICompanyService companies) =>
 {
     var session = context.CurrentSession!;
     if (!session.CanSee(MenuKeys.Companies)) return Results.Forbid();
@@ -146,7 +146,7 @@ app.MapGet("/api/mobile/companies", async (ICompanyContext context, ICompanyServ
     return Results.Ok(visible.Select(c => new MobileCompanyResponse(c.Id, c.Name, c.TaxId)));
 }).RequireAuthorization();
 
-app.MapGet("/api/mobile/employees", async (ICompanyContext context, IEmployeeService employees) =>
+app.MapGet("/api/mobile/employees", async Task<IResult> (ICompanyContext context, IEmployeeService employees) =>
 {
     var session = context.CurrentSession!;
     if (!session.CanSee(MenuKeys.Employees)) return Results.Forbid();
@@ -157,7 +157,7 @@ app.MapGet("/api/mobile/employees", async (ICompanyContext context, IEmployeeSer
     return Results.Ok(rows.Select(e => new MobileEmployeeResponse(e.Id, e.BranchId, e.FirstName, e.LastName, e.IsActive)));
 }).RequireAuthorization();
 
-app.MapGet("/api/mobile/today", async (ICompanyContext context, ITodayStatusService today,
+app.MapGet("/api/mobile/today", async Task<IResult> (ICompanyContext context, ITodayStatusService today,
     DateOnly? date, int? graceMinutes) =>
 {
     var session = context.CurrentSession!;
