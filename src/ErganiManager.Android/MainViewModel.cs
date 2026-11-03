@@ -26,15 +26,30 @@ public partial class MainViewModel : ObservableObject
     [ObservableProperty] private bool _isWorkCardsVisible;
     [ObservableProperty] private string _workCardFromDate = DateOnly.FromDateTime(DateTime.Today.AddDays(-30)).ToString("yyyy-MM-dd");
     [ObservableProperty] private string _workCardToDate = DateOnly.FromDateTime(DateTime.Today).ToString("yyyy-MM-dd");
+    [ObservableProperty] private DateTime? _workCardFromDatePicker = DateTime.Today.AddDays(-30);
+    [ObservableProperty] private DateTime? _workCardToDatePicker = DateTime.Today;
+    partial void OnWorkCardFromDatePickerChanged(DateTime? value)
+        => WorkCardFromDate = value?.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture) ?? string.Empty;
+    partial void OnWorkCardToDatePickerChanged(DateTime? value)
+        => WorkCardToDate = value?.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture) ?? string.Empty;
     [ObservableProperty] private MobileEmployee? _selectedWorkCardEmployee;
     [ObservableProperty] private string _workCardsMessage = "Choose a date range and refresh to load work cards.";
     public ObservableCollection<MobileWorkCardHistoryItem> WorkCardHistory { get; } = new();
     [ObservableProperty] private bool _isWorkCalendarVisible;
     [ObservableProperty] private MobileEmployee? _selectedCalendarEmployee;
     [ObservableProperty] private string _selectedCalendarMonth = DateOnly.FromDateTime(DateTime.Today).ToString("yyyy-MM");
+    [ObservableProperty] private DateTime? _selectedCalendarDate = DateTime.Today;
+    partial void OnSelectedCalendarDateChanged(DateTime? value)
+    {
+        if (value.HasValue)
+            SelectedCalendarMonth = value.Value.ToString("yyyy-MM", CultureInfo.InvariantCulture);
+    }
     [ObservableProperty] private string _workCalendarMessage = "Choose an employee to load the work calendar.";
     public ObservableCollection<MobileScheduleDay> WorkCalendarDays { get; } = new();
     [ObservableProperty] private string _selectedStatusDate = DateOnly.FromDateTime(DateTime.Today).ToString("yyyy-MM-dd");
+    [ObservableProperty] private DateTime? _selectedStatusDatePicker = DateTime.Today;
+    partial void OnSelectedStatusDatePickerChanged(DateTime? value)
+        => SelectedStatusDate = value?.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture) ?? string.Empty;
     [ObservableProperty] private string _graceMinutes = "10";
     [ObservableProperty] private string _dailyStatusMessage = "Select a date and refresh to load attendance.";
     public ObservableCollection<MobileTodayEmployeeStatus> TodayStatuses { get; } = new();
@@ -334,14 +349,24 @@ public partial class MainViewModel : ObservableObject
     private async Task PreviousCalendarMonthAsync()
     {
         if (DateOnly.TryParseExact(SelectedCalendarMonth + "-01", "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var month))
-        { SelectedCalendarMonth = month.AddMonths(-1).ToString("yyyy-MM"); await RefreshWorkCalendarAsync(); }
+        {
+            var previousMonth = month.AddMonths(-1);
+            SelectedCalendarMonth = previousMonth.ToString("yyyy-MM");
+            SelectedCalendarDate = previousMonth.ToDateTime(TimeOnly.MinValue);
+            await RefreshWorkCalendarAsync();
+        }
     }
 
     [RelayCommand]
     private async Task NextCalendarMonthAsync()
     {
         if (DateOnly.TryParseExact(SelectedCalendarMonth + "-01", "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var month))
-        { SelectedCalendarMonth = month.AddMonths(1).ToString("yyyy-MM"); await RefreshWorkCalendarAsync(); }
+        {
+            var nextMonth = month.AddMonths(1);
+            SelectedCalendarMonth = nextMonth.ToString("yyyy-MM");
+            SelectedCalendarDate = nextMonth.ToDateTime(TimeOnly.MinValue);
+            await RefreshWorkCalendarAsync();
+        }
     }
 
     [RelayCommand] private void BackFromWorkCalendar() { IsWorkCalendarVisible = false; PageTitle = "Overview"; }
