@@ -145,6 +145,7 @@ public partial class MainViewModel : ObservableObject
     {
         if (!IsAuthenticated || _api is null) { StatusMessage = "Please sign in first."; return; }
         if (IsCompanySelectionRequired) { StatusMessage = "Select a company before opening daily status."; return; }
+        IsWorkCalendarVisible = false;
         IsDailyStatusVisible = true;
         PageTitle = "Daily status";
         await RefreshDailyStatusAsync();
