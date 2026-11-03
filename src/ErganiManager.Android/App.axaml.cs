@@ -10,7 +10,9 @@ public partial class App : Avalonia.Application
 
     public override void OnFrameworkInitializationCompleted()
     {
-        if (ApplicationLifetime is ISingleViewApplicationLifetime singleView)
+        if (ApplicationLifetime is IActivityApplicationLifetime activityLifetime)
+            activityLifetime.MainViewFactory = () => new MainView();
+        else if (ApplicationLifetime is ISingleViewApplicationLifetime singleView)
             singleView.MainView = new MainView();
 
         base.OnFrameworkInitializationCompleted();
