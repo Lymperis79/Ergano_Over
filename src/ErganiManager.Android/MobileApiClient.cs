@@ -132,8 +132,8 @@ internal static class MdnsResolver
     public static async Task<IPAddress[]> ResolveIpv4Async(string host, CancellationToken cancellationToken)
     {
         var normalizedHost = host.TrimEnd('.');
-        var wifi = Android.App.Application.Context.GetSystemService(Android.Content.Context.WifiService)
-            as Android.Net.Wifi.WifiManager;
+        var wifi = global::Android.App.Application.Context.GetSystemService(global::Android.Content.Context.WifiService)
+            as global::Android.Net.Wifi.WifiManager;
         using var multicastLock = wifi?.CreateMulticastLock("ErganiMobileApi.mDNS");
         multicastLock?.SetReferenceCounted(false);
         multicastLock?.Acquire();
