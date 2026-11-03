@@ -164,22 +164,45 @@ internal static class MdnsResolver
         try
         {
             using var udp = new UdpClient(AddressFamily.InterNetwork);
+            // RFC 6762 requires mDNS packets to use IP TTL 255. Responders may
+            // silently discard queries sent with the operating system default.
+            udp.Ttl = 255;
+            udp.EnableBroadcast = true;
+
             var query = CreateAQuery(normalizedHost);
             var destination = new IPEndPoint(MulticastAddress, MdnsPort);
 
             // QU asks the mDNS responder to return the answer directly to this
             // ephemeral UDP port, avoiding a dependency on binding port 5353.
-            await udp.SendAsync(query, query.Length, destination);
-
             using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-            timeout.CancelAfter(TimeSpan.FromSeconds(3));
+            timeout.CancelAfter(TimeSpan.FromSeconds(5));
 
-            while (true)
+            // Repeat the query once: Wi-Fi multicast can be delayed while the
+            // Android multicast lock and radio are becoming active.
+            for (var attempt = 0; attempt < 2; attempt++)
             {
-                var packet = await udp.ReceiveAsync(timeout.Token);
-                var addresses = ParseARecords(packet.Buffer, normalizedHost);
-                if (addresses.Length > 0)
-                    return addresses;
+                await udp.SendAsync(query, query.Length, destination);
+                var attemptDeadline = DateTime.UtcNow.AddMilliseconds(2200);
+
+                while (DateTime.UtcNow < attemptDeadline)
+                {
+                    UdpReceiveResult packet;
+                    try
+                    {
+                        packet = await udp.ReceiveAsync(timeout.Token);
+                    }
+                    catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
+                    {
+                        break;
+                    }
+
+                    var addresses = ParseARecords(packet.Buffer, normalizedHost);
+                    if (addresses.Length > 0)
+                        return addresses;
+                }
+
+                if (timeout.IsCancellationRequested)
+                    break;
             }
         }
         catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
