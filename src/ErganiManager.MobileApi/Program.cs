@@ -233,6 +233,27 @@ app.MapGet("/api/mobile/today", async Task<IResult> (ICompanyContext context, IT
     return Results.Ok(rows);
 }).RequireAuthorization();
 
+
+app.MapGet("/api/mobile/schedules/{employeeId:int}/{year:int}/{month:int}", async Task<IResult> (
+    int employeeId, int year, int month, ICompanyContext context,
+    IEmployeeService employees, IScheduleService schedules) =>
+{
+    var session = context.CurrentSession!;
+    if (!session.CanSee(MenuKeys.Schedules)) return Results.Forbid();
+    var companyId = context.ActiveCompanyId;
+    if (!companyId.HasValue)
+        return Results.Conflict(new { message = "Select a company before requesting company data." });
+    if (year < 2000 || year > 2100 || month is < 1 or > 12)
+        return Results.BadRequest(new { message = "Invalid calendar month." });
+
+    var employee = await employees.GetByIdAsync(employeeId);
+    if (employee is null || employee.CompanyId != companyId.Value || !employee.IsActive)
+        return Results.NotFound(new { message = "The employee was not found in the active company." });
+
+    var rows = await schedules.GetMonthAsync(employeeId, year, month);
+    return Results.Ok(rows);
+}).RequireAuthorization();
+
 app.Run();
 
 
