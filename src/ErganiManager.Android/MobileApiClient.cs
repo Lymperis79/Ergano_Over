@@ -9,19 +9,36 @@ public sealed class MobileApiClient : IDisposable
 
     public MobileApiClient(string baseAddress)
     {
-        if (!Uri.TryCreate(baseAddress.TrimEnd('/') + "/", UriKind.Absolute, out var uri) || uri.Scheme != Uri.UriSchemeHttps)
-            throw new InvalidOperationException("Enter a valid HTTPS address for the mobile API.");
+        if (!Uri.TryCreate(baseAddress.Trim().TrimEnd('/') + "/", UriKind.Absolute, out var uri) || uri.Scheme != Uri.UriSchemeHttps)
+            throw new InvalidOperationException("Enter a valid HTTPS address for the mobile API, for example https://192.168.1.61:5001.");
+
         var cookies = new CookieContainer();
         var handler = new HttpClientHandler { CookieContainer = cookies, UseCookies = true };
         _http = new HttpClient(handler) { BaseAddress = uri, Timeout = TimeSpan.FromSeconds(20) };
     }
 
+    public async Task CheckHealthAsync(CancellationToken cancellationToken = default)
+    {
+        using var response = await _http.GetAsync("api/mobile/health", cancellationToken);
+        if (!response.IsSuccessStatusCode)
+        {
+            var body = await response.Content.ReadAsStringAsync(cancellationToken);
+            throw new HttpRequestException(
+                $"The API server responded with HTTP {(int)response.StatusCode} ({response.ReasonPhrase}). {body}".Trim());
+        }
+    }
+
     public async Task<MobileLoginResponse> LoginAsync(string username, string password, CancellationToken cancellationToken = default)
     {
         using var response = await _http.PostAsJsonAsync("api/mobile/login", new { username, password }, cancellationToken);
-        if (response.StatusCode == HttpStatusCode.Unauthorized) throw new InvalidOperationException("Invalid username or password.");
-        if (response.StatusCode == HttpStatusCode.ServiceUnavailable) throw new InvalidOperationException("The server database is unavailable. Mobile login requires an online connection.");
-        response.EnsureSuccessStatusCode();
+        if (response.StatusCode == HttpStatusCode.Unauthorized) throw new InvalidOperationException("The API was reached, but the username or password was rejected.");
+        if (response.StatusCode == HttpStatusCode.ServiceUnavailable) throw new InvalidOperationException("The API was reached, but the server database is unavailable. Mobile login requires an online connection.");
+        if (!response.IsSuccessStatusCode)
+        {
+            var body = await response.Content.ReadAsStringAsync(cancellationToken);
+            throw new HttpRequestException(
+                $"Login endpoint responded with HTTP {(int)response.StatusCode} ({response.ReasonPhrase}). {body}".Trim());
+        }
         return await response.Content.ReadFromJsonAsync<MobileLoginResponse>(cancellationToken: cancellationToken)
             ?? throw new InvalidOperationException("The server returned an empty login response.");
     }
