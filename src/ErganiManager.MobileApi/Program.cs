@@ -296,7 +296,8 @@ app.MapGet("/api/mobile/workcards/history", async Task<IResult> (
 app.MapPost("/api/mobile/workcards/scan", async Task<IResult> (
     MobileWorkCardScanRequest request,
     ICompanyContext context,
-    ICacheSyncService cacheSync) =>
+    ICacheSyncService cacheSync,
+    IWorkCardSubmitter submitter) =>
 {
     var session = context.CurrentSession!;
     if (!session.CanSee(MenuKeys.WorkCards)) return Results.Forbid();
@@ -366,6 +367,32 @@ app.MapPost("/api/mobile/workcards/scan", async Task<IResult> (
     if (duplicate)
         return Results.Conflict(new { message = "This employee was scanned in the last 20 seconds. Please wait before scanning again." });
 
+    // Use the same synchronous submitter as the Windows manual Work Cards form.
+    // It writes the WorkCard and API submission log as part of the Ergani call.
+    WorkCardSubmissionOutcome? outcome = null;
+    string? submissionException = null;
+    try
+    {
+        outcome = await submitter.SubmitAsync(new WorkCardSubmissionRequest
+        {
+            EmployeeId = employee.Id,
+            CompanyId = companyId.Value,
+            BranchId = employee.BranchId,
+            MovementType = movement,
+            MovementDateTime = now
+        });
+    }
+    catch (Exception ex)
+    {
+        submissionException = ex.GetBaseException().Message;
+    }
+
+    var submitted = outcome?.Success == true;
+    var rejected = outcome is { Success: false, IsBusinessError: true };
+    var error = outcome?.ErrorMessage ?? submissionException;
+
+    // Keep a processed queue marker after success/rejection for duplicate protection.
+    // Only temporary transport/service failures remain queued for Windows auto-retry.
     var queued = new PendingSubmission
     {
         EmployeeId = employee.Id,
@@ -374,17 +401,35 @@ app.MapPost("/api/mobile/workcards/scan", async Task<IResult> (
         EmployeeBarcodeId = employee.BarcodeId,
         MovementType = movement,
         ScannedAt = now,
-        Synced = false
+        Synced = submitted || rejected,
+        SyncedAt = submitted || rejected ? DateTime.UtcNow : null,
+        SyncAttempts = 1,
+        LastSyncError = submitted ? null : error
     };
     cache.PendingSubmissions.Add(queued);
     await cache.SaveChangesAsync();
 
-    // The host's existing ErganiRetryService owns delivery and retry ordering.
-    // The mobile endpoint only writes to the shared queue, avoiding a second sender
-    // racing the desktop application's retry worker.
+    if (submitted)
+    {
+        return Results.Ok(new MobileWorkCardScanResponse(
+            employee.FullName, movement, now, "Submitted",
+            $"Successfully submitted to Ergani. Protocol: {outcome!.Protocol ?? "not returned"}.",
+            outcome.Protocol));
+    }
+
+    if (rejected)
+    {
+        return Results.Ok(new MobileWorkCardScanResponse(
+            employee.FullName, movement, now, "Rejected",
+            error ?? "Ergani rejected the work card. Check the API submission log.",
+            outcome?.Protocol));
+    }
+
     return Results.Ok(new MobileWorkCardScanResponse(
         employee.FullName, movement, now, "Queued",
-        "Scan saved on the host. The Windows application's Ergani retry service will submit it automatically while that application is running."));
+        "Ergani could not be reached or the submission failed temporarily. The scan is saved and will be retried by the Windows retry service. " +
+        (string.IsNullOrWhiteSpace(error) ? string.Empty : error),
+        null));
 }).RequireAuthorization();
 
 app.MapGet("/api/mobile/notifications", async Task<IResult> (
@@ -494,4 +539,4 @@ public sealed record MobileNotificationResponse(long Id, int EventCode, string T
     string Message, DateTime CreatedAt, bool IsRead);
 
 public sealed record MobileWorkCardScanRequest(string ScanValue);
-public sealed record MobileWorkCardScanResponse(string EmployeeName, string Movement, DateTime ScannedAt, string Status, string Message);
+public sealed record MobileWorkCardScanResponse(string EmployeeName, string Movement, DateTime ScannedAt, string Status, string Message, string? Protocol = null);
