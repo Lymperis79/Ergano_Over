@@ -56,9 +56,9 @@ public sealed class BarcodeScannerActivity : Activity
 
         var panel = new LinearLayout(this)
         {
-            Orientation = Orientation.Vertical,
-            Gravity = GravityFlags.Center,
+            Orientation = Android.Widget.Orientation.Vertical,
         };
+        panel.SetGravity(GravityFlags.Center);
         panel.SetPadding(24, 28, 24, 28);
         panel.SetBackgroundColor(Color.Argb(190, 0, 0, 0));
 
@@ -114,7 +114,7 @@ public sealed class BarcodeScannerActivity : Activity
         {
             _cameraThread = new HandlerThread("ErganiQrCamera");
             _cameraThread.Start();
-            _cameraHandler = new Handler(_cameraThread.Looper);
+            _cameraHandler = new Handler(_cameraThread.Looper!);
 
             var manager = (CameraManager?)GetSystemService(CameraService);
             if (manager is null) throw new InvalidOperationException("Android camera service is unavailable.");
@@ -143,8 +143,15 @@ public sealed class BarcodeScannerActivity : Activity
         {
             texture.SetDefaultBufferSize(FrameWidth, FrameHeight);
             _previewSurface = new Surface(texture);
-            var outputs = new List<Surface> { _previewSurface, _imageReader!.Surface };
-            _camera!.CreateCaptureSession(outputs, new PreviewSessionListener(this), _cameraHandler);
+            var previewSurface = _previewSurface;
+            var imageSurface = _imageReader?.Surface;
+            if (previewSurface is null || imageSurface is null || _camera is null)
+                throw new InvalidOperationException("Camera preview surfaces are unavailable.");
+
+            var outputs = new List<Surface> { previewSurface, imageSurface };
+#pragma warning disable CA1422 // The legacy session API is required for compatibility with Android API 23-29.
+            _camera.CreateCaptureSession(outputs, new PreviewSessionListener(this), _cameraHandler);
+#pragma warning restore CA1422
         }
         catch (Exception ex)
         {
@@ -157,15 +164,17 @@ public sealed class BarcodeScannerActivity : Activity
         Image? image = null;
         try
         {
-            image = reader.AcquireLatestImage();
-            if (image is null || _decoded || _processing) return;
+            var currentImage = reader.AcquireLatestImage();
+            image = currentImage;
+            if (currentImage is null || _decoded || _processing) return;
             _processing = true;
 
-            var plane = image.GetPlanes()?[0];
+            var planes = currentImage.GetPlanes();
+            var plane = planes is { Length: > 0 } ? planes[0] : null;
             if (plane is null) return;
 
-            var width = image.Width;
-            var height = image.Height;
+            var width = currentImage.Width;
+            var height = currentImage.Height;
             var rowStride = plane.RowStride;
             var pixelStride = plane.PixelStride;
             var buffer = plane.Buffer;
@@ -202,13 +211,7 @@ public sealed class BarcodeScannerActivity : Activity
             }
             catch (ReaderException)
             {
-                // Try the other orientation; portrait phones often deliver landscape sensor frames.
-                try
-                {
-                    var rotated = source.RotateCounterClockwise();
-                    result = readerEngine.decode(new BinaryBitmap(new HybridBinarizer(rotated)), hints);
-                }
-                catch (ReaderException) { }
+                // QR decoding is rotation tolerant; wait for the next camera frame.
             }
 
             if (!string.IsNullOrWhiteSpace(result?.Text))
@@ -312,9 +315,14 @@ public sealed class BarcodeScannerActivity : Activity
             try
             {
                 var request = _owner._camera.CreateCaptureRequest(CameraTemplate.Preview);
-                request.Set(CaptureRequest.ControlAfMode, Java.Lang.Integer.ValueOf((int)ControlAFMode.ContinuousPicture));
-                request.AddTarget(_owner._previewSurface);
-                request.AddTarget(_owner._imageReader!.Surface);
+                var previewSurface = _owner._previewSurface;
+                var imageSurface = _owner._imageReader?.Surface;
+                if (previewSurface is null || imageSurface is null)
+                    throw new InvalidOperationException("Camera preview surfaces are unavailable.");
+
+                request.Set(CaptureRequest.ControlAfMode!, Java.Lang.Integer.ValueOf((int)ControlAFMode.ContinuousPicture));
+                request.AddTarget(previewSurface);
+                request.AddTarget(imageSurface);
                 session.SetRepeatingRequest(request.Build(), null, _owner._cameraHandler);
             }
             catch (Exception ex)
@@ -333,6 +341,10 @@ public sealed class BarcodeScannerActivity : Activity
     {
         private readonly BarcodeScannerActivity _owner;
         public FrameListener(BarcodeScannerActivity owner) => _owner = owner;
-        public void OnImageAvailable(ImageReader reader) => _owner.ProcessFrame(reader);
+        public void OnImageAvailable(ImageReader? reader)
+        {
+            if (reader is not null)
+                _owner.ProcessFrame(reader);
+        }
     }
 }
