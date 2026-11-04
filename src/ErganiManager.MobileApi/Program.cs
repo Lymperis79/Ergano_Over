@@ -294,7 +294,7 @@ app.MapPost("/api/mobile/schedules/day", async Task<IResult> (
             BranchId = employee.BranchId,
             ScheduleDate = request.ScheduleDate,
             WorkType = (AppWorkType)request.WorkType,
-            Source = ScheduleSource.Manual,
+            Source = ErganiManager.Core.Interfaces.ScheduleSource.Manual,
             StartTime = request.StartTime,
             EndTime = request.EndTime,
             WorkingPeriods = periods,
