@@ -5,6 +5,9 @@ using ErganiManager.Core.Models;
 using ErganiManager.Core.Services;
 using ErganiManager.ErganiApi;
 using ErganiManager.Licensing;
+using ErganiManager.Data;
+using ErganiManager.Data.Entities;
+using Microsoft.EntityFrameworkCore;
 using ErganiManager.LocalCache;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
@@ -289,6 +292,42 @@ app.MapGet("/api/mobile/workcards/history", async Task<IResult> (
     return Results.Ok(rows);
 }).RequireAuthorization();
 
+app.MapGet("/api/mobile/notifications", async Task<IResult> (
+    ICompanyContext context, IConnectionStateService connectionState, long? afterId) =>
+{
+    var companyId = context.ActiveCompanyId;
+    if (!companyId.HasValue)
+        return Results.Conflict(new { message = "Select a company before requesting notifications." });
+
+    await using var db = new AppDbContext(connectionState.GetDbOptions());
+    var query = db.NotificationLogs.AsNoTracking()
+        .Where(x => x.CompanyId == companyId.Value);
+    if (afterId.HasValue && afterId.Value > 0)
+        query = query.Where(x => x.Id > afterId.Value);
+
+    var rows = await query.OrderBy(x => x.Id).Take(100)
+        .Select(x => new MobileNotificationResponse(
+            x.Id, x.EventCode, x.Title, x.Message, x.CreatedAt, x.IsRead))
+        .ToListAsync();
+    return Results.Ok(rows);
+}).RequireAuthorization();
+
+app.MapPost("/api/mobile/notifications/{notificationId:long}/read", async Task<IResult> (
+    long notificationId, ICompanyContext context, IConnectionStateService connectionState) =>
+{
+    var companyId = context.ActiveCompanyId;
+    if (!companyId.HasValue)
+        return Results.Conflict(new { message = "Select a company before updating notifications." });
+
+    await using var db = new AppDbContext(connectionState.GetDbOptions());
+    var notification = await db.NotificationLogs.FirstOrDefaultAsync(
+        x => x.Id == notificationId && x.CompanyId == companyId.Value);
+    if (notification is null) return Results.NotFound();
+    notification.IsRead = true;
+    await db.SaveChangesAsync();
+    return Results.NoContent();
+}).RequireAuthorization();
+
 app.Run();
 
 
@@ -355,3 +394,6 @@ public sealed record MobileSessionResponse(string Username, string Role, int? Co
     string? CompanyName, int? BranchId, string? BranchName);
 public sealed record MobileCompanyResponse(int Id, string Name, string TaxId);
 public sealed record MobileEmployeeResponse(int Id, int BranchId, string FirstName, string LastName, bool IsActive);
+
+public sealed record MobileNotificationResponse(long Id, int EventCode, string Title,
+    string Message, DateTime CreatedAt, bool IsRead);
