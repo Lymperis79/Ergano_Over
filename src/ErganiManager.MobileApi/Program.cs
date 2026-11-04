@@ -9,6 +9,7 @@ using ErganiManager.Data;
 using ErganiManager.Data.Entities;
 using Microsoft.EntityFrameworkCore;
 using ErganiManager.LocalCache;
+using ErganiManager.LocalCache.Entities;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
@@ -296,7 +297,7 @@ app.MapPost("/api/mobile/workcards/scan", async Task<IResult> (
     MobileWorkCardScanRequest request,
     ICompanyContext context,
     ICacheSyncService cacheSync,
-    ErganiRetryService retryService) =>
+    ICacheSyncService cacheSyncService) =>
 {
     var session = context.CurrentSession!;
     if (!session.CanSee(MenuKeys.WorkCards)) return Results.Forbid();
