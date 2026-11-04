@@ -258,6 +258,57 @@ app.MapGet("/api/mobile/schedules/{employeeId:int}/{year:int}/{month:int}", asyn
     return Results.Ok(rows);
 }).RequireAuthorization();
 
+app.MapPost("/api/mobile/schedules/day", async Task<IResult> (
+    MobileScheduleUpsertRequest request, ICompanyContext context,
+    IEmployeeService employees, IScheduleService schedules) =>
+{
+    var session = context.CurrentSession!;
+    if (!session.CanSee(MenuKeys.Schedules)) return Results.Forbid();
+
+    var companyId = context.ActiveCompanyId;
+    if (!companyId.HasValue)
+        return Results.Conflict(new { message = "Select a company before editing schedules." });
+
+    if (request.WorkType is < 0 or > 3)
+        return Results.BadRequest(new { message = "Select a valid work type." });
+
+    var employee = await employees.GetByIdAsync(request.EmployeeId);
+    if (employee is null || employee.CompanyId != companyId.Value || !employee.IsActive)
+        return Results.NotFound(new { message = "The employee was not found in the active company." });
+
+    if (request.WorkType is 0 or 1 && (!request.StartTime.HasValue || !request.EndTime.HasValue))
+        return Results.BadRequest(new { message = "Start and end times are required for Office/Home work days." });
+
+    var periods = request.WorkType is 0 or 1
+        ? new List<ScheduleWorkingPeriodDto>
+        {
+            new() { PeriodNumber = 1, StartTime = request.StartTime!.Value, EndTime = request.EndTime!.Value }
+        }
+        : new List<ScheduleWorkingPeriodDto>();
+
+    try
+    {
+        var id = await schedules.UpsertDayAsync(new ScheduleDayDto
+        {
+            EmployeeId = employee.Id,
+            BranchId = employee.BranchId,
+            ScheduleDate = request.ScheduleDate,
+            WorkType = (AppWorkType)request.WorkType,
+            Source = ScheduleSource.Manual,
+            StartTime = request.StartTime,
+            EndTime = request.EndTime,
+            WorkingPeriods = periods,
+            Comments = request.Comments
+        });
+
+        return Results.Ok(new { id, message = "Schedule day saved. It is pending submission to Ergani." });
+    }
+    catch (InvalidOperationException ex)
+    {
+        return Results.BadRequest(new { message = ex.Message });
+    }
+}).RequireAuthorization();
+
 app.MapGet("/api/mobile/workcards/history", async Task<IResult> (
     ICompanyContext context,
     IWorkCardHistoryService history,
@@ -540,3 +591,5 @@ public sealed record MobileNotificationResponse(long Id, int EventCode, string T
 
 public sealed record MobileWorkCardScanRequest(string ScanValue);
 public sealed record MobileWorkCardScanResponse(string EmployeeName, string Movement, DateTime ScannedAt, string Status, string Message, string? Protocol = null, int EmployeeId = 0);
+
+public sealed record MobileScheduleUpsertRequest(int EmployeeId, DateOnly ScheduleDate, int WorkType, TimeOnly? StartTime, TimeOnly? EndTime, string? Comments);
