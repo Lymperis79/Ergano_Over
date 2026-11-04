@@ -414,7 +414,7 @@ app.MapPost("/api/mobile/workcards/scan", async Task<IResult> (
         return Results.Ok(new MobileWorkCardScanResponse(
             employee.FullName, movement, now, "Submitted",
             $"Successfully submitted to Ergani. Protocol: {outcome!.Protocol ?? "not returned"}.",
-            outcome.Protocol));
+            outcome.Protocol, employee.Id));
     }
 
     if (rejected)
@@ -422,14 +422,14 @@ app.MapPost("/api/mobile/workcards/scan", async Task<IResult> (
         return Results.Ok(new MobileWorkCardScanResponse(
             employee.FullName, movement, now, "Rejected",
             error ?? "Ergani rejected the work card. Check the API submission log.",
-            outcome?.Protocol));
+            outcome?.Protocol, employee.Id));
     }
 
     return Results.Ok(new MobileWorkCardScanResponse(
         employee.FullName, movement, now, "Queued",
         "Ergani could not be reached or the submission failed temporarily. The scan is saved and will be retried by the Windows retry service. " +
         (string.IsNullOrWhiteSpace(error) ? string.Empty : error),
-        null));
+        null, employee.Id));
 }).RequireAuthorization();
 
 app.MapGet("/api/mobile/notifications", async Task<IResult> (
@@ -539,4 +539,4 @@ public sealed record MobileNotificationResponse(long Id, int EventCode, string T
     string Message, DateTime CreatedAt, bool IsRead);
 
 public sealed record MobileWorkCardScanRequest(string ScanValue);
-public sealed record MobileWorkCardScanResponse(string EmployeeName, string Movement, DateTime ScannedAt, string Status, string Message, string? Protocol = null);
+public sealed record MobileWorkCardScanResponse(string EmployeeName, string Movement, DateTime ScannedAt, string Status, string Message, string? Protocol = null, int EmployeeId = 0);
