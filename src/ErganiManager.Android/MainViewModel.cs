@@ -199,14 +199,12 @@ public partial class MainViewModel : ObservableObject
 
     private async Task ShowNotificationAsync(MobileNotification item)
     {
-        // Use a native Android heads-up notification when the app is in the background.
-        // The existing in-app banner remains the foreground presentation.
-        if (!MainActivity.IsAppInForeground)
-        {
-            var context = global::Android.App.Application.Context;
-            AndroidNotificationService.Show(context, item);
-        }
+        // Post a native Android notification in both foreground and background.
+        // Android can therefore display its system heads-up banner over the current app.
+        var context = global::Android.App.Application.Context;
+        AndroidNotificationService.Show(context, item);
 
+        // Keep the in-app notification as well, so the alert remains visible in the workspace.
         await Dispatcher.UIThread.InvokeAsync(() =>
         {
             NotificationTitle = item.Title;
