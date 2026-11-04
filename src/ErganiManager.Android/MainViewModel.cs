@@ -20,7 +20,8 @@ public partial class MainViewModel : ObservableObject
                 return;
             }
             WorkCardScanInput = value;
-            WorkCardScanMessage = "Barcode captured. Press Submit scan to continue.";
+            WorkCardScanMessage = "Barcode captured. Sending to Ergani...";
+            SubmitWorkCardScanCommand.Execute(null);
         });
     }
 
@@ -41,13 +42,41 @@ public partial class MainViewModel : ObservableObject
             return;
         }
         IsWorkCardScanBusy = true;
+        WorkCardScanMessage = "Sending work card to Ergani... Waiting for the official response.";
         try
         {
             var result = await _api.ScanWorkCardAsync(WorkCardScanInput.Trim());
             WorkCardScanMessage = $"{result.Status}: {result.Movement} for {result.EmployeeName} at {result.ScannedAt:HH:mm:ss}. {result.Message}";
             if (!string.Equals(result.Status, "Rejected", StringComparison.OrdinalIgnoreCase))
                 WorkCardScanInput = string.Empty;
+
+            // Reload the authoritative history after Ergani responds, then ensure the
+            // just-submitted movement is visible even if the history query is slightly delayed.
             await RefreshWorkCardsAsync();
+            var matching = WorkCardHistory.FirstOrDefault(x =>
+                x.EmployeeId == result.EmployeeId &&
+                Math.Abs((x.MovementDateTime - result.ScannedAt).TotalSeconds) <= 60);
+            var updated = new MobileWorkCardHistoryItem
+            {
+                EmployeeId = result.EmployeeId,
+                EmployeeFullName = result.EmployeeName,
+                MovementType = result.Movement,
+                MovementDateTime = result.ScannedAt,
+                SubmittedToErgani = string.Equals(result.Status, "Submitted", StringComparison.OrdinalIgnoreCase),
+                IsLocalPending = string.Equals(result.Status, "Queued", StringComparison.OrdinalIgnoreCase),
+                IsLocalFailed = string.Equals(result.Status, "Rejected", StringComparison.OrdinalIgnoreCase),
+                Protocol = result.Protocol,
+                RetryError = result.Status == "Queued" ? result.Message : null
+            };
+            if (matching is not null)
+            {
+                var index = WorkCardHistory.IndexOf(matching);
+                WorkCardHistory[index] = updated;
+            }
+            else
+            {
+                WorkCardHistory.Insert(0, updated);
+            }
         }
         catch (Exception ex)
         {
