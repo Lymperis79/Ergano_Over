@@ -8,6 +8,7 @@ using Avalonia.Media;
 using Avalonia.Threading;
 using ErganiManager.Core.Interfaces;
 using Microsoft.Toolkit.Uwp.Notifications;
+using Windows.UI.Notifications;
 
 namespace ErganiManager.UI.Services;
 
@@ -37,7 +38,9 @@ public static class DesktopAlertNotificationWindow
 
                 // ToastNotificationManagerCompat automatically registers the
                 // unpackaged Win32 application identity/activator on Windows.
-                notification.Show();
+                var toastContent = notification.GetToastContent();
+                var toast = new ToastNotification(toastContent.GetXml());
+                ToastNotificationManagerCompat.CreateToastNotifier().Show(toast);
                 return;
             }
             catch
