@@ -20,7 +20,8 @@ public class AppDbContext : DbContext
     public DbSet<LeaveTypeConfiguration> LeaveTypeConfigurations => Set<LeaveTypeConfiguration>();
     public DbSet<ApiSubmissionLog> ApiSubmissionLogs => Set<ApiSubmissionLog>();
     public DbSet<AppLog> AppLogs => Set<AppLog>();
-    public DbSet<EmailLog> EmailLogs => Set<EmailLog>();\n    public DbSet<NotificationLog> NotificationLogs => Set<NotificationLog>();
+    public DbSet<EmailLog> EmailLogs => Set<EmailLog>();
+    public DbSet<NotificationLog> NotificationLogs => Set<NotificationLog>();
     public DbSet<AppSecret> AppSecrets => Set<AppSecret>();
     public DbSet<LicenseSession> LicenseSessions => Set<LicenseSession>();
     public DbSet<ReportDefinition> ReportDefinitions => Set<ReportDefinition>();
