@@ -312,7 +312,7 @@ public sealed class BarcodeScannerActivity : Activity
             try
             {
                 var request = _owner._camera.CreateCaptureRequest(CameraTemplate.Preview);
-                request.Set(CaptureRequest.ControlAfMode, (int)ControlAFMode.ContinuousPicture);
+                request.Set(CaptureRequest.ControlAfMode, Java.Lang.Integer.ValueOf((int)ControlAFMode.ContinuousPicture));
                 request.AddTarget(_owner._previewSurface);
                 request.AddTarget(_owner._imageReader!.Surface);
                 session.SetRepeatingRequest(request.Build(), null, _owner._cameraHandler);
