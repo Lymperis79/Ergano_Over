@@ -2,6 +2,10 @@ using Android.App;
 using Android.Content;
 using Android.Content.PM;
 using Android.OS;
+using Android.Graphics;
+using Android.Provider;
+using ZXing;
+using ZXing.Common;
 using Avalonia.Android;
 using System.Runtime.Versioning;
 
@@ -22,6 +26,8 @@ namespace ErganiManager.Android;
 public class MainActivity : AvaloniaMainActivity
 {
     private const int NotificationPermissionRequestCode = 4102;
+    private const int BarcodeCaptureRequestCode = 4103;
+    public static event Action<string?>? BarcodeCaptured;
 
     public static MainActivity? Current { get; private set; }
     public static bool IsAppInForeground { get; private set; }
@@ -53,7 +59,7 @@ public class MainActivity : AvaloniaMainActivity
         base.OnDestroy();
     }
 
-    public void RequestNotificationPermission()
+    public void StartBarcodeCapture()\n    {\n        try\n        {\n            var intent = new Intent(MediaStore.ActionImageCapture);\n            if (intent.ResolveActivity(PackageManager) is null)\n            {\n                BarcodeCaptured?.Invoke(null);\n                return;\n            }\n            StartActivityForResult(intent, BarcodeCaptureRequestCode);\n        }\n        catch\n        {\n            BarcodeCaptured?.Invoke(null);\n        }\n    }\n\n    protected override void OnActivityResult(int requestCode, Result resultCode, Intent? data)\n    {\n        base.OnActivityResult(requestCode, resultCode, data);\n        if (requestCode != BarcodeCaptureRequestCode) return;\n        if (resultCode != Result.Ok || data?.Extras?.Get("data") is not Bitmap bitmap)\n        {\n            BarcodeCaptured?.Invoke(null);\n            return;\n        }\n\n        try\n        {\n            var width = bitmap.Width;\n            var height = bitmap.Height;\n            var pixels = new int[width * height];\n            bitmap.GetPixels(pixels, 0, width, 0, 0, width, height);\n            var source = new RGBLuminanceSource(pixels, width, height);\n            var binary = new BinaryBitmap(new HybridBinarizer(source));\n            var reader = new MultiFormatReader();\n            var hints = new System.Collections.Generic.Dictionary<DecodeHintType, object>\n            {\n                [DecodeHintType.POSSIBLE_FORMATS] = new[] { BarcodeFormat.QR_CODE, BarcodeFormat.CODE_128, BarcodeFormat.CODE_39, BarcodeFormat.EAN_13, BarcodeFormat.EAN_8, BarcodeFormat.DATA_MATRIX, BarcodeFormat.PDF_417 }\n            };\n            var decoded = reader.Decode(binary, hints);\n            BarcodeCaptured?.Invoke(decoded?.Text);\n        }\n        catch (ReaderException)\n        {\n            BarcodeCaptured?.Invoke(null);\n        }\n        catch (Exception)\n        {\n            BarcodeCaptured?.Invoke(null);\n        }\n    }\n\n    public void RequestNotificationPermission()
     {
         if (Build.VERSION.SdkInt < BuildVersionCodes.Tiramisu)
             return;
