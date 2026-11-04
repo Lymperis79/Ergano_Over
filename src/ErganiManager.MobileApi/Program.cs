@@ -26,7 +26,7 @@ builder.WebHost.ConfigureKestrel(options =>
     options.ListenAnyIP(5001, listenOptions =>
     {
         listenOptions.UseHttps(
-            @"C:\Users\ThinkPad\ErganiMobileApi.pfx",
+            @"C:\Users\ThinkPad\ErganiII\ErganiMobileApi.pfx",
             "ErganiDev2026!");
     });
 });
