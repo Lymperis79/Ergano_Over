@@ -32,6 +32,7 @@ public sealed class BarcodeScannerActivity : Activity
     private Surface? _previewSurface;
     private volatile bool _decoded;
     private volatile bool _processing;
+    private bool _cameraOpening;
 
     protected override void OnCreate(Bundle? savedInstanceState)
     {
@@ -58,7 +59,6 @@ public sealed class BarcodeScannerActivity : Activity
         {
             Orientation = Orientation.Vertical,
             Gravity = GravityFlags.Center,
-            SetPadding = { }
         };
         panel.SetPadding(24, 28, 24, 28);
         panel.SetBackgroundColor(Color.Argb(190, 0, 0, 0));
@@ -109,6 +109,8 @@ public sealed class BarcodeScannerActivity : Activity
 
     private void OpenCamera()
     {
+        if (_cameraOpening || _camera is not null || IsFinishing) return;
+        _cameraOpening = true;
         try
         {
             _cameraThread = new HandlerThread("ErganiQrCamera");
@@ -126,9 +128,12 @@ public sealed class BarcodeScannerActivity : Activity
 
             if (CheckSelfPermission(Manifest.Permission.Camera) == Permission.Granted)
                 manager.OpenCamera(cameraId, new CameraStateListener(this), _cameraHandler);
+            else
+                _cameraOpening = false;
         }
         catch (Exception ex)
         {
+            _cameraOpening = false;
             _status!.Text = "Unable to start camera: " + ex.Message;
         }
     }
@@ -150,13 +155,12 @@ public sealed class BarcodeScannerActivity : Activity
 
     private void ProcessFrame(ImageReader reader)
     {
-        if (_decoded || _processing) return;
-        _processing = true;
         Image? image = null;
         try
         {
             image = reader.AcquireLatestImage();
-            if (image is null) return;
+            if (image is null || _decoded || _processing) return;
+            _processing = true;
 
             var plane = image.GetPlanes()?[0];
             if (plane is null) return;
@@ -192,7 +196,7 @@ public sealed class BarcodeScannerActivity : Activity
                 [DecodeHintType.TRY_HARDER] = true
             };
 
-            Result? result = null;
+            ZXing.Result? result = null;
             try
             {
                 result = readerEngine.decode(new BinaryBitmap(new HybridBinarizer(source)), hints);
@@ -277,18 +281,21 @@ public sealed class BarcodeScannerActivity : Activity
         public CameraStateListener(BarcodeScannerActivity owner) => _owner = owner;
         public override void OnOpened(CameraDevice camera)
         {
+            _owner._cameraOpening = false;
             _owner._camera = camera;
             var texture = _owner._preview?.SurfaceTexture;
             if (texture is not null) _owner.CreatePreview(texture);
         }
         public override void OnDisconnected(CameraDevice camera)
         {
+            _owner._cameraOpening = false;
             camera.Close();
             _owner._camera = null;
             _owner.RunOnUiThread(() => _owner._status!.Text = "Camera disconnected.");
         }
         public override void OnError(CameraDevice camera, CameraError error)
         {
+            _owner._cameraOpening = false;
             camera.Close();
             _owner._camera = null;
             _owner.RunOnUiThread(() => _owner._status!.Text = "Camera error: " + error);
