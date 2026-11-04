@@ -8,7 +8,6 @@ using Android.Media;
 using Android.OS;
 using Android.Views;
 using Android.Widget;
-using Java.Nio;
 using ZXing;
 using ZXing.Common;
 
@@ -220,7 +219,7 @@ public sealed class BarcodeScannerActivity : Activity
                     _status!.Text = "QR code detected. Sending to Ergani...";
                     var data = new Intent();
                     data.PutExtra("barcode", result.Text);
-                    SetResult(Result.Ok, data);
+                    SetResult(global::Android.App.Result.Ok, data);
                     Finish();
                 });
             }
@@ -313,6 +312,7 @@ public sealed class BarcodeScannerActivity : Activity
             try
             {
                 var request = _owner._camera.CreateCaptureRequest(CameraTemplate.Preview);
+                request.Set(CaptureRequest.ControlAfMode, (int)ControlAFMode.ContinuousPicture);
                 request.AddTarget(_owner._previewSurface);
                 request.AddTarget(_owner._imageReader!.Surface);
                 session.SetRepeatingRequest(request.Build(), null, _owner._cameraHandler);
