@@ -28,6 +28,7 @@
     <PackageReference Include="Serilog.Extensions.Logging" />
     <PackageReference Include="Serilog.Sinks.File" />
     <PackageReference Include="CommunityToolkit.Mvvm" />
+    <PackageReference Include="Microsoft.Toolkit.Uwp.Notifications" />
     <PackageReference Include="ClosedXML" />
   </ItemGroup>
 
