@@ -47,7 +47,10 @@ public class Company
     public int ClockInAlertMinutes { get; set; } = 10;
 
     // Email / SMTP settings
-    public bool AlertEmailEnabled { get; set; } = false;\n\n    /// <summary>When enabled, the same configured alert events are also stored for in-app notifications.</summary>\n    public bool AlertNotificationEnabled { get; set; } = false;
+    public bool AlertEmailEnabled { get; set; } = false;
+
+    /// <summary>When enabled, the same configured alert events are also stored for in-app notifications.</summary>
+    public bool AlertNotificationEnabled { get; set; } = false;
 
     /// <summary>When true the background retry service automatically resubmits
     /// failed clock-in/out records with EMPLOYER_SYSTEMS_UNAVAILABLE justification
