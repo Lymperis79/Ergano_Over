@@ -220,7 +220,7 @@ app.MapGet("/api/mobile/employees", async Task<IResult> (ICompanyContext context
     if (!companyId.HasValue) return Results.Conflict(new { message = "Select a company before requesting company data." });
 
     var rows = await employees.GetByCompanyAsync(companyId.Value, activeOnly: true);
-    return Results.Ok(rows.Select(e => new MobileEmployeeResponse(e.Id, e.BranchId, e.FirstName, e.LastName, e.IsActive)));
+    return Results.Ok(rows.Select(e => new MobileEmployeeResponse(e.Id, e.BranchId, e.FirstName, e.LastName, e.FatherName, e.TaxId, e.IsActive)));
 }).RequireAuthorization();
 
 app.MapGet("/api/mobile/today", async Task<IResult> (ICompanyContext context, ITodayStatusService today,
@@ -584,7 +584,7 @@ public sealed record SelectMobileCompanyRequest(int CompanyId);
 public sealed record MobileSessionResponse(string Username, string Role, int? CompanyId,
     string? CompanyName, int? BranchId, string? BranchName);
 public sealed record MobileCompanyResponse(int Id, string Name, string TaxId);
-public sealed record MobileEmployeeResponse(int Id, int BranchId, string FirstName, string LastName, bool IsActive);
+public sealed record MobileEmployeeResponse(int Id, int BranchId, string FirstName, string LastName, string? FatherName, string TaxId, bool IsActive);
 
 public sealed record MobileNotificationResponse(long Id, int EventCode, string Title,
     string Message, DateTime CreatedAt, bool IsRead);
