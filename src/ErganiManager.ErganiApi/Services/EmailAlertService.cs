@@ -18,6 +18,8 @@ public class EmailAlertService : IEmailAlertService
     private readonly ICredentialProtector _credentialProtector;
     private readonly ILogger<EmailAlertService> _logger;
 
+    public event Action<AlertMessage>? NotificationRaised;
+
     public EmailAlertService(
         IConnectionStateService connectionState,
         ICredentialProtector credentialProtector,
@@ -94,7 +96,10 @@ public class EmailAlertService : IEmailAlertService
             // Notification and email delivery are independent, but share the same alert event and content.
             var eventEnabled = (company.AlertEvents & (int)alert.Event) != 0;
             if (eventEnabled && company.AlertNotificationEnabled)
+            {
                 await SaveNotificationAsync(companyId, alert);
+                NotificationRaised?.Invoke(alert);
+            }
 
             if (!eventEnabled || !company.AlertEmailEnabled)
                 return (true, null);
