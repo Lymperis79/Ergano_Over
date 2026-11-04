@@ -91,7 +91,8 @@ public class CompanyService : ICompanyService
             OfficialHolidayDatesJson = string.IsNullOrWhiteSpace(dto.OfficialHolidayDatesJson) ? "[]" : dto.OfficialHolidayDatesJson,
             AlertEvents = dto.AlertEvents,
             ClockInAlertMinutes = dto.ClockInAlertMinutes,
-            AlertEmailEnabled = dto.AlertEmailEnabled,\n            AlertNotificationEnabled = dto.AlertNotificationEnabled,
+            AlertEmailEnabled = dto.AlertEmailEnabled,
+            AlertNotificationEnabled = dto.AlertNotificationEnabled,
             AutoRetryFailedSubmissions = dto.AutoRetryFailedSubmissions,
             AlertEmailRecipients = dto.AlertEmailRecipients,
             SmtpHost = dto.SmtpHost,
@@ -130,7 +131,8 @@ public class CompanyService : ICompanyService
         entity.OfficialHolidayDatesJson = string.IsNullOrWhiteSpace(dto.OfficialHolidayDatesJson) ? "[]" : dto.OfficialHolidayDatesJson;
         entity.AlertEvents = dto.AlertEvents;
         entity.ClockInAlertMinutes = dto.ClockInAlertMinutes;
-        entity.AlertEmailEnabled = dto.AlertEmailEnabled;\n        entity.AlertNotificationEnabled = dto.AlertNotificationEnabled;
+        entity.AlertEmailEnabled = dto.AlertEmailEnabled;
+        entity.AlertNotificationEnabled = dto.AlertNotificationEnabled;
         entity.AutoRetryFailedSubmissions = dto.AutoRetryFailedSubmissions;
         entity.AlertEmailRecipients = dto.AlertEmailRecipients;
         entity.SmtpHost = dto.SmtpHost;
@@ -189,7 +191,8 @@ public class CompanyService : ICompanyService
         OfficialHolidayDatesJson = string.IsNullOrWhiteSpace(c.OfficialHolidayDatesJson) ? "[]" : c.OfficialHolidayDatesJson,
         AlertEvents = c.AlertEvents,
         ClockInAlertMinutes = c.ClockInAlertMinutes,
-        AlertEmailEnabled = c.AlertEmailEnabled,\n        AlertNotificationEnabled = c.AlertNotificationEnabled,
+        AlertEmailEnabled = c.AlertEmailEnabled,
+        AlertNotificationEnabled = c.AlertNotificationEnabled,
         AutoRetryFailedSubmissions = c.AutoRetryFailedSubmissions,
         AlertEmailRecipients = c.AlertEmailRecipients,
         SmtpHost = c.SmtpHost,
