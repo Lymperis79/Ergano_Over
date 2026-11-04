@@ -2,12 +2,15 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using System.Collections.ObjectModel;
 using System.Globalization;
+using Avalonia.Threading;
 
 namespace ErganiManager.Android;
 
 public partial class MainViewModel : ObservableObject
 {
     private MobileApiClient? _api;
+    private CancellationTokenSource? _notificationPollingCts;
+    private long _lastNotificationId;
     [ObservableProperty] private string _pageTitle = "Sign in";
     [ObservableProperty] private string _serverAddress = "https://thinkpad-p16s.local:5001";
     [ObservableProperty] private string _username = string.Empty;
@@ -20,6 +23,11 @@ public partial class MainViewModel : ObservableObject
     [ObservableProperty] private MobileCompany? _selectedCompany;
     [ObservableProperty] private bool _isCompanySelectionRequired;
     public ObservableCollection<MobileCompany> Companies { get; } = new();
+    [ObservableProperty] private bool _hasNotificationPopup;
+    [ObservableProperty] private string _notificationTitle = string.Empty;
+    [ObservableProperty] private string _notificationMessage = string.Empty;
+    [ObservableProperty] private long? _activeNotificationId;
+
     [ObservableProperty] private bool _isDailyStatusVisible;
     [ObservableProperty] private bool _isEmployeesVisible;
     public bool HasEmployees => Employees.Count > 0;
@@ -113,6 +121,7 @@ public partial class MainViewModel : ObservableObject
             {
                 CompanyName = session.CompanyName ?? "Assigned company";
                 await LoadCompanyDataAsync();
+                StartNotificationPolling();
             }
             else
             {
@@ -138,6 +147,79 @@ public partial class MainViewModel : ObservableObject
         finally { IsBusy = false; }
     }
 
+    private void StartNotificationPolling()
+    {
+        _notificationPollingCts?.Cancel();
+        _notificationPollingCts?.Dispose();
+        _notificationPollingCts = new CancellationTokenSource();
+        _lastNotificationId = 0;
+        _ = PollNotificationsAsync(_notificationPollingCts.Token);
+    }
+
+    private async Task PollNotificationsAsync(CancellationToken cancellationToken)
+    {
+        if (_api is null) return;
+        try
+        {
+            // Load recent unread alerts on sign-in, then poll only for newly-created rows.
+            var initial = await _api.GetNotificationsAsync(0, cancellationToken);
+            _lastNotificationId = initial.Count == 0 ? 0 : initial.Max(x => x.Id);
+            var unread = initial.Where(x => !x.IsRead).OrderBy(x => x.Id).ToList();
+            if (unread.Count > 0)
+                await ShowNotificationAsync(unread[^1]);
+
+            using var timer = new PeriodicTimer(TimeSpan.FromSeconds(10));
+            while (await timer.WaitForNextTickAsync(cancellationToken))
+            {
+                if (_api is null || !IsAuthenticated || IsCompanySelectionRequired) continue;
+                var items = await _api.GetNotificationsAsync(_lastNotificationId, cancellationToken);
+                foreach (var item in items.OrderBy(x => x.Id))
+                {
+                    _lastNotificationId = Math.Max(_lastNotificationId, item.Id);
+                    await ShowNotificationAsync(item);
+                }
+            }
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { }
+        catch
+        {
+            // Temporary API/network outages must not interrupt the mobile workspace.
+            if (!cancellationToken.IsCancellationRequested)
+            {
+                try
+                {
+                    await Task.Delay(TimeSpan.FromSeconds(15), cancellationToken);
+                    if (!cancellationToken.IsCancellationRequested) StartNotificationPolling();
+                }
+                catch (OperationCanceledException) { }
+            }
+        }
+    }
+
+    private Task ShowNotificationAsync(MobileNotification item)
+    {
+        return Dispatcher.UIThread.InvokeAsync(() =>
+        {
+            NotificationTitle = item.Title;
+            NotificationMessage = item.Message;
+            ActiveNotificationId = item.Id;
+            HasNotificationPopup = true;
+        }).GetTask();
+    }
+
+    [RelayCommand]
+    private async Task DismissNotificationAsync()
+    {
+        var id = ActiveNotificationId;
+        HasNotificationPopup = false;
+        ActiveNotificationId = null;
+        if (id.HasValue && _api is not null)
+        {
+            try { await _api.MarkNotificationReadAsync(id.Value); }
+            catch { /* Keep dismissal local if the API is temporarily unavailable. */ }
+        }
+    }
+
     private static string GetFullError(Exception exception)
     {
         var messages = new List<string>();
@@ -152,6 +234,10 @@ public partial class MainViewModel : ObservableObject
     [RelayCommand]
     private async Task LogoutAsync()
     {
+        _notificationPollingCts?.Cancel();
+        _notificationPollingCts?.Dispose();
+        _notificationPollingCts = null;
+        HasNotificationPopup = false;
         if (_api is not null) { try { await _api.LogoutAsync(); } catch { } _api.Dispose(); _api = null; }
         Employees.Clear();
         OnPropertyChanged(nameof(HasEmployees));
@@ -189,6 +275,7 @@ public partial class MainViewModel : ObservableObject
             CompanyName = selected.Name;
             IsCompanySelectionRequired = false;
             await LoadCompanyDataAsync();
+            StartNotificationPolling();
             StatusMessage = $"Connected to {CompanyName}. {Employees.Count} active employees loaded from Ergani II.";
         }
         catch (Exception ex)
