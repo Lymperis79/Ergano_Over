@@ -31,7 +31,7 @@ public static class ServiceCollectionExtensions
         services.AddTransient<IErganiDocumentService, ErganiDocumentService>();
         services.AddTransient<IOvertimeSubmitter, OvertimeSubmitterService>();
         services.AddTransient<ILeaveSubmitter, LeaveSubmitterService>();
-        services.AddTransient<IEmailAlertService, EmailAlertService>();
+        services.AddSingleton<IEmailAlertService, EmailAlertService>();
         services.AddTransient<IErganiDataImportService, ErganiDataImportService>();
         services.AddSingleton<IErganiPortalService, ErganiPortalService>();
 
