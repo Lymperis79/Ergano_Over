@@ -3,9 +3,11 @@ using CommunityToolkit.Mvvm.Input;
 using System.Collections.ObjectModel;
 using System.Globalization;
 using Avalonia.Threading;
+using System.Runtime.Versioning;
 
 namespace ErganiManager.Android;
 
+[SupportedOSPlatform("android23.0")]
 public partial class MainViewModel : ObservableObject
 {
     public MainViewModel() => MainActivity.BarcodeCaptured += OnBarcodeCaptured;
