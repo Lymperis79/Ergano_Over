@@ -296,8 +296,7 @@ app.MapGet("/api/mobile/workcards/history", async Task<IResult> (
 app.MapPost("/api/mobile/workcards/scan", async Task<IResult> (
     MobileWorkCardScanRequest request,
     ICompanyContext context,
-    ICacheSyncService cacheSync,
-    ICacheSyncService cacheSyncService) =>
+    ICacheSyncService cacheSync) =>
 {
     var session = context.CurrentSession!;
     if (!session.CanSee(MenuKeys.WorkCards)) return Results.Forbid();
