@@ -59,7 +59,61 @@ public class MainActivity : AvaloniaMainActivity
         base.OnDestroy();
     }
 
-    public void StartBarcodeCapture()\n    {\n        try\n        {\n            var intent = new Intent(MediaStore.ActionImageCapture);\n            if (intent.ResolveActivity(PackageManager) is null)\n            {\n                BarcodeCaptured?.Invoke(null);\n                return;\n            }\n            StartActivityForResult(intent, BarcodeCaptureRequestCode);\n        }\n        catch\n        {\n            BarcodeCaptured?.Invoke(null);\n        }\n    }\n\n    protected override void OnActivityResult(int requestCode, Result resultCode, Intent? data)\n    {\n        base.OnActivityResult(requestCode, resultCode, data);\n        if (requestCode != BarcodeCaptureRequestCode) return;\n        if (resultCode != Result.Ok || data?.Extras?.Get("data") is not Bitmap bitmap)\n        {\n            BarcodeCaptured?.Invoke(null);\n            return;\n        }\n\n        try\n        {\n            var width = bitmap.Width;\n            var height = bitmap.Height;\n            var pixels = new int[width * height];\n            bitmap.GetPixels(pixels, 0, width, 0, 0, width, height);\n            var source = new RGBLuminanceSource(pixels, width, height);\n            var binary = new BinaryBitmap(new HybridBinarizer(source));\n            var reader = new MultiFormatReader();\n            var hints = new System.Collections.Generic.Dictionary<DecodeHintType, object>\n            {\n                [DecodeHintType.POSSIBLE_FORMATS] = new[] { BarcodeFormat.QR_CODE, BarcodeFormat.CODE_128, BarcodeFormat.CODE_39, BarcodeFormat.EAN_13, BarcodeFormat.EAN_8, BarcodeFormat.DATA_MATRIX, BarcodeFormat.PDF_417 }\n            };\n            var decoded = reader.Decode(binary, hints);\n            BarcodeCaptured?.Invoke(decoded?.Text);\n        }\n        catch (ReaderException)\n        {\n            BarcodeCaptured?.Invoke(null);\n        }\n        catch (Exception)\n        {\n            BarcodeCaptured?.Invoke(null);\n        }\n    }\n\n    public void RequestNotificationPermission()
+    public void StartBarcodeCapture()
+    {
+        try
+        {
+            var intent = new Intent(MediaStore.ActionImageCapture);
+            if (intent.ResolveActivity(PackageManager) is null)
+            {
+                BarcodeCaptured?.Invoke(null);
+                return;
+            }
+            StartActivityForResult(intent, BarcodeCaptureRequestCode);
+        }
+        catch
+        {
+            BarcodeCaptured?.Invoke(null);
+        }
+    }
+
+    protected override void OnActivityResult(int requestCode, Result resultCode, Intent? data)
+    {
+        base.OnActivityResult(requestCode, resultCode, data);
+        if (requestCode != BarcodeCaptureRequestCode) return;
+        if (resultCode != Result.Ok || data?.Extras?.Get("data") is not Bitmap bitmap)
+        {
+            BarcodeCaptured?.Invoke(null);
+            return;
+        }
+
+        try
+        {
+            var width = bitmap.Width;
+            var height = bitmap.Height;
+            var pixels = new int[width * height];
+            bitmap.GetPixels(pixels, 0, width, 0, 0, width, height);
+            var source = new RGBLuminanceSource(pixels, width, height);
+            var binary = new BinaryBitmap(new HybridBinarizer(source));
+            var reader = new MultiFormatReader();
+            var hints = new System.Collections.Generic.Dictionary<DecodeHintType, object>
+            {
+                [DecodeHintType.POSSIBLE_FORMATS] = new[] { BarcodeFormat.QR_CODE, BarcodeFormat.CODE_128, BarcodeFormat.CODE_39, BarcodeFormat.EAN_13, BarcodeFormat.EAN_8, BarcodeFormat.DATA_MATRIX, BarcodeFormat.PDF_417 }
+            };
+            var decoded = reader.Decode(binary, hints);
+            BarcodeCaptured?.Invoke(decoded?.Text);
+        }
+        catch (ReaderException)
+        {
+            BarcodeCaptured?.Invoke(null);
+        }
+        catch (Exception)
+        {
+            BarcodeCaptured?.Invoke(null);
+        }
+    }
+
+    public void RequestNotificationPermission()
     {
         if (Build.VERSION.SdkInt < BuildVersionCodes.Tiramisu)
             return;
