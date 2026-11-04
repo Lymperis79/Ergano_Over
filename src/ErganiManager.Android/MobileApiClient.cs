@@ -563,7 +563,8 @@ public sealed class MobileNotification
 
 public sealed class MobileWorkCardScanResult
 {
-    public string EmployeeName { get; set; } = string.Empty;
+    public string EmployeeName { get; set;     public int EmployeeId { get; set; }
+} = string.Empty;
     public string Movement { get; set; } = string.Empty;
     public DateTime ScannedAt { get; set; }
     public string Status { get; set; } = string.Empty;
