@@ -56,7 +56,7 @@ public sealed class BarcodeScannerActivity : Activity
 
         var panel = new LinearLayout(this)
         {
-            Orientation = Android.Widget.Orientation.Vertical,
+            Orientation = global::Android.Widget.Orientation.Vertical,
         };
         panel.SetGravity(GravityFlags.Center);
         panel.SetPadding(24, 28, 24, 28);
@@ -214,14 +214,15 @@ public sealed class BarcodeScannerActivity : Activity
                 // QR decoding is rotation tolerant; wait for the next camera frame.
             }
 
-            if (!string.IsNullOrWhiteSpace(result?.Text))
+            var decodedText = result?.Text;
+            if (!string.IsNullOrWhiteSpace(decodedText))
             {
                 _decoded = true;
                 RunOnUiThread(() =>
                 {
                     _status!.Text = "QR code detected. Sending to Ergani...";
                     var data = new Intent();
-                    data.PutExtra("barcode", result.Text);
+                    data.PutExtra("barcode", decodedText);
                     SetResult(global::Android.App.Result.Ok, data);
                     Finish();
                 });
