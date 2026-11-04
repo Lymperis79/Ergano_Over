@@ -53,9 +53,9 @@ public partial class WorkCardHistoryViewModel : ViewModelBase, IAdminSectionView
             ? AvailableEmployees.ToList()
             : AvailableEmployees.Where(e =>
                     e is not null &&
-                    (!string.IsNullOrWhiteSpace(e.FullName) &&
-                     e.FullName.Contains(query, StringComparison.CurrentCultureIgnoreCase)) ||
-                    e.Id.ToString().Contains(query, StringComparison.Ordinal))
+                    ((!string.IsNullOrWhiteSpace(e.FullName) &&
+                      e.FullName.Contains(query, StringComparison.CurrentCultureIgnoreCase)) ||
+                     e.Id.ToString().Contains(query, StringComparison.Ordinal)))
                 .ToList();
 
         FilteredEmployees.Clear();
