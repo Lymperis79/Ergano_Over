@@ -126,7 +126,14 @@ public class MainActivity : AvaloniaMainActivity
             var height = bitmap.Height;
             var pixels = new int[width * height];
             bitmap.GetPixels(pixels, 0, width, 0, 0, width, height);
-            var source = new RGBLuminanceSource(pixels, width, height);
+            var rgb = new byte[pixels.Length * 3];
+            for (var i = 0; i < pixels.Length; i++)
+            {
+                rgb[i * 3] = (byte)((pixels[i] >> 16) & 0xff);
+                rgb[i * 3 + 1] = (byte)((pixels[i] >> 8) & 0xff);
+                rgb[i * 3 + 2] = (byte)(pixels[i] & 0xff);
+            }
+            var source = new RGBLuminanceSource(rgb, width, height);
             var binary = new BinaryBitmap(new HybridBinarizer(source));
             var reader = new MultiFormatReader();
             var hints = new System.Collections.Generic.Dictionary<DecodeHintType, object>
