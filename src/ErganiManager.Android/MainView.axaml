@@ -271,5 +271,21 @@
         </StackPanel>
       </StackPanel>
     </ScrollViewer>
+
+    <Border Grid.Row="2" Margin="14,10" Padding="14" VerticalAlignment="Top"
+            HorizontalAlignment="Stretch" Background="#3B2F1D" BorderBrush="#D69B35"
+            BorderThickness="1" CornerRadius="12" IsVisible="{Binding HasNotificationPopup}">
+      <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+        <StackPanel Grid.Column="0" Spacing="5">
+          <TextBlock Text="⚠  ALERT" Foreground="#F0C674" FontWeight="Bold" FontSize="12" />
+          <TextBlock Text="{Binding NotificationTitle}" Foreground="White" FontWeight="SemiBold"
+                     TextWrapping="Wrap" />
+          <TextBlock Text="{Binding NotificationMessage}" Foreground="#E7DCC8"
+                     FontSize="12" TextWrapping="Wrap" />
+        </StackPanel>
+        <Button Grid.Column="1" Content="×" Command="{Binding DismissNotificationCommand}"
+                VerticalAlignment="Top" />
+      </Grid>
+    </Border>
   </Grid>
 </UserControl>
