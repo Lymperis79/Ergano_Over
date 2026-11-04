@@ -1000,7 +1000,9 @@ public partial class TerminalViewModel : ViewModelBase
     private void SendAlert(int companyId, AlertEvent kind, CachedEmployee employee, bool isOnline,
         params (string Label, string Value)[] details)
     {
-        if (!isOnline) return;
+        // Notifications are local and must be raised even while internet or Ergani is unavailable.
+        // SendAlertAsync persists the in-app notification before attempting SMTP; failed email
+        // delivery is queued independently by the alert service.
 
         var title = kind switch
         {
