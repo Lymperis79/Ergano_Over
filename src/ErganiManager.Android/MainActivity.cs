@@ -27,7 +27,7 @@ public class MainActivity : AvaloniaMainActivity
 {
     private const int NotificationPermissionRequestCode = 4102;
     private const int BarcodeCaptureRequestCode = 4103;
-    private Android.Net.Uri? _barcodeCaptureUri;
+    private global::Android.Net.Uri? _barcodeCaptureUri;
     public static event Action<string?>? BarcodeCaptured;
 
     public static MainActivity? Current { get; private set; }
@@ -96,7 +96,7 @@ public class MainActivity : AvaloniaMainActivity
         }
     }
 
-    protected override void OnActivityResult(int requestCode, Result resultCode, Intent? data)
+    protected override void OnActivityResult(int requestCode, Android.App.Result resultCode, Intent? data)
     {
         base.OnActivityResult(requestCode, resultCode, data);
         if (requestCode != BarcodeCaptureRequestCode) return;
@@ -104,7 +104,7 @@ public class MainActivity : AvaloniaMainActivity
         Bitmap? bitmap = null;
         try
         {
-            if (resultCode == Result.Ok && _barcodeCaptureUri != null)
+            if (resultCode == Android.App.Result.Ok && _barcodeCaptureUri != null)
             {
                 using var stream = ContentResolver?.OpenInputStream(_barcodeCaptureUri);
                 if (stream != null)
