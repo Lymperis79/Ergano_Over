@@ -4,7 +4,6 @@ using Android.Content.PM;
 using Android.OS;
 using Avalonia.Android;
 using System.Runtime.Versioning;
-using ActivityResult = global::Android.App.Result;
 
 namespace ErganiManager.Android;
 
@@ -72,12 +71,12 @@ public class MainActivity : AvaloniaMainActivity
         }
     }
 
-    protected override void OnActivityResult(int requestCode, ActivityResult resultCode, Intent? data)
+    protected override void OnActivityResult(int requestCode, global::Android.App.Result resultCode, Intent? data)
     {
         base.OnActivityResult(requestCode, resultCode, data);
         if (requestCode != BarcodeCaptureRequestCode) return;
 
-        if (resultCode == ActivityResult.Ok)
+        if (resultCode == global::Android.App.Result.Ok)
             BarcodeCaptured?.Invoke(data?.GetStringExtra("barcode"));
         // A user cancellation is not a failed scan; leave the manual-entry field untouched.
     }
