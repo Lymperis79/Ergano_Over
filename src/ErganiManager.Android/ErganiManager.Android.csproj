@@ -3,8 +3,8 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>net10.0-android</TargetFramework>
-    <RuntimeIdentifiers>android-arm64;android-x64</RuntimeIdentifiers>
-    <EmbedAssembliesIntoApk>true</EmbedAssembliesIntoApk>
+	<RuntimeIdentifiers>android-arm64;android-x64</RuntimeIdentifiers>
+	<EmbedAssembliesIntoApk>true</EmbedAssembliesIntoApk>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <RootNamespace>ErganiManager.Android</RootNamespace>
@@ -15,6 +15,23 @@
     <AndroidMinSdkVersion>23</AndroidMinSdkVersion>
     <AndroidPackageFormat>apk</AndroidPackageFormat>
     <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
+    <AndroidSigningKeyStore>ergani-release.keystore</AndroidSigningKeyStore>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <AndroidKeyStore>True</AndroidKeyStore>
+    <AndroidSigningStorePass>Limnos79@</AndroidSigningStorePass>
+    <AndroidSigningKeyAlias>ergani</AndroidSigningKeyAlias>
+    <AndroidApkSignerAdditionalArguments></AndroidApkSignerAdditionalArguments>
+    <AndroidSigningKeyPass>Limnos79@</AndroidSigningKeyPass>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+    <AndroidKeyStore>True</AndroidKeyStore>
+    <AndroidSigningStorePass>Limnos79@</AndroidSigningStorePass>
+    <AndroidSigningKeyAlias>ergani</AndroidSigningKeyAlias>
+    <AndroidApkSignerAdditionalArguments></AndroidApkSignerAdditionalArguments>
+    <AndroidSigningKeyPass>Limnos79@</AndroidSigningKeyPass>
   </PropertyGroup>
 
   <ItemGroup>
