@@ -1,5 +1,6 @@
 using Avalonia;
 using ErganiManager.Core;
+using ErganiManager.Core.Interfaces;
 using ErganiManager.ErganiApi;
 using ErganiManager.LocalCache;
 using Microsoft.Extensions.DependencyInjection;
@@ -94,6 +95,8 @@ internal static class Program
             Log.Information("ErganiManager starting up. OS: {OS}", Environment.OSVersion);
 
             Services = BuildServiceProvider();
+            Services.GetRequiredService<IEmailAlertService>().NotificationRaised +=
+                ErganiManager.UI.Services.DesktopAlertNotificationWindow.Show;
 
             // Leave type settings are shared through the main database; the JSON file is only an offline cache.
             ErganiManager.Core.Models.LeaveTypes.ConfigureDatabase(() =>
