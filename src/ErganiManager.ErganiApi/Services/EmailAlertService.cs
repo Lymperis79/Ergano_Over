@@ -91,8 +91,12 @@ public class EmailAlertService : IEmailAlertService
             if (company == null)
                 return (false, $"Company {companyId} not found.");
 
-            // Alerts off, or this kind of event not selected: silently skip, not a failure.
-            if (!company.AlertEmailEnabled || (company.AlertEvents & (int)alert.Event) == 0)
+            // Notification and email delivery are independent, but share the same alert event and content.
+            var eventEnabled = (company.AlertEvents & (int)alert.Event) != 0;
+            if (eventEnabled && company.AlertNotificationEnabled)
+                await SaveNotificationAsync(companyId, alert);
+
+            if (!eventEnabled || !company.AlertEmailEnabled)
                 return (true, null);
 
             var (subject, body) = Compose(company, alert, delayedSince: null);
@@ -216,6 +220,36 @@ public class EmailAlertService : IEmailAlertService
     }
 
     // ------------------------------------------------------------------ helpers
+
+    /// <summary>Persists an in-app notification independently of SMTP delivery.</summary>
+    private async Task SaveNotificationAsync(int companyId, AlertMessage alert)
+    {
+        try
+        {
+            var db = OpenDb();
+            if (db == null) return;
+            await using (db)
+            {
+                var message = string.Join(Environment.NewLine,
+                    alert.Lines.Select(line => $"{line.Label}: {line.Value}"));
+                db.NotificationLogs.Add(new NotificationLog
+                {
+                    CompanyId = companyId,
+                    EventCode = (int)alert.Event,
+                    Title = Trunc(alert.Title, 300) ?? string.Empty,
+                    Message = message,
+                    CreatedAt = DateTime.UtcNow,
+                    IsRead = false
+                });
+                await db.SaveChangesAsync();
+            }
+        }
+        catch (Exception ex)
+        {
+            // A notification failure must never prevent email delivery or the operation that raised the alert.
+            _logger.LogWarning(ex, "Could not persist in-app notification '{Title}'.", alert.Title);
+        }
+    }
 
     private AppDbContext? OpenDb()
     {
