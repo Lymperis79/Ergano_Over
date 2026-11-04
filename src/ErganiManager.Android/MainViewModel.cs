@@ -8,6 +8,53 @@ namespace ErganiManager.Android;
 
 public partial class MainViewModel : ObservableObject
 {
+    public MainViewModel() => MainActivity.BarcodeCaptured += OnBarcodeCaptured;
+
+    private void OnBarcodeCaptured(string? value)
+    {
+        Dispatcher.UIThread.Post(() =>
+        {
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                WorkCardScanMessage = "No barcode was detected. Try again or enter the number manually.";
+                return;
+            }
+            WorkCardScanInput = value;
+            WorkCardScanMessage = "Barcode captured. Press Submit scan to continue.";
+        });
+    }
+
+    [RelayCommand]
+    private void OpenBarcodeCamera()
+    {
+        if (!IsAuthenticated || !IsWorkCardsVisible) return;
+        MainActivity.Current?.StartBarcodeCapture();
+    }
+
+    [RelayCommand]
+    private async Task SubmitWorkCardScanAsync()
+    {
+        if (IsWorkCardScanBusy || _api is null) return;
+        if (string.IsNullOrWhiteSpace(WorkCardScanInput))
+        {
+            WorkCardScanMessage = "Scan a barcode or type the employee number first.";
+            return;
+        }
+        IsWorkCardScanBusy = true;
+        try
+        {
+            var result = await _api.ScanWorkCardAsync(WorkCardScanInput.Trim());
+            WorkCardScanMessage = $"{result.Movement} saved for {result.EmployeeName} at {result.ScannedAt:HH:mm:ss}. {result.Message}";
+            WorkCardScanInput = string.Empty;
+            await RefreshWorkCardsAsync();
+        }
+        catch (Exception ex)
+        {
+            WorkCardScanMessage = GetFullError(ex);
+        }
+        finally { IsWorkCardScanBusy = false; }
+    }
+
     private MobileApiClient? _api;
     private CancellationTokenSource? _notificationPollingCts;
     private long _lastNotificationId;
@@ -32,6 +79,9 @@ public partial class MainViewModel : ObservableObject
     [ObservableProperty] private bool _isEmployeesVisible;
     public bool HasEmployees => Employees.Count > 0;
     [ObservableProperty] private bool _isWorkCardsVisible;
+    [ObservableProperty] private string _workCardScanInput = string.Empty;
+    [ObservableProperty] private string _workCardScanMessage = "Scan an employee barcode with the camera or type the employee number.";
+    [ObservableProperty] private bool _isWorkCardScanBusy;
     [ObservableProperty] private string _workCardFromDate = DateOnly.FromDateTime(DateTime.Today.AddDays(-30)).ToString("yyyy-MM-dd");
     [ObservableProperty] private string _workCardToDate = DateOnly.FromDateTime(DateTime.Today).ToString("yyyy-MM-dd");
     [ObservableProperty] private DateTime? _workCardFromDatePicker = DateTime.Today.AddDays(-30);
