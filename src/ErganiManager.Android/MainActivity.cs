@@ -113,7 +113,7 @@ public class MainActivity : AvaloniaMainActivity
             }
 
             // Some camera apps ignore EXTRA_OUTPUT and return only a thumbnail.
-            bitmap ??= resultCode == global::Android.App.Result.Ok
+            bitmap ??= resultCode == (ActivityResult)(-1)
                 ? data?.Extras?.Get("data") as Bitmap
                 : null;
 
