@@ -292,6 +292,101 @@ app.MapGet("/api/mobile/workcards/history", async Task<IResult> (
     return Results.Ok(rows);
 }).RequireAuthorization();
 
+app.MapPost("/api/mobile/workcards/scan", async Task<IResult> (
+    MobileWorkCardScanRequest request,
+    ICompanyContext context,
+    ICacheSyncService cacheSync,
+    ErganiRetryService retryService) =>
+{
+    var session = context.CurrentSession!;
+    if (!session.CanSee(MenuKeys.WorkCards)) return Results.Forbid();
+    var companyId = context.ActiveCompanyId;
+    if (!companyId.HasValue)
+        return Results.Conflict(new { message = "Select a company before scanning a work card." });
+    if (string.IsNullOrWhiteSpace(request.ScanValue))
+        return Results.BadRequest(new { message = "Enter an employee number or scan a barcode." });
+
+    var raw = request.ScanValue.Trim();
+    var afmCandidate = raw;
+    if (raw.Contains(':'))
+    {
+        var afmPart = raw.Split(';', StringSplitOptions.RemoveEmptyEntries)
+            .Select(part => part.Split(':', 2))
+            .FirstOrDefault(parts => parts.Length == 2 &&
+                parts[0].Trim().Equals("afm", StringComparison.OrdinalIgnoreCase));
+        if (afmPart is { Length: 2 }) afmCandidate = afmPart[1].Trim();
+    }
+    var digits = new string(afmCandidate.Where(char.IsDigit).ToArray());
+    var afm = digits.Length == 9 ? digits.PadLeft(9, '0') : null;
+
+    var sync = await cacheSync.RefreshCacheFromMainDatabaseAsync(companyId.Value);
+    if (!sync.Success)
+        return Results.StatusCode(StatusCodes.Status503ServiceUnavailable);
+
+    using var cache = LocalCacheDbContextFactory.Create();
+    var employee = await cache.CachedEmployees.FirstOrDefaultAsync(e =>
+        e.CompanyId == companyId.Value && e.IsActive &&
+        ((afm != null && e.TaxId == afm) || e.BarcodeId == raw));
+    if (employee is null)
+        return Results.NotFound(new { message = "No active employee matches that AFM or barcode in the selected company." });
+
+    var now = DateTime.Now;
+    var settings = await cache.CachedCompanySettings.FindAsync(companyId.Value);
+    var shift = await ShiftResolver.ResolveAsync(cache, employee.Id, now,
+        settings?.EarlyClockInBlockMinutes ?? 0);
+    var movement = shift.Movement;
+    var schedule = shift.Schedule;
+    var officialHoliday = movement == "Arrival" &&
+        CompanyHolidayCalendar.IsEnabled(settings?.OfficialHolidayDatesJson, DateOnly.FromDateTime(now));
+
+    if (!officialHoliday && movement == "Arrival" && schedule != null &&
+        schedule.WorkType is 2 or 3 &&
+        (settings == null || settings.BlockClockInOnRestOrAbsentDay))
+    {
+        var dayType = schedule.WorkType == 2 ? "rest day" : "absence day";
+        return Results.Conflict(new { message = $"Clock-in is blocked because today is marked as a {dayType}." });
+    }
+
+    if (!officialHoliday && movement == "Arrival" && schedule == null &&
+        settings?.BlockClockInWithoutSchedule == true)
+        return Results.Conflict(new { message = "Clock-in is blocked because no schedule exists for today." });
+
+    if (!officialHoliday && movement == "Arrival" && shift.ShiftStart is { } shiftStart &&
+        settings is { EarlyClockInBlockMinutes: > 0 })
+    {
+        var earliest = shiftStart.AddMinutes(-settings.EarlyClockInBlockMinutes);
+        if (now < earliest)
+            return Results.Conflict(new { message = $"Clock-in is too early. Earliest allowed time is {earliest:HH:mm}." });
+    }
+
+    var duplicateSince = now.AddSeconds(-20);
+    var duplicate = await cache.PendingSubmissions.AnyAsync(p =>
+        p.CompanyId == companyId.Value && p.EmployeeId == employee.Id &&
+        p.ScannedAt >= duplicateSince && p.ScannedAt <= now.AddSeconds(1));
+    if (duplicate)
+        return Results.Conflict(new { message = "This employee was scanned in the last 20 seconds. Please wait before scanning again." });
+
+    var queued = new PendingSubmission
+    {
+        EmployeeId = employee.Id,
+        CompanyId = companyId.Value,
+        BranchId = employee.BranchId,
+        EmployeeBarcodeId = employee.BarcodeId,
+        MovementType = movement,
+        ScannedAt = now,
+        Synced = false
+    };
+    cache.PendingSubmissions.Add(queued);
+    await cache.SaveChangesAsync();
+
+    // The host's existing ErganiRetryService owns delivery and retry ordering.
+    // The mobile endpoint only writes to the shared queue, avoiding a second sender
+    // racing the desktop application's retry worker.
+    return Results.Ok(new MobileWorkCardScanResponse(
+        employee.FullName, movement, now, "Queued",
+        "Scan saved on the host. The existing Ergani retry service will submit it automatically."));
+}).RequireAuthorization();
+
 app.MapGet("/api/mobile/notifications", async Task<IResult> (
     ICompanyContext context, IConnectionStateService connectionState, long? afterId) =>
 {
@@ -397,3 +492,6 @@ public sealed record MobileEmployeeResponse(int Id, int BranchId, string FirstNa
 
 public sealed record MobileNotificationResponse(long Id, int EventCode, string Title,
     string Message, DateTime CreatedAt, bool IsRead);
+
+public sealed record MobileWorkCardScanRequest(string ScanValue);
+public sealed record MobileWorkCardScanResponse(string EmployeeName, string Movement, DateTime ScannedAt, string Status, string Message);
