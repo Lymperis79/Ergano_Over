@@ -8,6 +8,7 @@ using ZXing;
 using ZXing.Common;
 using Avalonia.Android;
 using System.Runtime.Versioning;
+using ActivityResult = global::Android.App.Result;
 
 namespace ErganiManager.Android;
 
@@ -65,7 +66,7 @@ public class MainActivity : AvaloniaMainActivity
         try
         {
             var intent = new Intent(MediaStore.ActionImageCapture);
-            if (intent.ResolveActivity(PackageManager) is null)
+            if (PackageManager is null || intent.ResolveActivity(PackageManager) is null)
             {
                 BarcodeCaptured?.Invoke(null);
                 return;
@@ -81,7 +82,7 @@ public class MainActivity : AvaloniaMainActivity
             if (Build.VERSION.SdkInt >= BuildVersionCodes.Q)
                 values.Put(MediaStore.Images.Media.InterfaceConsts.RelativePath, "Pictures/ErganiManager");
 
-            _barcodeCaptureUri = ContentResolver?.Insert(MediaStore.Images.Media.ExternalContentUri, values);
+            _barcodeCaptureUri = ContentResolver?.Insert(MediaStore.Images.Media.ExternalContentUri!, values);
             if (_barcodeCaptureUri != null)
             {
                 intent.PutExtra(MediaStore.ExtraOutput, _barcodeCaptureUri);
@@ -96,7 +97,7 @@ public class MainActivity : AvaloniaMainActivity
         }
     }
 
-    protected override void OnActivityResult(int requestCode, global::Android.App.Result resultCode, Intent? data)
+    protected override void OnActivityResult(int requestCode, ActivityResult resultCode, Intent? data)
     {
         base.OnActivityResult(requestCode, resultCode, data);
         if (requestCode != BarcodeCaptureRequestCode) return;
@@ -104,7 +105,7 @@ public class MainActivity : AvaloniaMainActivity
         Bitmap? bitmap = null;
         try
         {
-            if (resultCode == global::Android.App.Result.Ok && _barcodeCaptureUri != null)
+            if (resultCode == (ActivityResult)(-1) && _barcodeCaptureUri != null)
             {
                 using var stream = ContentResolver?.OpenInputStream(_barcodeCaptureUri);
                 if (stream != null)
@@ -145,7 +146,7 @@ public class MainActivity : AvaloniaMainActivity
                     BarcodeFormat.PDF_417
                 }
             };
-            var decoded = reader.Decode(binary, hints);
+            var decoded = reader.decode(binary, hints);
             BarcodeCaptured?.Invoke(decoded?.Text);
         }
         catch (ReaderException)
