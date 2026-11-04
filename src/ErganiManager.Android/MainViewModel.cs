@@ -196,15 +196,15 @@ public partial class MainViewModel : ObservableObject
         }
     }
 
-    private Task ShowNotificationAsync(MobileNotification item)
+    private async Task ShowNotificationAsync(MobileNotification item)
     {
-        return Dispatcher.UIThread.InvokeAsync(() =>
+        await Dispatcher.UIThread.InvokeAsync(() =>
         {
             NotificationTitle = item.Title;
             NotificationMessage = item.Message;
             ActiveNotificationId = item.Id;
             HasNotificationPopup = true;
-        }).GetTask();
+        });
     }
 
     [RelayCommand]
