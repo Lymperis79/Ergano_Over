@@ -91,6 +91,8 @@
                       Command="{Binding SubmitWorkCardScanCommand}"
                       IsEnabled="{Binding !IsWorkCardScanBusy}" />
             </Grid>
+            <ProgressBar IsIndeterminate="True" Height="4"
+                         IsVisible="{Binding IsWorkCardScanBusy}" />
             <TextBlock Text="{Binding WorkCardScanMessage}" Foreground="#F0C674"
                        FontSize="13" TextWrapping="Wrap" />
             <CalendarDatePicker SelectedDate="{Binding WorkCardFromDatePicker, Mode=TwoWay}"
