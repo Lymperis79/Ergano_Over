@@ -27,6 +27,7 @@ public class MainActivity : AvaloniaMainActivity
 {
     private const int NotificationPermissionRequestCode = 4102;
     private const int BarcodeCaptureRequestCode = 4103;
+    private Android.Net.Uri? _barcodeCaptureUri;
     public static event Action<string?>? BarcodeCaptured;
 
     public static MainActivity? Current { get; private set; }
@@ -69,6 +70,24 @@ public class MainActivity : AvaloniaMainActivity
                 BarcodeCaptured?.Invoke(null);
                 return;
             }
+
+            // Ask the camera app to save the full-resolution photo to MediaStore.
+            // The thumbnail returned in Intent extras is usually too small for reliable
+            // barcode decoding, especially for the QR payloads used by Ergani.
+            var values = new ContentValues();
+            values.Put(MediaStore.Images.Media.InterfaceConsts.DisplayName,
+                "ergani-scan-" + DateTime.Now.ToString("yyyyMMdd-HHmmss") + ".jpg");
+            values.Put(MediaStore.Images.Media.InterfaceConsts.MimeType, "image/jpeg");
+            if (Build.VERSION.SdkInt >= BuildVersionCodes.Q)
+                values.Put(MediaStore.Images.Media.InterfaceConsts.RelativePath, "Pictures/ErganiManager");
+
+            _barcodeCaptureUri = ContentResolver?.Insert(MediaStore.Images.Media.ExternalContentUri, values);
+            if (_barcodeCaptureUri != null)
+            {
+                intent.PutExtra(MediaStore.ExtraOutput, _barcodeCaptureUri);
+                intent.AddFlags(ActivityFlags.GrantReadUriPermission | ActivityFlags.GrantWriteUriPermission);
+            }
+
             StartActivityForResult(intent, BarcodeCaptureRequestCode);
         }
         catch
@@ -81,14 +100,28 @@ public class MainActivity : AvaloniaMainActivity
     {
         base.OnActivityResult(requestCode, resultCode, data);
         if (requestCode != BarcodeCaptureRequestCode) return;
-        if (resultCode != Result.Ok || data?.Extras?.Get("data") is not Bitmap bitmap)
-        {
-            BarcodeCaptured?.Invoke(null);
-            return;
-        }
 
+        Bitmap? bitmap = null;
         try
         {
+            if (resultCode == Result.Ok && _barcodeCaptureUri != null)
+            {
+                using var stream = ContentResolver?.OpenInputStream(_barcodeCaptureUri);
+                if (stream != null)
+                    bitmap = BitmapFactory.DecodeStream(stream);
+            }
+
+            // Some camera apps ignore EXTRA_OUTPUT and return only a thumbnail.
+            bitmap ??= resultCode == Result.Ok
+                ? data?.Extras?.Get("data") as Bitmap
+                : null;
+
+            if (bitmap is null)
+            {
+                BarcodeCaptured?.Invoke(null);
+                return;
+            }
+
             var width = bitmap.Width;
             var height = bitmap.Height;
             var pixels = new int[width * height];
@@ -98,7 +131,12 @@ public class MainActivity : AvaloniaMainActivity
             var reader = new MultiFormatReader();
             var hints = new System.Collections.Generic.Dictionary<DecodeHintType, object>
             {
-                [DecodeHintType.POSSIBLE_FORMATS] = new[] { BarcodeFormat.QR_CODE, BarcodeFormat.CODE_128, BarcodeFormat.CODE_39, BarcodeFormat.EAN_13, BarcodeFormat.EAN_8, BarcodeFormat.DATA_MATRIX, BarcodeFormat.PDF_417 }
+                [DecodeHintType.POSSIBLE_FORMATS] = new[]
+                {
+                    BarcodeFormat.QR_CODE, BarcodeFormat.CODE_128, BarcodeFormat.CODE_39,
+                    BarcodeFormat.EAN_13, BarcodeFormat.EAN_8, BarcodeFormat.DATA_MATRIX,
+                    BarcodeFormat.PDF_417
+                }
             };
             var decoded = reader.Decode(binary, hints);
             BarcodeCaptured?.Invoke(decoded?.Text);
@@ -110,6 +148,15 @@ public class MainActivity : AvaloniaMainActivity
         catch (Exception)
         {
             BarcodeCaptured?.Invoke(null);
+        }
+        finally
+        {
+            bitmap?.Recycle();
+            if (_barcodeCaptureUri != null)
+            {
+                try { ContentResolver?.Delete(_barcodeCaptureUri, null, null); } catch { }
+                _barcodeCaptureUri = null;
+            }
         }
     }
 
