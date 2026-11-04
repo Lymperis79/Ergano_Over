@@ -223,6 +223,20 @@ public sealed class MobileApiClient : IDisposable
         return await response.Content.ReadFromJsonAsync<List<MobileScheduleDay>>(cancellationToken: cancellationToken) ?? [];
     }
 
+    public async Task SaveScheduleDayAsync(
+        int employeeId, DateOnly scheduleDate, int workType,
+        TimeOnly? startTime, TimeOnly? endTime, string? comments,
+        CancellationToken cancellationToken = default)
+    {
+        using var response = await _http.PostAsJsonAsync("api/mobile/schedules/day",
+            new { employeeId, scheduleDate, workType, startTime, endTime, comments }, cancellationToken);
+        if (!response.IsSuccessStatusCode)
+        {
+            var body = await response.Content.ReadAsStringAsync(cancellationToken);
+            throw new HttpRequestException($"Saving work calendar day returned HTTP {(int)response.StatusCode}: {body}");
+        }
+    }
+
     public async Task<List<MobileWorkCardHistoryItem>> GetWorkCardHistoryAsync(
         DateOnly fromDate, DateOnly toDate, int? employeeId,
         CancellationToken cancellationToken = default)
@@ -481,6 +495,7 @@ public sealed class MobileScheduleDay
     public bool SubmittedToErgani { get; set; }
     public bool HasPendingChange { get; set; }
     public string? Protocol { get; set; }
+    public string? Comments { get; set; }
     public DateTime? ActualArrival { get; set; }
     public DateTime? ActualDeparture { get; set; }
     public string WorkTypeText => WorkType switch
