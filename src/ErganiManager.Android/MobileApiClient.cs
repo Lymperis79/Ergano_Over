@@ -568,4 +568,5 @@ public sealed class MobileWorkCardScanResult
     public DateTime ScannedAt { get; set; }
     public string Status { get; set; } = string.Empty;
     public string Message { get; set; } = string.Empty;
+    public string? Protocol { get; set; }
 }
