@@ -44,8 +44,9 @@ public partial class MainViewModel : ObservableObject
         try
         {
             var result = await _api.ScanWorkCardAsync(WorkCardScanInput.Trim());
-            WorkCardScanMessage = $"{result.Movement} saved for {result.EmployeeName} at {result.ScannedAt:HH:mm:ss}. {result.Message}";
-            WorkCardScanInput = string.Empty;
+            WorkCardScanMessage = $"{result.Status}: {result.Movement} for {result.EmployeeName} at {result.ScannedAt:HH:mm:ss}. {result.Message}";
+            if (!string.Equals(result.Status, "Rejected", StringComparison.OrdinalIgnoreCase))
+                WorkCardScanInput = string.Empty;
             await RefreshWorkCardsAsync();
         }
         catch (Exception ex)
