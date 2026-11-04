@@ -3,9 +3,11 @@ using Android.Content;
 using Android.Content.PM;
 using Android.OS;
 using Avalonia.Android;
+using System.Runtime.Versioning;
 
 namespace ErganiManager.Android;
 
+[SupportedOSPlatform("android23.0")]
 [Activity(
     Label = "Ergani Manager",
     Theme = "@style/MyTheme.NoActionBar",
@@ -65,6 +67,7 @@ public class MainActivity : AvaloniaMainActivity
     }
 }
 
+[SupportedOSPlatform("android23.0")]
 internal static class AndroidNotificationService
 {
     private const string ChannelId = "ergani_alerts";
@@ -121,7 +124,7 @@ internal static class AndroidNotificationService
             .SetCategory(Notification.CategoryMessage);
 
         if (Build.VERSION.SdkInt < BuildVersionCodes.O)
-            builder.SetPriority((int)NotificationPriority.High)
+            builder!.SetPriority((int)NotificationPriority.High)
                 .SetDefaults(NotificationDefaults.All);
 
         manager.Notify(requestCode, builder.Build());
