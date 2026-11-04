@@ -617,8 +617,10 @@ public sealed class MobileWorkCardHistoryItem
     public string StatusText =>
         IsLocalPending ? (RetryAttempts > 0
             ? $"Waiting to send · attempt {RetryAttempts}" + (string.IsNullOrWhiteSpace(RetryError) ? string.Empty : $" · {RetryError}")
-            : "Waiting to send") :
-        IsLocalFailed ? "Failed — retry pending" :
+            : "Waiting to send" + (string.IsNullOrWhiteSpace(RetryError) ? string.Empty : $" · {RetryError}")) :
+        IsLocalFailed ? (RetryAttempts > 0
+            ? "Failed — retry pending" + (string.IsNullOrWhiteSpace(RetryError) ? string.Empty : $" · {RetryError}")
+            : "Rejected by Ergani" + (string.IsNullOrWhiteSpace(RetryError) ? string.Empty : $" · {RetryError}")) :
         SubmittedToErgani ? "Sent to Ergani" + (string.IsNullOrWhiteSpace(Protocol) ? string.Empty : $" · Protocol: {Protocol}") :
         "Not submitted";
 }
