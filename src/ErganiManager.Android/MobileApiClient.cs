@@ -524,7 +524,13 @@ public sealed class MobileSchedulePeriod
 
 public sealed record MobileLoginResponse(string Username, string Role, int? CompanyId, string? CompanyName, int? BranchId, string? BranchName);
 public sealed record MobileCompany(int Id, string Name, string TaxId);
-public sealed record MobileEmployee(int Id, int BranchId, string FirstName, string LastName, bool IsActive);
+public sealed record MobileEmployee(int Id, int BranchId, string FirstName, string LastName, string? FatherName, string TaxId, bool IsActive)
+{
+    public string DisplayName =>
+        $"{FirstName} {LastName}" +
+        (string.IsNullOrWhiteSpace(FatherName) ? "" : $" {FatherName}") +
+        (string.IsNullOrWhiteSpace(TaxId) ? "" : $" · ΑΦΜ: {TaxId}");
+}
 
 
 public sealed class MobileTodayEmployeeStatus
