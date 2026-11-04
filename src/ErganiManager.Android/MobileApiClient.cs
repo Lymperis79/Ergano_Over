@@ -234,6 +234,19 @@ public sealed class MobileApiClient : IDisposable
             cancellationToken: cancellationToken) ?? [];
     }
 
+    public async Task<MobileWorkCardScanResult> ScanWorkCardAsync(string scanValue, CancellationToken cancellationToken = default)
+    {
+        using var response = await _http.PostAsJsonAsync("api/mobile/workcards/scan",
+            new { scanValue }, cancellationToken);
+        if (!response.IsSuccessStatusCode)
+        {
+            var body = await response.Content.ReadAsStringAsync(cancellationToken);
+            throw new HttpRequestException($"Work card scan returned HTTP {(int)response.StatusCode}: {body}");
+        }
+        return await response.Content.ReadFromJsonAsync<MobileWorkCardScanResult>(cancellationToken: cancellationToken)
+            ?? throw new InvalidOperationException("The server returned an empty scan response.");
+    }
+
     public async Task<List<MobileNotification>> GetNotificationsAsync(long afterId, CancellationToken cancellationToken = default)
     {
         using var response = await _http.GetAsync("api/mobile/notifications?afterId=" + afterId, cancellationToken);
@@ -539,4 +552,13 @@ public sealed class MobileNotification
     public string Message { get; set; } = string.Empty;
     public DateTime CreatedAt { get; set; }
     public bool IsRead { get; set; }
+}
+
+public sealed class MobileWorkCardScanResult
+{
+    public string EmployeeName { get; set; } = string.Empty;
+    public string Movement { get; set; } = string.Empty;
+    public DateTime ScannedAt { get; set; }
+    public string Status { get; set; } = string.Empty;
+    public string Message { get; set; } = string.Empty;
 }
