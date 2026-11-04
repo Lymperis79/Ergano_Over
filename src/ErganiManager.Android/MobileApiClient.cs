@@ -38,7 +38,14 @@ public sealed class MobileApiClient : IDisposable
         var host = context.DnsEndPoint.Host;
         IPAddress[] addresses = [];
         var isLocalHostname = host.EndsWith(".local", StringComparison.OrdinalIgnoreCase);
-        var hasCachedAddress = isLocalHostname && ResolvedHostCache.TryGetValue(host, out addresses);
+        var hasCachedAddress = false;
+        if (isLocalHostname &&
+            ResolvedHostCache.TryGetValue(host, out var cachedAddresses) &&
+            cachedAddresses is not null)
+        {
+            addresses = cachedAddresses;
+            hasCachedAddress = true;
+        }
 
         if (hasCachedAddress)
         {
