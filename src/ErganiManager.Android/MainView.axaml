@@ -84,7 +84,7 @@
             <TextBox PlaceholderText="Employee number, AFM or barcode"
                      Text="{Binding WorkCardScanInput, Mode=TwoWay}" />
             <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
-              <Button Grid.Column="0" Content="📷 Camera scan"
+              <Button Grid.Column="0" Content="▦ Scan QR code"
                       Command="{Binding OpenBarcodeCameraCommand}"
                       IsEnabled="{Binding !IsWorkCardScanBusy}" />
               <Button Grid.Column="1" Content="Submit scan"
