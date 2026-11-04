@@ -136,6 +136,17 @@ public partial class MainViewModel : ObservableObject
             SelectedCalendarMonth = value.Value.ToString("yyyy-MM", CultureInfo.InvariantCulture);
     }
     [ObservableProperty] private string _workCalendarMessage = "Choose an employee to load the work calendar.";
+    [ObservableProperty] private DateTime? _scheduleEditDatePicker = DateTime.Today;
+    [ObservableProperty] private int _scheduleWorkTypeIndex;
+    [ObservableProperty] private string _scheduleStartTime = string.Empty;
+    [ObservableProperty] private string _scheduleEndTime = string.Empty;
+    [ObservableProperty] private string _scheduleComments = string.Empty;
+    partial void OnScheduleEditDatePickerChanged(DateTime? value)
+    {
+        if (value.HasValue)
+            SelectedCalendarMonth = value.Value.ToString("yyyy-MM", CultureInfo.InvariantCulture);
+    }
+
     public ObservableCollection<MobileScheduleDay> WorkCalendarDays { get; } = new();
     [ObservableProperty] private string _selectedStatusDate = DateOnly.FromDateTime(DateTime.Today).ToString("yyyy-MM-dd");
     [ObservableProperty] private DateTime? _selectedStatusDatePicker = DateTime.Today;
@@ -520,6 +531,85 @@ public partial class MainViewModel : ObservableObject
         }
         catch (Exception ex) { WorkCalendarMessage = GetFullError(ex); }
         finally { IsBusy = false; }
+    }
+
+    [RelayCommand]
+    private void LoadSelectedScheduleDay()
+    {
+        if (SelectedCalendarEmployee is null || ScheduleEditDatePicker is null)
+        {
+            WorkCalendarMessage = "Choose an employee and a schedule date first.";
+            return;
+        }
+
+        var date = DateOnly.FromDateTime(ScheduleEditDatePicker.Value);
+        var day = WorkCalendarDays.FirstOrDefault(x =>
+            x.EmployeeId == SelectedCalendarEmployee.Id && x.ScheduleDate == date);
+
+        if (day is null)
+        {
+            ScheduleWorkTypeIndex = 0;
+            ScheduleStartTime = string.Empty;
+            ScheduleEndTime = string.Empty;
+            ScheduleComments = string.Empty;
+            WorkCalendarMessage = $"No schedule exists for {date:dd/MM/yyyy}. Enter a new day below.";
+            return;
+        }
+
+        ScheduleWorkTypeIndex = day.WorkType;
+        var periods = day.WorkingPeriods.OrderBy(x => x.PeriodNumber).ToList();
+        ScheduleStartTime = periods.Count > 0
+            ? periods[0].StartTime.ToString("HH:mm")
+            : day.StartTime?.ToString("HH:mm") ?? string.Empty;
+        ScheduleEndTime = periods.Count > 0
+            ? periods[^1].EndTime.ToString("HH:mm")
+            : day.EndTime?.ToString("HH:mm") ?? string.Empty;
+        ScheduleComments = day.Comments ?? string.Empty;
+        WorkCalendarMessage = $"Loaded {date:dd/MM/yyyy}. Changes to an already-submitted day will be marked as pending.";
+    }
+
+    [RelayCommand]
+    private async Task SaveScheduleDayAsync()
+    {
+        if (_api is null || SelectedCalendarEmployee is null || ScheduleEditDatePicker is null)
+        {
+            WorkCalendarMessage = "Choose an employee and a schedule date first.";
+            return;
+        }
+
+        var date = DateOnly.FromDateTime(ScheduleEditDatePicker.Value);
+        TimeOnly? start = null;
+        TimeOnly? end = null;
+        if (ScheduleWorkTypeIndex is 0 or 1)
+        {
+            if (!TimeOnly.TryParse(ScheduleStartTime, CultureInfo.InvariantCulture, out var parsedStart) ||
+                !TimeOnly.TryParse(ScheduleEndTime, CultureInfo.InvariantCulture, out var parsedEnd))
+            {
+                WorkCalendarMessage = "Enter valid start and end times in HH:mm format.";
+                return;
+            }
+            start = parsedStart;
+            end = parsedEnd;
+        }
+
+        IsBusy = true;
+        try
+        {
+            await _api.SaveScheduleDayAsync(
+                SelectedCalendarEmployee.Id, date, ScheduleWorkTypeIndex,
+                start, end, string.IsNullOrWhiteSpace(ScheduleComments) ? null : ScheduleComments.Trim());
+            WorkCalendarMessage = $"Schedule for {date:dd/MM/yyyy} saved. It is pending submission to Ergani.";
+        }
+        catch (Exception ex)
+        {
+            WorkCalendarMessage = GetFullError(ex);
+        }
+        finally
+        {
+            IsBusy = false;
+        }
+
+        await RefreshWorkCalendarAsync();
     }
 
     [RelayCommand]
