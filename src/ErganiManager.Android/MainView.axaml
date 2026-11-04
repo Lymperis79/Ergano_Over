@@ -160,6 +160,34 @@
               <Button Grid.Column="2" Content="›" Command="{Binding NextCalendarMonthCommand}" />
             </Grid>
             <Button Content="Load month" Command="{Binding RefreshWorkCalendarCommand}" IsEnabled="{Binding !IsBusy}" />
+            <Border Background="#293749" CornerRadius="10" Padding="12">
+              <StackPanel Spacing="8">
+                <TextBlock Text="EDIT SCHEDULE DAY" Foreground="#8BBCEB" FontWeight="Bold" FontSize="12" />
+                <CalendarDatePicker SelectedDate="{Binding ScheduleEditDatePicker, Mode=TwoWay}"
+                                    PlaceholderText="Schedule date"
+                                    SelectedDateFormat="Custom"
+                                    CustomDateFormatString="dd/MM/yyyy" />
+                <Button Content="Load selected day" Command="{Binding LoadSelectedScheduleDayCommand}"
+                        IsEnabled="{Binding !IsBusy}" />
+                <ComboBox SelectedIndex="{Binding ScheduleWorkTypeIndex, Mode=TwoWay}"
+                          HorizontalAlignment="Stretch">
+                  <ComboBoxItem Content="Office" />
+                  <ComboBoxItem Content="Work from home" />
+                  <ComboBoxItem Content="Rest day" />
+                  <ComboBoxItem Content="Absent" />
+                </ComboBox>
+                <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
+                  <TextBox Grid.Column="0" PlaceholderText="Start time (HH:mm)"
+                           Text="{Binding ScheduleStartTime, Mode=TwoWay}" />
+                  <TextBox Grid.Column="1" PlaceholderText="End time (HH:mm)"
+                           Text="{Binding ScheduleEndTime, Mode=TwoWay}" />
+                </Grid>
+                <TextBox PlaceholderText="Comments (optional)"
+                         Text="{Binding ScheduleComments, Mode=TwoWay}" />
+                <Button Content="Save schedule day" Command="{Binding SaveScheduleDayCommand}"
+                        IsEnabled="{Binding !IsBusy}" />
+              </StackPanel>
+            </Border>
             <TextBlock Text="{Binding WorkCalendarMessage}" Foreground="#C3CEDB" FontSize="13" TextWrapping="Wrap" />
             <ItemsControl ItemsSource="{Binding WorkCalendarDays}">
               <ItemsControl.ItemTemplate>
