@@ -384,7 +384,7 @@ app.MapPost("/api/mobile/workcards/scan", async Task<IResult> (
     // racing the desktop application's retry worker.
     return Results.Ok(new MobileWorkCardScanResponse(
         employee.FullName, movement, now, "Queued",
-        "Scan saved on the host. The existing Ergani retry service will submit it automatically."));
+        "Scan saved on the host. The Windows application's Ergani retry service will submit it automatically while that application is running."));
 }).RequireAuthorization();
 
 app.MapGet("/api/mobile/notifications", async Task<IResult> (
