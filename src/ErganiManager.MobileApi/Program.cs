@@ -276,10 +276,10 @@ app.MapPost("/api/mobile/schedules/day", async Task<IResult> (
     if (employee is null || employee.CompanyId != companyId.Value || !employee.IsActive)
         return Results.NotFound(new { message = "The employee was not found in the active company." });
 
-    if (request.WorkType is 0 or 1 && (!request.StartTime.HasValue || !request.EndTime.HasValue))
+    if ((request.WorkType is 0 or 1) && (!request.StartTime.HasValue || !request.EndTime.HasValue))
         return Results.BadRequest(new { message = "Start and end times are required for Office/Home work days." });
 
-    var periods = request.WorkType is 0 or 1
+    var periods = (request.WorkType is 0 or 1)
         ? new List<ScheduleWorkingPeriodDto>
         {
             new() { PeriodNumber = 1, StartTime = request.StartTime!.Value, EndTime = request.EndTime!.Value }
