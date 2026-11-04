@@ -22,7 +22,7 @@ public class CompanyDto
     /// <summary>Clock-in earlier/later than the scheduled start by more than this many minutes sends an alert (0 = off).</summary>
     public int ClockInAlertMinutes { get; set; } = 10;
 
-    public bool AlertEmailEnabled { get; set; }
+    public bool AlertEmailEnabled { get; set; }\n    public bool AlertNotificationEnabled { get; set; }
     public bool AutoRetryFailedSubmissions { get; set; } = true;
     public string? AlertEmailRecipients { get; set; }
     public string? SmtpHost { get; set; }
