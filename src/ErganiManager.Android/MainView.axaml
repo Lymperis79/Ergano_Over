@@ -78,7 +78,21 @@
 
         <Border Background="#202B3A" CornerRadius="16" Padding="14" IsVisible="{Binding IsWorkCardsVisible}">
           <StackPanel Spacing="12">
-            <TextBlock Text="WORK CARDS · HISTORY" Foreground="#8BBCEB" FontWeight="Bold" FontSize="12" />
+            <TextBlock Text="WORK CARDS · SCAN &amp; HISTORY" Foreground="#8BBCEB" FontWeight="Bold" FontSize="12" />
+            <TextBlock Text="Scan an employee barcode with your phone camera, or type the employee number below."
+                       Foreground="#C3CEDB" FontSize="13" TextWrapping="Wrap" />
+            <TextBox PlaceholderText="Employee number, AFM or barcode"
+                     Text="{Binding WorkCardScanInput, Mode=TwoWay}" />
+            <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
+              <Button Grid.Column="0" Content="📷 Camera scan"
+                      Command="{Binding OpenBarcodeCameraCommand}"
+                      IsEnabled="{Binding !IsWorkCardScanBusy}" />
+              <Button Grid.Column="1" Content="Submit scan"
+                      Command="{Binding SubmitWorkCardScanCommand}"
+                      IsEnabled="{Binding !IsWorkCardScanBusy}" />
+            </Grid>
+            <TextBlock Text="{Binding WorkCardScanMessage}" Foreground="#F0C674"
+                       FontSize="13" TextWrapping="Wrap" />
             <CalendarDatePicker SelectedDate="{Binding WorkCardFromDatePicker, Mode=TwoWay}"
                                 PlaceholderText="From date"
                                 SelectedDateFormat="Custom"
