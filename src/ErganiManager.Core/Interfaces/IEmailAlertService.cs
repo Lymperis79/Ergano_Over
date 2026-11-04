@@ -59,6 +59,9 @@ public sealed record EmailSmtpTestRequest(
 
 public interface IEmailAlertService
 {
+    /// <summary>Raised in-process when an alert is also enabled for in-app notifications.</summary>
+    event Action<AlertMessage>? NotificationRaised;
+
     /// <summary>Sends a test message using the settings currently entered in the company form.</summary>
     Task<(bool Success, string? ErrorMessage)> TestSmtpAsync(EmailSmtpTestRequest request);
 
