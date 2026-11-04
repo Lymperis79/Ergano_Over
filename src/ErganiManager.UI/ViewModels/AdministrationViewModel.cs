@@ -419,7 +419,7 @@ public partial class AdministrationViewModel : ViewModelBase, IAdminSectionViewM
     [ObservableProperty] private int _earlyDepartureAlertMinutes = 10;
     [ObservableProperty] private bool _blockClockInWithoutSchedule = true;
     [ObservableProperty] private bool _blockClockInOnRestOrAbsentDay = true;
-    [ObservableProperty] private bool _alertEmailEnabled;
+    [ObservableProperty] private bool _alertEmailEnabled;\n    [ObservableProperty] private bool _alertNotificationEnabled;
     [ObservableProperty] private bool _autoRetryFailedSubmissions = true;
     [ObservableProperty] private string _alertEmailRecipients = string.Empty;
     [ObservableProperty] private string _smtpHost = string.Empty;
@@ -1034,7 +1034,7 @@ public partial class AdministrationViewModel : ViewModelBase, IAdminSectionViewM
                     EarlyDepartureAlertMinutes = company.EarlyDepartureAlertMinutes;
                     BlockClockInWithoutSchedule = company.BlockClockInWithoutSchedule;
                     BlockClockInOnRestOrAbsentDay = company.BlockClockInOnRestOrAbsentDay;
-                    AlertEmailEnabled = company.AlertEmailEnabled;
+                    AlertEmailEnabled = company.AlertEmailEnabled;\n                    AlertNotificationEnabled = company.AlertNotificationEnabled;
                     AutoRetryFailedSubmissions = company.AutoRetryFailedSubmissions;
                     AlertEmailRecipients = company.AlertEmailRecipients ?? string.Empty;
                     SmtpHost = company.SmtpHost ?? string.Empty;
@@ -1070,7 +1070,7 @@ public partial class AdministrationViewModel : ViewModelBase, IAdminSectionViewM
     partial void OnEarlyDepartureAlertMinutesChanged(int value) => MarkCompanySettingsDirty();
     partial void OnBlockClockInWithoutScheduleChanged(bool value) => MarkCompanySettingsDirty();
     partial void OnBlockClockInOnRestOrAbsentDayChanged(bool value) => MarkCompanySettingsDirty();
-    partial void OnAlertEmailEnabledChanged(bool value) => MarkCompanySettingsDirty();
+    partial void OnAlertEmailEnabledChanged(bool value) => MarkCompanySettingsDirty();\n    partial void OnAlertNotificationEnabledChanged(bool value) => MarkCompanySettingsDirty();
     partial void OnAutoRetryFailedSubmissionsChanged(bool value) => MarkCompanySettingsDirty();
     partial void OnAlertEmailRecipientsChanged(string value) => MarkCompanySettingsDirty();
     partial void OnSmtpHostChanged(string value) => MarkCompanySettingsDirty();
@@ -1135,7 +1135,7 @@ public partial class AdministrationViewModel : ViewModelBase, IAdminSectionViewM
             company.EarlyDepartureAlertMinutes = EarlyDepartureAlertMinutes;
             company.BlockClockInWithoutSchedule = BlockClockInWithoutSchedule;
             company.BlockClockInOnRestOrAbsentDay = BlockClockInOnRestOrAbsentDay;
-            company.AlertEmailEnabled = AlertEmailEnabled;
+            company.AlertEmailEnabled = AlertEmailEnabled;\n            company.AlertNotificationEnabled = AlertNotificationEnabled;
             company.AutoRetryFailedSubmissions = AutoRetryFailedSubmissions;
             company.AlertEmailRecipients = string.IsNullOrWhiteSpace(AlertEmailRecipients) ? null : AlertEmailRecipients.Trim();
             company.SmtpHost = string.IsNullOrWhiteSpace(SmtpHost) ? null : SmtpHost.Trim();
