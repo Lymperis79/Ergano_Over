@@ -234,6 +234,23 @@ public sealed class MobileApiClient : IDisposable
             cancellationToken: cancellationToken) ?? [];
     }
 
+    public async Task<List<MobileNotification>> GetNotificationsAsync(long afterId, CancellationToken cancellationToken = default)
+    {
+        using var response = await _http.GetAsync("api/mobile/notifications?afterId=" + afterId, cancellationToken);
+        if (!response.IsSuccessStatusCode)
+        {
+            var body = await response.Content.ReadAsStringAsync(cancellationToken);
+            throw new HttpRequestException($"Notifications returned HTTP {(int)response.StatusCode}: {body}");
+        }
+        return await response.Content.ReadFromJsonAsync<List<MobileNotification>>(cancellationToken: cancellationToken) ?? [];
+    }
+
+    public async Task MarkNotificationReadAsync(long notificationId, CancellationToken cancellationToken = default)
+    {
+        using var response = await _http.PostAsync($"api/mobile/notifications/{notificationId}/read", null, cancellationToken);
+        response.EnsureSuccessStatusCode();
+    }
+
     public async Task LogoutAsync(CancellationToken cancellationToken = default)
     {
         using var response = await _http.PostAsync("api/mobile/logout", content: null, cancellationToken);
@@ -512,4 +529,14 @@ public sealed class MobileTodayIssue
     public int Code { get; set; }
     public int Level { get; set; }
     public string? Detail { get; set; }
+}
+
+public sealed class MobileNotification
+{
+    public long Id { get; set; }
+    public int EventCode { get; set; }
+    public string Title { get; set; } = string.Empty;
+    public string Message { get; set; } = string.Empty;
+    public DateTime CreatedAt { get; set; }
+    public bool IsRead { get; set; }
 }
