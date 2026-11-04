@@ -563,7 +563,7 @@ public partial class DashboardViewModel : ViewModelBase, IAdminSectionViewModel
             if (branch.WeatherShowHumidity) parts.Add($"💧 {humidity}%");
             if (branch.WeatherShowWind) parts.Add($"💨 {wind:0} km/h");
             WeatherText = parts.Count == 0 ? string.Empty : string.Join("  ·  ", parts);
-            WeatherLocationText = branch.WeatherShowLocation ? displayLocation : string.Empty;
+            WeatherLocationText = branch.WeatherShowLocation ? displayLocation ?? string.Empty : string.Empty;
             WeatherTemperatureText = branch.WeatherShowTemperature ? $"{temp:0}°" : string.Empty;
             WeatherConditionText = branch.WeatherShowCondition ? condition : string.Empty;
             WeatherIconText = branch.WeatherShowCondition ? icon : string.Empty;
