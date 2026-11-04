@@ -146,7 +146,7 @@
                       HorizontalAlignment="Stretch">
               <ComboBox.ItemTemplate>
                 <DataTemplate x:DataType="vm:MobileEmployee">
-                  <TextBlock Text="{Binding FirstName}" />
+                  <TextBlock Text="{Binding DisplayName}" />
                 </DataTemplate>
               </ComboBox.ItemTemplate>
             </ComboBox>
