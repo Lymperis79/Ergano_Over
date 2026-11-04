@@ -12,6 +12,8 @@ using ActivityResult = global::Android.App.Result;
 
 namespace ErganiManager.Android;
 
+// This file is Android-specific. Runtime SDK checks below guard APIs introduced after Android 6.
+#pragma warning disable CA1416, CA1422
 [SupportedOSPlatform("android23.0")]
 [Activity(
     Label = "Ergani Manager",
@@ -239,9 +241,14 @@ internal static class AndroidNotificationService
             .SetCategory(Notification.CategoryMessage);
 
         if (Build.VERSION.SdkInt < BuildVersionCodes.O)
-            builder!.SetPriority((int)NotificationPriority.High)
-                .SetDefaults(NotificationDefaults.All);
+        {
+            // Legacy priority/defaults are required only before notification channels exist.
+            builder!.SetPriority((int)NotificationPriority.High);
+            builder!.SetDefaults(NotificationDefaults.All);
+        }
 
-        manager.Notify(requestCode, builder.Build());
+        manager.Notify(requestCode, builder!.Build());
     }
 }
+
+#pragma warning restore CA1416, CA1422
