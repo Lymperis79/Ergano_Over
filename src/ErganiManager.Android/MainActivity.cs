@@ -2,10 +2,6 @@ using Android.App;
 using Android.Content;
 using Android.Content.PM;
 using Android.OS;
-using Android.Graphics;
-using Android.Provider;
-using ZXing;
-using ZXing.Common;
 using Avalonia.Android;
 using System.Runtime.Versioning;
 using ActivityResult = global::Android.App.Result;
@@ -30,7 +26,6 @@ public class MainActivity : AvaloniaMainActivity
 {
     private const int NotificationPermissionRequestCode = 4102;
     private const int BarcodeCaptureRequestCode = 4103;
-    private global::Android.Net.Uri? _barcodeCaptureUri;
     public static event Action<string?>? BarcodeCaptured;
 
     public static MainActivity? Current { get; private set; }
@@ -67,31 +62,9 @@ public class MainActivity : AvaloniaMainActivity
     {
         try
         {
-            var intent = new Intent(MediaStore.ActionImageCapture);
-            if (PackageManager is null || intent.ResolveActivity(PackageManager) is null)
-            {
-                BarcodeCaptured?.Invoke(null);
-                return;
-            }
-
-            // Ask the camera app to save the full-resolution photo to MediaStore.
-            // The thumbnail returned in Intent extras is usually too small for reliable
-            // barcode decoding, especially for the QR payloads used by Ergani.
-            var values = new ContentValues();
-            values.Put(MediaStore.Images.Media.InterfaceConsts.DisplayName,
-                "ergani-scan-" + DateTime.Now.ToString("yyyyMMdd-HHmmss") + ".jpg");
-            values.Put(MediaStore.Images.Media.InterfaceConsts.MimeType, "image/jpeg");
-            if (Build.VERSION.SdkInt >= BuildVersionCodes.Q)
-                values.Put(MediaStore.Images.Media.InterfaceConsts.RelativePath, "Pictures/ErganiManager");
-
-            _barcodeCaptureUri = ContentResolver?.Insert(MediaStore.Images.Media.ExternalContentUri!, values);
-            if (_barcodeCaptureUri != null)
-            {
-                intent.PutExtra(MediaStore.ExtraOutput, _barcodeCaptureUri);
-                intent.AddFlags(ActivityFlags.GrantReadUriPermission | ActivityFlags.GrantWriteUriPermission);
-            }
-
-            StartActivityForResult(intent, BarcodeCaptureRequestCode);
+            StartActivityForResult(
+                new Intent(this, typeof(BarcodeScannerActivity)),
+                BarcodeCaptureRequestCode);
         }
         catch
         {
@@ -104,70 +77,9 @@ public class MainActivity : AvaloniaMainActivity
         base.OnActivityResult(requestCode, resultCode, data);
         if (requestCode != BarcodeCaptureRequestCode) return;
 
-        Bitmap? bitmap = null;
-        try
-        {
-            if (resultCode == (ActivityResult)(-1) && _barcodeCaptureUri != null)
-            {
-                using var stream = ContentResolver?.OpenInputStream(_barcodeCaptureUri);
-                if (stream != null)
-                    bitmap = BitmapFactory.DecodeStream(stream);
-            }
-
-            // Some camera apps ignore EXTRA_OUTPUT and return only a thumbnail.
-            bitmap ??= resultCode == (ActivityResult)(-1)
-                ? data?.Extras?.Get("data") as Bitmap
-                : null;
-
-            if (bitmap is null)
-            {
-                BarcodeCaptured?.Invoke(null);
-                return;
-            }
-
-            var width = bitmap.Width;
-            var height = bitmap.Height;
-            var pixels = new int[width * height];
-            bitmap.GetPixels(pixels, 0, width, 0, 0, width, height);
-            var rgb = new byte[pixels.Length * 3];
-            for (var i = 0; i < pixels.Length; i++)
-            {
-                rgb[i * 3] = (byte)((pixels[i] >> 16) & 0xff);
-                rgb[i * 3 + 1] = (byte)((pixels[i] >> 8) & 0xff);
-                rgb[i * 3 + 2] = (byte)(pixels[i] & 0xff);
-            }
-            var source = new RGBLuminanceSource(rgb, width, height);
-            var binary = new BinaryBitmap(new HybridBinarizer(source));
-            var reader = new MultiFormatReader();
-            var hints = new System.Collections.Generic.Dictionary<DecodeHintType, object>
-            {
-                [DecodeHintType.POSSIBLE_FORMATS] = new[]
-                {
-                    BarcodeFormat.QR_CODE, BarcodeFormat.CODE_128, BarcodeFormat.CODE_39,
-                    BarcodeFormat.EAN_13, BarcodeFormat.EAN_8, BarcodeFormat.DATA_MATRIX,
-                    BarcodeFormat.PDF_417
-                }
-            };
-            var decoded = reader.decode(binary, hints);
-            BarcodeCaptured?.Invoke(decoded?.Text);
-        }
-        catch (ReaderException)
-        {
-            BarcodeCaptured?.Invoke(null);
-        }
-        catch (Exception)
-        {
-            BarcodeCaptured?.Invoke(null);
-        }
-        finally
-        {
-            bitmap?.Recycle();
-            if (_barcodeCaptureUri != null)
-            {
-                try { ContentResolver?.Delete(_barcodeCaptureUri, null, null); } catch { }
-                _barcodeCaptureUri = null;
-            }
-        }
+        if (resultCode == ActivityResult.Ok)
+            BarcodeCaptured?.Invoke(data?.GetStringExtra("barcode"));
+        // A user cancellation is not a failed scan; leave the manual-entry field untouched.
     }
 
     public void RequestNotificationPermission()
