@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls;
@@ -6,13 +7,51 @@ using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.Threading;
 using ErganiManager.Core.Interfaces;
+using Microsoft.Toolkit.Uwp.Notifications;
 
 namespace ErganiManager.UI.Services;
 
-/// <summary>Non-modal desktop pop-up for the same company alert events used by email and mobile.</summary>
+/// <summary>
+/// Shows desktop alerts through the native Windows notification system.
+/// Other desktop platforms retain the Avalonia pop-up fallback.
+/// </summary>
 public static class DesktopAlertNotificationWindow
 {
     public static void Show(AlertMessage alert)
+    {
+        if (OperatingSystem.IsWindows())
+        {
+            try
+            {
+                var details = string.Join(" • ",
+                    alert.Lines
+                        .Where(line => !string.IsNullOrWhiteSpace(line.Value))
+                        .Select(line => $"{line.Label}: {line.Value}"));
+
+                var notification = new ToastContentBuilder()
+                    .AddText("Ergani Manager")
+                    .AddText(alert.Title);
+
+                if (!string.IsNullOrWhiteSpace(details))
+                    notification.AddText(details);
+
+                // ToastNotificationManagerCompat automatically registers the
+                // unpackaged Win32 application identity/activator on Windows.
+                notification.Show();
+                return;
+            }
+            catch
+            {
+                // Keep alerts visible if Windows toast services are unavailable.
+                ShowAvaloniaFallback(alert);
+                return;
+            }
+        }
+
+        ShowAvaloniaFallback(alert);
+    }
+
+    private static void ShowAvaloniaFallback(AlertMessage alert)
     {
         Dispatcher.UIThread.Post(() =>
         {
