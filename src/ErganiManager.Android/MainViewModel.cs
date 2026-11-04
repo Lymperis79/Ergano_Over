@@ -55,7 +55,7 @@ public partial class MainViewModel : ObservableObject
             await RefreshWorkCardsAsync();
             var matching = WorkCardHistory.FirstOrDefault(x =>
                 x.EmployeeId == result.EmployeeId &&
-                Math.Abs((x.MovementDateTime - result.ScannedAt).TotalSeconds) <= 60);
+                Math.Abs((x.MovementDateTime - result.ScannedAt).TotalSeconds) <= 5);
             var updated = new MobileWorkCardHistoryItem
             {
                 EmployeeId = result.EmployeeId,
@@ -65,8 +65,9 @@ public partial class MainViewModel : ObservableObject
                 SubmittedToErgani = string.Equals(result.Status, "Submitted", StringComparison.OrdinalIgnoreCase),
                 IsLocalPending = string.Equals(result.Status, "Queued", StringComparison.OrdinalIgnoreCase),
                 IsLocalFailed = string.Equals(result.Status, "Rejected", StringComparison.OrdinalIgnoreCase),
+                RetryAttempts = string.Equals(result.Status, "Queued", StringComparison.OrdinalIgnoreCase) ? 1 : 0,
                 Protocol = result.Protocol,
-                RetryError = result.Status == "Queued" ? result.Message : null
+                RetryError = result.Status is "Queued" or "Rejected" ? result.Message : null
             };
             if (matching is not null)
             {
