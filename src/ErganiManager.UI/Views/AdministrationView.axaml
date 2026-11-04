@@ -151,7 +151,12 @@
                                             </Border.Background>
                                             <TextBlock Text="{Binding CompanyEmailTestResult}" Foreground="White" FontSize="12" TextWrapping="Wrap" />
                                         </Border>
-                                        <Separator />
+                                    </StackPanel>
+                                    <Separator />
+                                    <TextBlock Text="In-app notifications" FontSize="15" FontWeight="SemiBold" />
+                                    <CheckBox Content="Show pop-up notifications in Windows and Android"
+                                              IsChecked="{Binding AlertNotificationEnabled}" />
+                                    <StackPanel Spacing="8">
                                         <TextBlock Text="{Binding Loc[AlertEventsTitle]}" FontWeight="SemiBold" />
                                         <CheckBox Content="{Binding Loc[AlertEvEarlyDeparture]}" IsChecked="{Binding AlertEvEarlyDeparture}" />
                                         <CheckBox Content="{Binding Loc[AlertEvErganiDown]}" IsChecked="{Binding AlertEvErganiDown}" />
