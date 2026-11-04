@@ -96,7 +96,7 @@ public class MainActivity : AvaloniaMainActivity
         }
     }
 
-    protected override void OnActivityResult(int requestCode, Android.App.Result resultCode, Intent? data)
+    protected override void OnActivityResult(int requestCode, global::Android.App.Result resultCode, Intent? data)
     {
         base.OnActivityResult(requestCode, resultCode, data);
         if (requestCode != BarcodeCaptureRequestCode) return;
@@ -104,7 +104,7 @@ public class MainActivity : AvaloniaMainActivity
         Bitmap? bitmap = null;
         try
         {
-            if (resultCode == Android.App.Result.Ok && _barcodeCaptureUri != null)
+            if (resultCode == global::Android.App.Result.Ok && _barcodeCaptureUri != null)
             {
                 using var stream = ContentResolver?.OpenInputStream(_barcodeCaptureUri);
                 if (stream != null)
@@ -112,7 +112,7 @@ public class MainActivity : AvaloniaMainActivity
             }
 
             // Some camera apps ignore EXTRA_OUTPUT and return only a thumbnail.
-            bitmap ??= resultCode == Result.Ok
+            bitmap ??= resultCode == global::Android.App.Result.Ok
                 ? data?.Extras?.Get("data") as Bitmap
                 : null;
 
