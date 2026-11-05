@@ -154,7 +154,8 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
             : AvailableEmployees.Where(e =>
                     e is not null &&
                     ((!string.IsNullOrWhiteSpace(e.FullName) &&
-                      e.FullName.Contains(query, StringComparison.CurrentCultureIgnoreCase)) ||
+                      e.DisplayName.Contains(query, StringComparison.CurrentCultureIgnoreCase) ||
+                     (!string.IsNullOrWhiteSpace(e.TaxId) && e.TaxId.Contains(query, StringComparison.OrdinalIgnoreCase))) ||
                      e.Id.ToString().Contains(query, StringComparison.Ordinal)))
                 .ToList();
 
@@ -594,7 +595,7 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
     partial void OnSelectedEmployeeChanged(EmployeeDto? value)
     {
         if (value is not null && !string.Equals(EmployeeSearchText, value.FullName, StringComparison.Ordinal))
-            EmployeeSearchText = value.FullName;
+            EmployeeSearchText = value.DisplayName;
         _ = RefreshCalendarAsync();
     }
 
@@ -3225,7 +3226,7 @@ public partial class CloneTargetEmployee : ObservableObject
 {
     public EmployeeDto Employee { get; init; } = null!;
     [ObservableProperty] private bool _isSelected;
-    public string Name => Employee.FullName;
+    public string Name => Employee.DisplayName;
 
     /// <summary>Raised when the checkbox is ticked or unticked (the dialog refreshes its warning).</summary>
     public event EventHandler? SelectionChanged;
