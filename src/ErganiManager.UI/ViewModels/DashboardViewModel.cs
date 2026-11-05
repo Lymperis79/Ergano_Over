@@ -213,7 +213,8 @@ public partial class DashboardViewModel : ViewModelBase, IAdminSectionViewModel
                     p.CompanyId == companyId.Value && !p.Synced && !p.ReviewRequired);
                 PendingWorkCardCount = localPendingCount;
                 localReviewCount = await localCache.PendingSubmissions.CountAsync(p =>
-                    p.CompanyId == companyId.Value && !p.Synced && p.ReviewRequired)
+                    p.CompanyId == companyId.Value && p.ReviewRequired
+                    && (p.ErganiProtocol == null || p.ErganiProtocol == ""))
                     + await localCache.FailedSubmissions.CountAsync(f =>
                         f.CompanyId == companyId.Value && !f.Resolved && f.ReviewRequired);
                 localFailedCount = await localCache.FailedSubmissions.CountAsync(f =>
