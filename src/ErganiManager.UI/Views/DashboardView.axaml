@@ -79,17 +79,20 @@
                         </StackPanel>
                     </Button>
                 </Border>
-                <Border Grid.Column="4" Background="{DynamicResource PanelBrush}" CornerRadius="10" Padding="4">
-                    <Button Command="{Binding OpenPendingItemsCommand}" Background="Transparent" BorderThickness="0"
-                            HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" Padding="10"
-                            ToolTip.Tip="Open the schedules area to review pending submissions.">
-                        <StackPanel Spacing="7">
-                            <TextBlock Text="⏳" FontSize="20" />
-                            <TextBlock Text="{Binding Loc[Dashboard.PendingItems]}" FontSize="12" Opacity="0.75" />
-                            <TextBlock Text="{Binding PendingCount}" FontSize="27" FontWeight="Bold" />
-                            <TextBlock Text="Open pending items →" FontSize="11" Foreground="{DynamicResource AccentLightBrush}" />
-                        </StackPanel>
-                    </Button>
+                <Border Grid.Column="4" Background="{DynamicResource PanelBrush}" CornerRadius="10" Padding="12">
+                    <StackPanel Spacing="7">
+                        <TextBlock Text="⏳" FontSize="20" />
+                        <TextBlock Text="{Binding Loc[Dashboard.PendingItems]}" FontSize="12" Opacity="0.75" />
+                        <TextBlock Text="{Binding PendingCount}" FontSize="27" FontWeight="Bold" />
+                        <Button Content="Schedules / overtime / leave →"
+                                Command="{Binding OpenPendingItemsCommand}"
+                                HorizontalAlignment="Stretch" Padding="6,4"
+                                ToolTip.Tip="Open the schedules area; use the Schedules and Overtime sections to review unsubmitted items." />
+                        <Button Content="{Binding PendingWorkCardCount, StringFormat='Offline work cards pending: {0} →'}"
+                                Command="{Binding OpenPendingWorkCardsCommand}"
+                                HorizontalAlignment="Stretch" Padding="6,4"
+                                ToolTip.Tip="Open offline work-card scans that are waiting to be sent." />
+                    </StackPanel>
                 </Border>
             </Grid>
 
