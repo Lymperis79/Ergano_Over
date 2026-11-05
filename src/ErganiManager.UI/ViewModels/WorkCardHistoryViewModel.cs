@@ -445,13 +445,17 @@ public partial class WorkCardHistoryViewModel : ViewModelBase, IAdminSectionView
                 }
             }
 
-            // Legacy FailedSubmission rows are still retried by the background worker.
-            // Request an immediate run when any of those rows were selected.
-            if (selected.Any(r => r.IsLocalFailed))
+            // Legacy failures are retried only by this explicit selected-ID path.
+            // This is the administrator's deliberate override of the automatic pause.
+            var failedIds = selected
+                .Where(r => r.LocalFailedId.HasValue)
+                .Select(r => r.LocalFailedId!.Value)
+                .ToList();
+            if (failedIds.Count > 0)
             {
-                _retryService.Start();
-                _retryService.TriggerNow();
-                StatusMessage = Loc["Vm.Retry sending requested for failed queued work cards..."];
+                await _retryService.RetryFailedManuallyAsync(companyId, failedIds);
+                success += failedIds.Count;
+                StatusMessage = $"Manual retry requested for {failedIds.Count} selected failed record(s).";
             }
 
             await LoadAsync();
