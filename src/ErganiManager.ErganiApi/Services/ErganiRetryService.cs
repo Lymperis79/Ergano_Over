@@ -399,12 +399,63 @@ public class ErganiRetryService
     private static string? ReasonFor(PendingSubmission item) =>
         DateTime.Now - item.ScannedAt > WorkCardLogRetryService.OnTimeWindow ? item.LateJustification : null;
 
+    /// <summary>
+    /// Explicit administrator retry for selected legacy failed submissions. Unlike the
+    /// automatic worker, this may process ReviewRequired rows, but only the supplied IDs.
+    /// </summary>
+    public async Task RetryFailedManuallyAsync(
+        int companyId, IEnumerable<int> failedIds, CancellationToken ct = default)
+    {
+        var ids = failedIds.Distinct().ToList();
+        if (ids.Count == 0) return;
+
+        await _pendingGate.WaitAsync(ct);
+        var crossProcessAcquired = false;
+        try
+        {
+            crossProcessAcquired = CrossProcessWorkerGate.WaitOne(0);
+            if (!crossProcessAcquired)
+                throw new InvalidOperationException("Another retry worker is processing the queue. Please try again shortly.");
+
+            if (await _connectionState.EvaluateAsync() != AppConnectionState.Normal)
+                throw new InvalidOperationException("The main database is not available. The selected records remain paused.");
+
+            await using var db = new AppDbContext(_connectionState.GetDbOptions());
+            var company = await db.Companies.FirstOrDefaultAsync(c => c.Id == companyId, ct);
+            if (company == null)
+                throw new InvalidOperationException("The selected company could not be found.");
+
+            using var cache = LocalCacheDbContextFactory.Create();
+            var credentials = new ErganiCredentials
+            {
+                Username = company.ErganiUsername,
+                Password = _credentialProtector.Unprotect(company.ErganiPasswordEncrypted),
+                Usertype = company.ErganiUsertype,
+                BaseUrl = company.ErganiBaseUrl
+            };
+
+            await FlushFailedSubmissionsAsync(company, credentials, db, cache, ct, ids);
+        }
+        finally
+        {
+            if (crossProcessAcquired) CrossProcessWorkerGate.Release();
+            _pendingGate.Release();
+        }
+    }
+
     private async Task FlushFailedSubmissionsAsync(
         Company company, ErganiCredentials credentials,
-        AppDbContext db, LocalCache.LocalCacheDbContext cache, CancellationToken ct)
+        AppDbContext db, LocalCache.LocalCacheDbContext cache, CancellationToken ct,
+        IReadOnlyCollection<int>? selectedIds = null)
     {
-        var failed = await cache.FailedSubmissions
-            .Where(f => f.CompanyId == company.Id && !f.Resolved && !f.ReviewRequired && f.RetryCount < MaxRetryAttempts)
+        var failedQuery = cache.FailedSubmissions
+            .Where(f => f.CompanyId == company.Id && !f.Resolved);
+        if (selectedIds != null)
+            failedQuery = failedQuery.Where(f => selectedIds.Contains(f.Id));
+        else
+            failedQuery = failedQuery.Where(f => !f.ReviewRequired && f.RetryCount < MaxRetryAttempts);
+
+        var failed = await failedQuery
             .OrderBy(f => f.OriginalScannedAt)
             .ToListAsync(ct);
 
