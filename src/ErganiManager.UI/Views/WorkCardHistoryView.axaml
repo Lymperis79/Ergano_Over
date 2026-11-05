@@ -330,6 +330,16 @@
                                            Margin="6,0"
                                            IsVisible="{Binding LateJustification, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
 
+                                <!-- Direct action for chronology-review records; no checkbox + toolbar hunt required. -->
+                                <Button Grid.Column="10"
+                                        Content="Submit / Retry"
+                                        Command="{Binding $parent[UserControl].((vm:WorkCardHistoryViewModel)DataContext).RetryReviewedRecordCommand}"
+                                        CommandParameter="{Binding}"
+                                        IsVisible="{Binding ReviewRequired}"
+                                        Classes="accent"
+                                        Margin="0,0,8,0"
+                                        ToolTip.Tip="Administrator-approved retry. A successful Ergani acknowledgement resolves the review warning." />
+
                                 <!-- Automatic submission indicator -->
                                 <Border Grid.Column="10"
                                         IsVisible="{Binding IsAutomatic}"
