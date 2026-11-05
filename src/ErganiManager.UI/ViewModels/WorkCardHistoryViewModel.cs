@@ -378,7 +378,6 @@ public partial class WorkCardHistoryViewModel : ViewModelBase, IAdminSectionView
                 item.ResolvedAt = DateTime.UtcNow;
                 item.LastRetryError = "Administrator reviewed the chronology conflict and chose not to submit this scan.";
                 item.ReviewRequired = false;
-                item.ReviewReason = null;
                 changed++;
             }
         }
