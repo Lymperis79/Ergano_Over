@@ -604,6 +604,7 @@ public class ErganiRetryService
                     {
                         CompanyId = company.Id, EmployeeId = employee.Id,
                         SubmissionType = "WorkCard-Retry",
+                        WorkCardId = wc?.Id,
                         RequestPayloadJson = result.RequestPayloadJson,
                         ResponseRawJson = result.ResponseRawJson,
                         SubmissionId = first.SubmissionId,
