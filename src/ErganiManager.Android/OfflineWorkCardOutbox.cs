@@ -76,6 +76,7 @@ public sealed class OfflineWorkCardOutbox
         {
             await JsonSerializer.SerializeAsync(stream, items, JsonOptions, ct);
             await stream.FlushAsync(ct);
+            stream.Flush(flushToDisk: true);
         }
         File.Move(temp, FilePath, overwrite: true);
     }
