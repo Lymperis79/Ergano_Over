@@ -38,6 +38,10 @@ public class PendingSubmission
     public string? ErganiResponseRawJson { get; set; }
 
     public bool Synced { get; set; } = false;
+
+    /// <summary>Blocked from automatic retry because another protocol-bearing event exists on this employee's workday.</summary>
+    public bool ReviewRequired { get; set; }
+    public string? ReviewReason { get; set; }
     public DateTime? SyncedAt { get; set; }
 
     public int SyncAttempts { get; set; } = 0;
