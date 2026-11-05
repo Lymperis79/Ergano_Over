@@ -14,6 +14,7 @@ public static class MenuKeys
     public const string Schedules      = "Schedules";
     public const string WorkCards      = "WorkCards";
     public const string Scan           = "WorkCardScan";
+    public const string Terminal      = "Terminal";
     public const string Today          = "Today";
     public const string Overtime       = "Overtime";
     public const string Reports        = "Reports";
@@ -27,7 +28,7 @@ public static class MenuKeys
     public static readonly IReadOnlyList<string> Configurable = new[]
     {
         Companies, Branches, Employees,
-        Schedules, WorkCards, Scan, Today, Overtime, Reports, ApiLog,
+        Schedules, WorkCards, Scan, Terminal, Today, Overtime, Reports, ApiLog,
         Users, Help
     };
 
