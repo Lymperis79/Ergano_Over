@@ -352,6 +352,76 @@ app.MapGet("/api/mobile/workcards/history", async Task<IResult> (
     return Results.Ok(rows);
 }).RequireAuthorization();
 
+app.MapPost("/api/mobile/workcards/review", async Task<IResult> (
+    MobileWorkCardReviewRequest request,
+    ICompanyContext context,
+    ErganiManager.ErganiApi.Services.ErganiRetryService retryService) =>
+{
+    var session = context.CurrentSession!;
+    if (session.Role != AppUserRole.Admin || !session.CanSee(MenuKeys.WorkCards))
+        return Results.Forbid();
+
+    var companyId = context.ActiveCompanyId;
+    if (!companyId.HasValue)
+        return Results.Conflict(new { message = "Select a company before reviewing attendance records." });
+
+    if ((request.PendingId.HasValue ? 1 : 0) + (request.FailedId.HasValue ? 1 : 0) != 1)
+        return Results.BadRequest(new { message = "Specify exactly one pending or failed record." });
+
+    var decision = request.Decision?.Trim();
+    if (decision is not ("Retry" or "DoNotSubmit"))
+        return Results.BadRequest(new { message = "Choose Retry or DoNotSubmit." });
+
+    using var cache = LocalCacheDbContextFactory.Create();
+    if (request.PendingId is int pendingId)
+    {
+        var row = await cache.PendingSubmissions.AsNoTracking()
+            .FirstOrDefaultAsync(p => p.Id == pendingId && p.CompanyId == companyId.Value);
+        if (row is null) return Results.NotFound(new { message = "The pending scan was not found in the selected company." });
+        if (!string.IsNullOrWhiteSpace(row.ErganiProtocol))
+            return Results.Conflict(new { message = "This scan already has an Ergani protocol and is protected from changes or resubmission." });
+        if (!row.ReviewRequired || row.Synced)
+            return Results.Conflict(new { message = "This scan is no longer awaiting manual review." });
+
+        if (decision == "DoNotSubmit")
+        {
+            var changed = await retryService.MarkReviewedDoNotSubmitAsync(companyId.Value, pendingId, null);
+            return changed
+                ? Results.Ok(new { message = "Reviewed. This scan was retained in the audit history and will not be submitted." })
+                : Results.Conflict(new { message = "The scan changed before the review decision could be saved. Refresh history." });
+        }
+
+        var results = await retryService.RetryPendingAsync(new[] { pendingId });
+        var result = results.FirstOrDefault();
+        return Results.Ok(new
+        {
+            message = result.Success
+                ? "Manual retry completed. " + (result.Protocol is null ? string.Empty : "Protocol: " + result.Protocol)
+                : "Manual retry attempted but not confirmed: " + (result.Error ?? "Check the updated history and API log.")
+        });
+    }
+
+    var failedId = request.FailedId!.Value;
+    var failed = await cache.FailedSubmissions.AsNoTracking()
+        .FirstOrDefaultAsync(p => p.Id == failedId && p.CompanyId == companyId.Value);
+    if (failed is null) return Results.NotFound(new { message = "The failed scan was not found in the selected company." });
+    if (!string.IsNullOrWhiteSpace(failed.ResolvedProtocol))
+        return Results.Conflict(new { message = "This scan already has an Ergani protocol and is protected from changes or resubmission." });
+    if (!failed.ReviewRequired || failed.Resolved)
+        return Results.Conflict(new { message = "This scan is no longer awaiting manual review." });
+
+    if (decision == "DoNotSubmit")
+    {
+        var changed = await retryService.MarkReviewedDoNotSubmitAsync(companyId.Value, null, failedId);
+        return changed
+            ? Results.Ok(new { message = "Reviewed. This scan was retained in the audit history and will not be submitted." })
+            : Results.Conflict(new { message = "The scan changed before the review decision could be saved. Refresh history." });
+    }
+
+    await retryService.RetryFailedManuallyAsync(companyId.Value, new[] { failedId });
+    return Results.Ok(new { message = "Manual retry attempted. Check the updated history and protocol in the API log." });
+}).RequireAuthorization();
+
 app.MapPost("/api/mobile/workcards/scan", async Task<IResult> (
     MobileWorkCardScanRequest request,
     ICompanyContext context,
@@ -688,6 +758,7 @@ public sealed record MobileNotificationResponse(long Id, int EventCode, string T
     string Message, DateTime CreatedAt, bool IsRead);
 
 public sealed record MobileWorkCardScanRequest(string ScanValue, string? EventId = null, DateTime? ScannedAt = null);
+public sealed record MobileWorkCardReviewRequest(int? PendingId, int? FailedId, string Decision);
 public sealed record MobileWorkCardScanResponse(string EmployeeName, string Movement, DateTime ScannedAt, string Status, string Message, string? Protocol = null, int EmployeeId = 0);
 
 public sealed record MobileScheduleUpsertRequest(int EmployeeId, DateOnly ScheduleDate, int WorkType, TimeOnly? StartTime, TimeOnly? EndTime, string? Comments);
