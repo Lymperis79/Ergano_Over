@@ -544,10 +544,31 @@ public partial class MainViewModel : ObservableObject
             if (IsWorkCardsVisible)
                 await RefreshWorkCardsAsync();
         }
-        else if (IsWorkCardsVisible)
+        else
         {
-            // Keep device-only scans visible even while the server is unreachable.
-            await AddDevicePendingWorkCardsAsync();
+            if (IsWorkCardsVisible)
+            {
+                // Keep device-only scans visible even while the server is unreachable.
+                await AddDevicePendingWorkCardsAsync();
+            }
+            if (IsTerminalVisible)
+                await RefreshTerminalOutboxMessageAsync();
+        }
+    }
+
+    private async Task RefreshTerminalOutboxMessageAsync()
+    {
+        try
+        {
+            var pending = await _workCardOutbox.GetPendingAsync();
+            var count = pending.Count(x => x.CompanyId == _sessionCompanyId);
+            TerminalMessage = count > 0
+                ? $"{count} scan(s) saved on this device — waiting for server synchronization. The app will retry automatically."
+                : _lastOutboxSyncMessage ?? "Ready. Scan an employee QR code or enter the employee number.";
+        }
+        catch (Exception ex)
+        {
+            TerminalMessage = "Could not read the device's offline scan queue: " + GetFullError(ex);
         }
     }
 
@@ -602,6 +623,7 @@ public partial class MainViewModel : ObservableObject
         IsDailyStatusVisible = false; IsEmployeesVisible = false; IsWorkCardsVisible = false;
         IsWorkCalendarVisible = false; IsTerminalVisible = true; PageTitle = "Terminal";
         TerminalMessage = _lastOutboxSyncMessage ?? "Ready. Scan an employee QR code or enter the employee number.";
+        _ = RefreshTerminalOutboxMessageAsync();
     }
 
     [RelayCommand]
