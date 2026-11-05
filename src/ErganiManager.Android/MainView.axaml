@@ -39,6 +39,17 @@
             <TextBox PlaceholderText="HTTPS API address" Text="{Binding ServerAddress}" />
             <TextBox PlaceholderText="Username" Text="{Binding Username}" />
             <TextBox PlaceholderText="Password" Text="{Binding Password}" PasswordChar="●" />
+            <Border Background="#3B2F1D" BorderBrush="#D69B35" BorderThickness="1"
+                    CornerRadius="10" Padding="12" IsVisible="{Binding IsApiUnavailable}">
+              <StackPanel Spacing="8">
+                <TextBlock Text="⚠  ERGANI API NOT AVAILABLE" Foreground="#F0C674"
+                           FontWeight="Bold" FontSize="13" />
+                <TextBlock Text="{Binding ApiUnavailableMessage}" Foreground="#E7DCC8"
+                           FontSize="12" TextWrapping="Wrap" />
+                <Button Content="Retry connection" Command="{Binding ConnectCommand}"
+                        IsEnabled="{Binding !IsBusy}" HorizontalAlignment="Stretch" />
+              </StackPanel>
+            </Border>
             <Button Content="Sign in" HorizontalAlignment="Stretch"
                     Command="{Binding ConnectCommand}" IsEnabled="{Binding !IsBusy}" />
             <Button Content="Check API health" HorizontalAlignment="Stretch"
