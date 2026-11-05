@@ -101,6 +101,14 @@ public static class LocalCacheDbContextFactory
 
             AddColumn("PendingSubmissions", "LateJustification",
                 "ALTER TABLE PendingSubmissions ADD COLUMN LateJustification TEXT NULL");
+            AddColumn("PendingSubmissions", "ClientEventId",
+                "ALTER TABLE PendingSubmissions ADD COLUMN ClientEventId TEXT NULL");
+            if (TableExists("PendingSubmissions"))
+            {
+                using var eventIndex = connection.CreateCommand();
+                eventIndex.CommandText = "CREATE UNIQUE INDEX IF NOT EXISTS IX_PendingSubmissions_ClientEventId ON PendingSubmissions (ClientEventId)";
+                eventIndex.ExecuteNonQuery();
+            }
             // The cached company settings are re-filled from the main database on every sync, so an
             // in-place column is enough (and queued scans are never lost to a rebuild).
             AddColumn("CachedCompanySettings", "AlertEvents",
