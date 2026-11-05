@@ -138,6 +138,11 @@ public class WorkCardHistoryService : IWorkCardHistoryService
                 {
                     if (string.IsNullOrWhiteSpace(existingRecord.LateJustification))
                         existingRecord.LateJustification = p.LateJustification;
+                    if (p.Synced && string.IsNullOrWhiteSpace(p.ErganiProtocol) && p.ReviewReason != null)
+                    {
+                        existingRecord.ReviewReason = p.ReviewReason;
+                        existingRecord.ReviewDecision = p.LastSyncError;
+                    }
                     continue;
                 }
 
@@ -175,10 +180,18 @@ public class WorkCardHistoryService : IWorkCardHistoryService
                 if (!Matches(f.EmployeeId, f.BranchId, f.MovementType))
                     continue;
 
-                if (records.Any(r => r.EmployeeId == f.EmployeeId &&
+                var existingFailedRecord = records.FirstOrDefault(r => r.EmployeeId == f.EmployeeId &&
                                      r.MovementType == f.MovementType &&
-                                     Math.Abs((r.MovementDateTime - f.OriginalScannedAt).TotalSeconds) <= 1))
+                                     Math.Abs((r.MovementDateTime - f.OriginalScannedAt).TotalSeconds) <= 1);
+                if (existingFailedRecord != null)
+                {
+                    if (f.Resolved && string.IsNullOrWhiteSpace(f.ResolvedProtocol) && f.ReviewReason != null)
+                    {
+                        existingFailedRecord.ReviewReason = f.ReviewReason;
+                        existingFailedRecord.ReviewDecision = f.LastRetryError;
+                    }
                     continue;
+                }
 
                 records.Add(new WorkCardHistoryDto
                 {
