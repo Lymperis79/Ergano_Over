@@ -91,6 +91,11 @@ public partial class MainViewModel : ObservableObject
     private MobileApiClient? _api;
     private CancellationTokenSource? _notificationPollingCts;
     private long _lastNotificationId;
+    private string[]? _allowedMenus;
+    private string _role = string.Empty;
+    private int? _sessionCompanyId;
+    private string? _lastTerminalScan;
+    private DateTime _lastTerminalScanAt = DateTime.MinValue;
     [ObservableProperty] private string _pageTitle = "Sign in";
     [ObservableProperty] private string _serverAddress = "https://thinkpad-p16s.local:5001";
     [ObservableProperty] private string _username = string.Empty;
@@ -112,6 +117,35 @@ public partial class MainViewModel : ObservableObject
     [ObservableProperty] private bool _isEmployeesVisible;
     public bool HasEmployees => Employees.Count > 0;
     [ObservableProperty] private bool _isWorkCardsVisible;
+    [ObservableProperty] private bool _isTerminalVisible;
+    [ObservableProperty] private string _terminalMessage = "Ready to scan an employee QR code.";
+    [ObservableProperty] private bool _isTerminalScanBusy;
+    public bool CanOpenTerminal => CanSeeMenu(ErganiManager.Core.Models.MenuKeys.Terminal);
+    public bool CanOpenWorkCards => CanSeeMenu(ErganiManager.Core.Models.MenuKeys.WorkCards);
+    public bool CanOpenDailyStatus => CanSeeMenu(ErganiManager.Core.Models.MenuKeys.Today);
+    public bool CanOpenEmployees => CanSeeMenu(ErganiManager.Core.Models.MenuKeys.Employees);
+    public bool CanOpenSchedules => CanSeeMenu(ErganiManager.Core.Models.MenuKeys.Schedules);
+    public bool CanOpenOvertime => CanSeeMenu(ErganiManager.Core.Models.MenuKeys.Overtime);
+    public bool CanOpenSubmissions => CanSeeMenu(ErganiManager.Core.Models.MenuKeys.ApiLog);
+    public bool CanOpenReports => CanSeeMenu(ErganiManager.Core.Models.MenuKeys.Reports);
+    public bool CanOpenSettings => CanSeeMenu(ErganiManager.Core.Models.MenuKeys.Users) || CanSeeMenu(ErganiManager.Core.Models.MenuKeys.Help);
+    public bool CanOpenOverview => CanOpenWorkCards || CanOpenDailyStatus || CanOpenEmployees || CanOpenSchedules || CanOpenOvertime || CanOpenSubmissions || CanOpenReports || CanOpenSettings;
+    private bool CanSeeMenu(string key)
+    {
+        if (_role == "Admin" && !_sessionCompanyId.HasValue) return true;
+        if (_role == "Limited") return _allowedMenus?.Contains(key, StringComparer.Ordinal) == true;
+        return _allowedMenus is null || _allowedMenus.Contains(key, StringComparer.Ordinal);
+    }
+    private void RefreshMenuPermissions()
+    {
+        OnPropertyChanged(nameof(CanOpenTerminal)); OnPropertyChanged(nameof(CanOpenWorkCards));
+        OnPropertyChanged(nameof(CanOpenDailyStatus)); OnPropertyChanged(nameof(CanOpenEmployees));
+        OnPropertyChanged(nameof(CanOpenSchedules)); OnPropertyChanged(nameof(CanOpenOvertime));
+        OnPropertyChanged(nameof(CanOpenSubmissions)); OnPropertyChanged(nameof(CanOpenReports));
+        OnPropertyChanged(nameof(CanOpenSettings)); OnPropertyChanged(nameof(CanOpenOverview));
+        OnPropertyChanged(nameof(IsOverviewVisible)); OnPropertyChanged(nameof(IsOverviewNavigationVisible));
+    }
+    public bool IsOverviewNavigationVisible => IsAuthenticated && CanOpenOverview && !IsTerminalVisible;
     [ObservableProperty] private string _workCardScanInput = string.Empty;
     [ObservableProperty] private string _workCardScanMessage = "Scan an employee barcode with the camera or type the employee number.";
     [ObservableProperty] private bool _isWorkCardScanBusy;
@@ -158,9 +192,9 @@ public partial class MainViewModel : ObservableObject
     public ObservableCollection<MobileEmployee> Employees { get; } = new();
 
     // The Overview menu is shown only when no feature screen is open.
-    public bool IsOverviewVisible => IsAuthenticated && !IsCompanySelectionRequired
+    public bool IsOverviewVisible => IsAuthenticated && CanOpenOverview && !IsCompanySelectionRequired
         && !IsDailyStatusVisible && !IsEmployeesVisible
-        && !IsWorkCardsVisible && !IsWorkCalendarVisible;
+        && !IsWorkCardsVisible && !IsWorkCalendarVisible && !IsTerminalVisible;
 
     partial void OnIsAuthenticatedChanged(bool value) => OnPropertyChanged(nameof(IsOverviewVisible));
     partial void OnIsCompanySelectionRequiredChanged(bool value) => OnPropertyChanged(nameof(IsOverviewVisible));
@@ -168,6 +202,8 @@ public partial class MainViewModel : ObservableObject
     partial void OnIsEmployeesVisibleChanged(bool value) => OnPropertyChanged(nameof(IsOverviewVisible));
     partial void OnIsWorkCardsVisibleChanged(bool value) => OnPropertyChanged(nameof(IsOverviewVisible));
     partial void OnIsWorkCalendarVisibleChanged(bool value) => OnPropertyChanged(nameof(IsOverviewVisible));
+    partial void OnIsTerminalVisibleChanged(bool value)
+    { OnPropertyChanged(nameof(IsOverviewVisible)); OnPropertyChanged(nameof(IsOverviewNavigationVisible)); }
 
     [RelayCommand]
     private async Task CheckApiHealthAsync()
@@ -203,6 +239,10 @@ public partial class MainViewModel : ObservableObject
 
             ConnectionMessage = "API reachable. Signing in...";
             var session = await _api.LoginAsync(Username, Password);
+            _allowedMenus = session.AllowedMenus;
+            _role = session.Role;
+            _sessionCompanyId = session.CompanyId;
+            RefreshMenuPermissions();
             IsAuthenticated = true;
             MainActivity.Current?.RequestNotificationPermission();
             Password = string.Empty;
@@ -217,6 +257,7 @@ public partial class MainViewModel : ObservableObject
                 CompanyName = session.CompanyName ?? "Assigned company";
                 await LoadCompanyDataAsync();
                 StartNotificationPolling();
+                if (CanOpenTerminal && !CanOpenOverview) OpenTerminal();
             }
             else
             {
@@ -230,7 +271,7 @@ public partial class MainViewModel : ObservableObject
                     ? "No active companies are available to this account."
                     : "Choose a company below before loading employees or daily status.";
             }
-            PageTitle = "Overview";
+            PageTitle = IsTerminalVisible ? "Terminal" : "Overview";
         }
         catch (Exception ex)
         {
@@ -356,6 +397,9 @@ public partial class MainViewModel : ObservableObject
         IsWorkCardsVisible = false;
         IsWorkCalendarVisible = false;
         IsDailyStatusVisible = false;
+        IsTerminalVisible = false;
+        _allowedMenus = null; _role = string.Empty; _sessionCompanyId = null;
+        RefreshMenuPermissions();
         IsAuthenticated = false;
 
         Password = string.Empty;
@@ -378,6 +422,7 @@ public partial class MainViewModel : ObservableObject
             await LoadCompanyDataAsync();
             StartNotificationPolling();
             StatusMessage = $"Connected to {CompanyName}. {Employees.Count} active employees loaded from Ergani II.";
+            if (CanOpenTerminal && !CanOpenOverview) OpenTerminal();
         }
         catch (Exception ex)
         {
@@ -398,13 +443,58 @@ public partial class MainViewModel : ObservableObject
     }
 
     [RelayCommand]
+    private void OpenTerminal()
+    {
+        if (!IsAuthenticated || !CanOpenTerminal || IsCompanySelectionRequired) return;
+        IsDailyStatusVisible = false; IsEmployeesVisible = false; IsWorkCardsVisible = false;
+        IsWorkCalendarVisible = false; IsTerminalVisible = true; PageTitle = "Terminal";
+        TerminalMessage = "Ready. Scan an employee QR code or enter the employee number.";
+    }
+
+    [RelayCommand]
+    private void BackFromTerminal()
+    {
+        IsTerminalVisible = false;
+        if (CanOpenOverview) PageTitle = "Overview";
+        else if (CanOpenTerminal) OpenTerminal();
+    }
+
+    [RelayCommand]
+    private void OpenTerminalCamera()
+    {
+        if (!IsTerminalVisible || IsTerminalScanBusy) return;
+        MainActivity.Current?.StartBarcodeCapture();
+    }
+
+    [RelayCommand]
+    private async Task SubmitTerminalScanAsync()
+    {
+        if (IsTerminalScanBusy || _api is null || !IsTerminalVisible) return;
+        var scan = WorkCardScanInput.Trim();
+        if (string.IsNullOrWhiteSpace(scan)) { TerminalMessage = "Scan a QR code or enter an employee number."; return; }
+        if (string.Equals(scan, _lastTerminalScan, StringComparison.Ordinal) && DateTime.UtcNow - _lastTerminalScanAt < TimeSpan.FromSeconds(20))
+        { TerminalMessage = "Duplicate scan ignored. Please wait before scanning the same code again."; WorkCardScanInput = string.Empty; return; }
+        IsTerminalScanBusy = true;
+        try
+        {
+            var result = await _api.ScanWorkCardAsync(scan);
+            _lastTerminalScan = scan; _lastTerminalScanAt = DateTime.UtcNow;
+            TerminalMessage = $"{result.Status}: {result.Movement} · {result.EmployeeName} · {result.ScannedAt:HH:mm:ss}\n{result.Message}";
+            WorkCardScanInput = string.Empty;
+        }
+        catch (Exception ex) { TerminalMessage = GetFullError(ex); }
+        finally { IsTerminalScanBusy = false; }
+    }
+
+    [RelayCommand]
     private async Task OpenWorkCardsAsync()
     {
-        if (!IsAuthenticated || _api is null) { StatusMessage = "Please sign in first."; return; }
+        if (!IsAuthenticated || _api is null || !CanOpenWorkCards) { StatusMessage = "You do not have permission to open work cards."; return; }
         if (IsCompanySelectionRequired) { StatusMessage = "Select a company before opening work cards."; return; }
         IsDailyStatusVisible = false;
         IsEmployeesVisible = false;
         IsWorkCalendarVisible = false;
+        IsTerminalVisible = false;
         IsWorkCardsVisible = true;
         PageTitle = "Work cards";
         await RefreshWorkCardsAsync();
@@ -451,7 +541,7 @@ public partial class MainViewModel : ObservableObject
     [RelayCommand]
     private async Task OpenDailyStatusAsync()
     {
-        if (!IsAuthenticated || _api is null) { StatusMessage = "Please sign in first."; return; }
+        if (!IsAuthenticated || _api is null || !CanOpenDailyStatus) { StatusMessage = "You do not have permission to open daily status."; return; }
         if (IsCompanySelectionRequired) { StatusMessage = "Select a company before opening daily status."; return; }
         IsWorkCalendarVisible = false;
         IsEmployeesVisible = false;
@@ -485,7 +575,7 @@ public partial class MainViewModel : ObservableObject
     [RelayCommand]
     private void OpenEmployees()
     {
-        if (!IsAuthenticated) { StatusMessage = "Please sign in first."; return; }
+        if (!IsAuthenticated || !CanOpenEmployees) { StatusMessage = "You do not have permission to open employees."; return; }
         if (IsCompanySelectionRequired) { StatusMessage = "Select a company before opening employees."; return; }
         IsDailyStatusVisible = false;
         IsWorkCardsVisible = false;
@@ -503,11 +593,12 @@ public partial class MainViewModel : ObservableObject
     [RelayCommand]
     private async Task OpenSchedulesAsync()
     {
-        if (!IsAuthenticated || _api is null) { StatusMessage = "Please sign in first."; return; }
+        if (!IsAuthenticated || _api is null || !CanOpenSchedules) { StatusMessage = "You do not have permission to open the work calendar."; return; }
         if (IsCompanySelectionRequired) { StatusMessage = "Select a company before opening the work calendar."; return; }
         IsDailyStatusVisible = false;
         IsEmployeesVisible = false;
         IsWorkCardsVisible = false;
+        IsTerminalVisible = false;
         IsWorkCalendarVisible = true;
         PageTitle = "Work calendar";
         SelectedCalendarEmployee ??= Employees.FirstOrDefault();
@@ -640,20 +731,21 @@ public partial class MainViewModel : ObservableObject
     [RelayCommand]
     private void GoToOverview()
     {
-        if (!IsAuthenticated) return;
+        if (!IsAuthenticated || !CanOpenOverview) return;
         if (IsCompanySelectionRequired) return;
 
         IsDailyStatusVisible = false;
         IsEmployeesVisible = false;
         IsWorkCardsVisible = false;
         IsWorkCalendarVisible = false;
+        IsTerminalVisible = false;
         PageTitle = "Overview";
     }
 
-    [RelayCommand] private void OpenOvertime() => SetPage("Overtime");
-    [RelayCommand] private void OpenSubmissions() => SetPage("API submissions");
-    [RelayCommand] private void OpenReports() => SetPage("Reports");
-    [RelayCommand] private void OpenSettings() => SetPage("Settings");
+    [RelayCommand] private void OpenOvertime() { if (CanOpenOvertime) SetPage("Overtime"); }
+    [RelayCommand] private void OpenSubmissions() { if (CanOpenSubmissions) SetPage("API submissions"); }
+    [RelayCommand] private void OpenReports() { if (CanOpenReports) SetPage("Reports"); }
+    [RelayCommand] private void OpenSettings() { if (CanOpenSettings) SetPage("Settings"); }
     private void SetPage(string page)
     {
         if (IsCompanySelectionRequired)
@@ -665,6 +757,7 @@ public partial class MainViewModel : ObservableObject
         IsEmployeesVisible = false;
         IsWorkCalendarVisible = false;
         IsWorkCardsVisible = false;
+        IsTerminalVisible = false;
         PageTitle = page;
         StatusMessage = page == "Employees" && IsAuthenticated
             ? $"{Employees.Count} active employees loaded from the existing employee service."
