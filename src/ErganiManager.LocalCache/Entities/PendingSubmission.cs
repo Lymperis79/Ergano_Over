@@ -30,6 +30,13 @@ public class PendingSubmission
     /// <summary>Lease preventing another worker from submitting this event concurrently.</summary>
     public DateTime? ProcessingUntilUtc { get; set; }
 
+    /// <summary>Ergani acknowledgement details; retained for idempotent client retries and audit.</summary>
+    [MaxLength(100)]
+    public string? ErganiProtocol { get; set; }
+    [MaxLength(100)]
+    public string? ErganiSubmissionId { get; set; }
+    public string? ErganiResponseRawJson { get; set; }
+
     public bool Synced { get; set; } = false;
     public DateTime? SyncedAt { get; set; }
 
