@@ -515,6 +515,9 @@ app.MapPost("/api/mobile/workcards/scan", async Task<IResult> (
     var settings = await cache.CachedCompanySettings.FindAsync(companyId.Value);
     string? latestMainMovement = null;
     DateTime? latestMainMovementAt = null;
+    var workdayStart = now.Date;
+    var workdayEnd = workdayStart.AddDays(1);
+    var hasProtocolOnWorkday = false;
     try
     {
         await using var mainDb = new AppDbContext(connectionState.GetDbOptions());
@@ -527,12 +530,29 @@ app.MapPost("/api/mobile/workcards/scan", async Task<IResult> (
             latestMainMovement = latestMainCard.MovementType == MovementType.Arrival ? "Arrival" : "Departure";
             latestMainMovementAt = latestMainCard.MovementDateTime;
         }
+
+        // Look across the entire local workday, not only up to the scan time.
+        // A later acknowledged movement makes an earlier unresolved scan unsafe to resend.
+        hasProtocolOnWorkday = await mainDb.WorkCards.AsNoTracking()
+            .AnyAsync(w => w.EmployeeId == employee.Id
+                && w.Employee != null && w.Employee.CompanyId == companyId.Value
+                && w.Protocol != null && w.Protocol != ""
+                && w.MovementDateTime >= workdayStart && w.MovementDateTime < workdayEnd);
     }
     catch (Exception ex)
     {
         // Offline operation remains possible using the durable local pending queue.
         logger.LogWarning(ex, "Could not read main work-card history for movement resolution; using local queue.");
     }
+
+    hasProtocolOnWorkday |= await cache.PendingSubmissions.AnyAsync(p =>
+        p.CompanyId == companyId.Value && p.EmployeeId == employee.Id
+        && p.ErganiProtocol != null && p.ErganiProtocol != ""
+        && p.ScannedAt >= workdayStart && p.ScannedAt < workdayEnd);
+    hasProtocolOnWorkday |= await cache.FailedSubmissions.AnyAsync(p =>
+        p.CompanyId == companyId.Value && p.EmployeeId == employee.Id
+        && p.ResolvedProtocol != null && p.ResolvedProtocol != ""
+        && p.OriginalScannedAt >= workdayStart && p.OriginalScannedAt < workdayEnd);
     var shift = await ShiftResolver.ResolveAsync(cache, employee.Id, now,
         settings?.EarlyClockInBlockMinutes ?? 0, latestMainMovement: latestMainMovement,
         latestMainMovementAt: latestMainMovementAt);
@@ -586,6 +606,19 @@ app.MapPost("/api/mobile/workcards/scan", async Task<IResult> (
     };
     cache.PendingSubmissions.Add(queued);
     await cache.SaveChangesAsync();
+
+    const string chronologyReviewReason = "Another attendance event for this employee has an Ergani protocol on the same workday. Check the Ergani portal and API response before deciding whether to retry or mark this scan as not submitted.";
+    if (hasProtocolOnWorkday)
+    {
+        queued.ReviewRequired = true;
+        queued.ReviewReason = chronologyReviewReason;
+        queued.LastSyncError = chronologyReviewReason;
+        queued.ProcessingUntilUtc = null;
+        await cache.SaveChangesAsync();
+        return Results.Ok(new MobileWorkCardScanResponse(
+            employee.FullName, movement, now, "ReviewRequired",
+            chronologyReviewReason, null, employee.Id));
+    }
 
     // Use the same synchronous submitter as the Windows manual Work Cards form.
     WorkCardSubmissionOutcome? outcome = null;
