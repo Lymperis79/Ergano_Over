@@ -882,7 +882,10 @@ public partial class MainViewModel : ObservableObject
             var rows = await _api.GetWorkCardHistoryAsync(fromDate, toDate, SelectedWorkCardEmployee?.Id);
             WorkCardHistory.Clear();
             foreach (var row in rows.OrderByDescending(x => x.MovementDateTime))
+            {
+                row.CanManageReviewActions = _role == "Admin";
                 WorkCardHistory.Add(row);
+            }
             WorkCardsMessage = $"{rows.Count} work card(s) · {fromDate:dd/MM/yyyy} – {toDate:dd/MM/yyyy}";
             await AddDevicePendingWorkCardsAsync();
         }
@@ -895,6 +898,45 @@ public partial class MainViewModel : ObservableObject
             await AddDevicePendingWorkCardsAsync();
         }
         finally { IsBusy = false; }
+    }
+
+    [RelayCommand]
+    private Task RetryReviewedWorkCardAsync(MobileWorkCardHistoryItem? item)
+        => ApplyWorkCardReviewDecisionAsync(item, "Retry");
+
+    [RelayCommand]
+    private Task MarkReviewedDoNotSubmitAsync(MobileWorkCardHistoryItem? item)
+        => ApplyWorkCardReviewDecisionAsync(item, "DoNotSubmit");
+
+    private async Task ApplyWorkCardReviewDecisionAsync(MobileWorkCardHistoryItem? item, string decision)
+    {
+        if (item is null || !item.ReviewRequired) return;
+        if (_role != "Admin")
+        {
+            WorkCardsMessage = "Only an administrator can decide how to resolve a chronology review.";
+            return;
+        }
+        if (_api is null) return;
+        if ((item.LocalPendingId.HasValue ? 1 : 0) + (item.LocalFailedId.HasValue ? 1 : 0) != 1)
+        {
+            WorkCardsMessage = "This review record has no valid local queue identifier. Refresh history and contact an administrator.";
+            return;
+        }
+
+        WorkCardsMessage = decision == "Retry"
+            ? "Submitting the explicitly selected review record..."
+            : "Recording the decision not to submit this scan...";
+        try
+        {
+            var message = await _api.ReviewWorkCardAsync(
+                item.LocalPendingId, item.LocalFailedId, decision);
+            WorkCardsMessage = message;
+            await RefreshWorkCardsAsync();
+        }
+        catch (Exception ex)
+        {
+            WorkCardsMessage = "Could not apply the review decision: " + GetFullError(ex);
+        }
     }
 
     [RelayCommand]
@@ -1156,6 +1198,10 @@ public sealed class MobileWorkCardHistoryItem
     public bool IsLocalFailed { get; set; }
     public int RetryAttempts { get; set; }
     public string? RetryError { get; set; }
+    public bool ReviewRequired { get; set; }
+    public string? ReviewReason { get; set; }
+    public bool CanManageReviewActions { get; set; }
+    public bool CanShowReviewActions => ReviewRequired && CanManageReviewActions;
 
     public string MovementText => IsDeviceRejected
         ? "Rejected · employee/AFM not found"
@@ -1172,6 +1218,7 @@ public sealed class MobileWorkCardHistoryItem
     };
     public bool HasLateReason => !string.IsNullOrWhiteSpace(LateJustification);
     public string StatusText =>
+        ReviewRequired ? "⚠️ Manual review required — automatic retry paused. " + (ReviewReason ?? string.Empty) :
         IsDeviceRejected ? "Rejected on this device · correct the employee AFM/barcode and scan again. " + (RetryError ?? string.Empty) :
         IsDevicePending ? "Saved on this device · waiting for server synchronization" :
         IsLocalPending ? (RetryAttempts > 0
