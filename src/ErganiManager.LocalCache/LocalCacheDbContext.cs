@@ -41,6 +41,7 @@ public class LocalCacheDbContext : DbContext
         modelBuilder.Entity<PendingSubmission>(e =>
         {
             e.HasIndex(p => p.Synced);
+            e.HasIndex(p => p.ClientEventId).IsUnique();
         });
 
         modelBuilder.Entity<FailedSubmission>(e =>
