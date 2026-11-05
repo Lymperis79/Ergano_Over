@@ -58,6 +58,7 @@ public partial class MainViewModel : ObservableObject
         if (TryGetExplicitQrAfm(scanValue, out var qrAfm) && !IsValidGreekAfm(qrAfm))
         {
             WorkCardScanMessage = "Invalid AFM in QR code. The AFM checksum is incorrect; verify the employee's QR code before scanning again.";
+            IsWorkCardScanBusy = false;
             return;
         }
         OfflineWorkCardEvent? queuedEvent = null;
