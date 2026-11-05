@@ -491,11 +491,11 @@ app.MapPost("/api/mobile/workcards/scan", async Task<IResult> (
         {
             var priorHasProtocol = !string.IsNullOrWhiteSpace(prior.ErganiProtocol);
             var priorStatus = priorHasProtocol || (prior.Synced && string.IsNullOrWhiteSpace(prior.LastSyncError))
-                ? "Submitted" : !prior.Synced ? "Queued" : "Rejected";
+                ? "Submitted" : prior.ReviewRequired ? "ReviewRequired" : !prior.Synced ? "Queued" : "Rejected";
             return Results.Ok(new MobileWorkCardScanResponse(
                 string.Empty, prior.MovementType, prior.ScannedAt, priorStatus,
-                "This event was already received by the server. " + (prior.LastSyncError ?? string.Empty),
-                prior.ErganiProtocol, prior.EmployeeId));
+                "This event was already received by the server. " + (prior.ReviewReason ?? prior.LastSyncError ?? string.Empty),
+                prior.ErganiProtocol, prior.EmployeeId, prior.Id));
         }
     }
 
@@ -617,7 +617,7 @@ app.MapPost("/api/mobile/workcards/scan", async Task<IResult> (
         await cache.SaveChangesAsync();
         return Results.Ok(new MobileWorkCardScanResponse(
             employee.FullName, movement, now, "ReviewRequired",
-            chronologyReviewReason, null, employee.Id));
+            chronologyReviewReason, null, employee.Id, queued.Id));
     }
 
     // Use the same synchronous submitter as the Windows manual Work Cards form.
@@ -659,7 +659,7 @@ app.MapPost("/api/mobile/workcards/scan", async Task<IResult> (
         return Results.Ok(new MobileWorkCardScanResponse(
             employee.FullName, movement, now, "Submitted",
             $"Successfully submitted to Ergani. Protocol: {outcome!.Protocol ?? "not returned"}.",
-            outcome.Protocol, employee.Id));
+            outcome.Protocol, employee.Id, queued.Id));
     }
 
     if (rejected)
@@ -667,7 +667,7 @@ app.MapPost("/api/mobile/workcards/scan", async Task<IResult> (
         return Results.Ok(new MobileWorkCardScanResponse(
             employee.FullName, movement, now, "Rejected",
             error ?? "Ergani rejected the work card. Check the API submission log.",
-            outcome?.Protocol, employee.Id));
+            outcome?.Protocol, employee.Id, queued.Id));
     }
 
     return Results.Ok(new MobileWorkCardScanResponse(
@@ -792,6 +792,6 @@ public sealed record MobileNotificationResponse(long Id, int EventCode, string T
 
 public sealed record MobileWorkCardScanRequest(string ScanValue, string? EventId = null, DateTime? ScannedAt = null);
 public sealed record MobileWorkCardReviewRequest(int? PendingId, int? FailedId, string Decision);
-public sealed record MobileWorkCardScanResponse(string EmployeeName, string Movement, DateTime ScannedAt, string Status, string Message, string? Protocol = null, int EmployeeId = 0);
+public sealed record MobileWorkCardScanResponse(string EmployeeName, string Movement, DateTime ScannedAt, string Status, string Message, string? Protocol = null, int EmployeeId = 0, int? PendingId = null);
 
 public sealed record MobileScheduleUpsertRequest(int EmployeeId, DateOnly ScheduleDate, int WorkType, TimeOnly? StartTime, TimeOnly? EndTime, string? Comments);
