@@ -356,6 +356,7 @@ app.MapPost("/api/mobile/workcards/scan", async Task<IResult> (
     MobileWorkCardScanRequest request,
     ICompanyContext context,
     ICacheSyncService cacheSync,
+    IConnectionStateService connectionState,
     IWorkCardSubmitter submitter,
     ILogger<Program> logger) =>
 {
@@ -418,12 +419,13 @@ app.MapPost("/api/mobile/workcards/scan", async Task<IResult> (
             .FirstOrDefaultAsync(p => p.CompanyId == companyId.Value && p.ClientEventId == request.EventId);
         if (prior is not null)
         {
-            var priorStatus = !prior.Synced ? "Queued"
-                : string.IsNullOrWhiteSpace(prior.LastSyncError) ? "Submitted" : "Rejected";
+            var hasProtocol = !string.IsNullOrWhiteSpace(prior.ErganiProtocol);
+            var priorStatus = hasProtocol || (prior.Synced && string.IsNullOrWhiteSpace(prior.LastSyncError))
+                ? "Submitted" : !prior.Synced ? "Queued" : "Rejected";
             return Results.Ok(new MobileWorkCardScanResponse(
                 string.Empty, prior.MovementType, prior.ScannedAt, priorStatus,
                 "This event was already received by the server. " + (prior.LastSyncError ?? string.Empty),
-                null, prior.EmployeeId));
+                prior.ErganiProtocol, prior.EmployeeId));
         }
     }
 
@@ -441,8 +443,29 @@ app.MapPost("/api/mobile/workcards/scan", async Task<IResult> (
 
     var now = request.ScannedAt ?? DateTime.Now;
     var settings = await cache.CachedCompanySettings.FindAsync(companyId.Value);
+    string? latestMainMovement = null;
+    DateTime? latestMainMovementAt = null;
+    try
+    {
+        await using var mainDb = new AppDbContext(connectionState.GetDbOptions());
+        var latestMainCard = await mainDb.WorkCards.AsNoTracking()
+            .Where(w => w.EmployeeId == employee.Id && w.MovementDateTime <= now)
+            .OrderByDescending(w => w.MovementDateTime)
+            .FirstOrDefaultAsync();
+        if (latestMainCard != null)
+        {
+            latestMainMovement = latestMainCard.MovementType == MovementType.Arrival ? "Arrival" : "Departure";
+            latestMainMovementAt = latestMainCard.MovementDateTime;
+        }
+    }
+    catch (Exception ex)
+    {
+        // Offline operation remains possible using the durable local pending queue.
+        logger.LogWarning(ex, "Could not read main work-card history for movement resolution; using local queue.");
+    }
     var shift = await ShiftResolver.ResolveAsync(cache, employee.Id, now,
-        settings?.EarlyClockInBlockMinutes ?? 0);
+        settings?.EarlyClockInBlockMinutes ?? 0, latestMainMovement: latestMainMovement,
+        latestMainMovementAt: latestMainMovementAt);
     var movement = shift.Movement;
     var schedule = shift.Schedule;
     var officialHoliday = movement == "Arrival" &&
@@ -513,8 +536,9 @@ app.MapPost("/api/mobile/workcards/scan", async Task<IResult> (
         submissionException = ex.GetBaseException().Message;
     }
 
-    var submitted = outcome?.Success == true;
-    var rejected = outcome is { Success: false, IsBusinessError: true };
+    var hasProtocol = !string.IsNullOrWhiteSpace(outcome?.Protocol);
+    var submitted = outcome?.Success == true || hasProtocol;
+    var rejected = !submitted && outcome is { Success: false, IsBusinessError: true };
     var error = outcome?.ErrorMessage ?? submissionException;
 
     queued.SyncAttempts = 1;
@@ -522,6 +546,9 @@ app.MapPost("/api/mobile/workcards/scan", async Task<IResult> (
     queued.Synced = submitted || rejected;
     queued.SyncedAt = submitted || rejected ? DateTime.UtcNow : null;
     queued.LastSyncError = submitted ? null : error;
+    queued.ErganiProtocol = outcome?.Protocol ?? queued.ErganiProtocol;
+    queued.ErganiSubmissionId = outcome?.SubmissionId ?? queued.ErganiSubmissionId;
+    queued.ErganiResponseRawJson = outcome?.ResponseRawJson ?? queued.ErganiResponseRawJson;
     await cache.SaveChangesAsync();
 
     if (submitted)
