@@ -37,12 +37,16 @@ public partial class DashboardViewModel : ViewModelBase, IAdminSectionViewModel
     [RelayCommand]
     private void OpenPendingItems() => NavigationRequested?.Invoke("Pending");
 
+    [RelayCommand]
+    private void OpenPendingWorkCards() => NavigationRequested?.Invoke("PendingWorkCards");
+
     [ObservableProperty] private string _companyName = string.Empty;
     [ObservableProperty] private int _branchCount;
     [ObservableProperty] private int _employeeCount;
     [ObservableProperty] private int _submissionCount;
     [ObservableProperty] private int _errorCount;
     [ObservableProperty] private int _pendingCount;
+    [ObservableProperty] private int _pendingWorkCardCount;
     [ObservableProperty] private int _successfulCount;
     [ObservableProperty] private int _failedCount;
     [ObservableProperty] private string _periodText = string.Empty;
@@ -138,7 +142,7 @@ public partial class DashboardViewModel : ViewModelBase, IAdminSectionViewModel
                 CompanyName = Loc["Dashboard.NoCompany"];
                 InternetHealthText = DatabaseHealthText = ErganiHealthText = EmailHealthText = Loc["Dashboard.NotConfigured"];
                 BranchCount = EmployeeCount = SubmissionCount = ErrorCount = PendingCount = 0;
-                SuccessfulCount = FailedCount = 0;
+                SuccessfulCount = FailedCount = PendingWorkCardCount = 0;
                 Categories.Clear();
                 RecentActivity.Clear();
                 OnPropertyChanged(nameof(HasCategories));
@@ -198,6 +202,7 @@ public partial class DashboardViewModel : ViewModelBase, IAdminSectionViewModel
                 using var localCache = LocalCacheDbContextFactory.Create();
                 localPendingCount = await localCache.PendingSubmissions.CountAsync(p =>
                     p.CompanyId == companyId.Value && !p.Synced && !p.ReviewRequired);
+                PendingWorkCardCount = localPendingCount;
                 localReviewCount = await localCache.PendingSubmissions.CountAsync(p =>
                     p.CompanyId == companyId.Value && !p.Synced && p.ReviewRequired)
                     + await localCache.FailedSubmissions.CountAsync(f =>
@@ -219,8 +224,7 @@ public partial class DashboardViewModel : ViewModelBase, IAdminSectionViewModel
                 l.Employee != null && l.Employee.CompanyId == companyId.Value && !l.SubmittedToErgani);
             PendingCount = await pendingSchedules.CountAsync()
                          + await pendingOvertimes.CountAsync()
-                         + await pendingLeaves.CountAsync()
-                         + localPendingCount;
+                         + await pendingLeaves.CountAsync();
 
             QueuedEmailCount = await db.EmailLogs.CountAsync(e =>
                 e.CompanyId == companyId.Value && e.Status == "Queued");
