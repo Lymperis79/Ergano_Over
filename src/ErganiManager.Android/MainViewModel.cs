@@ -571,10 +571,22 @@ public partial class MainViewModel : ObservableObject
 
         if (synchronized > 0)
         {
-            var status = lastResult?.Status ?? "Synchronized";
-            var detail = string.Equals(status, "Queued", StringComparison.OrdinalIgnoreCase)
-                ? "The server received the offline scan and placed it in its pending submission queue."
-                : "Offline scan(s) successfully synchronized with the server.";
+            var reviewCount = synchronizedResults.Count(x =>
+                string.Equals(x.Result.Status, "ReviewRequired", StringComparison.OrdinalIgnoreCase));
+            var queuedCount = synchronizedResults.Count(x =>
+                string.Equals(x.Result.Status, "Queued", StringComparison.OrdinalIgnoreCase));
+            var submittedCount = synchronizedResults.Count(x =>
+                string.Equals(x.Result.Status, "Submitted", StringComparison.OrdinalIgnoreCase));
+            var detailParts = new List<string>();
+            if (submittedCount > 0)
+                detailParts.Add($"{submittedCount} submitted to Ergani.");
+            if (queuedCount > 0)
+                detailParts.Add($"{queuedCount} saved on the server and waiting for submission.");
+            if (reviewCount > 0)
+                detailParts.Add($"⚠️ {reviewCount} scan(s) require administrator review. Automatic retry is paused; open Work Cards history.");
+            var detail = detailParts.Count > 0
+                ? string.Join(" ", detailParts)
+                : "The server accepted the offline scan(s). Check Work Cards history for their current status.";
             var message = $"{synchronized} offline scan(s) synchronized. {detail}";
             if (!string.IsNullOrWhiteSpace(syncFailure))
                 message += $" Remaining scans are still on this device. Next retry in 30 seconds. Last error: {syncFailure}";
