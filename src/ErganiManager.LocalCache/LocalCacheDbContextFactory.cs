@@ -89,6 +89,14 @@ public static class LocalCacheDbContextFactory
                 return false;
             }
 
+            bool IndexExists(string index)
+            {
+                using var cmd = connection.CreateCommand();
+                cmd.CommandText = "SELECT 1 FROM sqlite_master WHERE type='index' AND name=$n";
+                cmd.Parameters.AddWithValue("$n", index);
+                return cmd.ExecuteScalar() != null;
+            }
+
             var added = false;
             void AddColumn(string table, string column, string ddl)
             {
@@ -105,10 +113,10 @@ public static class LocalCacheDbContextFactory
                 "ALTER TABLE PendingSubmissions ADD COLUMN ClientEventId TEXT NULL");
             AddColumn("PendingSubmissions", "ProcessingUntilUtc",
                 "ALTER TABLE PendingSubmissions ADD COLUMN ProcessingUntilUtc TEXT NULL");
-            if (TableExists("PendingSubmissions"))
+            if (TableExists("PendingSubmissions") && !IndexExists("IX_PendingSubmissions_ClientEventId"))
             {
                 using var eventIndex = connection.CreateCommand();
-                eventIndex.CommandText = "CREATE UNIQUE INDEX IF NOT EXISTS IX_PendingSubmissions_ClientEventId ON PendingSubmissions (ClientEventId)";
+                eventIndex.CommandText = "CREATE UNIQUE INDEX IX_PendingSubmissions_ClientEventId ON PendingSubmissions (ClientEventId)";
                 eventIndex.ExecuteNonQuery();
                 added = true; // Preserve queued rows when the model signature changes for this index.
             }
