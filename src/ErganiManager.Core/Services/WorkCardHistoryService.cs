@@ -76,7 +76,7 @@ public class WorkCardHistoryService : IWorkCardHistoryService
 
         var pending = await cache.PendingSubmissions
             .Where(p => p.CompanyId == companyId
-                        && (!p.Synced || (p.ErganiProtocol != null && p.ErganiProtocol != "")
+                        && (!p.Synced || p.ReviewRequired || (p.ErganiProtocol != null && p.ErganiProtocol != "")
                             || (p.Synced && p.ReviewReason != null && p.ReviewReason != ""))
                         && p.ScannedAt >= fromDt && p.ScannedAt <= toDt)
             .OrderByDescending(p => p.ScannedAt)
@@ -84,7 +84,7 @@ public class WorkCardHistoryService : IWorkCardHistoryService
 
         var failed = await cache.FailedSubmissions
             .Where(f => f.CompanyId == companyId
-                        && (!f.Resolved || (f.ResolvedProtocol != null && f.ResolvedProtocol != "")
+                        && (!f.Resolved || f.ReviewRequired || (f.ResolvedProtocol != null && f.ResolvedProtocol != "")
                             || (f.Resolved && f.ReviewReason != null && f.ReviewReason != ""))
                         && f.OriginalScannedAt >= fromDt && f.OriginalScannedAt <= toDt)
             .OrderByDescending(f => f.OriginalScannedAt)
