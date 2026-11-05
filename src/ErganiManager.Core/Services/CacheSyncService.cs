@@ -132,6 +132,7 @@ public class CacheSyncService : ICacheSyncService
 
     public async Task<SyncResult> FlushPendingSubmissionsAsync()
     {
+        await using var db = new AppDbContext(_connectionState.GetDbOptions());
         using var cache = LocalCacheDbContextFactory.Create();
 
         var pending = await cache.PendingSubmissions
@@ -168,6 +169,7 @@ public class CacheSyncService : ICacheSyncService
         }
 
         var result = new SyncResult { Success = true };
+        result.PendingSubmissionsRemaining += pending.Count(p => p.ReviewRequired);
 
         foreach (var item in pending.Where(p => !p.ReviewRequired))
         {
