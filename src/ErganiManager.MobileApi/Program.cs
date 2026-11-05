@@ -419,8 +419,8 @@ app.MapPost("/api/mobile/workcards/scan", async Task<IResult> (
             .FirstOrDefaultAsync(p => p.CompanyId == companyId.Value && p.ClientEventId == request.EventId);
         if (prior is not null)
         {
-            var hasProtocol = !string.IsNullOrWhiteSpace(prior.ErganiProtocol);
-            var priorStatus = hasProtocol || (prior.Synced && string.IsNullOrWhiteSpace(prior.LastSyncError))
+            var priorHasProtocol = !string.IsNullOrWhiteSpace(prior.ErganiProtocol);
+            var priorStatus = priorHasProtocol || (prior.Synced && string.IsNullOrWhiteSpace(prior.LastSyncError))
                 ? "Submitted" : !prior.Synced ? "Queued" : "Rejected";
             return Results.Ok(new MobileWorkCardScanResponse(
                 string.Empty, prior.MovementType, prior.ScannedAt, priorStatus,
