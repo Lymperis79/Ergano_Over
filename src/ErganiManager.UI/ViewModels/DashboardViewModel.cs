@@ -40,6 +40,9 @@ public partial class DashboardViewModel : ViewModelBase, IAdminSectionViewModel
     [RelayCommand]
     private void OpenPendingWorkCards() => NavigationRequested?.Invoke("PendingWorkCards");
 
+    [RelayCommand]
+    private void OpenPendingOvertime() => NavigationRequested?.Invoke("PendingOvertime");
+
     [ObservableProperty] private string _companyName = string.Empty;
     [ObservableProperty] private int _branchCount;
     [ObservableProperty] private int _employeeCount;
