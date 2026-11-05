@@ -22,8 +22,16 @@ public partial class MainViewModel : ObservableObject
                 return;
             }
             WorkCardScanInput = value;
-            WorkCardScanMessage = "Barcode captured. Sending to Ergani...";
-            SubmitWorkCardScanCommand.Execute(null);
+            if (IsTerminalVisible)
+            {
+                TerminalMessage = "QR code captured. Processing attendance...";
+                SubmitTerminalScanCommand.Execute(null);
+            }
+            else
+            {
+                WorkCardScanMessage = "Barcode captured. Sending to Ergani...";
+                SubmitWorkCardScanCommand.Execute(null);
+            }
         });
     }
 
@@ -483,7 +491,16 @@ public partial class MainViewModel : ObservableObject
             WorkCardScanInput = string.Empty;
         }
         catch (Exception ex) { TerminalMessage = GetFullError(ex); }
-        finally { IsTerminalScanBusy = false; }
+        finally
+        {
+            IsTerminalScanBusy = false;
+            if (IsTerminalVisible)
+            {
+                await Task.Delay(1300);
+                if (IsTerminalVisible && !IsTerminalScanBusy)
+                    MainActivity.Current?.StartBarcodeCapture();
+            }
+        }
     }
 
     [RelayCommand]
