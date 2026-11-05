@@ -207,6 +207,10 @@ public class ErganiRetryService
         await EndOutageAsync(company);
         await _emailAlerts.FlushOutboxAsync(company.Id);
 
+        // A protocol later in the same employee/workday makes unresolved scans chronology-sensitive.
+        // Pause them before either retry path can submit anything else.
+        await ProtectChronologyConflictsAsync(company.Id, db, cache, ct);
+
         // Scans saved by the scan screens are the first delivery, so they are always sent.
         await FlushPendingSubmissionsAsync(company, cache, ct);
 
@@ -400,7 +404,7 @@ public class ErganiRetryService
         AppDbContext db, LocalCache.LocalCacheDbContext cache, CancellationToken ct)
     {
         var failed = await cache.FailedSubmissions
-            .Where(f => f.CompanyId == company.Id && !f.Resolved && f.RetryCount < MaxRetryAttempts)
+            .Where(f => f.CompanyId == company.Id && !f.Resolved && !f.ReviewRequired && f.RetryCount < MaxRetryAttempts)
             .OrderBy(f => f.OriginalScannedAt)
             .ToListAsync(ct);
 
@@ -527,6 +531,71 @@ public class ErganiRetryService
     /// * Network / Ergani outage        → stays queued and is retried on the next cycle, with no
     ///                                    attempt limit, so a long outage can never lose a scan.
     /// </summary>
+    /// <summary>
+    /// If an employee already has a protocol-bearing WorkCard on a workday, every unresolved
+    /// local scan for that employee and calendar day is paused for administrator review. This
+    /// deliberately includes scans both before and after the acknowledged event.
+    /// </summary>
+    private async Task ProtectChronologyConflictsAsync(
+        int companyId, AppDbContext db, LocalCache.LocalCacheDbContext cache, CancellationToken ct)
+    {
+        var pending = await cache.PendingSubmissions
+            .Where(p => p.CompanyId == companyId && !p.Synced && !p.ReviewRequired)
+            .ToListAsync(ct);
+        var failed = await cache.FailedSubmissions
+            .Where(f => f.CompanyId == companyId && !f.Resolved && !f.ReviewRequired)
+            .ToListAsync(ct);
+
+        var unresolved = pending.Select(p => new { p.EmployeeId, WorkDate = p.ScannedAt.Date })
+            .Concat(failed.Select(f => new { f.EmployeeId, WorkDate = f.OriginalScannedAt.Date }))
+            .ToList();
+        if (unresolved.Count == 0) return;
+
+        var employeeIds = unresolved.Select(x => x.EmployeeId).Distinct().ToList();
+        var minDate = unresolved.Min(x => x.WorkDate);
+        var maxDate = unresolved.Max(x => x.WorkDate).AddDays(1);
+
+        var acknowledged = await db.WorkCards
+            .Where(w => employeeIds.Contains(w.EmployeeId)
+                        && w.Employee != null && w.Employee.CompanyId == companyId
+                        && w.Protocol != null && w.Protocol != ""
+                        && w.MovementDateTime >= minDate && w.MovementDateTime < maxDate)
+            .Select(w => new { w.EmployeeId, w.MovementDateTime })
+            .ToListAsync(ct);
+
+        if (acknowledged.Count == 0) return;
+
+        var protocolDays = acknowledged
+            .Select(x => (x.EmployeeId, Day: x.MovementDateTime.Date))
+            .ToHashSet();
+
+        const string reason = "Another attendance event for this employee has an Ergani protocol on the same workday. Check the Ergani portal and API response before deciding whether to retry or discard this unsubmitted record.";
+
+        var changed = false;
+        foreach (var item in pending)
+        {
+            if (!protocolDays.Contains((item.EmployeeId, item.ScannedAt.Date))) continue;
+            item.ReviewRequired = true;
+            item.ReviewReason = reason;
+            item.ProcessingUntilUtc = null;
+            changed = true;
+            _logger.LogWarning("Pending work card {Id} paused for manual chronology review (employee {EmployeeId}, {Date}).",
+                item.Id, item.EmployeeId, item.ScannedAt.Date);
+        }
+
+        foreach (var item in failed)
+        {
+            if (!protocolDays.Contains((item.EmployeeId, item.OriginalScannedAt.Date))) continue;
+            item.ReviewRequired = true;
+            item.ReviewReason = reason;
+            changed = true;
+            _logger.LogWarning("Failed work card {Id} paused for manual chronology review (employee {EmployeeId}, {Date}).",
+                item.Id, item.EmployeeId, item.OriginalScannedAt.Date);
+        }
+
+        if (changed) await cache.SaveChangesAsync(ct);
+    }
+
     private async Task FlushPendingSubmissionsAsync(
         Company company, LocalCache.LocalCacheDbContext cache, CancellationToken ct)
     {
@@ -545,7 +614,7 @@ public class ErganiRetryService
         Company company, LocalCache.LocalCacheDbContext cache, CancellationToken ct)
     {
         var pending = await cache.PendingSubmissions
-            .Where(p => p.CompanyId == company.Id && !p.Synced &&
+            .Where(p => p.CompanyId == company.Id && !p.Synced && !p.ReviewRequired &&
                         (p.ProcessingUntilUtc == null || p.ProcessingUntilUtc <= DateTime.UtcNow))
             .OrderBy(p => p.ScannedAt)
             .ToListAsync(ct);
@@ -659,7 +728,7 @@ public class ErganiRetryService
 
             using var cache = LocalCacheDbContextFactory.Create();
             var items = await cache.PendingSubmissions
-                .Where(p => ids.Contains(p.Id) && !p.Synced &&
+                .Where(p => ids.Contains(p.Id) && !p.Synced && !p.ReviewRequired &&
                     (p.ProcessingUntilUtc == null || p.ProcessingUntilUtc <= DateTime.UtcNow))
                 .OrderBy(p => p.ScannedAt)
                 .ToListAsync(ct);
