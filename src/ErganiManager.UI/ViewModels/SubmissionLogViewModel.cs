@@ -528,7 +528,7 @@ public partial class SubmissionLogViewModel
             var employees = await db.Employees
                 .Where(e => e.CompanyId == companyId)
                 .OrderBy(e => e.LastName).ThenBy(e => e.FirstName)
-                .Select(e => new EmployeeFilterOption { Id = e.Id, Name = e.LastName + " " + e.FirstName, TaxId = e.TaxId })
+                .Select(e => new EmployeeFilterOption { Id = e.Id, Name = e.LastName + " " + e.FirstName + (string.IsNullOrWhiteSpace(e.FatherName) ? "" : " " + e.FatherName) + (string.IsNullOrWhiteSpace(e.TaxId) ? "" : " · ΑΦΜ: " + e.TaxId), TaxId = e.TaxId })
                 .ToListAsync();
 
             EmployeeOptions.Clear();
