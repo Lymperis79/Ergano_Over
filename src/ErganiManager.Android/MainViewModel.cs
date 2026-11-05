@@ -1209,7 +1209,8 @@ public sealed class MobileWorkCardHistoryItem
     public bool ReviewRequired { get; set; }
     public string? ReviewReason { get; set; }
     public bool CanManageReviewActions { get; set; }
-    public bool CanShowReviewActions => ReviewRequired && CanManageReviewActions;
+    public bool CanShowReviewActions => ReviewRequired && CanManageReviewActions
+        && !SubmittedToErgani && string.IsNullOrWhiteSpace(Protocol);
 
     public string MovementText => IsDeviceRejected
         ? "Rejected · employee/AFM not found"
