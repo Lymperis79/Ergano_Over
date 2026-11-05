@@ -11,6 +11,10 @@ public class PendingSubmission
 {
     public int Id { get; set; }
 
+    /// <summary>Stable ID supplied by a remote client to make retries idempotent.</summary>
+    [MaxLength(64)]
+    public string? ClientEventId { get; set; }
+
     public int EmployeeId { get; set; } // matches Employee.Id in main DB
     public int CompanyId { get; set; }
     public int BranchId { get; set; }
