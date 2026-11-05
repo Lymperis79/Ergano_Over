@@ -11,7 +11,13 @@ namespace ErganiManager.Android;
 [SupportedOSPlatform("android23.0")]
 public partial class MainViewModel : ObservableObject
 {
-    public MainViewModel() => MainActivity.BarcodeCaptured += OnBarcodeCaptured;
+    public MainViewModel()
+    {
+        MainActivity.BarcodeCaptured += OnBarcodeCaptured;
+        // Check the configured server as soon as the sign-in screen opens.
+        // CheckApiHealthAsync handles failures and leaves the app usable offline.
+        _ = CheckApiHealthAsync();
+    }
 
     private void OnBarcodeCaptured(string? value)
     {
@@ -263,6 +269,8 @@ public partial class MainViewModel : ObservableObject
             using var healthClient = new MobileApiClient(ServerAddress);
             ConnectionMessage = "Checking API health (GET /api/mobile/health)...";
             await healthClient.CheckHealthAsync();
+            IsApiUnavailable = false;
+            ApiUnavailableMessage = string.Empty;
             ConnectionMessage = "API HEALTH OK — received HTTP 200 from /api/mobile/health. You can now sign in.";
         }
         catch (Exception ex)
