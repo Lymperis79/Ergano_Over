@@ -590,11 +590,36 @@ public class ErganiRetryService
     private async Task ProtectChronologyConflictsAsync(
         int companyId, AppDbContext db, LocalCache.LocalCacheDbContext cache, CancellationToken ct)
     {
+        // A protocol is conclusive evidence of an acknowledgement. Recover rows where the
+        // process stopped after saving the protocol but before saving the queue acknowledgement.
+        var protocolPending = await cache.PendingSubmissions
+            .Where(p => p.CompanyId == companyId && !p.Synced
+                        && p.ErganiProtocol != null && p.ErganiProtocol != "")
+            .ToListAsync(ct);
+        foreach (var item in protocolPending)
+        {
+            item.Synced = true;
+            item.SyncedAt ??= DateTime.UtcNow;
+            item.ProcessingUntilUtc = null;
+        }
+
+        var protocolFailed = await cache.FailedSubmissions
+            .Where(f => f.CompanyId == companyId && !f.Resolved
+                        && f.ResolvedProtocol != null && f.ResolvedProtocol != "")
+            .ToListAsync(ct);
+        foreach (var item in protocolFailed)
+        {
+            item.Resolved = true;
+            item.ResolvedAt ??= DateTime.UtcNow;
+        }
+
         var pending = await cache.PendingSubmissions
-            .Where(p => p.CompanyId == companyId && !p.Synced && !p.ReviewRequired)
+            .Where(p => p.CompanyId == companyId && !p.Synced && !p.ReviewRequired
+                        && (p.ErganiProtocol == null || p.ErganiProtocol == ""))
             .ToListAsync(ct);
         var failed = await cache.FailedSubmissions
-            .Where(f => f.CompanyId == companyId && !f.Resolved && !f.ReviewRequired)
+            .Where(f => f.CompanyId == companyId && !f.Resolved && !f.ReviewRequired
+                        && (f.ResolvedProtocol == null || f.ResolvedProtocol == ""))
             .ToListAsync(ct);
 
         var unresolved = pending.Select(p => new { p.EmployeeId, WorkDate = p.ScannedAt.Date })
@@ -656,7 +681,8 @@ public class ErganiRetryService
                 item.Id, item.EmployeeId, item.OriginalScannedAt.Date);
         }
 
-        if (changed) await cache.SaveChangesAsync(ct);
+        if (changed || protocolPending.Count > 0 || protocolFailed.Count > 0)
+            await cache.SaveChangesAsync(ct);
     }
 
     private async Task FlushPendingSubmissionsAsync(
@@ -677,8 +703,9 @@ public class ErganiRetryService
         Company company, LocalCache.LocalCacheDbContext cache, CancellationToken ct)
     {
         var pending = await cache.PendingSubmissions
-            .Where(p => p.CompanyId == company.Id && !p.Synced && !p.ReviewRequired &&
-                        (p.ProcessingUntilUtc == null || p.ProcessingUntilUtc <= DateTime.UtcNow))
+            .Where(p => p.CompanyId == company.Id && !p.Synced && !p.ReviewRequired
+                        && (p.ErganiProtocol == null || p.ErganiProtocol == "")
+                        && (p.ProcessingUntilUtc == null || p.ProcessingUntilUtc <= DateTime.UtcNow))
             .OrderBy(p => p.ScannedAt)
             .ToListAsync(ct);
 
@@ -791,8 +818,9 @@ public class ErganiRetryService
 
             using var cache = LocalCacheDbContextFactory.Create();
             var items = await cache.PendingSubmissions
-                .Where(p => ids.Contains(p.Id) && !p.Synced &&
-                    (p.ProcessingUntilUtc == null || p.ProcessingUntilUtc <= DateTime.UtcNow))
+                .Where(p => ids.Contains(p.Id) && !p.Synced
+                    && (p.ErganiProtocol == null || p.ErganiProtocol == "")
+                    && (p.ProcessingUntilUtc == null || p.ProcessingUntilUtc <= DateTime.UtcNow))
                 .OrderBy(p => p.ScannedAt)
                 .ToListAsync(ct);
 
