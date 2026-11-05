@@ -264,7 +264,9 @@ public sealed class MobileApiClient : IDisposable
         if (!response.IsSuccessStatusCode)
         {
             var body = await response.Content.ReadAsStringAsync(cancellationToken);
-            throw new HttpRequestException($"Work card scan returned HTTP {(int)response.StatusCode}: {body}");
+            throw new HttpRequestException(
+                $"Work card scan returned HTTP {(int)response.StatusCode}: {body}",
+                null, response.StatusCode);
         }
         return await response.Content.ReadFromJsonAsync<MobileWorkCardScanResult>(cancellationToken: cancellationToken)
             ?? throw new InvalidOperationException("The server returned an empty scan response.");
