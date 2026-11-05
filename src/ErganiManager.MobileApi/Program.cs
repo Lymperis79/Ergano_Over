@@ -356,7 +356,8 @@ app.MapPost("/api/mobile/workcards/scan", async Task<IResult> (
     MobileWorkCardScanRequest request,
     ICompanyContext context,
     ICacheSyncService cacheSync,
-    IWorkCardSubmitter submitter) =>
+    IWorkCardSubmitter submitter,
+    ILogger<Program> logger) =>
 {
     var session = context.CurrentSession!;
     if (!session.CanSee(MenuKeys.WorkCards) && !session.CanSee(MenuKeys.Terminal)) return Results.Forbid();
@@ -367,26 +368,55 @@ app.MapPost("/api/mobile/workcards/scan", async Task<IResult> (
         return Results.BadRequest(new { message = "Enter an employee number or scan a barcode." });
 
     var raw = request.ScanValue.Trim();
-    var afmCandidate = raw;
-    if (raw.Contains(':'))
-    {
-        var afmPart = raw.Split(';', StringSplitOptions.RemoveEmptyEntries)
-            .Select(part => part.Split(':', 2))
-            .FirstOrDefault(parts => parts.Length == 2 &&
-                parts[0].Trim().Equals("afm", StringComparison.OrdinalIgnoreCase));
-        if (afmPart is { Length: 2 }) afmCandidate = afmPart[1].Trim();
-    }
-    var digits = new string(afmCandidate.Where(char.IsDigit).ToArray());
-    var afm = digits.Length == 9 ? digits.PadLeft(9, '0') : null;
 
-    var sync = await cacheSync.RefreshCacheFromMainDatabaseAsync(companyId.Value);
-    if (!sync.Success)
-        return Results.StatusCode(StatusCodes.Status503ServiceUnavailable);
+    // Match the Windows Terminal parser: a plain AFM must be exactly nine digits;
+    // serialized Ergani QR values use the explicit "afm:" field.
+    string? afm = null;
+    if (raw.Length == 9 && raw.All(char.IsDigit))
+    {
+        afm = raw;
+    }
+    else if (raw.Contains(':'))
+    {
+        foreach (var part in raw.Split(';', StringSplitOptions.RemoveEmptyEntries))
+        {
+            var separator = part.IndexOf(':');
+            if (separator <= 0 ||
+                !part[..separator].Trim().Equals("afm", StringComparison.OrdinalIgnoreCase))
+                continue;
+
+            var digits = new string(part[(separator + 1)..].Where(char.IsDigit).ToArray());
+            if (digits.Length == 9) afm = digits;
+            break;
+        }
+    }
+
+    // Refresh when the main database is reachable, but do not make clocking depend
+    // on it: Windows Terminal uses the local cache when the database is offline.
+    try
+    {
+        var sync = await cacheSync.RefreshCacheFromMainDatabaseAsync(companyId.Value);
+        if (!sync.Success)
+            logger.LogWarning("Mobile work-card scan is using cached employee data for company {CompanyId}: {Reason}",
+                companyId.Value, sync.ErrorMessage);
+    }
+    catch (Exception ex)
+    {
+        logger.LogWarning(ex, "Mobile work-card scan is using cached employee data for company {CompanyId}.",
+            companyId.Value);
+    }
 
     using var cache = LocalCacheDbContextFactory.Create();
+
+    // Prefer an exact barcode match before AFM, matching the Windows Terminal.
+    // This prevents a nine-digit barcode from resolving to another employee's AFM.
     var employee = await cache.CachedEmployees.FirstOrDefaultAsync(e =>
-        e.CompanyId == companyId.Value && e.IsActive &&
-        ((afm != null && e.TaxId == afm) || e.BarcodeId == raw));
+        e.CompanyId == companyId.Value && e.IsActive && e.BarcodeId == raw);
+    if (employee is null && afm is not null)
+    {
+        employee = await cache.CachedEmployees.FirstOrDefaultAsync(e =>
+            e.CompanyId == companyId.Value && e.IsActive && e.TaxId == afm);
+    }
     if (employee is null)
         return Results.NotFound(new { message = "No active employee matches that AFM or barcode in the selected company." });
 
