@@ -120,7 +120,12 @@
             <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto"
                           AllowAutoHide="False">
                 <StackPanel Spacing="4">
-                    <TextBlock Text="{Binding SelectedRow.FullName}" FontWeight="Bold" />
+                    <Grid ColumnDefinitions="*,Auto">
+                        <TextBlock Text="{Binding SelectedRow.FullName}" FontWeight="Bold" VerticalAlignment="Center" />
+                        <Button Grid.Column="1" Content="Open work cards / fix issue"
+                                Command="{Binding OpenSelectedWorkCardsCommand}"
+                                Classes="accent" Padding="12,5" />
+                    </Grid>
                     <TextBlock Text="{Binding SelectedRow.DetailsText}" TextWrapping="NoWrap"
                                FontFamily="Consolas, Menlo, monospace" />
                 </StackPanel>
