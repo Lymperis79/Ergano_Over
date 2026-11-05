@@ -10,6 +10,7 @@ using ErganiManager.Core.Models;
 using ErganiManager.UI.Services;
 using ErganiManager.Data;
 using ErganiManager.ErganiApi.Services;
+using ErganiManager.LocalCache;
 using Microsoft.EntityFrameworkCore;
 
 namespace ErganiManager.UI.ViewModels;
@@ -305,6 +306,70 @@ public partial class WorkCardHistoryViewModel : ViewModelBase, IAdminSectionView
         StatusMessage = selectAll
             ? string.Format(Loc["Vm.Selected {0} retryable work card(s)."], retryable.Count)
             : Loc["Vm.Retry selection cleared."];
+    }
+
+    /// <summary>
+    /// Records an administrator's decision not to submit selected chronology-conflict rows.
+    /// Rows are retained in the local cache for audit; protocol-bearing rows are never changed.
+    /// </summary>
+    [RelayCommand]
+    private async Task MarkSelectedReviewedDoNotSubmitAsync()
+    {
+        var selected = Records.Where(r => r.IsSelected && r.ReviewRequired).ToList();
+        if (selected.Count == 0)
+        {
+            StatusMessage = "Select one or more records marked for manual review first.";
+            return;
+        }
+
+        using var cache = LocalCacheDbContextFactory.Create();
+        var changed = 0;
+        var protectedCount = 0;
+
+        foreach (var row in selected)
+        {
+            if (row.LocalPendingId is int pendingId)
+            {
+                var item = await cache.PendingSubmissions.FindAsync(pendingId);
+                if (item == null || item.Synced) continue;
+                if (!string.IsNullOrWhiteSpace(item.ErganiProtocol))
+                {
+                    protectedCount++;
+                    continue;
+                }
+
+                item.Synced = true; // resolved from the retry queue, not deleted
+                item.SyncedAt = DateTime.UtcNow;
+                item.ProcessingUntilUtc = null;
+                item.LastSyncError = "Administrator reviewed the chronology conflict and chose not to submit this scan.";
+                item.ReviewRequired = false;
+                item.ReviewReason = null;
+                changed++;
+            }
+            else if (row.LocalFailedId is int failedId)
+            {
+                var item = await cache.FailedSubmissions.FindAsync(failedId);
+                if (item == null || item.Resolved) continue;
+                if (!string.IsNullOrWhiteSpace(item.ResolvedProtocol))
+                {
+                    protectedCount++;
+                    continue;
+                }
+
+                item.Resolved = true; // retained as an audit record
+                item.ResolvedAt = DateTime.UtcNow;
+                item.LastRetryError = "Administrator reviewed the chronology conflict and chose not to submit this scan.";
+                item.ReviewRequired = false;
+                item.ReviewReason = null;
+                changed++;
+            }
+        }
+
+        await cache.SaveChangesAsync();
+        await LoadAsync();
+
+        StatusMessage = $"Marked {changed} record(s) as reviewed — not submitted. "
+            + (protectedCount > 0 ? $"{protectedCount} protocol-bearing record(s) were protected and left unchanged." : string.Empty);
     }
 
     [RelayCommand]
