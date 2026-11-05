@@ -260,8 +260,9 @@ public partial class MainViewModel : ObservableObject
             if (session.CompanyId.HasValue)
             {
                 CompanyName = session.CompanyName ?? "Assigned company";
-                await LoadCompanyDataAsync();
-                StartNotificationPolling();
+                if (CanOpenEmployees || CanOpenSchedules || CanOpenWorkCards)
+                    await LoadCompanyDataAsync();
+                if (CanOpenOverview) StartNotificationPolling();
                 if (CanOpenTerminal && !CanOpenOverview) OpenTerminal();
             }
             else
@@ -424,8 +425,9 @@ public partial class MainViewModel : ObservableObject
             var selected = await _api.SelectCompanyAsync(SelectedCompany.Id);
             CompanyName = selected.Name;
             IsCompanySelectionRequired = false;
-            await LoadCompanyDataAsync();
-            StartNotificationPolling();
+            if (CanOpenEmployees || CanOpenSchedules || CanOpenWorkCards)
+                await LoadCompanyDataAsync();
+            if (CanOpenOverview) StartNotificationPolling();
             StatusMessage = $"Connected to {CompanyName}. {Employees.Count} active employees loaded from Ergani II.";
             if (CanOpenTerminal && !CanOpenOverview) OpenTerminal();
         }
