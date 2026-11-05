@@ -526,7 +526,6 @@ public partial class MainViewModel : ObservableObject
         var synchronized = 0;
         string? syncFailure = null;
         var synchronizedResults = new List<(OfflineWorkCardEvent Event, MobileWorkCardScanResult Result)>();
-        MobileWorkCardScanResult? lastResult = null;
         try
         {
             var pending = await _workCardOutbox.GetPendingAsync(cancellationToken);
@@ -540,11 +539,11 @@ public partial class MainViewModel : ObservableObject
                 if (item.IsRejected) continue;
                 try
                 {
-                    lastResult = await _api.ScanWorkCardAsync(item.ScanValue, item.EventId, item.CapturedAt, cancellationToken);
+                    var result = await _api.ScanWorkCardAsync(item.ScanValue, item.EventId, item.CapturedAt, cancellationToken);
                     // The API response confirms that the event is durably recorded,
                     // either as submitted or in the server-side retry queue.
                     await _workCardOutbox.MarkAcknowledgedAsync(item.EventId, cancellationToken);
-                    synchronizedResults.Add((item, lastResult));
+                    synchronizedResults.Add((item, result));
                     synchronized++;
                 }
                 catch (HttpRequestException ex) when (ex.StatusCode == System.Net.HttpStatusCode.NotFound)
