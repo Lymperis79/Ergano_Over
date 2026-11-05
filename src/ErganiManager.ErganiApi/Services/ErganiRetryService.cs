@@ -728,7 +728,7 @@ public class ErganiRetryService
 
             using var cache = LocalCacheDbContextFactory.Create();
             var items = await cache.PendingSubmissions
-                .Where(p => ids.Contains(p.Id) && !p.Synced && !p.ReviewRequired &&
+                .Where(p => ids.Contains(p.Id) && !p.Synced &&
                     (p.ProcessingUntilUtc == null || p.ProcessingUntilUtc <= DateTime.UtcNow))
                 .OrderBy(p => p.ScannedAt)
                 .ToListAsync(ct);
