@@ -586,6 +586,11 @@ public class ErganiRetryService
                     item.ResolvedAt = DateTime.UtcNow;
                     item.ResolvedProtocol = first.Protocol;
                     item.LastRetryError = null;
+                    // The administrator explicitly approved this retry and Ergani accepted it.
+                    // Clear the chronology-review flag so this resolved record no longer counts
+                    // as an outstanding error or blocks later scans.
+                    item.ReviewRequired = false;
+                    item.ReviewReason = null;
 
                     var wc = await db.WorkCards
                         .FirstOrDefaultAsync(w => w.EmployeeId == item.EmployeeId
@@ -935,6 +940,9 @@ public class ErganiRetryService
                         item.Synced = true;
                         item.SyncedAt = DateTime.UtcNow;
                         item.LastSyncError = null;
+                        // Successful administrator retry resolves the chronology review.
+                        item.ReviewRequired = false;
+                        item.ReviewReason = null;
                         results.Add((item.Id, true, outcome.Protocol, null));
                         Notify(item.Id, QueuedScanStatus.Sent, outcome.Protocol, null, item.SyncAttempts);
                     }
