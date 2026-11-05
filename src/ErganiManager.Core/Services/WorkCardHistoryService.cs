@@ -138,11 +138,21 @@ public class WorkCardHistoryService : IWorkCardHistoryService
                 {
                     if (string.IsNullOrWhiteSpace(existingRecord.LateJustification))
                         existingRecord.LateJustification = p.LateJustification;
-                    if (p.Synced && string.IsNullOrWhiteSpace(p.ErganiProtocol) && p.ReviewReason != null)
+                    existingRecord.LocalPendingId = p.Id;
+                    existingRecord.IsLocalPending = !p.Synced && string.IsNullOrWhiteSpace(p.ErganiProtocol);
+                    existingRecord.RetryAttempts = p.SyncAttempts;
+                    existingRecord.RetryError = p.LastSyncError;
+                    existingRecord.ReviewRequired = p.ReviewRequired;
+                    existingRecord.ReviewReason = p.ReviewReason;
+                    if (!string.IsNullOrWhiteSpace(p.ErganiProtocol))
                     {
-                        existingRecord.ReviewReason = p.ReviewReason;
-                        existingRecord.ReviewDecision = p.LastSyncError;
+                        existingRecord.SubmittedToErgani = true;
+                        existingRecord.Protocol = p.ErganiProtocol;
+                        existingRecord.SubmissionId ??= p.ErganiSubmissionId;
+                        existingRecord.ResponseRawJson ??= p.ErganiResponseRawJson;
                     }
+                    if (p.Synced && string.IsNullOrWhiteSpace(p.ErganiProtocol) && p.ReviewReason != null)
+                        existingRecord.ReviewDecision = p.LastSyncError;
                     continue;
                 }
 
@@ -185,11 +195,19 @@ public class WorkCardHistoryService : IWorkCardHistoryService
                                      Math.Abs((r.MovementDateTime - f.OriginalScannedAt).TotalSeconds) <= 1);
                 if (existingFailedRecord != null)
                 {
-                    if (f.Resolved && string.IsNullOrWhiteSpace(f.ResolvedProtocol) && f.ReviewReason != null)
+                    existingFailedRecord.LocalFailedId = f.Id;
+                    existingFailedRecord.IsLocalFailed = !f.Resolved && string.IsNullOrWhiteSpace(f.ResolvedProtocol);
+                    existingFailedRecord.RetryAttempts = f.RetryCount;
+                    existingFailedRecord.RetryError = f.LastRetryError ?? f.ErrorDescription;
+                    existingFailedRecord.ReviewRequired = f.ReviewRequired;
+                    existingFailedRecord.ReviewReason = f.ReviewReason;
+                    if (!string.IsNullOrWhiteSpace(f.ResolvedProtocol))
                     {
-                        existingFailedRecord.ReviewReason = f.ReviewReason;
-                        existingFailedRecord.ReviewDecision = f.LastRetryError;
+                        existingFailedRecord.SubmittedToErgani = true;
+                        existingFailedRecord.Protocol = f.ResolvedProtocol;
                     }
+                    if (f.Resolved && string.IsNullOrWhiteSpace(f.ResolvedProtocol) && f.ReviewReason != null)
+                        existingFailedRecord.ReviewDecision = f.LastRetryError;
                     continue;
                 }
 
