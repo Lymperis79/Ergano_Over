@@ -18,7 +18,8 @@ public partial class MainViewModel : ObservableObject
         {
             if (string.IsNullOrWhiteSpace(value))
             {
-                WorkCardScanMessage = "No barcode was detected. Try again or enter the number manually.";
+                if (IsTerminalVisible) TerminalMessage = "No barcode was detected. Try again.";
+                else WorkCardScanMessage = "No barcode was detected. Try again or enter the number manually.";
                 return;
             }
             WorkCardScanInput = value;
@@ -136,14 +137,9 @@ public partial class MainViewModel : ObservableObject
     public bool CanOpenOvertime => CanSeeMenu(ErganiManager.Core.Models.MenuKeys.Overtime);
     public bool CanOpenSubmissions => CanSeeMenu(ErganiManager.Core.Models.MenuKeys.ApiLog);
     public bool CanOpenReports => CanSeeMenu(ErganiManager.Core.Models.MenuKeys.Reports);
-    public bool CanOpenSettings => CanSeeMenu(ErganiManager.Core.Models.MenuKeys.Users) || CanSeeMenu(ErganiManager.Core.Models.MenuKeys.Help);
+    public bool CanOpenSettings => _role == "Admin" && !_sessionCompanyId.HasValue;
     public bool CanOpenOverview => CanOpenWorkCards || CanOpenDailyStatus || CanOpenEmployees || CanOpenSchedules || CanOpenOvertime || CanOpenSubmissions || CanOpenReports || CanOpenSettings;
-    private bool CanSeeMenu(string key)
-    {
-        if (_role == "Admin" && !_sessionCompanyId.HasValue) return true;
-        if (_role == "Limited") return _allowedMenus?.Contains(key, StringComparer.Ordinal) == true;
-        return _allowedMenus is null || _allowedMenus.Contains(key, StringComparer.Ordinal);
-    }
+    private bool CanSeeMenu(string key) => _allowedMenus?.Contains(key, StringComparer.Ordinal) == true;
     private void RefreshMenuPermissions()
     {
         OnPropertyChanged(nameof(CanOpenTerminal)); OnPropertyChanged(nameof(CanOpenWorkCards));
@@ -204,7 +200,8 @@ public partial class MainViewModel : ObservableObject
         && !IsDailyStatusVisible && !IsEmployeesVisible
         && !IsWorkCardsVisible && !IsWorkCalendarVisible && !IsTerminalVisible;
 
-    partial void OnIsAuthenticatedChanged(bool value) => OnPropertyChanged(nameof(IsOverviewVisible));
+    partial void OnIsAuthenticatedChanged(bool value)
+    { OnPropertyChanged(nameof(IsOverviewVisible)); OnPropertyChanged(nameof(IsOverviewNavigationVisible)); }
     partial void OnIsCompanySelectionRequiredChanged(bool value) => OnPropertyChanged(nameof(IsOverviewVisible));
     partial void OnIsDailyStatusVisibleChanged(bool value) => OnPropertyChanged(nameof(IsOverviewVisible));
     partial void OnIsEmployeesVisibleChanged(bool value) => OnPropertyChanged(nameof(IsOverviewVisible));
@@ -480,9 +477,16 @@ public partial class MainViewModel : ObservableObject
         if (IsTerminalScanBusy || _api is null || !IsTerminalVisible) return;
         var scan = WorkCardScanInput.Trim();
         if (string.IsNullOrWhiteSpace(scan)) { TerminalMessage = "Scan a QR code or enter an employee number."; return; }
-        if (string.Equals(scan, _lastTerminalScan, StringComparison.Ordinal) && DateTime.UtcNow - _lastTerminalScanAt < TimeSpan.FromSeconds(20))
-        { TerminalMessage = "Duplicate scan ignored. Please wait before scanning the same code again."; WorkCardScanInput = string.Empty; return; }
         IsTerminalScanBusy = true;
+        if (string.Equals(scan, _lastTerminalScan, StringComparison.Ordinal) && DateTime.UtcNow - _lastTerminalScanAt < TimeSpan.FromSeconds(20))
+        {
+            TerminalMessage = "Duplicate scan ignored. Please wait before scanning the same code again.";
+            WorkCardScanInput = string.Empty;
+            IsTerminalScanBusy = false;
+            await Task.Delay(1300);
+            if (IsTerminalVisible) MainActivity.Current?.StartBarcodeCapture();
+            return;
+        }
         try
         {
             var result = await _api.ScanWorkCardAsync(scan);
