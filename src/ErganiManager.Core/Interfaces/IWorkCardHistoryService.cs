@@ -88,7 +88,7 @@ public class WorkCardHistoryDto : INotifyPropertyChanged
     }
 
     public bool CanRetry => !SubmittedToErgani && string.IsNullOrWhiteSpace(ReviewDecision)
-        && (IsLocalPending || IsLocalFailed || Id > 0);
+        && (ReviewRequired || IsLocalPending || IsLocalFailed || Id > 0);
 
     public string StatusText =>
         ReviewRequired ? "⚠️ Manual review required — automatic retry paused" :
