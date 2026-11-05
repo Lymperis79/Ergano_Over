@@ -525,11 +525,20 @@ public partial class SubmissionLogViewModel
                 toLocalDateExclusive,
                 TimeZoneInfo.Local.GetUtcOffset(toLocalDateExclusive)).UtcDateTime;
 
-            var employees = await db.Employees
+            var employeeRows = await db.Employees
                 .Where(e => e.CompanyId == companyId)
                 .OrderBy(e => e.LastName).ThenBy(e => e.FirstName)
-                .Select(e => new EmployeeFilterOption { Id = e.Id, Name = e.LastName + " " + e.FirstName + (string.IsNullOrWhiteSpace(e.FatherName) ? "" : " " + e.FatherName) + (string.IsNullOrWhiteSpace(e.TaxId) ? "" : " · ΑΦΜ: " + e.TaxId), TaxId = e.TaxId })
+                .Select(e => new { e.Id, e.LastName, e.FirstName, e.FatherName, e.TaxId })
                 .ToListAsync();
+
+            var employees = employeeRows.Select(e => new EmployeeFilterOption
+            {
+                Id = e.Id,
+                Name = e.LastName + " " + e.FirstName +
+                    (string.IsNullOrWhiteSpace(e.FatherName) ? "" : " " + e.FatherName) +
+                    (string.IsNullOrWhiteSpace(e.TaxId) ? "" : " · ΑΦΜ: " + e.TaxId),
+                TaxId = e.TaxId
+            }).ToList();
 
             EmployeeOptions.Clear();
             EmployeeOptions.Add(new EmployeeFilterOption { Id = 0, Name = Loc[L.AllEmployees], TaxId = string.Empty });
