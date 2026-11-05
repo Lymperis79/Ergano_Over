@@ -32,6 +32,10 @@ public class FailedSubmission
     public string? LastRetryError { get; set; }
 
     public bool Resolved { get; set; } = false;
+
+    /// <summary>Blocked from automatic retry until an administrator reviews the chronology.</summary>
+    public bool ReviewRequired { get; set; }
+    public string? ReviewReason { get; set; }
     public DateTime? ResolvedAt { get; set; }
 
     [MaxLength(100)]
