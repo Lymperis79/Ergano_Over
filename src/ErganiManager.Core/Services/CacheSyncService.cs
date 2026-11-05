@@ -169,11 +169,18 @@ public class CacheSyncService : ICacheSyncService
                 .Where(p => p.ErganiProtocol != null && p.ErganiProtocol != ""
                             && employeeIdsForReview.Contains(p.EmployeeId)
                             && p.ScannedAt >= minReviewDate && p.ScannedAt < maxReviewDate)
-                .Select(p => new { p.EmployeeId, p.ScannedAt })
+                .Select(p => new { p.EmployeeId, ScannedAt = p.ScannedAt })
+                .ToListAsync();
+            var legacyAcknowledged = await cache.FailedSubmissions
+                .Where(f => f.CompanyId == companyId && f.ResolvedProtocol != null && f.ResolvedProtocol != ""
+                            && employeeIdsForReview.Contains(f.EmployeeId)
+                            && f.OriginalScannedAt >= minReviewDate && f.OriginalScannedAt < maxReviewDate)
+                .Select(f => new { f.EmployeeId, ScannedAt = f.OriginalScannedAt })
                 .ToListAsync();
             var protocolDays = acknowledged
                 .Select(w => (w.EmployeeId, Day: w.MovementDateTime.Date))
                 .Concat(localAcknowledged.Select(w => (w.EmployeeId, Day: w.ScannedAt.Date)))
+                .Concat(legacyAcknowledged.Select(w => (w.EmployeeId, Day: w.ScannedAt.Date)))
                 .ToHashSet();
             foreach (var item in unresolvedPending)
             {
