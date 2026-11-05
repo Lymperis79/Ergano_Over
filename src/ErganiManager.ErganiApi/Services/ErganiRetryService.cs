@@ -479,7 +479,6 @@ public class ErganiRetryService
                 item.ProcessingUntilUtc = null;
                 item.LastSyncError = decision;
                 item.ReviewRequired = false;
-                item.ReviewReason = null;
             }
             else
             {
@@ -493,7 +492,6 @@ public class ErganiRetryService
                 item.ResolvedAt = DateTime.UtcNow;
                 item.LastRetryError = decision;
                 item.ReviewRequired = false;
-                item.ReviewReason = null;
             }
 
             await cache.SaveChangesAsync(ct);
