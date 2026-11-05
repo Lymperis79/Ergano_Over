@@ -719,19 +719,21 @@ public class ErganiRetryService
             .Select(f => new { f.EmployeeId, MovementDateTime = f.OriginalScannedAt })
             .ToListAsync(ct);
 
-        var protocolDays = acknowledged
-            .Select(x => (x.EmployeeId, Day: x.MovementDateTime.Date))
-            .Concat(localAcknowledged.Select(x => (x.EmployeeId, Day: x.MovementDateTime.Date)))
-            .Concat(legacyAcknowledged.Select(x => (x.EmployeeId, Day: x.MovementDateTime.Date)))
-            .ToHashSet();
+        // Only a protocol at or after an unresolved scan makes that scan chronology-sensitive.
+        // An earlier, already-approved arrival must not block a legitimate later departure.
+        var acknowledgedEvents = acknowledged
+            .Select(x => (x.EmployeeId, At: x.MovementDateTime))
+            .Concat(localAcknowledged.Select(x => (x.EmployeeId, At: x.MovementDateTime)))
+            .Concat(legacyAcknowledged.Select(x => (x.EmployeeId, At: x.MovementDateTime)))
+            .ToList();
 
-        const string reason = "Another attendance event for this employee has an Ergani protocol on the same workday. Check the Ergani portal and API response before deciding whether to retry or discard this unsubmitted record.";
+        const string reason = "A later or same-time attendance event for this employee already has an Ergani protocol. Check the Ergani portal and API response before deciding whether to retry or discard this earlier unsubmitted record.";
 
         var changed = false;
         var newlyPaused = new List<ChronologyReviewAlertItem>();
         foreach (var item in pending)
         {
-            if (!protocolDays.Contains((item.EmployeeId, item.ScannedAt.Date))) continue;
+            if (!acknowledgedEvents.Any(e => e.EmployeeId == item.EmployeeId && e.At >= item.ScannedAt)) continue;
             item.ReviewRequired = true;
             item.ReviewReason = reason;
             item.ProcessingUntilUtc = null;
@@ -743,7 +745,7 @@ public class ErganiRetryService
 
         foreach (var item in failed)
         {
-            if (!protocolDays.Contains((item.EmployeeId, item.OriginalScannedAt.Date))) continue;
+            if (!acknowledgedEvents.Any(e => e.EmployeeId == item.EmployeeId && e.At >= item.OriginalScannedAt)) continue;
             item.ReviewRequired = true;
             item.ReviewReason = reason;
             changed = true;
