@@ -171,8 +171,11 @@ public class CacheSyncService : ICacheSyncService
                             && p.ScannedAt >= minReviewDate && p.ScannedAt < maxReviewDate)
                 .Select(p => new { p.EmployeeId, ScannedAt = p.ScannedAt })
                 .ToListAsync();
+            // Employee IDs are globally unique in the main database; use the
+            // unresolved employee set here because this cache-sync method processes
+            // pending records from all companies and has no single companyId.
             var legacyAcknowledged = await cache.FailedSubmissions
-                .Where(f => f.CompanyId == companyId && f.ResolvedProtocol != null && f.ResolvedProtocol != ""
+                .Where(f => f.ResolvedProtocol != null && f.ResolvedProtocol != ""
                             && employeeIdsForReview.Contains(f.EmployeeId)
                             && f.OriginalScannedAt >= minReviewDate && f.OriginalScannedAt < maxReviewDate)
                 .Select(f => new { f.EmployeeId, ScannedAt = f.OriginalScannedAt })
