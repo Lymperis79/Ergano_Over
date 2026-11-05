@@ -103,7 +103,7 @@
                                 <AutoCompleteBox x:Name="WorkCardEmployeePicker" ItemsSource="{Binding FilteredEmployees}"
                                                SelectedItem="{Binding FilterEmployee, Mode=TwoWay}"
                                                Text="{Binding EmployeeSearchText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                               ValueMemberBinding="{Binding FullName}"
+                                               ValueMemberBinding="{Binding DisplayName}"
                                                FilterMode="Contains"
                                                MinimumPrefixLength="0"
                                                IsTextCompletionEnabled="False"
@@ -112,7 +112,7 @@
                                                ToolTip.Tip="Type an employee name or employee number to filter the list">
                                 <AutoCompleteBox.ItemTemplate>
                                     <DataTemplate x:DataType="core:EmployeeDto">
-                                        <TextBlock Text="{Binding FullName}" />
+                                        <TextBlock Text="{Binding DisplayName}" />
                                     </DataTemplate>
                                 </AutoCompleteBox.ItemTemplate>
                             </AutoCompleteBox>
