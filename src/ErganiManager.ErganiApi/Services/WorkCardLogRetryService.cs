@@ -231,6 +231,7 @@ public class WorkCardLogRetryService
             log.SubmissionId = first?.SubmissionId;
             log.Protocol = first?.Protocol;
             await MarkWorkCardsSubmittedAsync(db, log, entries, first, call, ct);
+            await ResolveMatchingLocalReviewAsync(log, entries, first, call, ct);
         }
 
         await db.SaveChangesAsync(ct);
@@ -243,6 +244,74 @@ public class WorkCardLogRetryService
             log.ErrorMessage, log.RetryCount, log.Protocol);
 
         return new(logId, ok ? LogRetryStatus.Succeeded : LogRetryStatus.Failed, log.ErrorMessage);
+    }
+
+    /// <summary>
+    /// An administrator-approved API-log retry supersedes the earlier chronology-review
+    /// decision for the same scan. Resolve matching local queue rows as well as the main
+    /// WorkCard, otherwise history keeps showing the stale ReviewRequired flag.
+    /// Rows that already have a protocol are immutable and are deliberately left untouched.
+    /// </summary>
+    private static async Task ResolveMatchingLocalReviewAsync(
+        ErganiManager.Data.Entities.ApiSubmissionLog log,
+        List<WorkCardEntry> entries,
+        ErganiSubmissionResponse? response,
+        ErganiCallResult<List<ErganiSubmissionResponse>> call,
+        CancellationToken ct)
+    {
+        if (log.EmployeeId is not int employeeId || entries.Count == 0)
+            return;
+
+        using var cache = LocalCacheDbContextFactory.Create();
+        var entry = entries[0];
+        var scanned = entry.MovementDateTime.DateTime;
+        var from = scanned.AddSeconds(-1);
+        var to = scanned.AddSeconds(1);
+
+        var pending = await cache.PendingSubmissions
+            .Where(p => p.CompanyId == log.CompanyId
+                        && p.EmployeeId == employeeId
+                        && p.MovementType == (entry.MovementType == WorkCardMovementTypeCodes.Departure
+                            ? "Departure" : "Arrival")
+                        && p.ScannedAt >= from && p.ScannedAt <= to
+                        && string.IsNullOrEmpty(p.ErganiProtocol))
+            .ToListAsync(ct);
+
+        foreach (var item in pending)
+        {
+            item.Synced = true;
+            item.SyncedAt = DateTime.UtcNow;
+            item.ProcessingUntilUtc = null;
+            item.ErganiProtocol = response?.Protocol;
+            item.ErganiSubmissionId = response?.SubmissionId;
+            item.ErganiResponseRawJson = call.ResponseRawJson;
+            item.LastSyncError = null;
+            item.ReviewRequired = false;
+            item.ReviewReason = null;
+        }
+
+        var failed = await cache.FailedSubmissions
+            .Where(f => f.CompanyId == log.CompanyId
+                        && f.EmployeeId == employeeId
+                        && f.MovementType == (entry.MovementType == WorkCardMovementTypeCodes.Departure
+                            ? "Departure" : "Arrival")
+                        && f.OriginalScannedAt >= from && f.OriginalScannedAt <= to
+                        && !f.Resolved
+                        && string.IsNullOrEmpty(f.ResolvedProtocol))
+            .ToListAsync(ct);
+
+        foreach (var item in failed)
+        {
+            item.Resolved = true;
+            item.ResolvedAt = DateTime.UtcNow;
+            item.ResolvedProtocol = response?.Protocol;
+            item.LastRetryError = null;
+            item.ReviewRequired = false;
+            item.ReviewReason = null;
+        }
+
+        if (pending.Count > 0 || failed.Count > 0)
+            await cache.SaveChangesAsync(ct);
     }
 
     private static async Task MarkWorkCardsSubmittedAsync(
