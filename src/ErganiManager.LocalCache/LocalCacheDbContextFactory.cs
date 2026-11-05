@@ -110,6 +110,7 @@ public static class LocalCacheDbContextFactory
                 using var eventIndex = connection.CreateCommand();
                 eventIndex.CommandText = "CREATE UNIQUE INDEX IF NOT EXISTS IX_PendingSubmissions_ClientEventId ON PendingSubmissions (ClientEventId)";
                 eventIndex.ExecuteNonQuery();
+                added = true; // Preserve queued rows when the model signature changes for this index.
             }
             // The cached company settings are re-filled from the main database on every sync, so an
             // in-place column is enough (and queued scans are never lost to a rebuild).
