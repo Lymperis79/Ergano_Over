@@ -107,6 +107,8 @@ public partial class MainViewModel : ObservableObject
 
     private MobileApiClient? _api;
     private readonly OfflineWorkCardOutbox _workCardOutbox = new();
+    private readonly SemaphoreSlim _outboxSyncGate = new(1, 1);
+    private CancellationTokenSource? _outboxSyncCts;
     private CancellationTokenSource? _notificationPollingCts;
     private long _lastNotificationId;
     private string[]? _allowedMenus;
@@ -280,6 +282,7 @@ public partial class MainViewModel : ObservableObject
                 CompanyName = session.CompanyName ?? "Assigned company";
                 if (CanOpenEmployees || CanOpenSchedules || CanOpenWorkCards)
                     await LoadCompanyDataAsync();
+                StartOutboxSynchronization();
                 if (CanOpenOverview) StartNotificationPolling();
                 if (CanOpenTerminal && !CanOpenOverview) OpenTerminal();
             }
@@ -311,6 +314,9 @@ public partial class MainViewModel : ObservableObject
     {
         _notificationPollingCts?.Cancel();
         _notificationPollingCts?.Dispose();
+        _outboxSyncCts?.Cancel();
+        _outboxSyncCts?.Dispose();
+        _outboxSyncCts = null;
         _notificationPollingCts = new CancellationTokenSource();
         _lastNotificationId = 0;
         _ = PollNotificationsAsync(_notificationPollingCts.Token);
@@ -442,9 +448,11 @@ public partial class MainViewModel : ObservableObject
         {
             var selected = await _api.SelectCompanyAsync(SelectedCompany.Id);
             CompanyName = selected.Name;
+            _sessionCompanyId = selected.Id;
             IsCompanySelectionRequired = false;
             if (CanOpenEmployees || CanOpenSchedules || CanOpenWorkCards)
                 await LoadCompanyDataAsync();
+            StartOutboxSynchronization();
             if (CanOpenOverview) StartNotificationPolling();
             StatusMessage = $"Connected to {CompanyName}. {Employees.Count} active employees loaded from Ergani II.";
             if (CanOpenTerminal && !CanOpenOverview) OpenTerminal();
@@ -455,6 +463,56 @@ public partial class MainViewModel : ObservableObject
             IsCompanySelectionRequired = true;
         }
         finally { IsBusy = false; }
+    }
+
+    private void StartOutboxSynchronization()
+    {
+        _outboxSyncCts?.Cancel();
+        _outboxSyncCts?.Dispose();
+        _outboxSyncCts = new CancellationTokenSource();
+        _ = RunOutboxSynchronizationAsync(_outboxSyncCts.Token);
+    }
+
+    private async Task RunOutboxSynchronizationAsync(CancellationToken cancellationToken)
+    {
+        // Retry on login and periodically while the app is open. A failed request
+        // never removes the local event; the next cycle retries the same event ID.
+        while (!cancellationToken.IsCancellationRequested)
+        {
+            try { await FlushOfflineWorkCardsAsync(cancellationToken); }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { break; }
+            catch { /* Keep the durable outbox intact and retry on the next cycle. */ }
+            try { await Task.Delay(TimeSpan.FromSeconds(30), cancellationToken); }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { break; }
+        }
+    }
+
+    private async Task FlushOfflineWorkCardsAsync(CancellationToken cancellationToken)
+    {
+        if (_api is null || !IsAuthenticated || !_sessionCompanyId.HasValue) return;
+        if (!await _outboxSyncGate.WaitAsync(0, cancellationToken)) return;
+        try
+        {
+            var pending = await _workCardOutbox.GetPendingAsync(cancellationToken);
+            foreach (var item in pending)
+            {
+                if (cancellationToken.IsCancellationRequested || _api is null) break;
+                // Never send one company's queued scan under another company's session.
+                if (item.CompanyId.HasValue && item.CompanyId.Value != _sessionCompanyId.Value) continue;
+                try
+                {
+                    await _api.ScanWorkCardAsync(item.ScanValue, item.EventId, item.CapturedAt, cancellationToken);
+                    await _workCardOutbox.MarkAcknowledgedAsync(item.EventId, cancellationToken);
+                }
+                catch
+                {
+                    // Stop at the first failure to preserve scan order and avoid hammering
+                    // the API while it is unavailable.
+                    break;
+                }
+            }
+        }
+        finally { _outboxSyncGate.Release(); }
     }
 
     private async Task LoadCompanyDataAsync()
