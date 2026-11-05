@@ -42,8 +42,8 @@ public partial class WorkCardHistoryViewModel : ViewModelBase, IAdminSectionView
 
     partial void OnFilterEmployeeChanged(EmployeeDto? value)
     {
-        if (value is not null && !string.Equals(EmployeeSearchText, value.FullName, StringComparison.Ordinal))
-            EmployeeSearchText = value.FullName;
+        if (value is not null && !string.Equals(EmployeeSearchText, value.DisplayName, StringComparison.Ordinal))
+            EmployeeSearchText = value.DisplayName;
     }
 
     private void RefreshFilteredEmployees()
@@ -54,7 +54,8 @@ public partial class WorkCardHistoryViewModel : ViewModelBase, IAdminSectionView
             : AvailableEmployees.Where(e =>
                     e is not null &&
                     ((!string.IsNullOrWhiteSpace(e.FullName) &&
-                      e.FullName.Contains(query, StringComparison.CurrentCultureIgnoreCase)) ||
+                      e.DisplayName.Contains(query, StringComparison.CurrentCultureIgnoreCase) ||
+                     (!string.IsNullOrWhiteSpace(e.TaxId) && e.TaxId.Contains(query, StringComparison.OrdinalIgnoreCase))) ||
                      e.Id.ToString().Contains(query, StringComparison.Ordinal)))
                 .ToList();
 
