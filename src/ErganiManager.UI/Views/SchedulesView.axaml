@@ -86,7 +86,7 @@
                     <AutoCompleteBox x:Name="ScheduleEmployeePicker"
                                  ItemsSource="{Binding AvailableEmployees}"
                                  SelectedItem="{Binding SelectedEmployee, Mode=TwoWay}"
-                                 ValueMemberBinding="{Binding FullName}"
+                                 ValueMemberBinding="{Binding DisplayName}"
                                  FilterMode="Contains"
                                  MinimumPrefixLength="0"
                                  IsTextCompletionEnabled="False"
@@ -94,7 +94,7 @@
                                  HorizontalAlignment="Stretch"
                                  ToolTip.Tip="Type an employee name or employee number to filter the list">
                     <AutoCompleteBox.ItemTemplate>
-                        <DataTemplate x:DataType="core:EmployeeDto"><TextBlock Text="{Binding FullName}" /></DataTemplate>
+                        <DataTemplate x:DataType="core:EmployeeDto"><TextBlock Text="{Binding DisplayName}" /></DataTemplate>
                     </AutoCompleteBox.ItemTemplate>
                 </AutoCompleteBox>
                     <ToggleButton IsChecked="{Binding #ScheduleEmployeePicker.IsDropDownOpen, Mode=TwoWay}"
