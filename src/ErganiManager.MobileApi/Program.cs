@@ -152,7 +152,7 @@ app.MapPost("/api/mobile/login", async Task<IResult> (LoginRequest request, IAut
     await http.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, new ClaimsPrincipal(identity));
     return Results.Ok(new MobileSessionResponse(session.Username, session.Role.ToString(),
         session.CompanyId, session.CompanyName, session.BranchId, session.BranchName,
-        session.AllowedMenus?.ToArray()));
+        MenuKeys.Configurable.Where(session.CanSee).ToArray()));
 }).AllowAnonymous();
 
 app.MapPost("/api/mobile/logout", async (HttpContext http, IAuthService auth) =>
@@ -167,7 +167,7 @@ app.MapGet("/api/mobile/me", (ICompanyContext companyContext) =>
     var session = companyContext.CurrentSession!;
     return Results.Ok(new MobileSessionResponse(session.Username, session.Role.ToString(),
         session.CompanyId, session.CompanyName, session.BranchId, session.BranchName,
-        session.AllowedMenus?.ToArray()));
+        MenuKeys.Configurable.Where(session.CanSee).ToArray()));
 }).RequireAuthorization();
 
 app.MapGet("/api/mobile/companies", async Task<IResult> (ICompanyContext context, ICompanyService companies) =>
