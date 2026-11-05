@@ -119,6 +119,14 @@ public static class LocalCacheDbContextFactory
                 "ALTER TABLE PendingSubmissions ADD COLUMN ErganiSubmissionId TEXT NULL");
             AddColumn("PendingSubmissions", "ErganiResponseRawJson",
                 "ALTER TABLE PendingSubmissions ADD COLUMN ErganiResponseRawJson TEXT NULL");
+            AddColumn("PendingSubmissions", "ReviewRequired",
+                "ALTER TABLE PendingSubmissions ADD COLUMN ReviewRequired INTEGER NOT NULL DEFAULT 0");
+            AddColumn("PendingSubmissions", "ReviewReason",
+                "ALTER TABLE PendingSubmissions ADD COLUMN ReviewReason TEXT NULL");
+            AddColumn("FailedSubmissions", "ReviewRequired",
+                "ALTER TABLE FailedSubmissions ADD COLUMN ReviewRequired INTEGER NOT NULL DEFAULT 0");
+            AddColumn("FailedSubmissions", "ReviewReason",
+                "ALTER TABLE FailedSubmissions ADD COLUMN ReviewReason TEXT NULL");
             if (TableExists("PendingSubmissions") && !IndexExists("IX_PendingSubmissions_ClientEventId"))
             {
                 using var eventIndex = connection.CreateCommand();
