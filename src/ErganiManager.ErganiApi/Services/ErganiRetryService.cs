@@ -562,11 +562,23 @@ public class ErganiRetryService
                         && w.MovementDateTime >= minDate && w.MovementDateTime < maxDate)
             .Select(w => new { w.EmployeeId, w.MovementDateTime })
             .ToListAsync(ct);
-
-        if (acknowledged.Count == 0) return;
+        var localAcknowledged = await cache.PendingSubmissions
+            .Where(p => p.CompanyId == companyId && p.ErganiProtocol != null && p.ErganiProtocol != ""
+                        && employeeIds.Contains(p.EmployeeId)
+                        && p.ScannedAt >= minDate && p.ScannedAt < maxDate)
+            .Select(p => new { p.EmployeeId, MovementDateTime = p.ScannedAt })
+            .ToListAsync(ct);
+        var legacyAcknowledged = await cache.FailedSubmissions
+            .Where(f => f.CompanyId == companyId && f.ResolvedProtocol != null && f.ResolvedProtocol != ""
+                        && employeeIds.Contains(f.EmployeeId)
+                        && f.OriginalScannedAt >= minDate && f.OriginalScannedAt < maxDate)
+            .Select(f => new { f.EmployeeId, MovementDateTime = f.OriginalScannedAt })
+            .ToListAsync(ct);
 
         var protocolDays = acknowledged
             .Select(x => (x.EmployeeId, Day: x.MovementDateTime.Date))
+            .Concat(localAcknowledged.Select(x => (x.EmployeeId, Day: x.MovementDateTime.Date)))
+            .Concat(legacyAcknowledged.Select(x => (x.EmployeeId, Day: x.MovementDateTime.Date)))
             .ToHashSet();
 
         const string reason = "Another attendance event for this employee has an Ergani protocol on the same workday. Check the Ergani portal and API response before deciding whether to retry or discard this unsubmitted record.";
