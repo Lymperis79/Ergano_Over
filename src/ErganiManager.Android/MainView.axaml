@@ -294,8 +294,6 @@
               <TextBlock Text="Work calendar" HorizontalAlignment="Center" />
             </StackPanel>
           </Button>
-        </Grid>
-
           <Button Grid.Row="2" Grid.Column="0" MinHeight="92"
                   Command="{Binding OpenTerminalCommand}" IsVisible="{Binding CanOpenTerminal}">
             <StackPanel Spacing="6">
@@ -303,6 +301,8 @@
               <TextBlock Text="Terminal" HorizontalAlignment="Center" />
             </StackPanel>
           </Button>
+        </Grid>
+
         <Border Background="#202B3A" CornerRadius="14" Padding="14" IsVisible="{Binding IsEmployeesVisible}">
           <StackPanel Spacing="12">
             <TextBlock Text="EMPLOYEES" Foreground="#8BBCEB" FontWeight="Bold" FontSize="12" />
