@@ -588,7 +588,7 @@ public partial class MainViewModel : ObservableObject
             var result = await _api.ScanWorkCardAsync(scan, queuedEvent.EventId, queuedEvent.CapturedAt);
             await _workCardOutbox.MarkAcknowledgedAsync(queuedEvent.EventId);
             _lastTerminalScan = scan; _lastTerminalScanAt = DateTime.UtcNow;
-            TerminalMessage = $"{result.Status}: {result.Movement} · {result.EmployeeName} · {result.ScannedAt:HH:mm:ss}\\n{result.Message}";
+            TerminalMessage = $"{result.Status}: {result.Movement} · {result.EmployeeName} · {result.ScannedAt:HH:mm:ss}\n{result.Message}";
             WorkCardScanInput = string.Empty;
         }
         catch (Exception ex)
