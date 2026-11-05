@@ -326,7 +326,7 @@ app.MapGet("/api/mobile/workcards/history", async Task<IResult> (
     int? employeeId) =>
 {
     var session = context.CurrentSession!;
-    if (!session.CanSee(MenuKeys.WorkCards) && !session.CanSee(MenuKeys.Terminal)) return Results.Forbid();
+    if (!session.CanSee(MenuKeys.WorkCards)) return Results.Forbid();
 
     var companyId = context.ActiveCompanyId;
     if (!companyId.HasValue)
@@ -494,6 +494,8 @@ app.MapPost("/api/mobile/workcards/scan", async Task<IResult> (
 app.MapGet("/api/mobile/notifications", async Task<IResult> (
     ICompanyContext context, IConnectionStateService connectionState, long? afterId) =>
 {
+    var session = context.CurrentSession!;
+    if (session.Role == AppUserRole.Operator) return Results.Forbid();
     var companyId = context.ActiveCompanyId;
     if (!companyId.HasValue)
         return Results.Conflict(new { message = "Select a company before requesting notifications." });
@@ -514,6 +516,8 @@ app.MapGet("/api/mobile/notifications", async Task<IResult> (
 app.MapPost("/api/mobile/notifications/{notificationId:long}/read", async Task<IResult> (
     long notificationId, ICompanyContext context, IConnectionStateService connectionState) =>
 {
+    var session = context.CurrentSession!;
+    if (session.Role == AppUserRole.Operator) return Results.Forbid();
     var companyId = context.ActiveCompanyId;
     if (!companyId.HasValue)
         return Results.Conflict(new { message = "Select a company before updating notifications." });
