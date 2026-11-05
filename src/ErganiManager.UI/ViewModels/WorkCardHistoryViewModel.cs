@@ -454,8 +454,7 @@ public partial class WorkCardHistoryViewModel : ViewModelBase, IAdminSectionView
             if (failedIds.Count > 0)
             {
                 await _retryService.RetryFailedManuallyAsync(companyId, failedIds);
-                success += failedIds.Count;
-                StatusMessage = $"Manual retry requested for {failedIds.Count} selected failed record(s).";
+                StatusMessage = $"Manual retry attempted for {failedIds.Count} selected failed record(s). Check the updated status and protocol in the history.";
             }
 
             await LoadAsync();
