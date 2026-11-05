@@ -105,7 +105,11 @@ public partial class MainViewModel : ObservableObject
                 : queuedEvent is null
                     ? GetFullError(ex)
                     : "Saved on this device — waiting for server synchronization. " + GetFullError(ex);
-            if (queuedEvent is not null) WorkCardScanInput = string.Empty;
+            if (queuedEvent is not null)
+            {
+                WorkCardScanInput = string.Empty;
+                await AddDevicePendingWorkCardsAsync();
+            }
         }
         finally { _outboxSyncGate.Release(); IsWorkCardScanBusy = false; }
     }
@@ -496,6 +500,8 @@ public partial class MainViewModel : ObservableObject
     {
         if (_api is null || !IsAuthenticated || !_sessionCompanyId.HasValue) return;
         if (!await _outboxSyncGate.WaitAsync(0, cancellationToken)) return;
+        var synchronized = 0;
+        MobileWorkCardScanResult? lastResult = null;
         try
         {
             var pending = await _workCardOutbox.GetPendingAsync(cancellationToken);
@@ -506,8 +512,11 @@ public partial class MainViewModel : ObservableObject
                 if (item.CompanyId.HasValue && item.CompanyId.Value != _sessionCompanyId.Value) continue;
                 try
                 {
-                    await _api.ScanWorkCardAsync(item.ScanValue, item.EventId, item.CapturedAt, cancellationToken);
+                    lastResult = await _api.ScanWorkCardAsync(item.ScanValue, item.EventId, item.CapturedAt, cancellationToken);
+                    // The API response confirms that the event is durably recorded,
+                    // either as submitted or in the server-side retry queue.
                     await _workCardOutbox.MarkAcknowledgedAsync(item.EventId, cancellationToken);
+                    synchronized++;
                 }
                 catch
                 {
@@ -518,6 +527,59 @@ public partial class MainViewModel : ObservableObject
             }
         }
         finally { _outboxSyncGate.Release(); }
+
+        if (synchronized > 0)
+        {
+            var status = lastResult?.Status ?? "Synchronized";
+            var detail = string.Equals(status, "Queued", StringComparison.OrdinalIgnoreCase)
+                ? "The server received the offline scan and placed it in its pending submission queue."
+                : "Offline scan(s) successfully synchronized with the server.";
+            var message = $"{synchronized} offline scan(s) synchronized. {detail}";
+            WorkCardScanMessage = message;
+            if (IsTerminalVisible) TerminalMessage = message;
+
+            // Replace local-only placeholders with the server's authoritative rows.
+            if (IsWorkCardsVisible)
+                await RefreshWorkCardsAsync();
+        }
+        else if (IsWorkCardsVisible)
+        {
+            // Keep device-only scans visible even while the server is unreachable.
+            await AddDevicePendingWorkCardsAsync();
+        }
+    }
+
+    private async Task AddDevicePendingWorkCardsAsync()
+    {
+        if (!DateOnly.TryParseExact(WorkCardFromDate, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var fromDate) ||
+            !DateOnly.TryParseExact(WorkCardToDate, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var toDate))
+            return;
+
+        var pending = await _workCardOutbox.GetPendingAsync();
+        foreach (var item in pending.Where(x => x.CompanyId == _sessionCompanyId &&
+                     DateOnly.FromDateTime(x.CapturedAt) >= fromDate &&
+                     DateOnly.FromDateTime(x.CapturedAt) <= toDate))
+        {
+            if (WorkCardHistory.Any(x => x.IsDevicePending && x.DeviceEventId == item.EventId))
+                continue;
+
+            var employee = Employees.FirstOrDefault(x =>
+                string.Equals(x.TaxId, item.ScanValue, StringComparison.OrdinalIgnoreCase));
+            WorkCardHistory.Insert(0, new MobileWorkCardHistoryItem
+            {
+                DeviceEventId = item.EventId,
+                IsDevicePending = true,
+                EmployeeFullName = employee?.DisplayName ?? "Offline scan — employee not yet verified",
+                EmployeeTaxId = employee?.TaxId ?? string.Empty,
+                MovementType = "Pending",
+                MovementDateTime = item.CapturedAt,
+                IsLocalPending = true,
+                RetryError = "Saved on this device. Waiting for server synchronization."
+            });
+        }
+
+        if (pending.Any(x => x.CompanyId == _sessionCompanyId))
+            WorkCardsMessage = $"{WorkCardHistory.Count(x => x.IsDevicePending)} scan(s) saved on this device and waiting for synchronization.";
     }
 
     private async Task LoadCompanyDataAsync()
@@ -649,10 +711,15 @@ public partial class MainViewModel : ObservableObject
             foreach (var row in rows.OrderByDescending(x => x.MovementDateTime))
                 WorkCardHistory.Add(row);
             WorkCardsMessage = $"{rows.Count} work card(s) · {fromDate:dd/MM/yyyy} – {toDate:dd/MM/yyyy}";
+            await AddDevicePendingWorkCardsAsync();
         }
         catch (Exception ex)
         {
-            WorkCardsMessage = GetFullError(ex);
+            // The server history may be unavailable, but device-side scans must
+            // remain visible and must never be hidden by a failed refresh.
+            WorkCardHistory.Clear();
+            WorkCardsMessage = "Server history unavailable: " + GetFullError(ex);
+            await AddDevicePendingWorkCardsAsync();
         }
         finally { IsBusy = false; }
     }
@@ -894,6 +961,8 @@ public partial class MainViewModel : ObservableObject
 public sealed class MobileWorkCardHistoryItem
 {
     public int Id { get; set; }
+    public string? DeviceEventId { get; set; }
+    public bool IsDevicePending { get; set; }
     public int EmployeeId { get; set; }
     public string EmployeeFullName { get; set; } = string.Empty;
     public string EmployeeTaxId { get; set; } = string.Empty;
@@ -914,7 +983,7 @@ public sealed class MobileWorkCardHistoryItem
     public int RetryAttempts { get; set; }
     public string? RetryError { get; set; }
 
-    public string MovementText => MovementType == "Arrival" ? "Arrival" : "Departure";
+    public string MovementText => IsDevicePending ? "Pending scan" : MovementType == "Arrival" ? "Arrival" : "Departure";
     public string DateTimeText => MovementDateTime.ToString("dd/MM/yyyy HH:mm:ss");
     public string LateReasonText => LateJustification switch
     {
@@ -925,6 +994,7 @@ public sealed class MobileWorkCardHistoryItem
     };
     public bool HasLateReason => !string.IsNullOrWhiteSpace(LateJustification);
     public string StatusText =>
+        IsDevicePending ? "Saved on this device · waiting for server synchronization" :
         IsLocalPending ? (RetryAttempts > 0
             ? $"Waiting to send · attempt {RetryAttempts}" + (string.IsNullOrWhiteSpace(RetryError) ? string.Empty : $" · {RetryError}")
             : "Waiting to send" + (string.IsNullOrWhiteSpace(RetryError) ? string.Empty : $" · {RetryError}")) :
