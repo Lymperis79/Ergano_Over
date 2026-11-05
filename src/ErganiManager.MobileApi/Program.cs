@@ -94,7 +94,9 @@ app.Use(async (context, next) =>
             CompanyName = context.User.FindFirstValue("company_name"),
             BranchId = int.TryParse(branchIdText, out var bid) ? bid : null,
             BranchName = context.User.FindFirstValue("branch_name"),
-            AllowedMenus = MenuKeys.Parse(context.User.FindFirstValue("allowed_menus")),
+            AllowedMenus = Enum.TryParse<AppUserRole>(roleText, out var mobileRole) && mobileRole == AppUserRole.Operator
+                ? new HashSet<string>(StringComparer.Ordinal) { MenuKeys.Terminal }
+                : MenuKeys.Parse(context.User.FindFirstValue("allowed_menus")),
             IsOfflineSession = false
         };
         contextService.SetSession(session);
@@ -152,7 +154,9 @@ app.MapPost("/api/mobile/login", async Task<IResult> (LoginRequest request, IAut
     await http.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, new ClaimsPrincipal(identity));
     return Results.Ok(new MobileSessionResponse(session.Username, session.Role.ToString(),
         session.CompanyId, session.CompanyName, session.BranchId, session.BranchName,
-        MenuKeys.Configurable.Where(session.CanSee).ToArray()));
+        (session.Role == AppUserRole.Operator
+            ? new[] { MenuKeys.Terminal }
+            : MenuKeys.Configurable.Where(session.CanSee).ToArray())));
 }).AllowAnonymous();
 
 app.MapPost("/api/mobile/logout", async (HttpContext http, IAuthService auth) =>
@@ -167,7 +171,9 @@ app.MapGet("/api/mobile/me", (ICompanyContext companyContext) =>
     var session = companyContext.CurrentSession!;
     return Results.Ok(new MobileSessionResponse(session.Username, session.Role.ToString(),
         session.CompanyId, session.CompanyName, session.BranchId, session.BranchName,
-        MenuKeys.Configurable.Where(session.CanSee).ToArray()));
+        (session.Role == AppUserRole.Operator
+            ? new[] { MenuKeys.Terminal }
+            : MenuKeys.Configurable.Where(session.CanSee).ToArray())));
 }).RequireAuthorization();
 
 app.MapGet("/api/mobile/companies", async Task<IResult> (ICompanyContext context, ICompanyService companies) =>
