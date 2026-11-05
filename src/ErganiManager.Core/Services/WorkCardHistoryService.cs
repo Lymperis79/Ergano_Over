@@ -76,14 +76,16 @@ public class WorkCardHistoryService : IWorkCardHistoryService
 
         var pending = await cache.PendingSubmissions
             .Where(p => p.CompanyId == companyId
-                        && (!p.Synced || (p.ErganiProtocol != null && p.ErganiProtocol != ""))
+                        && (!p.Synced || (p.ErganiProtocol != null && p.ErganiProtocol != "")
+                            || (p.Synced && p.ReviewReason != null && p.ReviewReason != ""))
                         && p.ScannedAt >= fromDt && p.ScannedAt <= toDt)
             .OrderByDescending(p => p.ScannedAt)
             .ToListAsync();
 
         var failed = await cache.FailedSubmissions
             .Where(f => f.CompanyId == companyId
-                        && (!f.Resolved || (f.ResolvedProtocol != null && f.ResolvedProtocol != ""))
+                        && (!f.Resolved || (f.ResolvedProtocol != null && f.ResolvedProtocol != "")
+                            || (f.Resolved && f.ReviewReason != null && f.ReviewReason != ""))
                         && f.OriginalScannedAt >= fromDt && f.OriginalScannedAt <= toDt)
             .OrderByDescending(f => f.OriginalScannedAt)
             .ToListAsync();
@@ -160,7 +162,9 @@ public class WorkCardHistoryService : IWorkCardHistoryService
                     RetryAttempts = p.SyncAttempts,
                     RetryError = p.LastSyncError,
                     ReviewRequired = p.ReviewRequired,
-                    ReviewReason = p.ReviewReason
+                    ReviewReason = p.ReviewReason,
+                    ReviewDecision = p.Synced && string.IsNullOrWhiteSpace(p.ErganiProtocol)
+                        && p.ReviewReason != null ? p.LastSyncError : null
                 });
             }
 
@@ -194,7 +198,9 @@ public class WorkCardHistoryService : IWorkCardHistoryService
                     RetryAttempts = f.RetryCount,
                     RetryError = f.LastRetryError ?? f.ErrorDescription,
                     ReviewRequired = f.ReviewRequired,
-                    ReviewReason = f.ReviewReason
+                    ReviewReason = f.ReviewReason,
+                    ReviewDecision = f.Resolved && string.IsNullOrWhiteSpace(f.ResolvedProtocol)
+                        && f.ReviewReason != null ? f.LastRetryError : null
                 });
             }
         }
