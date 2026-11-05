@@ -290,9 +290,11 @@ public partial class MainViewModel : ObservableObject
             if (session.CompanyId.HasValue)
             {
                 CompanyName = session.CompanyName ?? "Assigned company";
+                // Start the durable outbox worker immediately after authentication.
+                // Employee-list loading must not prevent queued attendance from syncing.
+                StartOutboxSynchronization();
                 if (CanOpenEmployees || CanOpenSchedules || CanOpenWorkCards)
                     await LoadCompanyDataAsync();
-                StartOutboxSynchronization();
                 if (CanOpenOverview) StartNotificationPolling();
                 if (CanOpenTerminal && !CanOpenOverview) OpenTerminal();
             }
@@ -460,9 +462,10 @@ public partial class MainViewModel : ObservableObject
             CompanyName = selected.Name;
             _sessionCompanyId = selected.Id;
             IsCompanySelectionRequired = false;
+            // Start synchronization before optional company data loading.
+            StartOutboxSynchronization();
             if (CanOpenEmployees || CanOpenSchedules || CanOpenWorkCards)
                 await LoadCompanyDataAsync();
-            StartOutboxSynchronization();
             if (CanOpenOverview) StartNotificationPolling();
             StatusMessage = $"Connected to {CompanyName}. {Employees.Count} active employees loaded from Ergani II.";
             if (CanOpenTerminal && !CanOpenOverview) OpenTerminal();
@@ -491,7 +494,15 @@ public partial class MainViewModel : ObservableObject
         {
             try { await FlushOfflineWorkCardsAsync(cancellationToken); }
             catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { break; }
-            catch { /* Keep the durable outbox intact and retry on the next cycle. */ }
+            catch (Exception ex)
+            {
+                // Never hide a sync failure: the scan remains on the device and
+                // the visible status explains why the server has not acknowledged it.
+                var message = "Offline synchronization error: " + GetFullError(ex);
+                WorkCardScanMessage = message;
+                if (IsTerminalVisible) TerminalMessage = message;
+                if (IsWorkCardsVisible) WorkCardsMessage = message;
+            }
             try { await Task.Delay(TimeSpan.FromSeconds(30), cancellationToken); }
             catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { break; }
         }
@@ -502,6 +513,8 @@ public partial class MainViewModel : ObservableObject
         if (_api is null || !IsAuthenticated || !_sessionCompanyId.HasValue) return;
         if (!await _outboxSyncGate.WaitAsync(0, cancellationToken)) return;
         var synchronized = 0;
+        string? syncFailure = null;
+        var synchronizedResults = new List<(OfflineWorkCardEvent Event, MobileWorkCardScanResult Result)>();
         MobileWorkCardScanResult? lastResult = null;
         try
         {
@@ -517,12 +530,14 @@ public partial class MainViewModel : ObservableObject
                     // The API response confirms that the event is durably recorded,
                     // either as submitted or in the server-side retry queue.
                     await _workCardOutbox.MarkAcknowledgedAsync(item.EventId, cancellationToken);
+                    synchronizedResults.Add((item, lastResult));
                     synchronized++;
                 }
-                catch
+                catch (Exception ex)
                 {
-                    // Stop at the first failure to preserve scan order and avoid hammering
-                    // the API while it is unavailable.
+                    // Stop at the first failure to preserve scan order. Keep the
+                    // exact HTTP/API error visible so a blocked sync can be diagnosed.
+                    syncFailure = GetFullError(ex);
                     break;
                 }
             }
@@ -536,13 +551,40 @@ public partial class MainViewModel : ObservableObject
                 ? "The server received the offline scan and placed it in its pending submission queue."
                 : "Offline scan(s) successfully synchronized with the server.";
             var message = $"{synchronized} offline scan(s) synchronized. {detail}";
+            if (!string.IsNullOrWhiteSpace(syncFailure))
+                message += $" Remaining scans are still on this device. Next retry in 30 seconds. Last error: {syncFailure}";
             WorkCardScanMessage = message;
             _lastOutboxSyncMessage = message;
             if (IsTerminalVisible) TerminalMessage = message;
 
-            // Replace local-only placeholders with the server's authoritative rows.
+            // Replace local-only placeholders with server records, then retain an
+            // authoritative row from each API acknowledgement even if history lags.
             if (IsWorkCardsVisible)
+            {
                 await RefreshWorkCardsAsync();
+                foreach (var entry in synchronizedResults)
+                {
+                    var result = entry.Result;
+                    if (WorkCardHistory.Any(x => x.EmployeeId == result.EmployeeId &&
+                        Math.Abs((x.MovementDateTime - result.ScannedAt).TotalSeconds) <= 5))
+                        continue;
+                    WorkCardHistory.Insert(0, new MobileWorkCardHistoryItem
+                    {
+                        EmployeeId = result.EmployeeId,
+                        EmployeeFullName = result.EmployeeName,
+                        MovementType = result.Movement,
+                        MovementDateTime = result.ScannedAt,
+                        SubmittedToErgani = string.Equals(result.Status, "Submitted", StringComparison.OrdinalIgnoreCase),
+                        IsLocalPending = string.Equals(result.Status, "Queued", StringComparison.OrdinalIgnoreCase),
+                        IsLocalFailed = string.Equals(result.Status, "Rejected", StringComparison.OrdinalIgnoreCase),
+                        RetryAttempts = string.Equals(result.Status, "Queued", StringComparison.OrdinalIgnoreCase) ? 1 : 0,
+                        Protocol = result.Protocol,
+                        RetryError = result.Status is "Queued" or "Rejected" ? result.Message : null
+                    });
+                }
+            }
+            if (!string.IsNullOrWhiteSpace(syncFailure) && IsWorkCardsVisible)
+                WorkCardsMessage = "Some scans synchronized; remaining scans are still on this device. " + syncFailure;
         }
         else
         {
@@ -553,6 +595,15 @@ public partial class MainViewModel : ObservableObject
             }
             if (IsTerminalVisible)
                 await RefreshTerminalOutboxMessageAsync();
+
+            if (!string.IsNullOrWhiteSpace(syncFailure))
+            {
+                var pendingMessage = "Offline scans are still saved on this device. Synchronization failed; retrying in 30 seconds. Last error: " + syncFailure;
+                WorkCardScanMessage = pendingMessage;
+                _lastOutboxSyncMessage = pendingMessage;
+                if (IsTerminalVisible) TerminalMessage = pendingMessage;
+                if (IsWorkCardsVisible) WorkCardsMessage = pendingMessage;
+            }
         }
     }
 
@@ -597,7 +648,7 @@ public partial class MainViewModel : ObservableObject
                 MovementType = "Pending",
                 MovementDateTime = item.CapturedAt,
                 IsLocalPending = true,
-                RetryError = "Saved on this device. Waiting for server synchronization."
+                RetryError = "Movement is determined by the server's existing shift rules when synchronization succeeds."
             });
         }
 
@@ -709,6 +760,9 @@ public partial class MainViewModel : ObservableObject
         IsTerminalVisible = false;
         IsWorkCardsVisible = true;
         PageTitle = "Work cards";
+        // Ensure the retry loop is active whenever the user returns to this screen.
+        if (_outboxSyncCts is null || _outboxSyncCts.IsCancellationRequested)
+            StartOutboxSynchronization();
         await RefreshWorkCardsAsync();
     }
 
@@ -1008,7 +1062,9 @@ public sealed class MobileWorkCardHistoryItem
     public int RetryAttempts { get; set; }
     public string? RetryError { get; set; }
 
-    public string MovementText => IsDevicePending ? "Pending scan" : MovementType == "Arrival" ? "Arrival" : "Departure";
+    public string MovementText => IsDevicePending
+        ? "Pending · Arrival/Departure will be determined by the server"
+        : MovementType == "Arrival" ? "Arrival" : MovementType == "Departure" ? "Departure" : MovementType;
     public string DateTimeText => MovementDateTime.ToString("dd/MM/yyyy HH:mm:ss");
     public string LateReasonText => LateJustification switch
     {
