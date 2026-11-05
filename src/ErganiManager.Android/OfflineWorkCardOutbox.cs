@@ -60,6 +60,35 @@ public sealed class OfflineWorkCardOutbox
         finally { Gate.Release(); }
     }
 
+    public async Task MarkRejectedAsync(string eventId, string reason, CancellationToken cancellationToken = default)
+    {
+        await Gate.WaitAsync(cancellationToken);
+        try
+        {
+            var items = await ReadCoreAsync(cancellationToken);
+            var item = items.FirstOrDefault(x => string.Equals(x.EventId, eventId, StringComparison.Ordinal));
+            if (item is not null)
+            {
+                item.IsRejected = true;
+                item.RejectionReason = reason;
+                await WriteCoreAsync(items, cancellationToken);
+            }
+        }
+        finally { Gate.Release(); }
+    }
+
+    public async Task RemoveAsync(string eventId, CancellationToken cancellationToken = default)
+    {
+        await Gate.WaitAsync(cancellationToken);
+        try
+        {
+            var items = await ReadCoreAsync(cancellationToken);
+            items.RemoveAll(x => string.Equals(x.EventId, eventId, StringComparison.Ordinal));
+            await WriteCoreAsync(items, cancellationToken);
+        }
+        finally { Gate.Release(); }
+    }
+
     private static async Task<List<OfflineWorkCardEvent>> ReadCoreAsync(CancellationToken ct)
     {
         if (!File.Exists(FilePath)) return [];
@@ -89,4 +118,6 @@ public sealed class OfflineWorkCardEvent
     public int? CompanyId { get; set; }
     public DateTime CapturedAt { get; set; }
     public DateTime CreatedAtUtc { get; set; }
+    public bool IsRejected { get; set; }
+    public string? RejectionReason { get; set; }
 }
