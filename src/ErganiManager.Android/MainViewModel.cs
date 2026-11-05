@@ -55,6 +55,7 @@ public partial class MainViewModel : ObservableObject
         IsWorkCardScanBusy = true;
         var scanValue = WorkCardScanInput.Trim();
         OfflineWorkCardEvent? queuedEvent = null;
+        await _outboxSyncGate.WaitAsync();
         try
         {
             // Write to durable device storage before touching the network.
@@ -102,7 +103,7 @@ public partial class MainViewModel : ObservableObject
                 : "Saved on this device — waiting for server synchronization. " + GetFullError(ex);
             if (queuedEvent is not null) WorkCardScanInput = string.Empty;
         }
-        finally { IsWorkCardScanBusy = false; }
+        finally { _outboxSyncGate.Release(); IsWorkCardScanBusy = false; }
     }
 
     private MobileApiClient? _api;
