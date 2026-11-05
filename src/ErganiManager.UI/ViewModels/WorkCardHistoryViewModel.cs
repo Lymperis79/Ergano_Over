@@ -589,8 +589,10 @@ public partial class WorkCardHistoryViewModel : ViewModelBase, IAdminSectionView
                         Records.Add(record);
                 });
 
-            StatusMessage =
-                results.Count == 1000
+            var reviewCount = results.Count(r => r.ReviewRequired);
+            StatusMessage = reviewCount > 0
+                ? $"⚠️ {reviewCount} attendance record(s) paused for manual review because another event for the same employee/workday has an Ergani protocol. Check the Ergani portal and response before choosing Retry or Mark reviewed — do not submit."
+                : results.Count == 1000
                     ? Loc["Vm.Showing first 1,000 records — narrow the date range for more precision."]
                     : string.Format(Loc["Vm.{0} record(s) found."], results.Count);
         }
