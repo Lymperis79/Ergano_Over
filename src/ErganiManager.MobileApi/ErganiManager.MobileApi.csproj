@@ -6,6 +6,8 @@
     <RootNamespace>ErganiManager.MobileApi</RootNamespace>
   </PropertyGroup>
   <ItemGroup>
+    <!-- Core login evaluates the local offline cache; ensure the SQLite provider is deployed with the API host. -->
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" />
     <ProjectReference Include="..\ErganiManager.Core\ErganiManager.Core.csproj" />
     <ProjectReference Include="..\ErganiManager.ErganiApi\ErganiManager.ErganiApi.csproj" />
   </ItemGroup>
