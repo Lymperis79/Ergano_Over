@@ -524,6 +524,9 @@ public partial class MainViewModel : ObservableObject
                 if (cancellationToken.IsCancellationRequested || _api is null) break;
                 // Never send one company's queued scan under another company's session.
                 if (item.CompanyId.HasValue && item.CompanyId.Value != _sessionCompanyId.Value) continue;
+                // A permanent rejection is retained for the user to inspect, but it
+                // must never block later valid events or be retried every 30 seconds.
+                if (item.IsRejected) continue;
                 try
                 {
                     lastResult = await _api.ScanWorkCardAsync(item.ScanValue, item.EventId, item.CapturedAt, cancellationToken);
@@ -533,10 +536,21 @@ public partial class MainViewModel : ObservableObject
                     synchronizedResults.Add((item, lastResult));
                     synchronized++;
                 }
+                catch (HttpRequestException ex) when (ex.StatusCode == System.Net.HttpStatusCode.NotFound)
+                {
+                    var reason = GetFullError(ex);
+                    await _workCardOutbox.MarkRejectedAsync(item.EventId, reason, cancellationToken);
+                    // Unknown employee/AFM is a permanent, scan-specific failure.
+                    // Continue with the next event so valid scans behind it sync.
+                    syncFailure = string.IsNullOrWhiteSpace(syncFailure)
+                        ? reason
+                        : syncFailure + " | " + reason;
+                    continue;
+                }
                 catch (Exception ex)
                 {
-                    // Stop at the first failure to preserve scan order. Keep the
-                    // exact HTTP/API error visible so a blocked sync can be diagnosed.
+                    // Network/server failures remain retryable. Stop here to preserve
+                    // chronological order for scans that still need server movement rules.
                     syncFailure = GetFullError(ex);
                     break;
                 }
@@ -652,29 +666,36 @@ public partial class MainViewModel : ObservableObject
                      DateOnly.FromDateTime(x.CapturedAt) >= fromDate &&
                      DateOnly.FromDateTime(x.CapturedAt) <= toDate))
         {
-            if (WorkCardHistory.Any(x => x.IsDevicePending && x.DeviceEventId == item.EventId))
-                continue;
-
+            var existing = WorkCardHistory.FirstOrDefault(x => x.IsDevicePending && x.DeviceEventId == item.EventId);
             var scanAfm = ExtractOfflineScanAfm(item.ScanValue);
             var employee = Employees.FirstOrDefault(x =>
                 !string.IsNullOrWhiteSpace(scanAfm) &&
                 string.Equals(x.TaxId, scanAfm, StringComparison.OrdinalIgnoreCase));
-            WorkCardHistory.Insert(0, new MobileWorkCardHistoryItem
+            var deviceRow = new MobileWorkCardHistoryItem
             {
                 DeviceEventId = item.EventId,
                 IsDevicePending = true,
-                EmployeeFullName = employee?.DisplayName ?? "Offline scan — employee not yet verified",
+                IsDeviceRejected = item.IsRejected,
+                EmployeeFullName = employee?.DisplayName ?? (item.IsRejected
+                    ? "Rejected offline scan — employee not found"
+                    : "Offline scan — employee not yet verified"),
                 EmployeeTaxId = employee?.TaxId ?? string.Empty,
-                MovementType = "Pending",
+                MovementType = item.IsRejected ? "Rejected" : "Pending",
                 MovementDateTime = item.CapturedAt,
-                IsLocalPending = true,
-                RetryError = "Movement is determined by the server's existing shift rules when synchronization succeeds."
-            });
+                IsLocalPending = !item.IsRejected,
+                IsLocalFailed = item.IsRejected,
+                RetryError = item.IsRejected
+                    ? item.RejectionReason
+                    : "Movement is determined by the server's existing shift rules when synchronization succeeds."
+            };
+            if (existing is null) WorkCardHistory.Insert(0, deviceRow);
+            else WorkCardHistory[WorkCardHistory.IndexOf(existing)] = deviceRow;
         }
 
-        var visiblePendingCount = WorkCardHistory.Count(x => x.IsDevicePending);
-        if (visiblePendingCount > 0)
-            WorkCardsMessage = $"{visiblePendingCount} scan(s) saved on this device and waiting for synchronization.";
+        var visiblePendingCount = WorkCardHistory.Count(x => x.IsDevicePending && !x.IsDeviceRejected);
+        var visibleRejectedCount = WorkCardHistory.Count(x => x.IsDeviceRejected);
+        if (visiblePendingCount > 0 || visibleRejectedCount > 0)
+            WorkCardsMessage = $"{visiblePendingCount} scan(s) waiting for synchronization · {visibleRejectedCount} rejected scan(s) need attention.";
     }
 
     private async Task LoadCompanyDataAsync()
@@ -1062,6 +1083,7 @@ public sealed class MobileWorkCardHistoryItem
     public int Id { get; set; }
     public string? DeviceEventId { get; set; }
     public bool IsDevicePending { get; set; }
+    public bool IsDeviceRejected { get; set; }
     public int EmployeeId { get; set; }
     public string EmployeeFullName { get; set; } = string.Empty;
     public string EmployeeTaxId { get; set; } = string.Empty;
@@ -1082,7 +1104,9 @@ public sealed class MobileWorkCardHistoryItem
     public int RetryAttempts { get; set; }
     public string? RetryError { get; set; }
 
-    public string MovementText => IsDevicePending
+    public string MovementText => IsDeviceRejected
+        ? "Rejected · employee/AFM not found"
+        : IsDevicePending
         ? "Pending · Arrival/Departure will be determined by the server"
         : MovementType == "Arrival" ? "Arrival" : MovementType == "Departure" ? "Departure" : MovementType;
     public string DateTimeText => MovementDateTime.ToString("dd/MM/yyyy HH:mm:ss");
@@ -1095,6 +1119,7 @@ public sealed class MobileWorkCardHistoryItem
     };
     public bool HasLateReason => !string.IsNullOrWhiteSpace(LateJustification);
     public string StatusText =>
+        IsDeviceRejected ? "Rejected on this device · correct the employee AFM/barcode and scan again. " + (RetryError ?? string.Empty) :
         IsDevicePending ? "Saved on this device · waiting for server synchronization" :
         IsLocalPending ? (RetryAttempts > 0
             ? $"Waiting to send · attempt {RetryAttempts}" + (string.IsNullOrWhiteSpace(RetryError) ? string.Empty : $" · {RetryError}")
