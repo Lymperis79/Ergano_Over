@@ -22,7 +22,7 @@
             IsVisible="{Binding IsAuthenticated}">
       <Button Content="⌂  Overview" Command="{Binding GoToOverviewCommand}"
               HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
-              MinHeight="42" />
+              MinHeight="42" IsVisible="{Binding IsOverviewNavigationVisible}" />
     </Border>
 
     <ScrollViewer Grid.Row="2">
@@ -75,6 +75,31 @@
           </StackPanel>
         </Border>
 
+
+        <Border Background="#202B3A" CornerRadius="16" Padding="16" IsVisible="{Binding IsTerminalVisible}">
+          <StackPanel Spacing="14">
+            <TextBlock Text="ATTENDANCE TERMINAL" Foreground="#8BBCEB" FontWeight="Bold" FontSize="12" />
+            <TextBlock Text="Scan an employee QR code to record arrival or departure. The terminal returns to camera scanning automatically after each result."
+                       Foreground="#C3CEDB" FontSize="13" TextWrapping="Wrap" />
+            <TextBox PlaceholderText="Employee number or QR value"
+                     Text="{Binding WorkCardScanInput, Mode=TwoWay}" />
+            <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
+              <Button Grid.Column="0" Content="▦ Scan QR code"
+                      Command="{Binding OpenTerminalCameraCommand}"
+                      IsEnabled="{Binding !IsTerminalScanBusy}" />
+              <Button Grid.Column="1" Content="Process"
+                      Command="{Binding SubmitTerminalScanCommand}"
+                      IsEnabled="{Binding !IsTerminalScanBusy}" />
+            </Grid>
+            <ProgressBar IsIndeterminate="True" Height="5" IsVisible="{Binding IsTerminalScanBusy}" />
+            <Border Background="#18212D" CornerRadius="10" Padding="12">
+              <TextBlock Text="{Binding TerminalMessage}" Foreground="White"
+                         FontSize="15" TextWrapping="Wrap" />
+            </Border>
+            <Button Content="Back to overview" Command="{Binding BackFromTerminalCommand}"
+                    IsVisible="{Binding CanOpenOverview}" />
+          </StackPanel>
+        </Border>
 
         <Border Background="#202B3A" CornerRadius="16" Padding="14" IsVisible="{Binding IsWorkCardsVisible}">
           <StackPanel Spacing="12">
@@ -240,30 +265,30 @@
 
         <TextBlock Text="WORKING DAY" Foreground="#8BBCEB" FontWeight="Bold"
                    FontSize="12" IsVisible="{Binding IsOverviewVisible}" />
-        <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto" ColumnSpacing="12" RowSpacing="12" IsVisible="{Binding IsOverviewVisible}">
+        <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto,Auto" ColumnSpacing="12" RowSpacing="12" IsVisible="{Binding IsOverviewVisible}">
           <Button Grid.Row="0" Grid.Column="0" MinHeight="92"
-                  Command="{Binding OpenWorkCardsCommand}">
+                  Command="{Binding OpenWorkCardsCommand}" IsVisible="{Binding CanOpenWorkCards}">
             <StackPanel Spacing="6">
               <TextBlock Text="▣" FontSize="25" HorizontalAlignment="Center" />
               <TextBlock Text="Work cards" HorizontalAlignment="Center" />
             </StackPanel>
           </Button>
           <Button Grid.Row="0" Grid.Column="1" MinHeight="92"
-                  Command="{Binding OpenDailyStatusCommand}">
+                  Command="{Binding OpenDailyStatusCommand}" IsVisible="{Binding CanOpenDailyStatus}">
             <StackPanel Spacing="6">
               <TextBlock Text="◷" FontSize="25" HorizontalAlignment="Center" />
               <TextBlock Text="Daily status" HorizontalAlignment="Center" />
             </StackPanel>
           </Button>
           <Button Grid.Row="1" Grid.Column="0" MinHeight="92"
-                  Command="{Binding OpenEmployeesCommand}">
+                  Command="{Binding OpenEmployeesCommand}" IsVisible="{Binding CanOpenEmployees}">
             <StackPanel Spacing="6">
               <TextBlock Text="♙" FontSize="25" HorizontalAlignment="Center" />
               <TextBlock Text="Employees" HorizontalAlignment="Center" />
             </StackPanel>
           </Button>
           <Button Grid.Row="1" Grid.Column="1" MinHeight="92"
-                  Command="{Binding OpenSchedulesCommand}">
+                  Command="{Binding OpenSchedulesCommand}" IsVisible="{Binding CanOpenSchedules}">
             <StackPanel Spacing="6">
               <TextBlock Text="▦" FontSize="25" HorizontalAlignment="Center" />
               <TextBlock Text="Work calendar" HorizontalAlignment="Center" />
@@ -271,6 +296,13 @@
           </Button>
         </Grid>
 
+          <Button Grid.Row="2" Grid.Column="0" MinHeight="92"
+                  Command="{Binding OpenTerminalCommand}" IsVisible="{Binding CanOpenTerminal}">
+            <StackPanel Spacing="6">
+              <TextBlock Text="▣" FontSize="25" HorizontalAlignment="Center" />
+              <TextBlock Text="Terminal" HorizontalAlignment="Center" />
+            </StackPanel>
+          </Button>
         <Border Background="#202B3A" CornerRadius="14" Padding="14" IsVisible="{Binding IsEmployeesVisible}">
           <StackPanel Spacing="12">
             <TextBlock Text="EMPLOYEES" Foreground="#8BBCEB" FontWeight="Bold" FontSize="12" />
@@ -295,13 +327,13 @@
                    FontSize="12" IsVisible="{Binding IsOverviewVisible}" />
         <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto" ColumnSpacing="12" RowSpacing="12" IsVisible="{Binding IsOverviewVisible}">
           <Button Grid.Row="0" Grid.Column="0" MinHeight="76"
-                  Command="{Binding OpenOvertimeCommand}" Content="Overtime" />
+                  Command="{Binding OpenOvertimeCommand}" Content="Overtime" IsVisible="{Binding CanOpenOvertime}" />
           <Button Grid.Row="0" Grid.Column="1" MinHeight="76"
-                  Command="{Binding OpenSubmissionsCommand}" Content="API submissions" />
+                  Command="{Binding OpenSubmissionsCommand}" Content="API submissions" IsVisible="{Binding CanOpenSubmissions}" />
           <Button Grid.Row="1" Grid.Column="0" MinHeight="76"
-                  Command="{Binding OpenReportsCommand}" Content="Reports" />
+                  Command="{Binding OpenReportsCommand}" Content="Reports" IsVisible="{Binding CanOpenReports}" />
           <Button Grid.Row="1" Grid.Column="1" MinHeight="76"
-                  Command="{Binding OpenSettingsCommand}" Content="Settings" />
+                  Command="{Binding OpenSettingsCommand}" Content="Settings" IsVisible="{Binding CanOpenSettings}" />
         </Grid>
 
         <Border Background="#202B3A" CornerRadius="14" Padding="14" IsVisible="{Binding IsOverviewVisible}">
