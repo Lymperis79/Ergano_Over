@@ -27,6 +27,9 @@ public class PendingSubmission
 
     public DateTime ScannedAt { get; set; } = DateTime.UtcNow;
 
+    /// <summary>Lease preventing another worker from submitting this event concurrently.</summary>
+    public DateTime? ProcessingUntilUtc { get; set; }
+
     public bool Synced { get; set; } = false;
     public DateTime? SyncedAt { get; set; }
 
