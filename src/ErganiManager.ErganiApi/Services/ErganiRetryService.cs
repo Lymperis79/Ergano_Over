@@ -449,7 +449,8 @@ public class ErganiRetryService
         IReadOnlyCollection<int>? selectedIds = null)
     {
         var failedQuery = cache.FailedSubmissions
-            .Where(f => f.CompanyId == company.Id && !f.Resolved);
+            .Where(f => f.CompanyId == company.Id && !f.Resolved
+                        && (f.ResolvedProtocol == null || f.ResolvedProtocol == ""));
         if (selectedIds != null)
             failedQuery = failedQuery.Where(f => selectedIds.Contains(f.Id));
         else
