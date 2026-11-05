@@ -353,7 +353,7 @@ app.MapPost("/api/mobile/workcards/scan", async Task<IResult> (
     IWorkCardSubmitter submitter) =>
 {
     var session = context.CurrentSession!;
-    if (!session.CanSee(MenuKeys.WorkCards)) return Results.Forbid();
+    if (!session.CanSee(MenuKeys.WorkCards) && !session.CanSee(MenuKeys.Terminal)) return Results.Forbid();
     var companyId = context.ActiveCompanyId;
     if (!companyId.HasValue)
         return Results.Conflict(new { message = "Select a company before scanning a work card." });
