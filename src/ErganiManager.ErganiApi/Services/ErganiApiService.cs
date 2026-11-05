@@ -110,6 +110,32 @@ public class ErganiApiService : IWorkCardSubmitter
             BaseUrl  = company.ErganiBaseUrl
         };
 
+        var movementEnum = movementTypeCode == WorkCardMovementTypeCodes.Arrival
+            ? Data.Entities.MovementType.Arrival
+            : Data.Entities.MovementType.Departure;
+        var from = request.MovementDateTime.AddSeconds(-1);
+        var to = request.MovementDateTime.AddSeconds(1);
+
+        // A previous attempt may have received a protocol and then crashed before its
+        // local queue acknowledgement was saved. Never submit that same attendance again.
+        var acknowledgedCard = await db.WorkCards.AsNoTracking().FirstOrDefaultAsync(w =>
+            w.EmployeeId == employee.Id &&
+            w.MovementType == movementEnum &&
+            w.MovementDateTime >= from &&
+            w.MovementDateTime <= to &&
+            !string.IsNullOrWhiteSpace(w.Protocol));
+
+        if (acknowledgedCard != null)
+        {
+            return new WorkCardSubmissionOutcome
+            {
+                Success = true,
+                Protocol = acknowledgedCard.Protocol,
+                SubmissionId = acknowledgedCard.SubmissionId,
+                ResponseRawJson = acknowledgedCard.ResponseRawJson
+            };
+        }
+
         var callResult = await _erganiClient.SubmitWorkCardAsync(credentials, envelope);
 
         var firstResponse = callResult.Data?.FirstOrDefault();
@@ -124,15 +150,7 @@ public class ErganiApiService : IWorkCardSubmitter
             ? null
             : (callResult.ErrorMessage ?? firstResponse?.Description ?? ErganiManager.Data.UiText.T("Ergani submission failed."));
 
-        var movementEnum = movementTypeCode == WorkCardMovementTypeCodes.Arrival
-            ? Data.Entities.MovementType.Arrival
-            : Data.Entities.MovementType.Departure;
-
-        // Background retries call this method repeatedly for the same scan. Reuse the existing
-        // WorkCard and log row (matched by employee + movement + time) instead of adding new ones.
-        var from = request.MovementDateTime.AddSeconds(-1);
-        var to   = request.MovementDateTime.AddSeconds(1);
-
+        // Background retries reuse the existing unacknowledged WorkCard and API log row.
         var workCard = await db.WorkCards.FirstOrDefaultAsync(w =>
             w.EmployeeId == employee.Id &&
             w.MovementType == movementEnum &&
