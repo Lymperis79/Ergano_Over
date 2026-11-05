@@ -86,7 +86,7 @@ public class WorkCardHistoryDto : INotifyPropertyChanged
         set { if (_retryError == value) return; _retryError = value; OnPropertyChanged(); OnPropertyChanged(nameof(StatusText)); }
     }
 
-    public bool CanRetry => IsLocalPending || IsLocalFailed || (!SubmittedToErgani && Id > 0);
+    public bool CanRetry => !SubmittedToErgani && (IsLocalPending || IsLocalFailed || Id > 0);
 
     public string StatusText =>
         ReviewRequired ? "⚠️ Manual review required — automatic retry paused" :
