@@ -32,7 +32,10 @@ public partial class DashboardViewModel : ViewModelBase, IAdminSectionViewModel
     public event Action<string>? NavigationRequested;
 
     [RelayCommand]
-    private void OpenErrors() => NavigationRequested?.Invoke("Errors");
+    private void OpenErrors() => NavigationRequested?.Invoke("SubmissionErrors");
+
+    [RelayCommand]
+    private void OpenAttendanceErrors() => NavigationRequested?.Invoke("AttendanceErrors");
 
     [RelayCommand]
     private void OpenPendingItems() => NavigationRequested?.Invoke("Pending");
@@ -48,6 +51,7 @@ public partial class DashboardViewModel : ViewModelBase, IAdminSectionViewModel
     [ObservableProperty] private int _employeeCount;
     [ObservableProperty] private int _submissionCount;
     [ObservableProperty] private int _errorCount;
+    [ObservableProperty] private int _workCardErrorCount;
     [ObservableProperty] private int _pendingCount;
     [ObservableProperty] private int _pendingWorkCardCount;
     [ObservableProperty] private int _successfulCount;
@@ -145,7 +149,7 @@ public partial class DashboardViewModel : ViewModelBase, IAdminSectionViewModel
                 CompanyName = Loc["Dashboard.NoCompany"];
                 InternetHealthText = DatabaseHealthText = ErganiHealthText = EmailHealthText = Loc["Dashboard.NotConfigured"];
                 BranchCount = EmployeeCount = SubmissionCount = ErrorCount = PendingCount = 0;
-                SuccessfulCount = FailedCount = PendingWorkCardCount = 0;
+                SuccessfulCount = FailedCount = PendingWorkCardCount = WorkCardErrorCount = 0;
                 Categories.Clear();
                 RecentActivity.Clear();
                 OnPropertyChanged(nameof(HasCategories));
@@ -201,6 +205,7 @@ public partial class DashboardViewModel : ViewModelBase, IAdminSectionViewModel
             PendingWorkCardCount = 0;
             var localFailedCount = 0;
             var localReviewCount = 0;
+            WorkCardErrorCount = 0;
             try
             {
                 using var localCache = LocalCacheDbContextFactory.Create();
@@ -218,7 +223,8 @@ public partial class DashboardViewModel : ViewModelBase, IAdminSectionViewModel
             {
                 Serilog.Log.Warning(ex, "Dashboard could not read the local work-card queue.");
             }
-            ErrorCount = FailedCount + localFailedCount + localReviewCount;
+            WorkCardErrorCount = localFailedCount + localReviewCount;
+            ErrorCount = FailedCount + WorkCardErrorCount;
 
             var pendingSchedules = db.Schedules.Where(s =>
                 s.Employee != null && s.Employee.CompanyId == companyId.Value && !s.SubmittedToErgani);
