@@ -162,7 +162,7 @@
 
                     <!-- Options / Load -->
 
-                    <Grid ColumnDefinitions="Auto,Auto,*,Auto,Auto"
+                    <Grid ColumnDefinitions="Auto,Auto,*,Auto,Auto,Auto"
                           ColumnSpacing="10">
 
                         <CheckBox Grid.Column="0"
@@ -189,6 +189,12 @@
                                 Command="{Binding RetrySelectedCommand}"
                                 Classes="accent"
                                 VerticalAlignment="Center" />
+
+                        <Button Grid.Column="5"
+                                Content="Mark reviewed — do not submit"
+                                Command="{Binding MarkSelectedReviewedDoNotSubmitCommand}"
+                                VerticalAlignment="Center"
+                                ToolTip.Tip="Resolve selected manual-review records without sending them to Ergani. Protocol-bearing records are protected." />
 
                         <Button Grid.Column="1"
                                 Content="{Binding Loc[Load]}"
