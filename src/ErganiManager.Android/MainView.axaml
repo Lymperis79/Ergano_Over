@@ -19,7 +19,7 @@
     </Border>
 
     <Border Grid.Row="1" Background="#202B3A" Padding="14,8"
-            IsVisible="{Binding IsAuthenticated}">
+            IsVisible="{Binding IsOverviewNavigationVisible}">
       <Button Content="⌂  Overview" Command="{Binding GoToOverviewCommand}"
               HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
               MinHeight="42" IsVisible="{Binding IsOverviewNavigationVisible}" />
