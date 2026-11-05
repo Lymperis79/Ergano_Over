@@ -75,7 +75,12 @@
                             <TextBlock Text="⚠" FontSize="20" />
                             <TextBlock Text="{Binding Loc[Dashboard.Errors30Days]}" FontSize="12" Opacity="0.75" />
                             <TextBlock Text="{Binding ErrorCount}" FontSize="27" FontWeight="Bold" Foreground="#EF5350" />
-                            <TextBlock Text="Open and resolve →" FontSize="11" Foreground="{DynamicResource AccentLightBrush}" />
+                            <Button Content="{Binding FailedCount, StringFormat='API submission errors: {0} →'}"
+                                    Command="{Binding OpenErrorsCommand}" HorizontalAlignment="Stretch" Padding="6,4"
+                                    ToolTip.Tip="Open the API Submission Log to inspect and retry failed submissions." />
+                            <Button Content="{Binding WorkCardErrorCount, StringFormat='Attendance errors / reviews: {0} →'}"
+                                    Command="{Binding OpenAttendanceErrorsCommand}" HorizontalAlignment="Stretch" Padding="6,4"
+                                    ToolTip.Tip="Open attendance history filtered to failed scans and chronology reviews." />
                         </StackPanel>
                     </Button>
                 </Border>
