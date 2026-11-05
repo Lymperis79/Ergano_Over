@@ -197,7 +197,13 @@ public partial class DashboardViewModel : ViewModelBase, IAdminSectionViewModel
 
             SubmissionCount = await companyLogs.CountAsync(l => l.SubmissionDate >= monthStart && l.SubmissionDate < nextMonth);
             SuccessfulCount = await companyLogs.CountAsync(l => l.SubmissionDate >= monthStart && l.SubmissionDate < nextMonth && l.Success);
-            FailedCount = await companyLogs.CountAsync(l => l.SubmissionDate >= recentStart && !l.Success);
+            var failedApiLogs = companyLogs.Where(l => l.SubmissionDate >= recentStart && !l.Success);
+            // A failed attempt is no longer an outstanding dashboard error when a later
+            // successful retry exists for the same WorkCard. Keep the original log for audit.
+            FailedCount = await failedApiLogs.CountAsync(l =>
+                !l.WorkCardId.HasValue ||
+                !companyLogs.Any(success => success.WorkCardId == l.WorkCardId
+                    && success.Success && success.SubmissionDate > l.SubmissionDate));
 
             // Include the durable offline queue in the dashboard. Chronology-review records
             // are errors requiring an administrator decision, not ordinary pending work.
