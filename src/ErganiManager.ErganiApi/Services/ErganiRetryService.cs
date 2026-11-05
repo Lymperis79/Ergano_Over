@@ -723,6 +723,7 @@ public class ErganiRetryService
         const string reason = "Another attendance event for this employee has an Ergani protocol on the same workday. Check the Ergani portal and API response before deciding whether to retry or discard this unsubmitted record.";
 
         var changed = false;
+        var newlyPaused = new List<ChronologyReviewAlertItem>();
         foreach (var item in pending)
         {
             if (!protocolDays.Contains((item.EmployeeId, item.ScannedAt.Date))) continue;
@@ -730,6 +731,7 @@ public class ErganiRetryService
             item.ReviewReason = reason;
             item.ProcessingUntilUtc = null;
             changed = true;
+            newlyPaused.Add(new ChronologyReviewAlertItem(companyId, item.EmployeeId, item.ScannedAt, item.MovementType));
             _logger.LogWarning("Pending work card {Id} paused for manual chronology review (employee {EmployeeId}, {Date}).",
                 item.Id, item.EmployeeId, item.ScannedAt.Date);
         }
@@ -740,12 +742,23 @@ public class ErganiRetryService
             item.ReviewRequired = true;
             item.ReviewReason = reason;
             changed = true;
+            newlyPaused.Add(new ChronologyReviewAlertItem(companyId, item.EmployeeId, item.OriginalScannedAt, item.MovementType));
             _logger.LogWarning("Failed work card {Id} paused for manual chronology review (employee {EmployeeId}, {Date}).",
                 item.Id, item.EmployeeId, item.OriginalScannedAt.Date);
         }
 
         if (changed || protocolPending.Count > 0 || protocolFailed.Count > 0)
             await cache.SaveChangesAsync(ct);
+
+        // Only newly paused records generate an alert. Subsequent retry cycles leave the
+        // review state untouched and therefore cannot spam the administrator.
+        if (newlyPaused.Count > 0)
+        {
+            await ChronologyReviewAlert.SendAsync(
+                _emailAlerts, cache,
+                new Dictionary<int, string> { [companyId] = company.Name },
+                newlyPaused);
+        }
     }
 
     private async Task FlushPendingSubmissionsAsync(
