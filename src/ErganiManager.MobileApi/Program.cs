@@ -674,7 +674,7 @@ app.MapPost("/api/mobile/workcards/scan", async Task<IResult> (
         employee.FullName, movement, now, "Queued",
         "Ergani could not be reached or the submission failed temporarily. The scan is saved and will be retried by the Windows retry service. " +
         (string.IsNullOrWhiteSpace(error) ? string.Empty : error),
-        null, employee.Id));
+        null, employee.Id, queued.Id));
 }).RequireAuthorization();
 
 app.MapGet("/api/mobile/notifications", async Task<IResult> (
