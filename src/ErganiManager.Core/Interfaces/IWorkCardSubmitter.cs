@@ -17,6 +17,7 @@ public class WorkCardSubmissionOutcome
     public string? Protocol { get; set; }
     public string? SubmissionId { get; set; }
     public string? ErrorMessage { get; set; }
+    public string? ResponseRawJson { get; set; }
 
     /// <summary>
     /// True when Ergani itself rejected the card (a business/validation error).
