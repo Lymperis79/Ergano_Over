@@ -56,6 +56,8 @@ public class ErganiRetryService
     private bool _started;
 
     private static readonly TimeSpan HealthCheckInterval = TimeSpan.FromMinutes(1);
+    private static readonly Semaphore CrossProcessWorkerGate =
+        new(1, 1, "ErganiManager.ErganiRetryService.PendingQueue");
 
     // Lets the scan screens wake the loop immediately after queuing a scan, instead of
     // waiting for the next interval.
@@ -130,6 +132,17 @@ public class ErganiRetryService
     }
 
     private async Task ProcessAllCompaniesAsync(CancellationToken ct)
+    {
+        if (!CrossProcessWorkerGate.WaitOne(0))
+        {
+            _logger.LogDebug("Another Ergani retry worker owns the shared queue; this cycle is skipped.");
+            return;
+        }
+        try { await ProcessAllCompaniesCoreAsync(ct); }
+        finally { CrossProcessWorkerGate.Release(); }
+    }
+
+    private async Task ProcessAllCompaniesCoreAsync(CancellationToken ct)
     {
         // Refresh the cached connection state here, off the UI thread, so the scan screens can
         // read it instantly instead of probing the database during a scan.
@@ -532,7 +545,8 @@ public class ErganiRetryService
         Company company, LocalCache.LocalCacheDbContext cache, CancellationToken ct)
     {
         var pending = await cache.PendingSubmissions
-            .Where(p => p.CompanyId == company.Id && !p.Synced)
+            .Where(p => p.CompanyId == company.Id && !p.Synced &&
+                        (p.ProcessingUntilUtc == null || p.ProcessingUntilUtc <= DateTime.UtcNow))
             .OrderBy(p => p.ScannedAt)
             .ToListAsync(ct);
 
@@ -546,10 +560,14 @@ public class ErganiRetryService
 
             try
             {
-                // The age of the scan decides f_aitiologia inside the submitter
-                // (empty within 10 minutes, a justification code after that).
+                // Claim before the external call; a five-minute lease recovers after crashes.
+                item.ProcessingUntilUtc = DateTime.UtcNow.AddMinutes(5);
+                item.SyncAttempts++;
+                await cache.SaveChangesAsync(ct);
                 Notify(item.Id, QueuedScanStatus.Retrying, null, item.LastSyncError, item.SyncAttempts);
 
+                // The age of the scan decides f_aitiologia inside the submitter
+                // (empty within 10 minutes, a justification code after that).
                 var outcome = await _workCardSubmitter.SubmitAsync(new WorkCardSubmissionRequest
                 {
                     EmployeeId = item.EmployeeId, CompanyId = item.CompanyId,
@@ -557,7 +575,7 @@ public class ErganiRetryService
                     MovementDateTime = item.ScannedAt          // always the time of the scan
                 }, ReasonFor(item));
 
-                item.SyncAttempts++;
+                item.ProcessingUntilUtc = null;
 
                 if (outcome.Success)
                 {
@@ -594,7 +612,7 @@ public class ErganiRetryService
             catch (OperationCanceledException) { throw; }
             catch (Exception ex)
             {
-                item.SyncAttempts++;
+                item.ProcessingUntilUtc = null;
                 item.LastSyncError = ex.Message;
                 await cache.SaveChangesAsync(ct);
                 _logger.LogError(ex, "Exception sending queued scan {Id}; will retry.", item.Id);
