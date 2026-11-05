@@ -156,6 +156,7 @@ public partial class WorkCardHistoryViewModel : ViewModelBase, IAdminSectionView
     /// </summary>
     public async Task LoadOnFormSelectedAsync()
     {
+        ShowOnlyAttention = false;
         if (!HasActiveCompany)
             return;
 
@@ -239,7 +240,7 @@ public partial class WorkCardHistoryViewModel : ViewModelBase, IAdminSectionView
     {
         await _filtersLoadTask;
         var date = workDate ?? DateOnly.FromDateTime(DateTime.Today);
-        FilterFromDate = new DateTimeOffset((workDate.HasValue ? date.AddDays(-1) : date.AddDays(-30)).ToDateTime(TimeOnly.MinValue));
+        FilterFromDate = new DateTimeOffset((workDate.HasValue ? date : date.AddDays(-30)).ToDateTime(TimeOnly.MinValue));
         FilterToDate = new DateTimeOffset(date.ToDateTime(TimeOnly.MaxValue));
         FilterEmployee = employeeId.HasValue
             ? AvailableEmployees.FirstOrDefault(e => e.Id == employeeId.Value) ?? AvailableEmployees.FirstOrDefault()
