@@ -612,4 +612,5 @@ public sealed class MobileWorkCardScanResult
     public string Status { get; set; } = string.Empty;
     public string Message { get; set; } = string.Empty;
     public string? Protocol { get; set; }
+    public int? PendingId { get; set; }
 }
