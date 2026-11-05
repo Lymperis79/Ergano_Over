@@ -577,7 +577,14 @@ public class ErganiRetryService
 
                 item.ProcessingUntilUtc = null;
 
-                if (outcome.Success)
+                if (!string.IsNullOrWhiteSpace(outcome.Protocol))
+                    item.ErganiProtocol = outcome.Protocol;
+                if (!string.IsNullOrWhiteSpace(outcome.SubmissionId))
+                    item.ErganiSubmissionId = outcome.SubmissionId;
+                if (!string.IsNullOrWhiteSpace(outcome.ResponseRawJson))
+                    item.ErganiResponseRawJson = outcome.ResponseRawJson;
+
+                if (outcome.Success || !string.IsNullOrWhiteSpace(outcome.Protocol))
                 {
                     item.Synced = true;
                     item.SyncedAt = DateTime.UtcNow;
