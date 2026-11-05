@@ -24,6 +24,8 @@ public partial class TodayBoardViewModel : ViewModelBase, IAdminSectionViewModel
     private DispatcherTimer? _timer;
     private bool _refreshing;
 
+    public event Action<int, DateOnly>? WorkCardsRequested;
+
     public ObservableCollection<TodayRowViewModel> Rows { get; } = new();
     private List<TodayRowViewModel> _allRows = new();
     private DateTime? _lastUpdated;
@@ -107,6 +109,14 @@ public partial class TodayBoardViewModel : ViewModelBase, IAdminSectionViewModel
 
     [RelayCommand]
     private void GoToday() => SelectedDate = new DateTimeOffset(DateTime.Today);
+
+    [RelayCommand]
+    private void OpenSelectedWorkCards()
+    {
+        if (SelectedRow == null) return;
+        var date = DateOnly.FromDateTime((SelectedDate ?? DateTimeOffset.Now).DateTime);
+        WorkCardsRequested?.Invoke(SelectedRow.EmployeeId, date);
+    }
 
     private void ApplyFilter()
     {
