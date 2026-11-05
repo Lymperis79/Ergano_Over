@@ -195,6 +195,7 @@ public partial class DashboardViewModel : ViewModelBase, IAdminSectionViewModel
             // Include the durable offline queue in the dashboard. Chronology-review records
             // are errors requiring an administrator decision, not ordinary pending work.
             var localPendingCount = 0;
+            PendingWorkCardCount = 0;
             var localFailedCount = 0;
             var localReviewCount = 0;
             try
