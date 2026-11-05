@@ -243,7 +243,7 @@
                                 CornerRadius="6"
                                 Padding="14,10">
 
-                            <Grid MinWidth="1320" HorizontalAlignment="Stretch" ColumnDefinitions="Auto,Auto,*,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto">
+                            <Grid MinWidth="1400" HorizontalAlignment="Stretch" ColumnDefinitions="Auto,Auto,*,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto">
 
                                 <!-- Retry selection -->
 
@@ -330,15 +330,22 @@
                                            Margin="6,0"
                                            IsVisible="{Binding LateJustification, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
 
-                                <!-- Direct action for chronology-review records; no checkbox + toolbar hunt required. -->
-                                <Button Grid.Column="10"
-                                        Content="Submit / Retry"
-                                        Command="{Binding $parent[UserControl].((vm:WorkCardHistoryViewModel)DataContext).RetryReviewedRecordCommand}"
-                                        CommandParameter="{Binding}"
-                                        IsVisible="{Binding ReviewRequired}"
-                                        Classes="accent"
-                                        Margin="0,0,8,0"
-                                        ToolTip.Tip="Administrator-approved retry. A successful Ergani acknowledgement resolves the review warning." />
+                                <!-- Both administrator decisions are available directly on the affected row. -->
+                                <StackPanel Grid.Column="11" Spacing="4" VerticalAlignment="Center">
+                                    <Button Content="Submit / Retry"
+                                            Command="{Binding $parent[UserControl].((vm:WorkCardHistoryViewModel)DataContext).RetryReviewedRecordCommand}"
+                                            CommandParameter="{Binding}"
+                                            IsVisible="{Binding ReviewRequired}"
+                                            Classes="accent"
+                                            Padding="8,4"
+                                            ToolTip.Tip="Retry this scan. A successful Ergani acknowledgement resolves the warning." />
+                                    <Button Content="Do not submit"
+                                            Command="{Binding $parent[UserControl].((vm:WorkCardHistoryViewModel)DataContext).MarkReviewedDoNotSubmitRecordCommand}"
+                                            CommandParameter="{Binding}"
+                                            IsVisible="{Binding ReviewRequired}"
+                                            Padding="8,4"
+                                            ToolTip.Tip="Resolve this review without sending the scan; keep it in the audit history." />
+                                </StackPanel>
 
                                 <!-- Automatic submission indicator -->
                                 <Border Grid.Column="10"
