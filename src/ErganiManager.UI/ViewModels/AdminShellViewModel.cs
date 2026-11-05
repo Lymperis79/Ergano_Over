@@ -913,6 +913,10 @@ public partial class AdminShellViewModel : ViewModelBase
             if (CurrentSectionViewModel is WorkCardHistoryViewModel workCards)
                 _ = workCards.OpenForAttentionAsync();
         }
+        else if (destination == "PendingOvertime")
+        {
+            NavigateTo("Overtime");
+        }
     }
 
     private void HandleTodayWorkCardsRequested(int employeeId, DateOnly workDate)
