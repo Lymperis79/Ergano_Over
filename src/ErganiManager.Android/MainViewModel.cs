@@ -314,9 +314,6 @@ public partial class MainViewModel : ObservableObject
     {
         _notificationPollingCts?.Cancel();
         _notificationPollingCts?.Dispose();
-        _outboxSyncCts?.Cancel();
-        _outboxSyncCts?.Dispose();
-        _outboxSyncCts = null;
         _notificationPollingCts = new CancellationTokenSource();
         _lastNotificationId = 0;
         _ = PollNotificationsAsync(_notificationPollingCts.Token);
@@ -408,6 +405,9 @@ public partial class MainViewModel : ObservableObject
     {
         _notificationPollingCts?.Cancel();
         _notificationPollingCts?.Dispose();
+        _outboxSyncCts?.Cancel();
+        _outboxSyncCts?.Dispose();
+        _outboxSyncCts = null;
         _notificationPollingCts = null;
         HasNotificationPopup = false;
         if (_api is not null) { try { await _api.LogoutAsync(); } catch { } _api.Dispose(); _api = null; }
