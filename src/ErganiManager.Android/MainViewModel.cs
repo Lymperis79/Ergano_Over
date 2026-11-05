@@ -142,6 +142,8 @@ public partial class MainViewModel : ObservableObject
     [ObservableProperty] private string _username = string.Empty;
     [ObservableProperty] private string _password = string.Empty;
     [ObservableProperty] private string _connectionMessage = "Connect to the HTTPS mobile API hosted beside your Ergani II installation.";
+    [ObservableProperty] private bool _isApiUnavailable;
+    [ObservableProperty] private string _apiUnavailableMessage = string.Empty;
     [ObservableProperty] private string _statusMessage = "Use your existing Ergani II account. No separate mobile user database is created.";
     [ObservableProperty] private bool _isBusy;
     [ObservableProperty] private bool _isAuthenticated;
@@ -265,7 +267,9 @@ public partial class MainViewModel : ObservableObject
         }
         catch (Exception ex)
         {
-            ConnectionMessage = "API HEALTH FAILED — " + GetFullError(ex);
+            IsApiUnavailable = true;
+            ApiUnavailableMessage = "The Ergani API is not reachable. Check that the API service is running and that this device can reach the server.\n\n" + GetFullError(ex);
+            ConnectionMessage = "API unavailable. The app is still open; you can retry when the server is running.";
         }
         finally { IsBusy = false; }
     }
@@ -282,6 +286,8 @@ public partial class MainViewModel : ObservableObject
 
             ConnectionMessage = "Checking HTTPS connection to the Mobile API...";
             await _api.CheckHealthAsync();
+            IsApiUnavailable = false;
+            ApiUnavailableMessage = string.Empty;
 
             ConnectionMessage = "API reachable. Signing in...";
             var session = await _api.LoginAsync(Username, Password);
@@ -326,8 +332,24 @@ public partial class MainViewModel : ObservableObject
         catch (Exception ex)
         {
             IsAuthenticated = false;
-            ConnectionMessage = GetFullError(ex);
-            StatusMessage = "Connection diagnostics are shown above. If the API health check succeeds, verify the login response and credentials.";
+            var detail = GetFullError(ex);
+            if (ex is HttpRequestException or System.Net.Sockets.SocketException or TaskCanceledException)
+            {
+                IsApiUnavailable = true;
+                ApiUnavailableMessage = "Cannot connect to the Ergani API. The mobile app will remain open.\n\n" +
+                    "1. Check that the Ergani Mobile API is running on the server PC.\n" +
+                    "2. Check that the phone and PC are connected to the same network.\n" +
+                    "3. Verify the HTTPS address and port.\n\n" + detail;
+                ConnectionMessage = "API unavailable — start the API service and tap Retry connection.";
+                StatusMessage = "Your login screen is ready. No attendance data has been lost.";
+            }
+            else
+            {
+                IsApiUnavailable = false;
+                ApiUnavailableMessage = string.Empty;
+                ConnectionMessage = detail;
+                StatusMessage = "The API responded, but sign-in could not be completed. Check the credentials and server response.";
+            }
             _api?.Dispose(); _api = null;
         }
         finally { IsBusy = false; }
