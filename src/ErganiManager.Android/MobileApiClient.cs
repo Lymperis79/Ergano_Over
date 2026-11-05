@@ -255,10 +255,12 @@ public sealed class MobileApiClient : IDisposable
             cancellationToken: cancellationToken) ?? [];
     }
 
-    public async Task<MobileWorkCardScanResult> ScanWorkCardAsync(string scanValue, CancellationToken cancellationToken = default)
+    public async Task<MobileWorkCardScanResult> ScanWorkCardAsync(
+        string scanValue, string eventId, DateTime capturedAt,
+        CancellationToken cancellationToken = default)
     {
         using var response = await _http.PostAsJsonAsync("api/mobile/workcards/scan",
-            new { scanValue }, cancellationToken);
+            new { scanValue, eventId, scannedAt = capturedAt }, cancellationToken);
         if (!response.IsSuccessStatusCode)
         {
             var body = await response.Content.ReadAsStringAsync(cancellationToken);
