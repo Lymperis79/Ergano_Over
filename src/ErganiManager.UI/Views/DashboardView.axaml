@@ -84,10 +84,14 @@
                         <TextBlock Text="⏳" FontSize="20" />
                         <TextBlock Text="{Binding Loc[Dashboard.PendingItems]}" FontSize="12" Opacity="0.75" />
                         <TextBlock Text="{Binding PendingCount}" FontSize="27" FontWeight="Bold" />
-                        <Button Content="Schedules / overtime / leave →"
+                        <Button Content="Schedules / leave →"
                                 Command="{Binding OpenPendingItemsCommand}"
                                 HorizontalAlignment="Stretch" Padding="6,4"
                                 ToolTip.Tip="Open the schedules area; use the Schedules and Overtime sections to review unsubmitted items." />
+                        <Button Content="Pending overtime →"
+                                Command="{Binding OpenPendingOvertimeCommand}"
+                                HorizontalAlignment="Stretch" Padding="6,4"
+                                ToolTip.Tip="Open the overtime page to review and submit pending overtime." />
                         <Button Content="{Binding PendingWorkCardCount, StringFormat='Offline work cards pending: {0} →'}"
                                 Command="{Binding OpenPendingWorkCardsCommand}"
                                 HorizontalAlignment="Stretch" Padding="6,4"
