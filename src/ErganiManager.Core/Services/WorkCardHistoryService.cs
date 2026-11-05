@@ -75,13 +75,15 @@ public class WorkCardHistoryService : IWorkCardHistoryService
         using var cache = ErganiManager.LocalCache.LocalCacheDbContextFactory.Create();
 
         var pending = await cache.PendingSubmissions
-            .Where(p => p.CompanyId == companyId && !p.Synced
+            .Where(p => p.CompanyId == companyId
+                        && (!p.Synced || (p.ErganiProtocol != null && p.ErganiProtocol != ""))
                         && p.ScannedAt >= fromDt && p.ScannedAt <= toDt)
             .OrderByDescending(p => p.ScannedAt)
             .ToListAsync();
 
         var failed = await cache.FailedSubmissions
-            .Where(f => f.CompanyId == companyId && !f.Resolved
+            .Where(f => f.CompanyId == companyId
+                        && (!f.Resolved || (f.ResolvedProtocol != null && f.ResolvedProtocol != ""))
                         && f.OriginalScannedAt >= fromDt && f.OriginalScannedAt <= toDt)
             .OrderByDescending(f => f.OriginalScannedAt)
             .ToListAsync();
@@ -154,7 +156,7 @@ public class WorkCardHistoryService : IWorkCardHistoryService
                     SubmissionDate = DateOnly.FromDateTime(p.ScannedAt.Date),
                     CreatedAt = p.ScannedAt,
                     LocalPendingId = p.Id,
-                    IsLocalPending = true,
+                    IsLocalPending = string.IsNullOrWhiteSpace(p.ErganiProtocol) && !p.Synced,
                     RetryAttempts = p.SyncAttempts,
                     RetryError = p.LastSyncError,
                     ReviewRequired = p.ReviewRequired,
@@ -188,7 +190,7 @@ public class WorkCardHistoryService : IWorkCardHistoryService
                     SubmissionDate = DateOnly.FromDateTime(f.OriginalScannedAt.Date),
                     CreatedAt = f.CreatedAt,
                     LocalFailedId = f.Id,
-                    IsLocalFailed = true,
+                    IsLocalFailed = string.IsNullOrWhiteSpace(f.ResolvedProtocol) && !f.Resolved,
                     RetryAttempts = f.RetryCount,
                     RetryError = f.LastRetryError ?? f.ErrorDescription,
                     ReviewRequired = f.ReviewRequired,
