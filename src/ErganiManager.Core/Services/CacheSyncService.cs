@@ -11,15 +11,18 @@ public class CacheSyncService : ICacheSyncService
 {
     private readonly IConnectionStateService _connectionState;
     private readonly IWorkCardSubmitter _workCardSubmitter;
+    private readonly IEmailAlertService _emailAlerts;
     private readonly ILogger<CacheSyncService> _logger;
 
     public CacheSyncService(
         IConnectionStateService connectionState,
         IWorkCardSubmitter workCardSubmitter,
+        IEmailAlertService emailAlerts,
         ILogger<CacheSyncService> logger)
     {
         _connectionState = connectionState;
         _workCardSubmitter = workCardSubmitter;
+        _emailAlerts = emailAlerts;
         _logger = logger;
     }
 
@@ -185,16 +188,32 @@ public class CacheSyncService : ICacheSyncService
                 .Concat(localAcknowledged.Select(w => (w.EmployeeId, Day: w.ScannedAt.Date)))
                 .Concat(legacyAcknowledged.Select(w => (w.EmployeeId, Day: w.ScannedAt.Date)))
                 .ToHashSet();
+            var newlyPaused = new List<ChronologyReviewAlertItem>();
             foreach (var item in unresolvedPending)
             {
                 if (protocolDays.Contains((item.EmployeeId, item.ScannedAt.Date)))
                 {
+                    if (!item.ReviewRequired)
+                        newlyPaused.Add(new ChronologyReviewAlertItem(
+                            item.CompanyId, item.EmployeeId, item.ScannedAt, item.MovementType));
                     item.ReviewRequired = true;
                     item.ReviewReason = "Another attendance event for this employee has an Ergani protocol on the same workday. Check the Ergani portal and API response before deciding whether to retry or discard this unsubmitted record.";
+                    item.ProcessingUntilUtc = null;
                 }
             }
             if (protocolDays.Count > 0)
                 await cache.SaveChangesAsync();
+
+            // This flush path can be the first one to detect the conflict (including Android
+            // outbox scans), so it must raise the same admin alert as the retry worker.
+            if (newlyPaused.Count > 0)
+            {
+                var companyIds = newlyPaused.Select(x => x.CompanyId).Distinct().ToList();
+                var companyNames = await db.Companies.AsNoTracking()
+                    .Where(x => companyIds.Contains(x.Id))
+                    .ToDictionaryAsync(x => x.Id, x => x.Name);
+                await ChronologyReviewAlert.SendAsync(_emailAlerts, cache, companyNames, newlyPaused);
+            }
         }
 
         var result = new SyncResult { Success = true };
