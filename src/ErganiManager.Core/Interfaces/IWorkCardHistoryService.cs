@@ -28,6 +28,8 @@ public class WorkCardHistoryDto : INotifyPropertyChanged
     private bool _isSelected;
     private int _retryAttempts;
     private string? _retryError;
+    public bool ReviewRequired { get; set; }
+    public string? ReviewReason { get; set; }
 
     public bool IsAutomatic { get; set; }
 
@@ -87,6 +89,7 @@ public class WorkCardHistoryDto : INotifyPropertyChanged
     public bool CanRetry => IsLocalPending || IsLocalFailed || (!SubmittedToErgani && Id > 0);
 
     public string StatusText =>
+        ReviewRequired ? "⚠️ Manual review required — automatic retry paused" :
         IsLocalPending ? (RetryAttempts > 0
             ? $"⏳ Retrying — attempt {RetryAttempts}" + (string.IsNullOrWhiteSpace(RetryError) ? string.Empty : $" ({RetryError})")
             : "⏳ Waiting to send") :
