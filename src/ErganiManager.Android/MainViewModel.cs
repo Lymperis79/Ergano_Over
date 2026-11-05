@@ -570,16 +570,37 @@ public partial class MainViewModel : ObservableObject
             if (IsTerminalVisible) MainActivity.Current?.StartBarcodeCapture();
             return;
         }
+        OfflineWorkCardEvent? queuedEvent = null;
+        await _outboxSyncGate.WaitAsync();
         try
         {
-            var result = await _api.ScanWorkCardAsync(scan);
+            var recent = await _workCardOutbox.GetPendingAsync();
+            if (recent.Any(x => x.CompanyId == _sessionCompanyId &&
+                string.Equals(x.ScanValue, scan, StringComparison.Ordinal) &&
+                DateTime.Now - x.CapturedAt < TimeSpan.FromSeconds(20)))
+            {
+                TerminalMessage = "Duplicate offline scan ignored. Please wait before scanning the same code again.";
+                WorkCardScanInput = string.Empty;
+                return;
+            }
+
+            queuedEvent = await _workCardOutbox.EnqueueAsync(scan, _sessionCompanyId, DateTime.Now);
+            var result = await _api.ScanWorkCardAsync(scan, queuedEvent.EventId, queuedEvent.CapturedAt);
+            await _workCardOutbox.MarkAcknowledgedAsync(queuedEvent.EventId);
             _lastTerminalScan = scan; _lastTerminalScanAt = DateTime.UtcNow;
-            TerminalMessage = $"{result.Status}: {result.Movement} · {result.EmployeeName} · {result.ScannedAt:HH:mm:ss}\n{result.Message}";
+            TerminalMessage = $"{result.Status}: {result.Movement} · {result.EmployeeName} · {result.ScannedAt:HH:mm:ss}\\n{result.Message}";
             WorkCardScanInput = string.Empty;
         }
-        catch (Exception ex) { TerminalMessage = GetFullError(ex); }
+        catch (Exception ex)
+        {
+            TerminalMessage = queuedEvent is null
+                ? GetFullError(ex)
+                : "Saved on this device — waiting for server synchronization. " + GetFullError(ex);
+            if (queuedEvent is not null) WorkCardScanInput = string.Empty;
+        }
         finally
         {
+            _outboxSyncGate.Release();
             IsTerminalScanBusy = false;
             if (IsTerminalVisible)
             {
