@@ -54,6 +54,11 @@ public partial class MainViewModel : ObservableObject
         }
         IsWorkCardScanBusy = true;
         var scanValue = WorkCardScanInput.Trim();
+        if (TryGetExplicitQrAfm(scanValue, out var qrAfm) && !IsValidGreekAfm(qrAfm))
+        {
+            WorkCardScanMessage = "Invalid AFM in QR code. The AFM checksum is incorrect; verify the employee's QR code before scanning again.";
+            return;
+        }
         OfflineWorkCardEvent? queuedEvent = null;
         var serverAcknowledged = false;
         await _outboxSyncGate.WaitAsync();
@@ -626,15 +631,45 @@ public partial class MainViewModel : ObservableObject
         try
         {
             var pending = await _workCardOutbox.GetPendingAsync();
-            var count = pending.Count(x => x.CompanyId == _sessionCompanyId);
-            TerminalMessage = count > 0
-                ? $"{count} scan(s) saved on this device — waiting for server synchronization. The app will retry automatically."
+            var companyItems = pending.Where(x => x.CompanyId == _sessionCompanyId).ToList();
+            var count = companyItems.Count(x => !x.IsRejected);
+            var rejected = companyItems.Count(x => x.IsRejected);
+            TerminalMessage = count > 0 || rejected > 0
+                ? $"{count} scan(s) waiting for synchronization · {rejected} rejected scan(s) need attention. The app will retry valid pending scans automatically."
                 : _lastOutboxSyncMessage ?? "Ready. Scan an employee QR code or enter the employee number.";
         }
         catch (Exception ex)
         {
             TerminalMessage = "Could not read the device's offline scan queue: " + GetFullError(ex);
         }
+    }
+
+    private static bool TryGetExplicitQrAfm(string scanValue, out string afm)
+    {
+        afm = string.Empty;
+        if (string.IsNullOrWhiteSpace(scanValue) || !scanValue.Contains(':')) return false;
+        foreach (var part in scanValue.Split(';', StringSplitOptions.RemoveEmptyEntries))
+        {
+            var separator = part.IndexOf(':');
+            if (separator <= 0 ||
+                !part[..separator].Trim().Equals("afm", StringComparison.OrdinalIgnoreCase))
+                continue;
+            afm = new string(part[(separator + 1)..].Where(char.IsDigit).ToArray());
+            return true;
+        }
+        return false;
+    }
+
+    // Greek AFM checksum: the first eight digits are weighted 2^8 ... 2^1;
+    // the final digit is (weighted sum mod 11) mod 10.
+    private static bool IsValidGreekAfm(string afm)
+    {
+        if (afm.Length != 9 || afm.Any(c => !char.IsDigit(c)) || afm.All(c => c == '0'))
+            return false;
+        var sum = 0;
+        for (var i = 0; i < 8; i++)
+            sum += (afm[i] - '0') * (1 << (8 - i));
+        return sum % 11 % 10 == afm[8] - '0';
     }
 
     private static string? ExtractOfflineScanAfm(string scanValue)
@@ -739,6 +774,11 @@ public partial class MainViewModel : ObservableObject
         if (IsTerminalScanBusy || _api is null || !IsTerminalVisible) return;
         var scan = WorkCardScanInput.Trim();
         if (string.IsNullOrWhiteSpace(scan)) { TerminalMessage = "Scan a QR code or enter an employee number."; return; }
+        if (TryGetExplicitQrAfm(scan, out var qrAfm) && !IsValidGreekAfm(qrAfm))
+        {
+            TerminalMessage = "Invalid AFM in QR code. The AFM checksum is incorrect; verify the employee's QR code.";
+            return;
+        }
         IsTerminalScanBusy = true;
         if (string.Equals(scan, _lastTerminalScan, StringComparison.Ordinal) && DateTime.UtcNow - _lastTerminalScanAt < TimeSpan.FromSeconds(20))
         {
