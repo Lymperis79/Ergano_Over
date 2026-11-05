@@ -125,6 +125,7 @@ public partial class MainViewModel : ObservableObject
     private int? _sessionCompanyId;
     private string? _lastTerminalScan;
     private DateTime _lastTerminalScanAt = DateTime.MinValue;
+    private string? _lastOutboxSyncMessage;
     [ObservableProperty] private string _pageTitle = "Sign in";
     [ObservableProperty] private string _serverAddress = "https://thinkpad-p16s.local:5001";
     [ObservableProperty] private string _username = string.Empty;
@@ -536,6 +537,7 @@ public partial class MainViewModel : ObservableObject
                 : "Offline scan(s) successfully synchronized with the server.";
             var message = $"{synchronized} offline scan(s) synchronized. {detail}";
             WorkCardScanMessage = message;
+            _lastOutboxSyncMessage = message;
             if (IsTerminalVisible) TerminalMessage = message;
 
             // Replace local-only placeholders with the server's authoritative rows.
@@ -578,8 +580,9 @@ public partial class MainViewModel : ObservableObject
             });
         }
 
-        if (pending.Any(x => x.CompanyId == _sessionCompanyId))
-            WorkCardsMessage = $"{WorkCardHistory.Count(x => x.IsDevicePending)} scan(s) saved on this device and waiting for synchronization.";
+        var visiblePendingCount = WorkCardHistory.Count(x => x.IsDevicePending);
+        if (visiblePendingCount > 0)
+            WorkCardsMessage = $"{visiblePendingCount} scan(s) saved on this device and waiting for synchronization.";
     }
 
     private async Task LoadCompanyDataAsync()
@@ -598,7 +601,7 @@ public partial class MainViewModel : ObservableObject
         if (!IsAuthenticated || !CanOpenTerminal || IsCompanySelectionRequired) return;
         IsDailyStatusVisible = false; IsEmployeesVisible = false; IsWorkCardsVisible = false;
         IsWorkCalendarVisible = false; IsTerminalVisible = true; PageTitle = "Terminal";
-        TerminalMessage = "Ready. Scan an employee QR code or enter the employee number.";
+        TerminalMessage = _lastOutboxSyncMessage ?? "Ready. Scan an employee QR code or enter the employee number.";
     }
 
     [RelayCommand]
