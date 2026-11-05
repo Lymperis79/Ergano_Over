@@ -895,7 +895,11 @@ public partial class AdminShellViewModel : ViewModelBase
 
     private void HandleDashboardNavigationRequested(string destination)
     {
-        if (destination == "Errors")
+        if (destination == "SubmissionErrors")
+        {
+            NavigateTo("SubmissionLog");
+        }
+        else if (destination == "AttendanceErrors")
         {
             _skipNextWorkCardAutoLoad = true;
             NavigateTo("WorkCards");
