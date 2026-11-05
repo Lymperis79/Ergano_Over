@@ -151,7 +151,8 @@ app.MapPost("/api/mobile/login", async Task<IResult> (LoginRequest request, IAut
     var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
     await http.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, new ClaimsPrincipal(identity));
     return Results.Ok(new MobileSessionResponse(session.Username, session.Role.ToString(),
-        session.CompanyId, session.CompanyName, session.BranchId, session.BranchName));
+        session.CompanyId, session.CompanyName, session.BranchId, session.BranchName,
+        session.AllowedMenus?.ToArray()));
 }).AllowAnonymous();
 
 app.MapPost("/api/mobile/logout", async (HttpContext http, IAuthService auth) =>
@@ -165,7 +166,8 @@ app.MapGet("/api/mobile/me", (ICompanyContext companyContext) =>
 {
     var session = companyContext.CurrentSession!;
     return Results.Ok(new MobileSessionResponse(session.Username, session.Role.ToString(),
-        session.CompanyId, session.CompanyName, session.BranchId, session.BranchName));
+        session.CompanyId, session.CompanyName, session.BranchId, session.BranchName,
+        session.AllowedMenus?.ToArray()));
 }).RequireAuthorization();
 
 app.MapGet("/api/mobile/companies", async Task<IResult> (ICompanyContext context, ICompanyService companies) =>
@@ -318,7 +320,7 @@ app.MapGet("/api/mobile/workcards/history", async Task<IResult> (
     int? employeeId) =>
 {
     var session = context.CurrentSession!;
-    if (!session.CanSee(MenuKeys.WorkCards)) return Results.Forbid();
+    if (!session.CanSee(MenuKeys.WorkCards) && !session.CanSee(MenuKeys.Terminal)) return Results.Forbid();
 
     var companyId = context.ActiveCompanyId;
     if (!companyId.HasValue)
@@ -582,7 +584,7 @@ static string SignLicenseClock(string value)
 public sealed record LoginRequest(string Username, string Password);
 public sealed record SelectMobileCompanyRequest(int CompanyId);
 public sealed record MobileSessionResponse(string Username, string Role, int? CompanyId,
-    string? CompanyName, int? BranchId, string? BranchName);
+    string? CompanyName, int? BranchId, string? BranchName, string[]? AllowedMenus);
 public sealed record MobileCompanyResponse(int Id, string Name, string TaxId);
 public sealed record MobileEmployeeResponse(int Id, int BranchId, string FirstName, string LastName, string? FatherName, string TaxId, bool IsActive);
 
