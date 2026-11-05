@@ -148,7 +148,6 @@ public class CacheSyncService : ICacheSyncService
             var maxReviewDate = pending.Max(p => p.ScannedAt.Date).AddDays(1);
             var acknowledged = await db.WorkCards
                 .Where(w => employeeIdsForReview.Contains(w.EmployeeId)
-                            && w.Employee != null && w.Employee.CompanyId == pending[0].CompanyId
                             && w.Protocol != null && w.Protocol != ""
                             && w.MovementDateTime >= minReviewDate && w.MovementDateTime < maxReviewDate)
                 .Select(w => new { w.EmployeeId, w.MovementDateTime })
