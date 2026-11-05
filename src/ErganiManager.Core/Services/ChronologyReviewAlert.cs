@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 using ErganiManager.Core.Interfaces;
@@ -24,18 +25,20 @@ public static class ChronologyReviewAlert
         IReadOnlyDictionary<int, string> companyNames,
         IEnumerable<ChronologyReviewAlertItem> items)
     {
-        var grouped = items
-            .GroupBy(x => new { x.CompanyId, x.EmployeeId, Day = x.ScannedAt.Date })
-            .ToList();
-        if (grouped.Count == 0) return;
-
-        var employeeIds = grouped.Select(x => x.Key.EmployeeId).Distinct().ToList();
-        var employees = await cache.CachedEmployees.AsNoTracking()
-            .Where(x => employeeIds.Contains(x.Id))
-            .ToDictionaryAsync(x => x.Id);
-
-        foreach (var group in grouped)
+        try
         {
+            var grouped = items
+                .GroupBy(x => new { x.CompanyId, x.EmployeeId, Day = x.ScannedAt.Date })
+                .ToList();
+            if (grouped.Count == 0) return;
+
+            var employeeIds = grouped.Select(x => x.Key.EmployeeId).Distinct().ToList();
+            var employees = await cache.CachedEmployees.AsNoTracking()
+                .Where(x => employeeIds.Contains(x.Id))
+                .ToDictionaryAsync(x => x.Id);
+
+            foreach (var group in grouped)
+            {
             var employee = employees.GetValueOrDefault(group.Key.EmployeeId);
             var employeeName = employee?.FullName ?? $"#{group.Key.EmployeeId}";
             var employeeIdentity = employee == null || string.IsNullOrWhiteSpace(employee.TaxId)
@@ -63,7 +66,13 @@ public static class ChronologyReviewAlert
             .Add("Action required", ErganiManager.Data.UiText.T(
                 "Check the Ergani portal and API response. Decide manually whether each paused scan should be retried or marked as not submitted. Protocol-bearing records are protected and must not be deleted or resubmitted."));
 
-            await alerts.SendAlertAsync(group.Key.CompanyId, alert);
+                await alerts.SendAlertAsync(group.Key.CompanyId, alert);
+            }
+        }
+        catch (Exception ex)
+        {
+            // An alert must never turn a safely queued/review-paused scan into an HTTP or sync failure.
+            Trace.TraceError("Could not create chronology review alert: " + ex);
         }
     }
 }
