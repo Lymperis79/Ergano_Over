@@ -153,7 +153,9 @@ public class WorkCardHistoryService : IWorkCardHistoryService
                     LocalPendingId = p.Id,
                     IsLocalPending = true,
                     RetryAttempts = p.SyncAttempts,
-                    RetryError = p.LastSyncError
+                    RetryError = p.LastSyncError,
+                    ReviewRequired = p.ReviewRequired,
+                    ReviewReason = p.ReviewReason
                 });
             }
 
@@ -184,7 +186,9 @@ public class WorkCardHistoryService : IWorkCardHistoryService
                     LocalFailedId = f.Id,
                     IsLocalFailed = true,
                     RetryAttempts = f.RetryCount,
-                    RetryError = f.LastRetryError ?? f.ErrorDescription
+                    RetryError = f.LastRetryError ?? f.ErrorDescription,
+                    ReviewRequired = f.ReviewRequired,
+                    ReviewReason = f.ReviewReason
                 });
             }
         }
