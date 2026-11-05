@@ -156,7 +156,11 @@ public class CacheSyncService : ICacheSyncService
             {
                 var outcome = await _workCardSubmitter.SubmitAsync(request);
 
-                if (outcome.Success)
+                item.ErganiProtocol = outcome.Protocol ?? item.ErganiProtocol;
+                item.ErganiSubmissionId = outcome.SubmissionId ?? item.ErganiSubmissionId;
+                item.ErganiResponseRawJson = outcome.ResponseRawJson ?? item.ErganiResponseRawJson;
+
+                if (outcome.Success || !string.IsNullOrWhiteSpace(outcome.Protocol))
                 {
                     item.Synced = true;
                     item.SyncedAt = DateTime.UtcNow;
