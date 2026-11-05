@@ -587,7 +587,10 @@ app.MapPost("/api/mobile/notifications/{notificationId:long}/read", async Task<I
     return Results.NoContent();
 }).RequireAuthorization();
 
-app.Run();
+var retryService = app.Services.GetRequiredService<ErganiManager.ErganiApi.Services.ErganiRetryService>();
+retryService.Start();
+await app.RunAsync();
+await retryService.StopAsync();
 
 
 static void LoadMobileLicense()
