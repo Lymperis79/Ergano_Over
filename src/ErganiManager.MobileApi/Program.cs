@@ -217,7 +217,7 @@ app.MapPost("/api/mobile/company/select", async Task<IResult> (
 app.MapGet("/api/mobile/employees", async Task<IResult> (ICompanyContext context, IEmployeeService employees) =>
 {
     var session = context.CurrentSession!;
-    if (!session.CanSee(MenuKeys.Employees)) return Results.Forbid();
+    if (!session.CanSee(MenuKeys.Employees) && !session.CanSee(MenuKeys.WorkCards) && !session.CanSee(MenuKeys.Schedules)) return Results.Forbid();
     var companyId = context.ActiveCompanyId;
     if (!companyId.HasValue) return Results.Conflict(new { message = "Select a company before requesting company data." });
 
