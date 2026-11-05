@@ -63,6 +63,7 @@ public partial class UsersViewModel : ViewModelBase, IAdminSectionViewModel
         MenuKeys.Schedules => "NavSchedules",
         MenuKeys.WorkCards => "NavWorkCards",
         MenuKeys.Scan      => "NavScan",
+        MenuKeys.Terminal  => "Terminal",
         MenuKeys.Today     => "NavToday",
         MenuKeys.Overtime  => "NavOvertime",
         MenuKeys.Reports   => "NavReports",
