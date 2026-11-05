@@ -41,6 +41,10 @@ public class EmployeeDto
     public bool IsActive { get; set; } = true;
 
     public string FullName => $"{FirstName} {LastName}";
+    public string DisplayName =>
+        $"{FirstName} {LastName}" +
+        (string.IsNullOrWhiteSpace(FatherName) ? string.Empty : $" {FatherName}") +
+        (string.IsNullOrWhiteSpace(TaxId) ? string.Empty : $" · ΑΦΜ: {TaxId}");
 }
 
 public interface IEmployeeService
