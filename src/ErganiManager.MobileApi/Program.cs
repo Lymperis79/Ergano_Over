@@ -515,6 +515,7 @@ app.MapPost("/api/mobile/workcards/scan", async Task<IResult> (
     var settings = await cache.CachedCompanySettings.FindAsync(companyId.Value);
     string? latestMainMovement = null;
     DateTime? latestMainMovementAt = null;
+    var workdayEnd = now.Date.AddDays(1);
     var hasLaterProtocol = false;
     try
     {
@@ -536,7 +537,7 @@ app.MapPost("/api/mobile/workcards/scan", async Task<IResult> (
             .AnyAsync(w => w.EmployeeId == employee.Id
                 && w.Employee != null && w.Employee.CompanyId == companyId.Value
                 && w.Protocol != null && w.Protocol != ""
-                && w.MovementDateTime >= now);
+                && w.MovementDateTime >= now && w.MovementDateTime < workdayEnd);
     }
     catch (Exception ex)
     {
@@ -547,11 +548,11 @@ app.MapPost("/api/mobile/workcards/scan", async Task<IResult> (
     hasLaterProtocol |= await cache.PendingSubmissions.AnyAsync(p =>
         p.CompanyId == companyId.Value && p.EmployeeId == employee.Id
         && p.ErganiProtocol != null && p.ErganiProtocol != ""
-        && p.ScannedAt >= now);
+        && p.ScannedAt >= now && p.ScannedAt < workdayEnd);
     hasLaterProtocol |= await cache.FailedSubmissions.AnyAsync(p =>
         p.CompanyId == companyId.Value && p.EmployeeId == employee.Id
         && p.ResolvedProtocol != null && p.ResolvedProtocol != ""
-        && p.OriginalScannedAt >= now);
+        && p.OriginalScannedAt >= now && p.OriginalScannedAt < workdayEnd);
     var shift = await ShiftResolver.ResolveAsync(cache, employee.Id, now,
         settings?.EarlyClockInBlockMinutes ?? 0, latestMainMovement: latestMainMovement,
         latestMainMovementAt: latestMainMovementAt);
