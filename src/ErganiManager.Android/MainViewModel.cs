@@ -1,3 +1,4 @@
+using System.Net.Http;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using System.Collections.ObjectModel;
@@ -688,6 +689,17 @@ public partial class MainViewModel : ObservableObject
             return digits.Length == 9 ? digits : null;
         }
         return null;
+    }
+
+    [RelayCommand]
+    private async Task RemoveDeviceScanAsync(MobileWorkCardHistoryItem? item)
+    {
+        if (item is null || !item.IsDeviceRejected || string.IsNullOrWhiteSpace(item.DeviceEventId))
+            return;
+        await _workCardOutbox.RemoveAsync(item.DeviceEventId);
+        WorkCardHistory.Remove(item);
+        var remainingRejected = WorkCardHistory.Count(x => x.IsDeviceRejected);
+        WorkCardsMessage = $"Rejected scan removed from this device. {remainingRejected} rejected scan(s) remain.";
     }
 
     private async Task AddDevicePendingWorkCardsAsync()
