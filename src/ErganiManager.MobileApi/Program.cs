@@ -368,6 +368,8 @@ app.MapPost("/api/mobile/workcards/scan", async Task<IResult> (
         return Results.BadRequest(new { message = "Enter an employee number or scan a barcode." });
 
     var raw = request.ScanValue.Trim();
+    if (!string.IsNullOrWhiteSpace(request.EventId) && request.EventId.Length > 64)
+        return Results.BadRequest(new { message = "The client event ID is invalid." });
 
     // Match the Windows Terminal parser: a plain AFM must be exactly nine digits;
     // serialized Ergani QR values use the explicit "afm:" field.
@@ -408,6 +410,23 @@ app.MapPost("/api/mobile/workcards/scan", async Task<IResult> (
 
     using var cache = LocalCacheDbContextFactory.Create();
 
+    // A client may retry because the HTTP acknowledgement was lost. Return the
+    // already-recorded result instead of processing the same event a second time.
+    if (!string.IsNullOrWhiteSpace(request.EventId))
+    {
+        var prior = await cache.PendingSubmissions.AsNoTracking()
+            .FirstOrDefaultAsync(p => p.ClientEventId == request.EventId);
+        if (prior is not null)
+        {
+            var priorStatus = !prior.Synced ? "Queued"
+                : string.IsNullOrWhiteSpace(prior.LastSyncError) ? "Submitted" : "Rejected";
+            return Results.Ok(new MobileWorkCardScanResponse(
+                string.Empty, prior.MovementType, prior.ScannedAt, priorStatus,
+                "This event was already received by the server. " + (prior.LastSyncError ?? string.Empty),
+                null, prior.EmployeeId));
+        }
+    }
+
     // Prefer an exact barcode match before AFM, matching the Windows Terminal.
     // This prevents a nine-digit barcode from resolving to another employee's AFM.
     var employee = await cache.CachedEmployees.FirstOrDefaultAsync(e =>
@@ -420,7 +439,7 @@ app.MapPost("/api/mobile/workcards/scan", async Task<IResult> (
     if (employee is null)
         return Results.NotFound(new { message = "No active employee matches that AFM or barcode in the selected company." });
 
-    var now = DateTime.Now;
+    var now = request.ScannedAt ?? DateTime.Now;
     var settings = await cache.CachedCompanySettings.FindAsync(companyId.Value);
     var shift = await ShiftResolver.ResolveAsync(cache, employee.Id, now,
         settings?.EarlyClockInBlockMinutes ?? 0);
@@ -488,6 +507,7 @@ app.MapPost("/api/mobile/workcards/scan", async Task<IResult> (
         CompanyId = companyId.Value,
         BranchId = employee.BranchId,
         EmployeeBarcodeId = employee.BarcodeId,
+        ClientEventId = string.IsNullOrWhiteSpace(request.EventId) ? null : request.EventId,
         MovementType = movement,
         ScannedAt = now,
         Synced = submitted || rejected,
@@ -631,7 +651,7 @@ public sealed record MobileEmployeeResponse(int Id, int BranchId, string FirstNa
 public sealed record MobileNotificationResponse(long Id, int EventCode, string Title,
     string Message, DateTime CreatedAt, bool IsRead);
 
-public sealed record MobileWorkCardScanRequest(string ScanValue);
+public sealed record MobileWorkCardScanRequest(string ScanValue, string? EventId = null, DateTime? ScannedAt = null);
 public sealed record MobileWorkCardScanResponse(string EmployeeName, string Movement, DateTime ScannedAt, string Status, string Message, string? Protocol = null, int EmployeeId = 0);
 
 public sealed record MobileScheduleUpsertRequest(int EmployeeId, DateOnly ScheduleDate, int WorkType, TimeOnly? StartTime, TimeOnly? EndTime, string? Comments);
