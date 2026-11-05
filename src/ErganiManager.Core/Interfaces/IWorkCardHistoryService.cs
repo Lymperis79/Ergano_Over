@@ -30,6 +30,7 @@ public class WorkCardHistoryDto : INotifyPropertyChanged
     private string? _retryError;
     public bool ReviewRequired { get; set; }
     public string? ReviewReason { get; set; }
+    public string? ReviewDecision { get; set; }
 
     public bool IsAutomatic { get; set; }
 
@@ -90,6 +91,7 @@ public class WorkCardHistoryDto : INotifyPropertyChanged
 
     public string StatusText =>
         ReviewRequired ? "⚠️ Manual review required — automatic retry paused" :
+        !string.IsNullOrWhiteSpace(ReviewDecision) ? "📝 Reviewed — not submitted" :
         IsLocalPending ? (RetryAttempts > 0
             ? $"⏳ Retrying — attempt {RetryAttempts}" + (string.IsNullOrWhiteSpace(RetryError) ? string.Empty : $" ({RetryError})")
             : "⏳ Waiting to send") :
