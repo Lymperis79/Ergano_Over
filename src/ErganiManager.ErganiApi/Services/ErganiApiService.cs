@@ -115,8 +115,11 @@ public class ErganiApiService : IWorkCardSubmitter
         var firstResponse = callResult.Data?.FirstOrDefault();
 
         // A 200 response carrying a description but no protocol is an Ergani business error.
-        var isBusinessError = callResult.IsBusinessError || firstResponse is { IsBusinessError: true };
-        var succeeded = callResult.Success && !isBusinessError;
+        var hasProtocol = !string.IsNullOrWhiteSpace(firstResponse?.Protocol);
+        var isBusinessError = !hasProtocol && (callResult.IsBusinessError || firstResponse is { IsBusinessError: true });
+        // A returned Ergani protocol is an acknowledgement: preserve and treat the card as submitted
+        // even if an outer transport/status flag is inconsistent.
+        var succeeded = hasProtocol || (callResult.Success && !isBusinessError);
         var errorMessage = succeeded
             ? null
             : (callResult.ErrorMessage ?? firstResponse?.Description ?? ErganiManager.Data.UiText.T("Ergani submission failed."));
@@ -154,9 +157,9 @@ public class ErganiApiService : IWorkCardSubmitter
 
         workCard.IsAutomatic = workCard.IsAutomatic || request.IsAutomatic;
         workCard.SubmittedToErgani = succeeded;
-        workCard.SubmissionId = firstResponse?.SubmissionId;
-        workCard.Protocol = firstResponse?.Protocol;
-        workCard.ResponseRawJson = callResult.ResponseRawJson;
+        workCard.SubmissionId = firstResponse?.SubmissionId ?? workCard.SubmissionId;
+        workCard.Protocol = firstResponse?.Protocol ?? workCard.Protocol;
+        workCard.ResponseRawJson = callResult.ResponseRawJson ?? workCard.ResponseRawJson;
         workCard.LateJustification = string.IsNullOrEmpty(aitiologia) ? null : aitiologia;
 
         // Save first so a new WorkCard has an Id to link the log row to.
@@ -184,9 +187,9 @@ public class ErganiApiService : IWorkCardSubmitter
         }
 
         log.RequestPayloadJson = callResult.RequestPayloadJson;
-        log.ResponseRawJson = callResult.ResponseRawJson;
-        log.SubmissionId = firstResponse?.SubmissionId;
-        log.Protocol = firstResponse?.Protocol;
+        log.ResponseRawJson = callResult.ResponseRawJson ?? log.ResponseRawJson;
+        log.SubmissionId = firstResponse?.SubmissionId ?? log.SubmissionId;
+        log.Protocol = firstResponse?.Protocol ?? log.Protocol;
         log.HttpStatusCode = callResult.HttpStatusCode;
         log.Success = succeeded;
         log.ErrorMessage = errorMessage;
@@ -207,7 +210,8 @@ public class ErganiApiService : IWorkCardSubmitter
             Protocol = firstResponse?.Protocol,
             SubmissionId = firstResponse?.SubmissionId,
             ErrorMessage = errorMessage,
-            IsBusinessError = isBusinessError
+            IsBusinessError = isBusinessError,
+            ResponseRawJson = callResult.ResponseRawJson
         };
     }
 }
