@@ -153,8 +153,15 @@ public class CacheSyncService : ICacheSyncService
                             && w.MovementDateTime >= minReviewDate && w.MovementDateTime < maxReviewDate)
                 .Select(w => new { w.EmployeeId, w.MovementDateTime })
                 .ToListAsync();
+            var localAcknowledged = await cache.PendingSubmissions
+                .Where(p => p.ErganiProtocol != null && p.ErganiProtocol != ""
+                            && employeeIdsForReview.Contains(p.EmployeeId)
+                            && p.ScannedAt >= minReviewDate && p.ScannedAt < maxReviewDate)
+                .Select(p => new { p.EmployeeId, p.ScannedAt })
+                .ToListAsync();
             var protocolDays = acknowledged
                 .Select(w => (w.EmployeeId, Day: w.MovementDateTime.Date))
+                .Concat(localAcknowledged.Select(w => (w.EmployeeId, Day: w.ScannedAt.Date)))
                 .ToHashSet();
             foreach (var item in pending)
             {
