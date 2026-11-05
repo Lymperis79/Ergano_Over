@@ -599,11 +599,14 @@ public partial class MainViewModel : ObservableObject
                         MovementType = result.Movement,
                         MovementDateTime = result.ScannedAt,
                         SubmittedToErgani = string.Equals(result.Status, "Submitted", StringComparison.OrdinalIgnoreCase),
-                        IsLocalPending = string.Equals(result.Status, "Queued", StringComparison.OrdinalIgnoreCase),
+                        IsLocalPending = result.Status is "Queued" or "ReviewRequired",
                         IsLocalFailed = string.Equals(result.Status, "Rejected", StringComparison.OrdinalIgnoreCase),
                         RetryAttempts = string.Equals(result.Status, "Queued", StringComparison.OrdinalIgnoreCase) ? 1 : 0,
                         Protocol = result.Protocol,
-                        RetryError = result.Status is "Queued" or "Rejected" ? result.Message : null
+                        ReviewRequired = string.Equals(result.Status, "ReviewRequired", StringComparison.OrdinalIgnoreCase),
+                        ReviewReason = string.Equals(result.Status, "ReviewRequired", StringComparison.OrdinalIgnoreCase) ? result.Message : null,
+                        CanManageReviewActions = _role == "Admin",
+                        RetryError = result.Status is "Queued" or "Rejected" or "ReviewRequired" ? result.Message : null
                     });
                 }
             }
