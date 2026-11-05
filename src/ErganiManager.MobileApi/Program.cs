@@ -415,7 +415,7 @@ app.MapPost("/api/mobile/workcards/scan", async Task<IResult> (
     if (!string.IsNullOrWhiteSpace(request.EventId))
     {
         var prior = await cache.PendingSubmissions.AsNoTracking()
-            .FirstOrDefaultAsync(p => p.ClientEventId == request.EventId);
+            .FirstOrDefaultAsync(p => p.CompanyId == companyId.Value && p.ClientEventId == request.EventId);
         if (prior is not null)
         {
             var priorStatus = !prior.Synced ? "Queued"
