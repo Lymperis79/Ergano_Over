@@ -639,18 +639,30 @@ public class ErganiRetryService
             return results;
 
         await _pendingGate.WaitAsync(ct);
+        var crossProcessAcquired = false;
         try
         {
+            crossProcessAcquired = CrossProcessWorkerGate.WaitOne(0);
+            if (!crossProcessAcquired)
+            {
+                foreach (var id in ids)
+                    results.Add((id, false, null, "Another retry worker is processing the queue. Automatic retry will continue."));
+                return results;
+            }
+
             using var cache = LocalCacheDbContextFactory.Create();
             var items = await cache.PendingSubmissions
-                .Where(p => ids.Contains(p.Id) && !p.Synced)
+                .Where(p => ids.Contains(p.Id) && !p.Synced &&
+                    (p.ProcessingUntilUtc == null || p.ProcessingUntilUtc <= DateTime.UtcNow))
                 .OrderBy(p => p.ScannedAt)
                 .ToListAsync(ct);
 
             foreach (var item in items)
             {
                 ct.ThrowIfCancellationRequested();
+                item.ProcessingUntilUtc = DateTime.UtcNow.AddMinutes(5);
                 item.SyncAttempts++;
+                await cache.SaveChangesAsync(ct);
 
                 try
                 {
@@ -697,18 +709,24 @@ public class ErganiRetryService
                     Notify(item.Id, QueuedScanStatus.Waiting, null, ex.Message, item.SyncAttempts);
                 }
 
+                item.ProcessingUntilUtc = null;
                 await cache.SaveChangesAsync(ct);
             }
 
-            // IDs that disappeared because the background worker already sent them are treated
-            // as successfully handled; the history view will reload their WorkCard row.
+            // Distinguish completed rows from rows currently leased by another process.
+            var stillPending = await cache.PendingSubmissions
+                .Where(p => ids.Contains(p.Id) && !p.Synced)
+                .Select(p => p.Id).ToListAsync(ct);
             foreach (var missing in ids.Except(items.Select(i => i.Id)))
-                results.Add((missing, true, null, "Already sent or no longer queued."));
+                results.Add(stillPending.Contains(missing)
+                    ? (missing, false, null, "Already being processed; automatic retry will continue.")
+                    : (missing, true, null, "Already sent or no longer queued."));
 
             return results;
         }
         finally
         {
+            if (crossProcessAcquired) CrossProcessWorkerGate.Release();
             _pendingGate.Release();
         }
     }
