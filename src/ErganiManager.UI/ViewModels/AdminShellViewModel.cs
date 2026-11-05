@@ -876,6 +876,9 @@ public partial class AdminShellViewModel : ViewModelBase
         if (section == AdminSection.EmailLog && vm is EmailLogViewModel emailLogVm)
             _ = emailLogVm.RefreshOnFormSelectedAsync();
 
+        if (section == AdminSection.SubmissionLog && vm is SubmissionLogViewModel submissionLogVm)
+            _ = submissionLogVm.RefreshOnFormSelectedAsync();
+
         // Automatically load saved work-card results whenever the Work Cards form is selected.
         // This loads the application's history; it does not open the external Ergani portal.
         if (section == AdminSection.WorkCards && vm is WorkCardHistoryViewModel workCardsHistoryVm)
