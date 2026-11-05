@@ -55,17 +55,30 @@ public static class ShiftResolver
     /// </summary>
     public static async Task<ShiftContext> ResolveAsync(
         LocalCacheDbContext cache, int employeeId, DateTime when,
-        int earlyClockInBlockMinutes, string? forcedMovement = null)
+        int earlyClockInBlockMinutes, string? forcedMovement = null,
+        string? latestMainMovement = null, DateTime? latestMainMovementAt = null)
     {
         var last = await cache.PendingSubmissions
             .Where(p => p.EmployeeId == employeeId && p.ScannedAt <= when)
             .OrderByDescending(p => p.ScannedAt)
             .FirstOrDefaultAsync();
 
+        // The local queue contains mobile/offline events; it does not contain arrivals
+        // submitted online through the Windows app. Compare both sources so an offline
+        // departure can close the latest online arrival as well.
+        var lastMovement = last?.MovementType;
+        DateTime? lastMovementAt = last?.ScannedAt;
+        if (latestMainMovementAt.HasValue && latestMainMovementAt.Value <= when &&
+            (!lastMovementAt.HasValue || latestMainMovementAt.Value > lastMovementAt.Value))
+        {
+            lastMovement = latestMainMovement;
+            lastMovementAt = latestMainMovementAt.Value;
+        }
+
         DateTime? open = null;
-        if (last != null && last.MovementType == "Arrival"
-            && await IsStillOpenAsync(cache, employeeId, last.ScannedAt, when, earlyClockInBlockMinutes))
-            open = last.ScannedAt;
+        if (lastMovement == "Arrival" && lastMovementAt.HasValue
+            && await IsStillOpenAsync(cache, employeeId, lastMovementAt.Value, when, earlyClockInBlockMinutes))
+            open = lastMovementAt.Value;
 
         var movement = forcedMovement ?? (open != null ? "Departure" : "Arrival");
 
