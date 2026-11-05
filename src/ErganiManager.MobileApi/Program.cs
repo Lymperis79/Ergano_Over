@@ -475,8 +475,26 @@ app.MapPost("/api/mobile/workcards/scan", async Task<IResult> (
     if (duplicate)
         return Results.Conflict(new { message = "This employee was scanned in the last 20 seconds. Please wait before scanning again." });
 
+    // Durably reserve the event before calling Ergani. The lease prevents the
+    // background retry worker from racing this first submission. If the API process
+    // stops mid-call, the lease expires and the same server-side queue row is retried.
+    var queued = new PendingSubmission
+    {
+        EmployeeId = employee.Id,
+        CompanyId = companyId.Value,
+        BranchId = employee.BranchId,
+        EmployeeBarcodeId = employee.BarcodeId,
+        ClientEventId = string.IsNullOrWhiteSpace(request.EventId) ? null : request.EventId,
+        MovementType = movement,
+        ScannedAt = now,
+        Synced = false,
+        ProcessingUntilUtc = DateTime.UtcNow.AddMinutes(5),
+        SyncAttempts = 0
+    };
+    cache.PendingSubmissions.Add(queued);
+    await cache.SaveChangesAsync();
+
     // Use the same synchronous submitter as the Windows manual Work Cards form.
-    // It writes the WorkCard and API submission log as part of the Ergani call.
     WorkCardSubmissionOutcome? outcome = null;
     string? submissionException = null;
     try
@@ -499,23 +517,11 @@ app.MapPost("/api/mobile/workcards/scan", async Task<IResult> (
     var rejected = outcome is { Success: false, IsBusinessError: true };
     var error = outcome?.ErrorMessage ?? submissionException;
 
-    // Keep a processed queue marker after success/rejection for duplicate protection.
-    // Only temporary transport/service failures remain queued for Windows auto-retry.
-    var queued = new PendingSubmission
-    {
-        EmployeeId = employee.Id,
-        CompanyId = companyId.Value,
-        BranchId = employee.BranchId,
-        EmployeeBarcodeId = employee.BarcodeId,
-        ClientEventId = string.IsNullOrWhiteSpace(request.EventId) ? null : request.EventId,
-        MovementType = movement,
-        ScannedAt = now,
-        Synced = submitted || rejected,
-        SyncedAt = submitted || rejected ? DateTime.UtcNow : null,
-        SyncAttempts = 1,
-        LastSyncError = submitted ? null : error
-    };
-    cache.PendingSubmissions.Add(queued);
+    queued.SyncAttempts = 1;
+    queued.ProcessingUntilUtc = null;
+    queued.Synced = submitted || rejected;
+    queued.SyncedAt = submitted || rejected ? DateTime.UtcNow : null;
+    queued.LastSyncError = submitted ? null : error;
     await cache.SaveChangesAsync();
 
     if (submitted)
