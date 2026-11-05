@@ -906,6 +906,13 @@ public partial class AdminShellViewModel : ViewModelBase
         {
             NavigateTo("Schedules");
         }
+        else if (destination == "PendingWorkCards")
+        {
+            _skipNextWorkCardAutoLoad = true;
+            NavigateTo("WorkCards");
+            if (CurrentSectionViewModel is WorkCardHistoryViewModel workCards)
+                _ = workCards.OpenForAttentionAsync();
+        }
     }
 
     private void HandleTodayWorkCardsRequested(int employeeId, DateOnly workDate)
