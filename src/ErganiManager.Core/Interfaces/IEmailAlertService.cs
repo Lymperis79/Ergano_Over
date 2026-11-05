@@ -31,8 +31,10 @@ public enum AlertEvent
     ScanRejected      = 64,
     /// <summary>The application automatically submitted a clock-out after the configured schedule-end delay.</summary>
     AutomaticClockOut = 128,
+    /// <summary>A same-workday protocol conflict paused one or more scans for administrator review.</summary>
+    ChronologyReview = 256,
 
-    All = EarlyDeparture | ErganiDown | InternetDown | EarlyClockIn | LateClockIn | NoScheduleClockIn | ScanRejected | AutomaticClockOut,
+    All = EarlyDeparture | ErganiDown | InternetDown | EarlyClockIn | LateClockIn | NoScheduleClockIn | ScanRejected | AutomaticClockOut | ChronologyReview,
     /// <summary>What companies had before the choice existed.</summary>
     Default = EarlyDeparture
 }
