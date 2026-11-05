@@ -183,25 +183,29 @@ public class CacheSyncService : ICacheSyncService
                             && f.OriginalScannedAt >= minReviewDate && f.OriginalScannedAt < maxReviewDate)
                 .Select(f => new { f.EmployeeId, ScannedAt = f.OriginalScannedAt })
                 .ToListAsync();
-            var protocolDays = acknowledged
-                .Select(w => (w.EmployeeId, Day: w.MovementDateTime.Date))
-                .Concat(localAcknowledged.Select(w => (w.EmployeeId, Day: w.ScannedAt.Date)))
-                .Concat(legacyAcknowledged.Select(w => (w.EmployeeId, Day: w.ScannedAt.Date)))
-                .ToHashSet();
+            // Only a later or same-time acknowledged event can make an unresolved scan
+            // unsafe to send. An earlier accepted movement must not block a later scan.
+            var acknowledgedEvents = acknowledged
+                .Select(w => (w.EmployeeId, At: w.MovementDateTime))
+                .Concat(localAcknowledged.Select(w => (w.EmployeeId, At: w.ScannedAt)))
+                .Concat(legacyAcknowledged.Select(w => (w.EmployeeId, At: w.ScannedAt)))
+                .ToList();
             var newlyPaused = new List<ChronologyReviewAlertItem>();
             foreach (var item in unresolvedPending)
             {
-                if (protocolDays.Contains((item.EmployeeId, item.ScannedAt.Date)))
+                var hasLaterOrSameProtocol = acknowledgedEvents.Any(w =>
+                    w.EmployeeId == item.EmployeeId && w.At >= item.ScannedAt);
+                if (hasLaterOrSameProtocol)
                 {
                     if (!item.ReviewRequired)
                         newlyPaused.Add(new ChronologyReviewAlertItem(
                             item.CompanyId, item.EmployeeId, item.ScannedAt, item.MovementType));
                     item.ReviewRequired = true;
-                    item.ReviewReason = "Another attendance event for this employee has an Ergani protocol on the same workday. Check the Ergani portal and API response before deciding whether to retry or discard this unsubmitted record.";
+                    item.ReviewReason = "A later or same-time attendance event for this employee already has an Ergani protocol. Check the Ergani portal and API response before deciding whether to retry or discard this earlier unsubmitted record.";
                     item.ProcessingUntilUtc = null;
                 }
             }
-            if (protocolDays.Count > 0)
+            if (acknowledgedEvents.Count > 0)
                 await cache.SaveChangesAsync();
 
             // This flush path can be the first one to detect the conflict (including Android
