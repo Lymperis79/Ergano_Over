@@ -140,13 +140,25 @@ public class CacheSyncService : ICacheSyncService
             .OrderBy(p => p.ScannedAt)
             .ToListAsync();
 
+        // A saved protocol is an acknowledgement even if a previous process stopped
+        // before setting Synced. Never submit that event again.
+        foreach (var acknowledgedPending in pending.Where(p => !string.IsNullOrWhiteSpace(p.ErganiProtocol)))
+        {
+            acknowledgedPending.Synced = true;
+            acknowledgedPending.SyncedAt ??= DateTime.UtcNow;
+            acknowledgedPending.ProcessingUntilUtc = null;
+        }
+        var unresolvedPending = pending
+            .Where(p => string.IsNullOrWhiteSpace(p.ErganiProtocol))
+            .ToList();
+
         // Keep this secondary flush path subject to the same chronology safeguard as
         // the retry worker: a protocol on the same employee/workday pauses unresolved scans.
-        if (pending.Count > 0)
+        if (unresolvedPending.Count > 0)
         {
-            var employeeIdsForReview = pending.Select(p => p.EmployeeId).Distinct().ToList();
-            var minReviewDate = pending.Min(p => p.ScannedAt.Date);
-            var maxReviewDate = pending.Max(p => p.ScannedAt.Date).AddDays(1);
+            var employeeIdsForReview = unresolvedPending.Select(p => p.EmployeeId).Distinct().ToList();
+            var minReviewDate = unresolvedPending.Min(p => p.ScannedAt.Date);
+            var maxReviewDate = unresolvedPending.Max(p => p.ScannedAt.Date).AddDays(1);
             var acknowledged = await db.WorkCards
                 .Where(w => employeeIdsForReview.Contains(w.EmployeeId)
                             && w.Protocol != null && w.Protocol != ""
@@ -163,7 +175,7 @@ public class CacheSyncService : ICacheSyncService
                 .Select(w => (w.EmployeeId, Day: w.MovementDateTime.Date))
                 .Concat(localAcknowledged.Select(w => (w.EmployeeId, Day: w.ScannedAt.Date)))
                 .ToHashSet();
-            foreach (var item in pending)
+            foreach (var item in unresolvedPending)
             {
                 if (protocolDays.Contains((item.EmployeeId, item.ScannedAt.Date)))
                 {
@@ -176,9 +188,9 @@ public class CacheSyncService : ICacheSyncService
         }
 
         var result = new SyncResult { Success = true };
-        result.PendingSubmissionsRemaining += pending.Count(p => p.ReviewRequired);
+        result.PendingSubmissionsRemaining += unresolvedPending.Count(p => p.ReviewRequired);
 
-        foreach (var item in pending.Where(p => !p.ReviewRequired))
+        foreach (var item in unresolvedPending.Where(p => !p.ReviewRequired))
         {
             var request = new WorkCardSubmissionRequest
             {
