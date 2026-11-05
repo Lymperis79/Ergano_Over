@@ -469,7 +469,7 @@ public class ErganiRetryService
             if (pendingId.HasValue)
             {
                 var item = await cache.PendingSubmissions.FirstOrDefaultAsync(
-                    p => p.Id == pendingId.Value && p.CompanyId == companyId && !p.Synced && p.ReviewRequired, ct);
+                    p => p.Id == pendingId.Value && p.CompanyId == companyId && p.ReviewRequired, ct);
                 if (item is null) return false;
                 if (!string.IsNullOrWhiteSpace(item.ErganiProtocol))
                     throw new InvalidOperationException("This record has an Ergani protocol and is protected; it cannot be changed.");
@@ -903,7 +903,7 @@ public class ErganiRetryService
 
             using var cache = LocalCacheDbContextFactory.Create();
             var items = await cache.PendingSubmissions
-                .Where(p => ids.Contains(p.Id) && !p.Synced
+                .Where(p => ids.Contains(p.Id) && (!p.Synced || p.ReviewRequired)
                     && (p.ErganiProtocol == null || p.ErganiProtocol == "")
                     && (p.ProcessingUntilUtc == null || p.ProcessingUntilUtc <= DateTime.UtcNow))
                 .OrderBy(p => p.ScannedAt)
