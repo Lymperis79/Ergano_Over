@@ -149,7 +149,7 @@ public partial class MainViewModel : ObservableObject
         OnPropertyChanged(nameof(CanOpenSettings)); OnPropertyChanged(nameof(CanOpenOverview));
         OnPropertyChanged(nameof(IsOverviewVisible)); OnPropertyChanged(nameof(IsOverviewNavigationVisible));
     }
-    public bool IsOverviewNavigationVisible => IsAuthenticated && CanOpenOverview && !IsTerminalVisible;
+    public bool IsOverviewNavigationVisible => IsAuthenticated && CanOpenOverview && !IsTerminalVisible && !IsCompanySelectionRequired;
     [ObservableProperty] private string _workCardScanInput = string.Empty;
     [ObservableProperty] private string _workCardScanMessage = "Scan an employee barcode with the camera or type the employee number.";
     [ObservableProperty] private bool _isWorkCardScanBusy;
@@ -202,7 +202,8 @@ public partial class MainViewModel : ObservableObject
 
     partial void OnIsAuthenticatedChanged(bool value)
     { OnPropertyChanged(nameof(IsOverviewVisible)); OnPropertyChanged(nameof(IsOverviewNavigationVisible)); }
-    partial void OnIsCompanySelectionRequiredChanged(bool value) => OnPropertyChanged(nameof(IsOverviewVisible));
+    partial void OnIsCompanySelectionRequiredChanged(bool value)
+    { OnPropertyChanged(nameof(IsOverviewVisible)); OnPropertyChanged(nameof(IsOverviewNavigationVisible)); }
     partial void OnIsDailyStatusVisibleChanged(bool value) => OnPropertyChanged(nameof(IsOverviewVisible));
     partial void OnIsEmployeesVisibleChanged(bool value) => OnPropertyChanged(nameof(IsOverviewVisible));
     partial void OnIsWorkCardsVisibleChanged(bool value) => OnPropertyChanged(nameof(IsOverviewVisible));
