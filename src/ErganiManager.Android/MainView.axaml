@@ -159,6 +159,16 @@
                               CommandParameter="{Binding}"
                               IsVisible="{Binding IsDeviceRejected}"
                               HorizontalAlignment="Left" />
+                      <Button Content="Retry this scan (administrator decision)"
+                              Command="{Binding $parent[UserControl].DataContext.RetryReviewedWorkCardCommand}"
+                              CommandParameter="{Binding}"
+                              IsVisible="{Binding CanShowReviewActions}"
+                              HorizontalAlignment="Stretch" />
+                      <Button Content="Mark reviewed — DO NOT SUBMIT"
+                              Command="{Binding $parent[UserControl].DataContext.MarkReviewedDoNotSubmitCommand}"
+                              CommandParameter="{Binding}"
+                              IsVisible="{Binding CanShowReviewActions}"
+                              HorizontalAlignment="Stretch" />
                     </StackPanel>
                   </Border>
                 </DataTemplate>
