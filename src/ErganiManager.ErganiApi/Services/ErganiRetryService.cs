@@ -443,6 +443,68 @@ public class ErganiRetryService
         }
     }
 
+    /// <summary>
+    /// Records an administrator's decision not to submit one chronology-review record.
+    /// The row remains in the local cache as an audit record. The shared worker gate
+    /// prevents a concurrent automatic retry from submitting it during this decision.
+    /// </summary>
+    public async Task<bool> MarkReviewedDoNotSubmitAsync(
+        int companyId, int? pendingId, int? failedId, CancellationToken ct = default)
+    {
+        if ((pendingId.HasValue ? 1 : 0) + (failedId.HasValue ? 1 : 0) != 1)
+            throw new ArgumentException("Specify exactly one pending or failed record ID.");
+
+        await _pendingGate.WaitAsync(ct);
+        var crossProcessAcquired = false;
+        try
+        {
+            crossProcessAcquired = CrossProcessWorkerGate.WaitOne(0);
+            if (!crossProcessAcquired)
+                throw new InvalidOperationException("Another retry worker is processing the queue. Please try again shortly.");
+
+            using var cache = LocalCacheDbContextFactory.Create();
+            const string decision = "Administrator reviewed the chronology conflict and chose not to submit this scan.";
+
+            if (pendingId.HasValue)
+            {
+                var item = await cache.PendingSubmissions.FirstOrDefaultAsync(
+                    p => p.Id == pendingId.Value && p.CompanyId == companyId && !p.Synced && p.ReviewRequired, ct);
+                if (item is null) return false;
+                if (!string.IsNullOrWhiteSpace(item.ErganiProtocol))
+                    throw new InvalidOperationException("This record has an Ergani protocol and is protected; it cannot be changed.");
+
+                item.Synced = true;
+                item.SyncedAt = DateTime.UtcNow;
+                item.ProcessingUntilUtc = null;
+                item.LastSyncError = decision;
+                item.ReviewRequired = false;
+                item.ReviewReason = null;
+            }
+            else
+            {
+                var item = await cache.FailedSubmissions.FirstOrDefaultAsync(
+                    p => p.Id == failedId!.Value && p.CompanyId == companyId && !p.Resolved && p.ReviewRequired, ct);
+                if (item is null) return false;
+                if (!string.IsNullOrWhiteSpace(item.ResolvedProtocol))
+                    throw new InvalidOperationException("This record has an Ergani protocol and is protected; it cannot be changed.");
+
+                item.Resolved = true;
+                item.ResolvedAt = DateTime.UtcNow;
+                item.LastRetryError = decision;
+                item.ReviewRequired = false;
+                item.ReviewReason = null;
+            }
+
+            await cache.SaveChangesAsync(ct);
+            return true;
+        }
+        finally
+        {
+            if (crossProcessAcquired) CrossProcessWorkerGate.Release();
+            _pendingGate.Release();
+        }
+    }
+
     private async Task FlushFailedSubmissionsAsync(
         Company company, ErganiCredentials credentials,
         AppDbContext db, LocalCache.LocalCacheDbContext cache, CancellationToken ct,
