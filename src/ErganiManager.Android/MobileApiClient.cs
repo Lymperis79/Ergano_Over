@@ -255,6 +255,23 @@ public sealed class MobileApiClient : IDisposable
             cancellationToken: cancellationToken) ?? [];
     }
 
+    public async Task<string> ReviewWorkCardAsync(
+        int? pendingId, int? failedId, string decision,
+        CancellationToken cancellationToken = default)
+    {
+        using var response = await _http.PostAsJsonAsync("api/mobile/workcards/review",
+            new { pendingId, failedId, decision }, cancellationToken);
+        var body = await response.Content.ReadAsStringAsync(cancellationToken);
+        if (!response.IsSuccessStatusCode)
+            throw new HttpRequestException(
+                $"Work-card review returned HTTP {(int)response.StatusCode}: {body}",
+                null, response.StatusCode);
+        using var document = System.Text.Json.JsonDocument.Parse(body);
+        return document.RootElement.TryGetProperty("message", out var message)
+            ? message.GetString() ?? "Review action completed."
+            : "Review action completed.";
+    }
+
     public async Task<MobileWorkCardScanResult> ScanWorkCardAsync(
         string scanValue, string eventId, DateTime capturedAt,
         CancellationToken cancellationToken = default)
