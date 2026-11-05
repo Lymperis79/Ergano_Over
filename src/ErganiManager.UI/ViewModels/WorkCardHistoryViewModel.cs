@@ -107,6 +107,9 @@ public partial class WorkCardHistoryViewModel : ViewModelBase, IAdminSectionView
     [ObservableProperty]
     private bool _filterEarlyDepartureOnly;
 
+    [ObservableProperty]
+    private bool _showOnlyAttention;
+
     public WorkCardHistoryViewModel(
         IWorkCardHistoryService historyService,
         IEmployeeService employeeService,
@@ -229,6 +232,21 @@ public partial class WorkCardHistoryViewModel : ViewModelBase, IAdminSectionView
 
         // Do not automatically load records.
         // Records are loaded only when the user presses Load.
+    }
+
+    /// <summary>Loads the work-card records that need administrator attention.</summary>
+    public async Task OpenForAttentionAsync(int? employeeId = null, DateOnly? workDate = null)
+    {
+        await _filtersLoadTask;
+        var date = workDate ?? DateOnly.FromDateTime(DateTime.Today);
+        FilterFromDate = new DateTimeOffset((workDate.HasValue ? date.AddDays(-1) : date.AddDays(-30)).ToDateTime(TimeOnly.MinValue));
+        FilterToDate = new DateTimeOffset(date.ToDateTime(TimeOnly.MaxValue));
+        FilterEmployee = employeeId.HasValue
+            ? AvailableEmployees.FirstOrDefault(e => e.Id == employeeId.Value) ?? AvailableEmployees.FirstOrDefault()
+            : AvailableEmployees.FirstOrDefault();
+        FilterBranch = AvailableBranches.FirstOrDefault();
+        ShowOnlyAttention = true;
+        await LoadAsync();
     }
 
     [RelayCommand]
@@ -370,6 +388,18 @@ public partial class WorkCardHistoryViewModel : ViewModelBase, IAdminSectionView
 
         StatusMessage = $"Marked {changed} record(s) as reviewed — not submitted. "
             + (protectedCount > 0 ? $"{protectedCount} protocol-bearing record(s) were protected and left unchanged." : string.Empty);
+    }
+
+    [RelayCommand]
+    private async Task RetryReviewedRecordAsync(WorkCardHistoryDto record)
+    {
+        if (record == null || !record.ReviewRequired || !record.CanRetry)
+            return;
+
+        foreach (var row in Records)
+            row.IsSelected = false;
+        record.IsSelected = true;
+        await RetrySelectedAsync();
     }
 
     [RelayCommand]
@@ -580,6 +610,11 @@ public partial class WorkCardHistoryViewModel : ViewModelBase, IAdminSectionView
                     .GetAsync(companyId, filter)
                     .ConfigureAwait(false);
 
+            // Dashboard / Daily Status shortcuts show only records that can still require
+            // action: review-paused, waiting, failed, or otherwise not submitted.
+            if (ShowOnlyAttention)
+                results = results.Where(r => r.ReviewRequired || r.CanRetry).ToList();
+
             await Avalonia.Threading.Dispatcher.UIThread
                 .InvokeAsync(() =>
                 {
@@ -590,9 +625,11 @@ public partial class WorkCardHistoryViewModel : ViewModelBase, IAdminSectionView
                 });
 
             var reviewCount = results.Count(r => r.ReviewRequired);
-            StatusMessage = reviewCount > 0
-                ? $"⚠️ {reviewCount} attendance record(s) paused for manual review because another event for the same employee/workday has an Ergani protocol. Check the Ergani portal and response before choosing Retry or Mark reviewed — do not submit."
-                : results.Count == 1000
+            StatusMessage = ShowOnlyAttention
+                ? $"Showing {results.Count} record(s) that need attention. {reviewCount} require chronology review. Select a record and choose Submit / Retry or Mark reviewed — do not submit."
+                : reviewCount > 0
+                    ? $"⚠️ {reviewCount} attendance record(s) paused for manual review because another event for the same employee/workday has an Ergani protocol. Check the Ergani portal and response before choosing Retry or Mark reviewed — do not submit."
+                    : results.Count == 1000
                     ? Loc["Vm.Showing first 1,000 records — narrow the date range for more precision."]
                     : string.Format(Loc["Vm.{0} record(s) found."], results.Count);
         }
