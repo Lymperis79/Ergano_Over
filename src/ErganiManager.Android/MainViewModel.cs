@@ -53,10 +53,15 @@ public partial class MainViewModel : ObservableObject
             return;
         }
         IsWorkCardScanBusy = true;
-        WorkCardScanMessage = "Sending work card to Ergani... Waiting for the official response.";
+        var scanValue = WorkCardScanInput.Trim();
+        OfflineWorkCardEvent? queuedEvent = null;
         try
         {
-            var result = await _api.ScanWorkCardAsync(WorkCardScanInput.Trim());
+            // Write to durable device storage before touching the network.
+            queuedEvent = await _workCardOutbox.EnqueueAsync(scanValue, _sessionCompanyId, DateTime.Now);
+            WorkCardScanMessage = "Saved on this device. Sending to the server...";
+            var result = await _api.ScanWorkCardAsync(scanValue, queuedEvent.EventId, queuedEvent.CapturedAt);
+            await _workCardOutbox.MarkAcknowledgedAsync(queuedEvent.EventId);
             WorkCardScanMessage = $"{result.Status}: {result.Movement} for {result.EmployeeName} at {result.ScannedAt:HH:mm:ss}. {result.Message}";
             if (!string.Equals(result.Status, "Rejected", StringComparison.OrdinalIgnoreCase))
                 WorkCardScanInput = string.Empty;
@@ -92,12 +97,16 @@ public partial class MainViewModel : ObservableObject
         }
         catch (Exception ex)
         {
-            WorkCardScanMessage = GetFullError(ex);
+            WorkCardScanMessage = queuedEvent is null
+                ? GetFullError(ex)
+                : "Saved on this device — waiting for server synchronization. " + GetFullError(ex);
+            if (queuedEvent is not null) WorkCardScanInput = string.Empty;
         }
         finally { IsWorkCardScanBusy = false; }
     }
 
     private MobileApiClient? _api;
+    private readonly OfflineWorkCardOutbox _workCardOutbox = new();
     private CancellationTokenSource? _notificationPollingCts;
     private long _lastNotificationId;
     private string[]? _allowedMenus;
