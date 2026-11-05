@@ -51,6 +51,7 @@ public partial class AdminShellViewModel : ViewModelBase
     private readonly IErganiHealthCheckService _erganiHealth;
 
     private readonly Dictionary<AdminSection, ViewModelBase> _sectionCache = new();
+    private bool _skipNextWorkCardAutoLoad;
 
     [ObservableProperty]
     private string _welcomeText = string.Empty;
@@ -845,6 +846,12 @@ public partial class AdminShellViewModel : ViewModelBase
                         ShowNotification(message, filePath: filePath));
             }
 
+            if (vm is DashboardViewModel dashboardVm)
+                dashboardVm.NavigationRequested += HandleDashboardNavigationRequested;
+
+            if (vm is TodayBoardViewModel todayBoardVm)
+                todayBoardVm.WorkCardsRequested += HandleTodayWorkCardsRequested;
+
             if (vm is CompaniesViewModel companiesVm)
             {
                 companiesVm.CompaniesChanged +=
@@ -872,13 +879,41 @@ public partial class AdminShellViewModel : ViewModelBase
         // Automatically load saved work-card results whenever the Work Cards form is selected.
         // This loads the application's history; it does not open the external Ergani portal.
         if (section == AdminSection.WorkCards && vm is WorkCardHistoryViewModel workCardsHistoryVm)
-            _ = workCardsHistoryVm.LoadOnFormSelectedAsync();
+        {
+            if (_skipNextWorkCardAutoLoad)
+                _skipNextWorkCardAutoLoad = false;
+            else
+                _ = workCardsHistoryVm.LoadOnFormSelectedAsync();
+        }
 
         // Cached sections keep their view models; refresh overtime records on every revisit.
         if (wasCached && section == AdminSection.Overtime && vm is OvertimeViewModel overtimeVm)
             _ = overtimeVm.RefreshAsync();
         else if (wasCached && section == AdminSection.Schedules && vm is SchedulesViewModel schedulesVm)
             _ = schedulesVm.RefreshAsync();
+    }
+
+    private void HandleDashboardNavigationRequested(string destination)
+    {
+        if (destination == "Errors")
+        {
+            _skipNextWorkCardAutoLoad = true;
+            NavigateTo("WorkCards");
+            if (CurrentSectionViewModel is WorkCardHistoryViewModel workCards)
+                _ = workCards.OpenForAttentionAsync();
+        }
+        else if (destination == "Pending")
+        {
+            NavigateTo("Schedules");
+        }
+    }
+
+    private void HandleTodayWorkCardsRequested(int employeeId, DateOnly workDate)
+    {
+        _skipNextWorkCardAutoLoad = true;
+        NavigateTo("WorkCards");
+        if (CurrentSectionViewModel is WorkCardHistoryViewModel workCards)
+            _ = workCards.OpenForAttentionAsync(employeeId, workDate);
     }
 }
 
