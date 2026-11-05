@@ -350,7 +350,7 @@ public partial class WorkCardHistoryViewModel : ViewModelBase, IAdminSectionView
             if (row.LocalPendingId is int pendingId)
             {
                 var item = await cache.PendingSubmissions.FindAsync(pendingId);
-                if (item == null || item.Synced) continue;
+                if (item == null || (item.Synced && !item.ReviewRequired)) continue;
                 if (!string.IsNullOrWhiteSpace(item.ErganiProtocol))
                 {
                     protectedCount++;
