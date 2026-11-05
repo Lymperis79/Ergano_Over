@@ -86,6 +86,7 @@ public partial class MainViewModel : ObservableObject
             {
                 EmployeeId = result.EmployeeId,
                 EmployeeFullName = result.EmployeeName,
+                LocalPendingId = result.PendingId,
                 MovementType = result.Movement,
                 MovementDateTime = result.ScannedAt,
                 SubmittedToErgani = string.Equals(result.Status, "Submitted", StringComparison.OrdinalIgnoreCase),
@@ -596,6 +597,7 @@ public partial class MainViewModel : ObservableObject
                     {
                         EmployeeId = result.EmployeeId,
                         EmployeeFullName = result.EmployeeName,
+                        LocalPendingId = result.PendingId,
                         MovementType = result.Movement,
                         MovementDateTime = result.ScannedAt,
                         SubmittedToErgani = string.Equals(result.Status, "Submitted", StringComparison.OrdinalIgnoreCase),
