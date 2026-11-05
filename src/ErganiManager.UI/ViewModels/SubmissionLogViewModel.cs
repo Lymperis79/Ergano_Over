@@ -259,6 +259,13 @@ public partial class SubmissionLogViewModel
         }
     }
 
+    /// <summary>Refreshes both API log failures and the durable offline retry queue whenever this page is opened.</summary>
+    public async Task RefreshOnFormSelectedAsync()
+    {
+        await LoadAsync();
+        await LoadFailedSubmissionsAsync();
+    }
+
     [RelayCommand]
     private async Task LoadFailedSubmissionsAsync()
     {
