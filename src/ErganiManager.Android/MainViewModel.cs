@@ -139,7 +139,15 @@ public partial class MainViewModel : ObservableObject
     public bool CanOpenReports => CanSeeMenu("Reports");
     public bool CanOpenSettings => _role == "Admin" && !_sessionCompanyId.HasValue;
     public bool CanOpenOverview => CanOpenWorkCards || CanOpenDailyStatus || CanOpenEmployees || CanOpenSchedules || CanOpenOvertime || CanOpenSubmissions || CanOpenReports || CanOpenSettings;
-    private bool CanSeeMenu(string key) => _allowedMenus?.Contains(key, StringComparer.Ordinal) == true;
+    private bool CanSeeMenu(string key)
+    {
+        // Operator accounts are kiosk/terminal identities, not general mobile users.
+        // Enforce this locally as well as in the API response so stale or older
+        // server permission payloads cannot expose other menu tiles.
+        if (string.Equals(_role, "Operator", StringComparison.OrdinalIgnoreCase))
+            return string.Equals(key, "Terminal", StringComparison.Ordinal);
+        return _allowedMenus?.Contains(key, StringComparer.Ordinal) == true;
+    }
     private void RefreshMenuPermissions()
     {
         OnPropertyChanged(nameof(CanOpenTerminal)); OnPropertyChanged(nameof(CanOpenWorkCards));
