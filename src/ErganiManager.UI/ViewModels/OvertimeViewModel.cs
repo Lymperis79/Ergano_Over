@@ -40,7 +40,7 @@ public partial class OvertimeViewModel : ViewModelBase, IAdminSectionViewModel
     public sealed class EmployeeSelectionOption : ObservableObject
     {
         public EmployeeDto Employee { get; }
-        public string FullName => Employee.FullName;
+        public string FullName => Employee.DisplayName;
 
         private bool _isSelected;
         public bool IsSelected
