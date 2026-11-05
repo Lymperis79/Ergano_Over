@@ -428,6 +428,7 @@ app.MapPost("/api/mobile/workcards/scan", async Task<IResult> (
     ICacheSyncService cacheSync,
     IConnectionStateService connectionState,
     IWorkCardSubmitter submitter,
+    IEmailAlertService emailAlerts,
     ILogger<Program> logger) =>
 {
     var session = context.CurrentSession!;
@@ -517,9 +518,13 @@ app.MapPost("/api/mobile/workcards/scan", async Task<IResult> (
     DateTime? latestMainMovementAt = null;
     var workdayEnd = now.Date.AddDays(1);
     var hasLaterProtocol = false;
+    var companyName = $"#{companyId.Value}";
     try
     {
         await using var mainDb = new AppDbContext(connectionState.GetDbOptions());
+        companyName = await mainDb.Companies.AsNoTracking()
+            .Where(c => c.Id == companyId.Value).Select(c => c.Name).FirstOrDefaultAsync()
+            ?? companyName;
         var latestMainCard = await mainDb.WorkCards.AsNoTracking()
             .Where(w => w.EmployeeId == employee.Id && w.MovementDateTime <= now)
             .OrderByDescending(w => w.MovementDateTime)
@@ -615,6 +620,17 @@ app.MapPost("/api/mobile/workcards/scan", async Task<IResult> (
         queued.LastSyncError = chronologyReviewReason;
         queued.ProcessingUntilUtc = null;
         await cache.SaveChangesAsync();
+
+        // This is an immediate mobile scan decision, so raise the alert here rather than
+        // waiting for the background retry worker (which deliberately ignores review rows).
+        await ChronologyReviewAlert.SendAsync(
+            emailAlerts, cache,
+            new Dictionary<int, string> { [companyId.Value] = companyName },
+            new[]
+            {
+                new ChronologyReviewAlertItem(companyId.Value, employee.Id, now, movement)
+            });
+
         return Results.Ok(new MobileWorkCardScanResponse(
             employee.FullName, movement, now, "ReviewRequired",
             chronologyReviewReason, null, employee.Id, queued.Id));
