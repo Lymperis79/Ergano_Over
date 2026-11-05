@@ -154,6 +154,11 @@
                       <TextBlock Text="{Binding BranchName}" Foreground="#AAB7C8" FontSize="12" />
                       <TextBlock Text="{Binding StatusText}" Foreground="#F0C674" FontSize="12" TextWrapping="Wrap" />
                       <TextBlock Text="{Binding LateReasonText}" Foreground="#C3CEDB" FontSize="12" TextWrapping="Wrap" IsVisible="{Binding HasLateReason}" />
+                      <Button Content="Remove rejected scan"
+                              Command="{Binding $parent[UserControl].DataContext.RemoveDeviceScanCommand}"
+                              CommandParameter="{Binding}"
+                              IsVisible="{Binding IsDeviceRejected}"
+                              HorizontalAlignment="Left" />
                     </StackPanel>
                   </Border>
                 </DataTemplate>
