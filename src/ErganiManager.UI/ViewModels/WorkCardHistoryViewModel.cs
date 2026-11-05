@@ -390,6 +390,18 @@ public partial class WorkCardHistoryViewModel : ViewModelBase, IAdminSectionView
     }
 
     [RelayCommand]
+    private async Task MarkReviewedDoNotSubmitRecordAsync(WorkCardHistoryDto record)
+    {
+        if (record == null || !record.ReviewRequired)
+            return;
+
+        foreach (var row in Records)
+            row.IsSelected = false;
+        record.IsSelected = true;
+        await MarkSelectedReviewedDoNotSubmitAsync();
+    }
+
+    [RelayCommand]
     private async Task RetryReviewedRecordAsync(WorkCardHistoryDto record)
     {
         if (record == null || !record.ReviewRequired || !record.CanRetry)
