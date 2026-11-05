@@ -314,6 +314,7 @@
                                         Margin="0,0,8,0">
 
                                     <TextBlock Text="{Binding StatusText}"
+                                               ToolTip.Tip="{Binding ReviewReason}"
                                                FontSize="11"
                                                Foreground="White"
                                                TextWrapping="Wrap" />
