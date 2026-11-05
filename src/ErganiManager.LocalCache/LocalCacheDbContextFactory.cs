@@ -103,6 +103,8 @@ public static class LocalCacheDbContextFactory
                 "ALTER TABLE PendingSubmissions ADD COLUMN LateJustification TEXT NULL");
             AddColumn("PendingSubmissions", "ClientEventId",
                 "ALTER TABLE PendingSubmissions ADD COLUMN ClientEventId TEXT NULL");
+            AddColumn("PendingSubmissions", "ProcessingUntilUtc",
+                "ALTER TABLE PendingSubmissions ADD COLUMN ProcessingUntilUtc TEXT NULL");
             if (TableExists("PendingSubmissions"))
             {
                 using var eventIndex = connection.CreateCommand();
