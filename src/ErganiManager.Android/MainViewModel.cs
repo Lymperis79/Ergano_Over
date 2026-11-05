@@ -55,6 +55,7 @@ public partial class MainViewModel : ObservableObject
         IsWorkCardScanBusy = true;
         var scanValue = WorkCardScanInput.Trim();
         OfflineWorkCardEvent? queuedEvent = null;
+        var serverAcknowledged = false;
         await _outboxSyncGate.WaitAsync();
         try
         {
@@ -63,6 +64,7 @@ public partial class MainViewModel : ObservableObject
             WorkCardScanMessage = "Saved on this device. Sending to the server...";
             var result = await _api.ScanWorkCardAsync(scanValue, queuedEvent.EventId, queuedEvent.CapturedAt);
             await _workCardOutbox.MarkAcknowledgedAsync(queuedEvent.EventId);
+            serverAcknowledged = true;
             WorkCardScanMessage = $"{result.Status}: {result.Movement} for {result.EmployeeName} at {result.ScannedAt:HH:mm:ss}. {result.Message}";
             if (!string.Equals(result.Status, "Rejected", StringComparison.OrdinalIgnoreCase))
                 WorkCardScanInput = string.Empty;
@@ -98,9 +100,11 @@ public partial class MainViewModel : ObservableObject
         }
         catch (Exception ex)
         {
-            WorkCardScanMessage = queuedEvent is null
-                ? GetFullError(ex)
-                : "Saved on this device — waiting for server synchronization. " + GetFullError(ex);
+            WorkCardScanMessage = serverAcknowledged
+                ? "The server accepted the event, but refreshing history failed. " + GetFullError(ex)
+                : queuedEvent is null
+                    ? GetFullError(ex)
+                    : "Saved on this device — waiting for server synchronization. " + GetFullError(ex);
             if (queuedEvent is not null) WorkCardScanInput = string.Empty;
         }
         finally { _outboxSyncGate.Release(); IsWorkCardScanBusy = false; }
