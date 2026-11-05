@@ -623,6 +623,24 @@ public partial class MainViewModel : ObservableObject
         }
     }
 
+    private static string? ExtractOfflineScanAfm(string scanValue)
+    {
+        var raw = scanValue.Trim();
+        if (raw.Length == 9 && raw.All(char.IsDigit)) return raw;
+        if (!raw.Contains(':')) return null;
+
+        foreach (var part in raw.Split(';', StringSplitOptions.RemoveEmptyEntries))
+        {
+            var separator = part.IndexOf(':');
+            if (separator <= 0 ||
+                !part[..separator].Trim().Equals("afm", StringComparison.OrdinalIgnoreCase))
+                continue;
+            var digits = new string(part[(separator + 1)..].Where(char.IsDigit).ToArray());
+            return digits.Length == 9 ? digits : null;
+        }
+        return null;
+    }
+
     private async Task AddDevicePendingWorkCardsAsync()
     {
         if (!DateOnly.TryParseExact(WorkCardFromDate, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var fromDate) ||
@@ -637,8 +655,10 @@ public partial class MainViewModel : ObservableObject
             if (WorkCardHistory.Any(x => x.IsDevicePending && x.DeviceEventId == item.EventId))
                 continue;
 
+            var scanAfm = ExtractOfflineScanAfm(item.ScanValue);
             var employee = Employees.FirstOrDefault(x =>
-                string.Equals(x.TaxId, item.ScanValue, StringComparison.OrdinalIgnoreCase));
+                !string.IsNullOrWhiteSpace(scanAfm) &&
+                string.Equals(x.TaxId, scanAfm, StringComparison.OrdinalIgnoreCase));
             WorkCardHistory.Insert(0, new MobileWorkCardHistoryItem
             {
                 DeviceEventId = item.EventId,
