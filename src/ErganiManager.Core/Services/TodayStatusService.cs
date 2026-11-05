@@ -119,7 +119,8 @@ public class TodayStatusService : ITodayStatusService
         var departures = cards.Where(c => c.MovementType == "Departure").ToList();
 
         TodaySendState SendStateOf(WorkCardHistoryDto c)
-            => c.IsLocalFailed ? TodaySendState.Failed
+            => c.ReviewRequired ? TodaySendState.Failed
+             : c.IsLocalFailed ? TodaySendState.Failed
              : c.IsLocalPending ? (c.RetryAttempts > 0 ? TodaySendState.Retrying : TodaySendState.Waiting)
              : c.SubmittedToErgani ? TodaySendState.Sent
              : TodaySendState.NotSubmitted;
@@ -138,7 +139,7 @@ public class TodayStatusService : ITodayStatusService
             SendState = SendStateOf(c),
             Protocol  = c.Protocol,
             Attempts  = c.RetryAttempts,
-            Detail    = c.RetryError
+            Detail    = c.ReviewReason ?? c.RetryError
         }).ToList();
 
         // The status shown for a side is the worst one of that side, so one failed card is never hidden.
@@ -172,7 +173,7 @@ public class TodayStatusService : ITodayStatusService
                 Code = TodayIssueCode.SendProblem, Level = LevelOf(state),
                 IsArrival = c.MovementType == "Arrival",
                 Time = TimeOnly.FromDateTime(c.MovementDateTime),
-                SendState = state, Protocol = c.Protocol, Attempts = c.RetryAttempts, Detail = c.RetryError
+                SendState = state, Protocol = c.Protocol, Attempts = c.RetryAttempts, Detail = c.ReviewReason ?? c.RetryError
             });
         }
 
