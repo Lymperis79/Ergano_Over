@@ -755,9 +755,14 @@ public class ErganiRetryService
         // review state untouched and therefore cannot spam the administrator.
         if (newlyPaused.Count > 0)
         {
+            var companyName = await db.Companies.AsNoTracking()
+                .Where(c => c.Id == companyId)
+                .Select(c => c.Name)
+                .FirstOrDefaultAsync(ct) ?? $"#{companyId}";
+
             await ChronologyReviewAlert.SendAsync(
                 _emailAlerts, cache,
-                new Dictionary<int, string> { [companyId] = company.Name },
+                new Dictionary<int, string> { [companyId] = companyName },
                 newlyPaused);
         }
     }
