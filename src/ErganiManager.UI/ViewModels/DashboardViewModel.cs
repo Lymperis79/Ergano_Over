@@ -15,6 +15,7 @@ using Microsoft.EntityFrameworkCore;
 using ErganiManager.UI.Services;
 using ErganiManager.ErganiApi.Services;
 using ErganiManager.ErganiApi.Models;
+using ErganiManager.LocalCache;
 
 namespace ErganiManager.UI.ViewModels;
 
@@ -27,6 +28,14 @@ public partial class DashboardViewModel : ViewModelBase, IAdminSectionViewModel
     private readonly ICredentialProtector _credentialProtector;
     private readonly DailyReconciliationService _reconciliation;
     private UserSession? _session;
+
+    public event Action<string>? NavigationRequested;
+
+    [RelayCommand]
+    private void OpenErrors() => NavigationRequested?.Invoke("Errors");
+
+    [RelayCommand]
+    private void OpenPendingItems() => NavigationRequested?.Invoke("Pending");
 
     [ObservableProperty] private string _companyName = string.Empty;
     [ObservableProperty] private int _branchCount;
@@ -178,7 +187,29 @@ public partial class DashboardViewModel : ViewModelBase, IAdminSectionViewModel
             SubmissionCount = await companyLogs.CountAsync(l => l.SubmissionDate >= monthStart && l.SubmissionDate < nextMonth);
             SuccessfulCount = await companyLogs.CountAsync(l => l.SubmissionDate >= monthStart && l.SubmissionDate < nextMonth && l.Success);
             FailedCount = await companyLogs.CountAsync(l => l.SubmissionDate >= recentStart && !l.Success);
-            ErrorCount = FailedCount;
+
+            // Include the durable offline queue in the dashboard. Chronology-review records
+            // are errors requiring an administrator decision, not ordinary pending work.
+            var localPendingCount = 0;
+            var localFailedCount = 0;
+            var localReviewCount = 0;
+            try
+            {
+                using var localCache = LocalCacheDbContextFactory.Create();
+                localPendingCount = await localCache.PendingSubmissions.CountAsync(p =>
+                    p.CompanyId == companyId.Value && !p.Synced && !p.ReviewRequired);
+                localReviewCount = await localCache.PendingSubmissions.CountAsync(p =>
+                    p.CompanyId == companyId.Value && !p.Synced && p.ReviewRequired)
+                    + await localCache.FailedSubmissions.CountAsync(f =>
+                        f.CompanyId == companyId.Value && !f.Resolved && f.ReviewRequired);
+                localFailedCount = await localCache.FailedSubmissions.CountAsync(f =>
+                    f.CompanyId == companyId.Value && !f.Resolved && !f.ReviewRequired);
+            }
+            catch (Exception ex)
+            {
+                Serilog.Log.Warning(ex, "Dashboard could not read the local work-card queue.");
+            }
+            ErrorCount = FailedCount + localFailedCount + localReviewCount;
 
             var pendingSchedules = db.Schedules.Where(s =>
                 s.Employee != null && s.Employee.CompanyId == companyId.Value && !s.SubmittedToErgani);
@@ -188,7 +219,8 @@ public partial class DashboardViewModel : ViewModelBase, IAdminSectionViewModel
                 l.Employee != null && l.Employee.CompanyId == companyId.Value && !l.SubmittedToErgani);
             PendingCount = await pendingSchedules.CountAsync()
                          + await pendingOvertimes.CountAsync()
-                         + await pendingLeaves.CountAsync();
+                         + await pendingLeaves.CountAsync()
+                         + localPendingCount;
 
             QueuedEmailCount = await db.EmailLogs.CountAsync(e =>
                 e.CompanyId == companyId.Value && e.Status == "Queued");
