@@ -362,7 +362,6 @@ public partial class WorkCardHistoryViewModel : ViewModelBase, IAdminSectionView
                 item.ProcessingUntilUtc = null;
                 item.LastSyncError = "Administrator reviewed the chronology conflict and chose not to submit this scan.";
                 item.ReviewRequired = false;
-                item.ReviewReason = null;
                 changed++;
             }
             else if (row.LocalFailedId is int failedId)
