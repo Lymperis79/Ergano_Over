@@ -88,7 +88,9 @@ public sealed class WorkCardIntervalAlertService
             if (!isShortClockInOut && !isRepeatedArrival) return null;
 
             var elapsed = scannedAt - previous.At;
-            if (elapsed.TotalMinutes >= threshold) return null;
+            // The clients already reject accidental duplicate scans inside 20 seconds.
+            // Do not emit an interval warning for a scan that will be rejected by that guard.
+            if (elapsed.TotalSeconds < 20 || elapsed.TotalMinutes >= threshold) return null;
 
             var eventType = isShortClockInOut
                 ? AlertEvent.ShortClockInOutInterval
