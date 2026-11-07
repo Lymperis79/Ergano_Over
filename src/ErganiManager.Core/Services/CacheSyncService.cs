@@ -47,6 +47,7 @@ public class CacheSyncService : ICacheSyncService
                 cache.CachedCompanySettings.Add(cachedSettings);
             }
 
+            cachedSettings.CompanyName = company.Name;
             cachedSettings.EarlyClockInBlockMinutes = company.EarlyClockInBlockMinutes;
             cachedSettings.EarlyDepartureAlertMinutes = company.EarlyDepartureAlertMinutes;
             cachedSettings.ShortClockInOutAlertEnabled = company.ShortClockInOutAlertEnabled;
