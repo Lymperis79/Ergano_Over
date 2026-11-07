@@ -27,6 +27,10 @@ public static class GreekStrings
         [L.NavOvertime] = "⏱️ Υπερωρίες",
         [L.NavApiLog] = "📋 Αρχείο API",
 
+        ["ShortClockInOutRuleTitle"] = "Ειδοποίηση όταν η προσέλευση και η αποχώρηση είναι πολύ κοντά",
+        ["ShortClockInOutRuleThreshold"] = "Ελάχιστα λεπτά μεταξύ προσέλευσης και αποχώρησης",
+        ["RepeatedClockInRuleTitle"] = "Ειδοποίηση όταν υπάρχουν δύο κοντινές προσελεύσεις",
+        ["RepeatedClockInRuleThreshold"] = "Ελάχιστα λεπτά μεταξύ προσελεύσεων",
         ["Vm.WeatherDisplaySettings"] = "Ρυθμίσεις εμφάνισης καιρού",
         ["Vm.SelectBranchWeatherOptions"] = "Επιλέξτε υποκατάστημα και τα στοιχεία καιρού που θα εμφανίζονται στο τερματικό.",
         ["Vm.Select branch"] = "Επιλογή υποκαταστήματος",
