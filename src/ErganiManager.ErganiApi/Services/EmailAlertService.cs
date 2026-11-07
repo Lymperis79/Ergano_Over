@@ -96,8 +96,9 @@ public class EmailAlertService : IEmailAlertService
             // Notification and email delivery are independent, but share the same alert event and content.
             // Chronology conflicts are a safety-critical audit event: do not let the optional
             // per-event mask suppress them. The company-wide notification/email switches still apply.
-            var eventEnabled = alert.Event == AlertEvent.ChronologyReview ||
-                               (company.AlertEvents & (int)alert.Event) != 0;
+            var eventEnabled = alert.Event is AlertEvent.ChronologyReview
+                    or AlertEvent.ShortClockInOutInterval or AlertEvent.RepeatedClockIn ||
+                (company.AlertEvents & (int)alert.Event) != 0;
             if (eventEnabled && company.AlertNotificationEnabled)
             {
                 await SaveNotificationAsync(companyId, alert);
