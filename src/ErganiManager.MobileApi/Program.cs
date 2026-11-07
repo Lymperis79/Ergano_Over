@@ -429,6 +429,7 @@ app.MapPost("/api/mobile/workcards/scan", async Task<IResult> (
     IConnectionStateService connectionState,
     IWorkCardSubmitter submitter,
     IEmailAlertService emailAlerts,
+    WorkCardIntervalAlertService intervalAlerts,
     ILogger<Program> logger) =>
 {
     var session = context.CurrentSession!;
@@ -563,6 +564,8 @@ app.MapPost("/api/mobile/workcards/scan", async Task<IResult> (
         latestMainMovementAt: latestMainMovementAt);
     var movement = shift.Movement;
     var schedule = shift.Schedule;
+    var intervalWarning = await intervalAlerts.EvaluateAndAlertAsync(
+        companyId.Value, employee.Id, employee.FullName, employee.TaxId, movement, now);
     var officialHoliday = movement == "Arrival" &&
         CompanyHolidayCalendar.IsEnabled(settings?.OfficialHolidayDatesJson, DateOnly.FromDateTime(now));
 
@@ -674,7 +677,7 @@ app.MapPost("/api/mobile/workcards/scan", async Task<IResult> (
     {
         return Results.Ok(new MobileWorkCardScanResponse(
             employee.FullName, movement, now, "Submitted",
-            $"Successfully submitted to Ergani. Protocol: {outcome!.Protocol ?? "not returned"}.",
+            $"Successfully submitted to Ergani. Protocol: {outcome!.Protocol ?? "not returned"}. " + (intervalWarning ?? string.Empty),
             outcome.Protocol, employee.Id, queued.Id));
     }
 
@@ -689,7 +692,7 @@ app.MapPost("/api/mobile/workcards/scan", async Task<IResult> (
     return Results.Ok(new MobileWorkCardScanResponse(
         employee.FullName, movement, now, "Queued",
         "Ergani could not be reached or the submission failed temporarily. The scan is saved and will be retried by the Windows retry service. " +
-        (string.IsNullOrWhiteSpace(error) ? string.Empty : error),
+        (string.IsNullOrWhiteSpace(error) ? string.Empty : error) + " " + (intervalWarning ?? string.Empty),
         null, employee.Id, queued.Id));
 }).RequireAuthorization();
 
