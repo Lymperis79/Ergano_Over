@@ -564,8 +564,6 @@ app.MapPost("/api/mobile/workcards/scan", async Task<IResult> (
         latestMainMovementAt: latestMainMovementAt);
     var movement = shift.Movement;
     var schedule = shift.Schedule;
-    var intervalWarning = await intervalAlerts.EvaluateAndAlertAsync(
-        companyId.Value, employee.Id, employee.FullName, employee.TaxId, movement, now);
     var officialHoliday = movement == "Arrival" &&
         CompanyHolidayCalendar.IsEnabled(settings?.OfficialHolidayDatesJson, DateOnly.FromDateTime(now));
 
@@ -588,6 +586,9 @@ app.MapPost("/api/mobile/workcards/scan", async Task<IResult> (
         if (now < earliest)
             return Results.Conflict(new { message = $"Clock-in is too early. Earliest allowed time is {earliest:HH:mm}." });
     }
+
+    var intervalWarning = await intervalAlerts.EvaluateAndAlertAsync(
+        companyId.Value, employee.Id, employee.FullName, employee.TaxId, movement, now);
 
     var duplicateSince = now.AddSeconds(-20);
     var duplicate = await cache.PendingSubmissions.AnyAsync(p =>
