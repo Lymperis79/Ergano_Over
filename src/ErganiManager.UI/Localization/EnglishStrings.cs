@@ -27,6 +27,10 @@ public static class EnglishStrings
         [L.NavOvertime] = "⏱️ Overtime",
         [L.NavApiLog] = "📋 API Log",
 
+        ["ShortClockInOutRuleTitle"] = "Alert when arrival and departure are too close",
+        ["ShortClockInOutRuleThreshold"] = "Minimum minutes between arrival and departure",
+        ["RepeatedClockInRuleTitle"] = "Alert when two arrivals are too close",
+        ["RepeatedClockInRuleThreshold"] = "Minimum minutes between arrivals",
         ["Vm.WeatherDisplaySettings"] = "Weather display settings",
         ["Vm.SelectBranchWeatherOptions"] = "Select a branch and choose what the terminal weather bar displays.",
         ["Vm.Select branch"] = "Select branch",
