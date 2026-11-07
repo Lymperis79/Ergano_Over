@@ -587,8 +587,6 @@ app.MapPost("/api/mobile/workcards/scan", async Task<IResult> (
             return Results.Conflict(new { message = $"Clock-in is too early. Earliest allowed time is {earliest:HH:mm}." });
     }
 
-    var intervalWarning = await intervalAlerts.EvaluateAndAlertAsync(
-        companyId.Value, employee.Id, employee.FullName, employee.TaxId, movement, now);
 
     var duplicateSince = now.AddSeconds(-20);
     var duplicate = await cache.PendingSubmissions.AnyAsync(p =>
@@ -596,6 +594,9 @@ app.MapPost("/api/mobile/workcards/scan", async Task<IResult> (
         p.ScannedAt >= duplicateSince && p.ScannedAt <= now.AddSeconds(1));
     if (duplicate)
         return Results.Conflict(new { message = "This employee was scanned in the last 20 seconds. Please wait before scanning again." });
+
+    var intervalWarning = await intervalAlerts.EvaluateAndAlertAsync(
+        companyId.Value, employee.Id, employee.FullName, employee.TaxId, movement, now);
 
     // Durably reserve the event before calling Ergani. The lease prevents the
     // background retry worker from racing this first submission. If the API process
