@@ -102,11 +102,14 @@ public sealed class WorkCardIntervalAlertService
                           "The scan will still be submitted to Ergani.";
 
             string branchName = string.Empty;
+            string companyName = $"Company #{companyId}";
             if (_connection.ConfigExists())
             {
                 try
                 {
                     await using var db = new AppDbContext(_connection.GetDbOptions());
+                    companyName = await db.Companies.AsNoTracking()
+                        .Where(c => c.Id == companyId).Select(c => c.Name).FirstOrDefaultAsync() ?? companyName;
                     var branchId = await db.Employees.AsNoTracking()
                         .Where(e => e.Id == employeeId && e.CompanyId == companyId)
                         .Select(e => (int?)e.BranchId).FirstOrDefaultAsync();
@@ -124,7 +127,7 @@ public sealed class WorkCardIntervalAlertService
                 Title = $"{ruleName} — {employeeName}",
                 OccurredAt = scannedAt
             }
-            .Add("Company", $"Company ID: {companyId}")
+            .Add("Company", companyName)
             .Add("Branch", branchName)
             .Add("Employee", $"{employeeName} (AFM: {taxId})")
             .Add("Previous movement", $"{previous.Movement} at {previous.At:yyyy-MM-dd HH:mm:ss}")
