@@ -86,6 +86,10 @@ public class CompanyService : ICompanyService
             IsActive = dto.IsActive,
             EarlyClockInBlockMinutes = dto.EarlyClockInBlockMinutes,
             EarlyDepartureAlertMinutes = dto.EarlyDepartureAlertMinutes,
+            ShortClockInOutAlertEnabled = dto.ShortClockInOutAlertEnabled,
+            ShortClockInOutAlertMinutes = dto.ShortClockInOutAlertMinutes,
+            RepeatedClockInAlertEnabled = dto.RepeatedClockInAlertEnabled,
+            RepeatedClockInAlertMinutes = dto.RepeatedClockInAlertMinutes,
             BlockClockInWithoutSchedule = dto.BlockClockInWithoutSchedule,
             BlockClockInOnRestOrAbsentDay = dto.BlockClockInOnRestOrAbsentDay,
             OfficialHolidayDatesJson = string.IsNullOrWhiteSpace(dto.OfficialHolidayDatesJson) ? "[]" : dto.OfficialHolidayDatesJson,
@@ -126,6 +130,10 @@ public class CompanyService : ICompanyService
         entity.IsActive = dto.IsActive;
         entity.EarlyClockInBlockMinutes = dto.EarlyClockInBlockMinutes;
         entity.EarlyDepartureAlertMinutes = dto.EarlyDepartureAlertMinutes;
+        entity.ShortClockInOutAlertEnabled = dto.ShortClockInOutAlertEnabled;
+        entity.ShortClockInOutAlertMinutes = dto.ShortClockInOutAlertMinutes;
+        entity.RepeatedClockInAlertEnabled = dto.RepeatedClockInAlertEnabled;
+        entity.RepeatedClockInAlertMinutes = dto.RepeatedClockInAlertMinutes;
         entity.BlockClockInWithoutSchedule = dto.BlockClockInWithoutSchedule;
         entity.BlockClockInOnRestOrAbsentDay = dto.BlockClockInOnRestOrAbsentDay;
         entity.OfficialHolidayDatesJson = string.IsNullOrWhiteSpace(dto.OfficialHolidayDatesJson) ? "[]" : dto.OfficialHolidayDatesJson;
@@ -186,6 +194,10 @@ public class CompanyService : ICompanyService
         IsActive = c.IsActive,
         EarlyClockInBlockMinutes = c.EarlyClockInBlockMinutes,
         EarlyDepartureAlertMinutes = c.EarlyDepartureAlertMinutes,
+        ShortClockInOutAlertEnabled = c.ShortClockInOutAlertEnabled,
+        ShortClockInOutAlertMinutes = c.ShortClockInOutAlertMinutes,
+        RepeatedClockInAlertEnabled = c.RepeatedClockInAlertEnabled,
+        RepeatedClockInAlertMinutes = c.RepeatedClockInAlertMinutes,
         BlockClockInWithoutSchedule = c.BlockClockInWithoutSchedule,
         BlockClockInOnRestOrAbsentDay = c.BlockClockInOnRestOrAbsentDay,
         OfficialHolidayDatesJson = string.IsNullOrWhiteSpace(c.OfficialHolidayDatesJson) ? "[]" : c.OfficialHolidayDatesJson,
