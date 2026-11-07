@@ -636,7 +636,7 @@ app.MapPost("/api/mobile/workcards/scan", async Task<IResult> (
 
         return Results.Ok(new MobileWorkCardScanResponse(
             employee.FullName, movement, now, "ReviewRequired",
-            chronologyReviewReason, null, employee.Id, queued.Id));
+            chronologyReviewReason + " " + (intervalWarning ?? string.Empty), null, employee.Id, queued.Id));
     }
 
     // Use the same synchronous submitter as the Windows manual Work Cards form.
@@ -685,7 +685,7 @@ app.MapPost("/api/mobile/workcards/scan", async Task<IResult> (
     {
         return Results.Ok(new MobileWorkCardScanResponse(
             employee.FullName, movement, now, "Rejected",
-            error ?? "Ergani rejected the work card. Check the API submission log.",
+            (error ?? "Ergani rejected the work card. Check the API submission log.") + " " + (intervalWarning ?? string.Empty),
             outcome?.Protocol, employee.Id, queued.Id));
     }
 
