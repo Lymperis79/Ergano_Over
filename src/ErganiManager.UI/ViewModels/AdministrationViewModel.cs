@@ -417,6 +417,10 @@ public partial class AdministrationViewModel : ViewModelBase, IAdminSectionViewM
     [ObservableProperty] private string _companyErganiBaseUrl = ErganiEndpoints.TrialBaseUrl;
     [ObservableProperty] private int _earlyClockInBlockMinutes = 15;
     [ObservableProperty] private int _earlyDepartureAlertMinutes = 10;
+    [ObservableProperty] private bool _shortClockInOutAlertEnabled;
+    [ObservableProperty] private int _shortClockInOutAlertMinutes = 10;
+    [ObservableProperty] private bool _repeatedClockInAlertEnabled;
+    [ObservableProperty] private int _repeatedClockInAlertMinutes = 10;
     [ObservableProperty] private bool _blockClockInWithoutSchedule = true;
     [ObservableProperty] private bool _blockClockInOnRestOrAbsentDay = true;
     [ObservableProperty] private bool _alertEmailEnabled;
@@ -436,6 +440,8 @@ public partial class AdministrationViewModel : ViewModelBase, IAdminSectionViewM
     [ObservableProperty] private bool _alertEvNoSchedule;
     [ObservableProperty] private bool _alertEvScanRejected;
     [ObservableProperty] private bool _alertEvAutomaticClockOut;
+    [ObservableProperty] private bool _alertEvShortClockInOut;
+    [ObservableProperty] private bool _alertEvRepeatedClockIn;
     [ObservableProperty] private int _clockInAlertMinutes = 10;
     [ObservableProperty] private bool _isTestingCompanyEmail;
     [ObservableProperty] private bool _companyEmailTestSuccess;
@@ -1039,6 +1045,10 @@ public partial class AdministrationViewModel : ViewModelBase, IAdminSectionViewM
                         ? ErganiEndpoints.TrialBaseUrl : company.ErganiBaseUrl;
                     EarlyClockInBlockMinutes = company.EarlyClockInBlockMinutes;
                     EarlyDepartureAlertMinutes = company.EarlyDepartureAlertMinutes;
+                    ShortClockInOutAlertEnabled = company.ShortClockInOutAlertEnabled;
+                    ShortClockInOutAlertMinutes = company.ShortClockInOutAlertMinutes;
+                    RepeatedClockInAlertEnabled = company.RepeatedClockInAlertEnabled;
+                    RepeatedClockInAlertMinutes = company.RepeatedClockInAlertMinutes;
                     BlockClockInWithoutSchedule = company.BlockClockInWithoutSchedule;
                     BlockClockInOnRestOrAbsentDay = company.BlockClockInOnRestOrAbsentDay;
                     AlertEmailEnabled = company.AlertEmailEnabled;
@@ -1076,6 +1086,10 @@ public partial class AdministrationViewModel : ViewModelBase, IAdminSectionViewM
     partial void OnCompanyErganiBaseUrlChanged(string value) => MarkCompanySettingsDirty();
     partial void OnEarlyClockInBlockMinutesChanged(int value) => MarkCompanySettingsDirty();
     partial void OnEarlyDepartureAlertMinutesChanged(int value) => MarkCompanySettingsDirty();
+    partial void OnShortClockInOutAlertEnabledChanged(bool value) => MarkCompanySettingsDirty();
+    partial void OnShortClockInOutAlertMinutesChanged(int value) => MarkCompanySettingsDirty();
+    partial void OnRepeatedClockInAlertEnabledChanged(bool value) => MarkCompanySettingsDirty();
+    partial void OnRepeatedClockInAlertMinutesChanged(int value) => MarkCompanySettingsDirty();
     partial void OnBlockClockInWithoutScheduleChanged(bool value) => MarkCompanySettingsDirty();
     partial void OnBlockClockInOnRestOrAbsentDayChanged(bool value) => MarkCompanySettingsDirty();
     partial void OnAlertEmailEnabledChanged(bool value) => MarkCompanySettingsDirty();
@@ -1095,6 +1109,8 @@ public partial class AdministrationViewModel : ViewModelBase, IAdminSectionViewM
     partial void OnAlertEvNoScheduleChanged(bool value) => MarkCompanySettingsDirty();
     partial void OnAlertEvScanRejectedChanged(bool value) => MarkCompanySettingsDirty();
     partial void OnAlertEvAutomaticClockOutChanged(bool value) => MarkCompanySettingsDirty();
+    partial void OnAlertEvShortClockInOutChanged(bool value) => MarkCompanySettingsDirty();
+    partial void OnAlertEvRepeatedClockInChanged(bool value) => MarkCompanySettingsDirty();
     partial void OnClockInAlertMinutesChanged(int value) => MarkCompanySettingsDirty();
 
     [RelayCommand]
@@ -1128,6 +1144,8 @@ public partial class AdministrationViewModel : ViewModelBase, IAdminSectionViewM
 
         if (EarlyClockInBlockMinutes is < 0 or > 120 ||
             EarlyDepartureAlertMinutes is < 0 or > 120 ||
+            ShortClockInOutAlertMinutes is < 1 or > 240 ||
+            RepeatedClockInAlertMinutes is < 1 or > 240 ||
             ClockInAlertMinutes is < 0 or > 240 ||
             SmtpPort is < 1 or > 65535)
         {
@@ -1142,6 +1160,10 @@ public partial class AdministrationViewModel : ViewModelBase, IAdminSectionViewM
             company.ErganiBaseUrl = CompanyErganiBaseUrl.Trim();
             company.EarlyClockInBlockMinutes = EarlyClockInBlockMinutes;
             company.EarlyDepartureAlertMinutes = EarlyDepartureAlertMinutes;
+            company.ShortClockInOutAlertEnabled = ShortClockInOutAlertEnabled;
+            company.ShortClockInOutAlertMinutes = ShortClockInOutAlertMinutes;
+            company.RepeatedClockInAlertEnabled = RepeatedClockInAlertEnabled;
+            company.RepeatedClockInAlertMinutes = RepeatedClockInAlertMinutes;
             company.BlockClockInWithoutSchedule = BlockClockInWithoutSchedule;
             company.BlockClockInOnRestOrAbsentDay = BlockClockInOnRestOrAbsentDay;
             company.AlertEmailEnabled = AlertEmailEnabled;
