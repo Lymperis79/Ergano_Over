@@ -107,11 +107,13 @@ public sealed class WorkCardIntervalAlertService
                 try
                 {
                     await using var db = new AppDbContext(_connection.GetDbOptions());
-                    branchName = await db.Branches.AsNoTracking()
-                        .Where(b => b.Id == (await db.Employees.AsNoTracking()
-                            .Where(e => e.Id == employeeId && e.CompanyId == companyId)
-                            .Select(e => (int?)e.BranchId).FirstOrDefaultAsync()))
-                        .Select(b => b.Name).FirstOrDefaultAsync() ?? string.Empty;
+                    var branchId = await db.Employees.AsNoTracking()
+                        .Where(e => e.Id == employeeId && e.CompanyId == companyId)
+                        .Select(e => (int?)e.BranchId).FirstOrDefaultAsync();
+                    if (branchId.HasValue)
+                        branchName = await db.Branches.AsNoTracking()
+                            .Where(b => b.Id == branchId.Value && b.CompanyId == companyId)
+                            .Select(b => b.Name).FirstOrDefaultAsync() ?? string.Empty;
                 }
                 catch { /* Branch label is optional; do not affect the scan. */ }
             }
