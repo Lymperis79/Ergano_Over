@@ -98,7 +98,6 @@ public sealed class WorkCardIntervalAlertService
             var ruleName = isShortClockInOut
                 ? "Arrival followed by departure too quickly"
                 : "Two consecutive arrivals too close together";
-            var interval = Math.Max(0, (int)Math.Floor(elapsed.TotalMinutes));
             var warning = $"{ruleName}: {employeeName}, {previous.At:HH:mm:ss} → {scannedAt:HH:mm:ss} " +
                           $"({elapsed.TotalMinutes:0.0} minutes; configured minimum {threshold} minutes). " +
                           "The scan will still be submitted to Ergani.";
