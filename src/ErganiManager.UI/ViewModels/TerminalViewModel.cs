@@ -863,8 +863,6 @@ public partial class TerminalViewModel : ViewModelBase
         var isOfficialHoliday = movementType == "Arrival" &&
             CompanyHolidayCalendar.IsEnabled(settings?.OfficialHolidayDatesJson, DateOnly.FromDateTime(now));
         _currentMovementText = movementType == "Arrival" ? Loc[L.Arrival] : Loc[L.Departure];
-        var intervalWarning = await _intervalAlerts.EvaluateAndAlertAsync(
-            companyId, employee.Id, employee.FullName, employee.TaxId, movementType, now);
 
         // Rest/Absent days block the clock-in (company setting; without cached settings the safe default is
         // to block). A departure is never blocked: it closes an arrival that already exists, and blocking
@@ -915,6 +913,8 @@ public partial class TerminalViewModel : ViewModelBase
                 }
             }
 
+            var intervalWarning = await _intervalAlerts.EvaluateAndAlertAsync(
+                companyId, employee.Id, employee.FullName, employee.TaxId, "Arrival", now);
             if (!await QueueScanAsync(cache, employee, companyId, "Arrival", now))
                 return;
 
@@ -961,6 +961,8 @@ public partial class TerminalViewModel : ViewModelBase
                 earlyMinutes = (int)Math.Round((shiftEnd - now).TotalMinutes);
             }
 
+            var intervalWarning = await _intervalAlerts.EvaluateAndAlertAsync(
+                companyId, employee.Id, employee.FullName, employee.TaxId, "Departure", now);
             if (!await QueueScanAsync(cache, employee, companyId, "Departure", now))
                 return;
 
