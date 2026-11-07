@@ -33,8 +33,12 @@ public enum AlertEvent
     AutomaticClockOut = 128,
     /// <summary>A same-workday protocol conflict paused one or more scans for administrator review.</summary>
     ChronologyReview = 256,
+    /// <summary>An arrival and its following departure are unusually close together.</summary>
+    ShortClockInOutInterval = 512,
+    /// <summary>Two consecutive arrivals for the same employee are unusually close together.</summary>
+    RepeatedClockIn = 1024,
 
-    All = EarlyDeparture | ErganiDown | InternetDown | EarlyClockIn | LateClockIn | NoScheduleClockIn | ScanRejected | AutomaticClockOut | ChronologyReview,
+    All = EarlyDeparture | ErganiDown | InternetDown | EarlyClockIn | LateClockIn | NoScheduleClockIn | ScanRejected | AutomaticClockOut | ChronologyReview | ShortClockInOutInterval | RepeatedClockIn,
     /// <summary>What companies had before the choice existed.</summary>
     Default = EarlyDeparture
 }
