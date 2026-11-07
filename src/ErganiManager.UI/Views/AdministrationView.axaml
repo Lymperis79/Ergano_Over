@@ -127,14 +127,14 @@
                                     <NumericUpDown Value="{Binding EarlyClockInBlockMinutes}" Minimum="0" Maximum="120" />
                                     <TextBlock Text="{Binding Loc[EarlyDepartureAlert]}" FontWeight="SemiBold" />
                                     <NumericUpDown Value="{Binding EarlyDepartureAlertMinutes}" Minimum="0" Maximum="120" />
-                                    <CheckBox Content="Alert when arrival and departure are too close" IsChecked="{Binding ShortClockInOutAlertEnabled}" />
+                                    <CheckBox Content="{Binding Loc[ShortClockInOutRuleTitle]}" IsChecked="{Binding ShortClockInOutAlertEnabled}" />
                                     <StackPanel Orientation="Horizontal" Spacing="8" IsVisible="{Binding ShortClockInOutAlertEnabled}">
-                                        <TextBlock Text="Minimum minutes between arrival and departure" VerticalAlignment="Center" />
+                                        <TextBlock Text="{Binding Loc[ShortClockInOutRuleThreshold]}" VerticalAlignment="Center" />
                                         <NumericUpDown Value="{Binding ShortClockInOutAlertMinutes}" Minimum="1" Maximum="240" Width="100" />
                                     </StackPanel>
-                                    <CheckBox Content="Alert when two arrivals are too close" IsChecked="{Binding RepeatedClockInAlertEnabled}" />
+                                    <CheckBox Content="{Binding Loc[RepeatedClockInRuleTitle]}" IsChecked="{Binding RepeatedClockInAlertEnabled}" />
                                     <StackPanel Orientation="Horizontal" Spacing="8" IsVisible="{Binding RepeatedClockInAlertEnabled}">
-                                        <TextBlock Text="Minimum minutes between arrivals" VerticalAlignment="Center" />
+                                        <TextBlock Text="{Binding Loc[RepeatedClockInRuleThreshold]}" VerticalAlignment="Center" />
                                         <NumericUpDown Value="{Binding RepeatedClockInAlertMinutes}" Minimum="1" Maximum="240" Width="100" />
                                     </StackPanel>
                                     <CheckBox Content="{Binding Loc[BlockRestAbsent]}" IsChecked="{Binding BlockClockInOnRestOrAbsentDay}" />
