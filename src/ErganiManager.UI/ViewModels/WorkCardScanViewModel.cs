@@ -106,6 +106,7 @@ public partial class WorkCardScanViewModel :
     private readonly IConnectionStateService _connectionState;
     private readonly ICompanyService _companyService;
     private readonly ICompanyContext _companyContext;
+    private readonly WorkCardIntervalAlertService _intervalAlerts;
 
     private UserSession? _session;
 
@@ -206,7 +207,8 @@ public partial class WorkCardScanViewModel :
         ErganiRetryService retryService,
         IConnectionStateService connectionState,
         ICompanyService companyService,
-        ICompanyContext companyContext)
+        ICompanyContext companyContext,
+        WorkCardIntervalAlertService intervalAlerts)
     {
         _workCardSubmitter = workCardSubmitter;
         _retryService = retryService;
@@ -214,6 +216,7 @@ public partial class WorkCardScanViewModel :
         _connectionState = connectionState;
         _companyService = companyService;
         _companyContext = companyContext;
+        _intervalAlerts = intervalAlerts;
         AvailableAitiologiai = AitiologiaOptions.Create(Loc);
 
         /*
@@ -783,6 +786,8 @@ public partial class WorkCardScanViewModel :
                 AutoDetect ? null : movement);
             if (AutoDetect) movement = shift.Movement;
             var schedule = shift.Schedule;
+            var intervalWarning = await _intervalAlerts.EvaluateAndAlertAsync(
+                companyId.Value, employee.Id, employee.FullName, employee.TaxId, movement, scanTime);
             var isOfficialHoliday = movement == "Arrival" &&
                 CompanyHolidayCalendar.IsEnabled(companySettings?.OfficialHolidayDatesJson, DateOnly.FromDateTime(scanTime));
 
@@ -854,7 +859,7 @@ public partial class WorkCardScanViewModel :
             // result and the chosen late reason is used (it is not put in the offline queue).
             if (!AutoDetect)
             {
-                await SubmitManualCardAsync(request, name, movement, scanTime);
+                await SubmitManualCardAsync(request, name, movement, scanTime, intervalWarning);
                 BarcodeInput = string.Empty;
                 return;
             }
@@ -914,7 +919,8 @@ public partial class WorkCardScanViewModel :
                 true,
                 $"✅ {(movement == "Arrival" ? Loc[L.Arrival] : Loc[L.Departure]).ToUpper()} — {name}",
                 Loc["Vm.Saved — sending to Ergani in the background."] + "\n" +
-                string.Format(Loc["Vm.Time:          {0}"], scanTime.ToString("HH:mm:ss dd/MM/yyyy")));
+                string.Format(Loc["Vm.Time:          {0}"], scanTime.ToString("HH:mm:ss dd/MM/yyyy")) +
+                (string.IsNullOrWhiteSpace(intervalWarning) ? string.Empty : "\n⚠️ " + intervalWarning));
 
             RecentScans.Insert(
                 0,
@@ -1037,7 +1043,7 @@ public partial class WorkCardScanViewModel :
     }
 
     private async Task SubmitManualCardAsync(
-        WorkCardSubmissionRequest request, string name, string movement, DateTime scanTime)
+        WorkCardSubmissionRequest request, string name, string movement, DateTime scanTime, string? intervalWarning)
     {
         var isLate = DateTime.Now - scanTime > WorkCardLogRetryService.OnTimeWindow;
 
@@ -1058,7 +1064,8 @@ public partial class WorkCardScanViewModel :
                 $"✅ {(movement == "Arrival" ? Loc[L.Arrival] : Loc[L.Departure]).ToUpper()} — {name}",
                 string.Format(Loc["Vm.Protocol:      {0}"], result.Protocol) + "\n" +
                 string.Format(Loc["Vm.Time:          {0}"], scanTime.ToString("HH:mm:ss dd/MM/yyyy")) +
-                (isLate ? "\n" + string.Format(Loc["Vm.Reason:        {0}"], reason) : string.Empty));
+                (isLate ? "\n" + string.Format(Loc["Vm.Reason:        {0}"], reason) : string.Empty) +
+                (string.IsNullOrWhiteSpace(intervalWarning) ? string.Empty : "\n⚠️ " + intervalWarning));
 
             RecentScans.Insert(0, new ScanResultRow
             {
