@@ -139,7 +139,7 @@ public sealed class WorkCardIntervalAlertService
 
             // SendAlertAsync is designed to persist in-app notification independently and queue
             // retryable email failures. It never throws into the attendance path.
-            await _alerts.SendAlertAsync(companyId, alert);
+            _ = _alerts.SendAlertAsync(companyId, alert);
             return warning;
         }
         catch (Exception ex)
