@@ -13,6 +13,10 @@ public class CompanyDto
 
     public int EarlyClockInBlockMinutes { get; set; } = 15;
     public int EarlyDepartureAlertMinutes { get; set; } = 10;
+    public bool ShortClockInOutAlertEnabled { get; set; }
+    public int ShortClockInOutAlertMinutes { get; set; } = 10;
+    public bool RepeatedClockInAlertEnabled { get; set; }
+    public int RepeatedClockInAlertMinutes { get; set; } = 10;
     public bool BlockClockInWithoutSchedule { get; set; } = true;
     public bool BlockClockInOnRestOrAbsentDay { get; set; } = true;
     public string OfficialHolidayDatesJson { get; set; } = "[]";
