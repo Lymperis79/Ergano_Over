@@ -101,8 +101,16 @@ public class EmailAlertService : IEmailAlertService
                 (company.AlertEvents & (int)alert.Event) != 0;
             if (eventEnabled && company.AlertNotificationEnabled)
             {
-                await SaveNotificationAsync(companyId, alert);
-                NotificationRaised?.Invoke(alert);
+                try
+                {
+                    await SaveNotificationAsync(companyId, alert);
+                    NotificationRaised?.Invoke(alert);
+                }
+                catch (Exception notificationError)
+                {
+                    // Notification persistence must not suppress the independent email channel.
+                    _logger.LogWarning(notificationError, "Could not persist in-app alert '{Title}'.", alert.Title);
+                }
             }
 
             if (!eventEnabled || !company.AlertEmailEnabled)
