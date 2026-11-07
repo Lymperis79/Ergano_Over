@@ -49,6 +49,10 @@ public class CacheSyncService : ICacheSyncService
 
             cachedSettings.EarlyClockInBlockMinutes = company.EarlyClockInBlockMinutes;
             cachedSettings.EarlyDepartureAlertMinutes = company.EarlyDepartureAlertMinutes;
+            cachedSettings.ShortClockInOutAlertEnabled = company.ShortClockInOutAlertEnabled;
+            cachedSettings.ShortClockInOutAlertMinutes = company.ShortClockInOutAlertMinutes;
+            cachedSettings.RepeatedClockInAlertEnabled = company.RepeatedClockInAlertEnabled;
+            cachedSettings.RepeatedClockInAlertMinutes = company.RepeatedClockInAlertMinutes;
             cachedSettings.BlockClockInWithoutSchedule = company.BlockClockInWithoutSchedule;
             cachedSettings.BlockClockInOnRestOrAbsentDay = company.BlockClockInOnRestOrAbsentDay;
             cachedSettings.OfficialHolidayDatesJson = string.IsNullOrWhiteSpace(company.OfficialHolidayDatesJson) ? "[]" : company.OfficialHolidayDatesJson;
