@@ -31,6 +31,14 @@ public class Company
     // Time rules
     public int EarlyClockInBlockMinutes { get; set; } = 15;
     public int EarlyDepartureAlertMinutes { get; set; } = 10;
+
+    /// <summary>Warn when an arrival and its following departure are closer than this threshold.</summary>
+    public bool ShortClockInOutAlertEnabled { get; set; }
+    public int ShortClockInOutAlertMinutes { get; set; } = 10;
+
+    /// <summary>Warn when two consecutive arrivals for the same employee are closer than this threshold.</summary>
+    public bool RepeatedClockInAlertEnabled { get; set; }
+    public int RepeatedClockInAlertMinutes { get; set; } = 10;
     public bool BlockClockInWithoutSchedule { get; set; } = true;
 
     /// <summary>When true (default) clock-in/out is blocked on days the schedule marks as Rest or Absent.
