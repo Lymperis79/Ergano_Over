@@ -176,8 +176,6 @@
                                         <CheckBox Content="{Binding Loc[AlertEvNoSchedule]}" IsChecked="{Binding AlertEvNoSchedule}" />
                                         <CheckBox Content="{Binding Loc[AlertEvScanRejected]}" IsChecked="{Binding AlertEvScanRejected}" />
                                         <CheckBox Content="{Binding Loc[AlertEvAutomaticClockOut]}" IsChecked="{Binding AlertEvAutomaticClockOut}" />
-                                        <CheckBox Content="Short interval between clock-in and clock-out" IsChecked="{Binding AlertEvShortClockInOut}" />
-                                        <CheckBox Content="Repeated clock-in within short interval" IsChecked="{Binding AlertEvRepeatedClockIn}" />
                                         <TextBlock Text="{Binding Loc[ClockInAlertMinutes]}" FontWeight="SemiBold" />
                                         <NumericUpDown Value="{Binding ClockInAlertMinutes}" Minimum="0" Maximum="240" />
                                         <TextBlock Text="{Binding Loc[AlertEventsHint]}" TextWrapping="Wrap" Foreground="Gray" FontSize="11" />
