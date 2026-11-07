@@ -19,6 +19,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IConnectionStateService, ConnectionStateService>();
         services.AddTransient<IAuthService, AuthService>();
         services.AddTransient<ICacheSyncService, CacheSyncService>();
+        services.AddTransient<WorkCardIntervalAlertService>();
         services.AddTransient<IAdminBootstrapService, AdminBootstrapService>();
         services.AddTransient<ICompanyService, CompanyService>();
         services.AddSingleton<LicenseSeatService>();
