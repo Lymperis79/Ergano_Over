@@ -787,8 +787,6 @@ public partial class WorkCardScanViewModel :
                 AutoDetect ? null : movement);
             if (AutoDetect) movement = shift.Movement;
             var schedule = shift.Schedule;
-            var intervalWarning = await _intervalAlerts.EvaluateAndAlertAsync(
-                companyId.Value, employee.Id, employee.FullName, employee.TaxId, movement, scanTime);
             var isOfficialHoliday = movement == "Arrival" &&
                 CompanyHolidayCalendar.IsEnabled(companySettings?.OfficialHolidayDatesJson, DateOnly.FromDateTime(scanTime));
 
@@ -834,6 +832,9 @@ public partial class WorkCardScanViewModel :
              *
              * This same request is reused when Retry is selected.
              */
+            var intervalWarning = await _intervalAlerts.EvaluateAndAlertAsync(
+                companyId.Value, employee.Id, employee.FullName, employee.TaxId, movement, scanTime);
+
             var request =
                 new WorkCardSubmissionRequest
                 {
