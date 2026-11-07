@@ -8,6 +8,7 @@ namespace ErganiManager.LocalCache.Entities;
 public class CachedCompanySettings
 {
     public int CompanyId { get; set; } // primary key, matches Company.Id in main DB
+    public string CompanyName { get; set; } = string.Empty;
 
     public int EarlyClockInBlockMinutes { get; set; } = 15;
     public int EarlyDepartureAlertMinutes { get; set; } = 10;
