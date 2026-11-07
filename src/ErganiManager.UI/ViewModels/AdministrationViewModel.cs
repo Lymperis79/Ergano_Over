@@ -990,7 +990,9 @@ public partial class AdministrationViewModel : ViewModelBase, IAdminSectionViewM
         (AlertEvLateClockIn ? (int)AlertEvent.LateClockIn : 0) |
         (AlertEvNoSchedule ? (int)AlertEvent.NoScheduleClockIn : 0) |
         (AlertEvScanRejected ? (int)AlertEvent.ScanRejected : 0) |
-        (AlertEvAutomaticClockOut ? (int)AlertEvent.AutomaticClockOut : 0);
+        (AlertEvAutomaticClockOut ? (int)AlertEvent.AutomaticClockOut : 0) |
+        (AlertEvShortClockInOut ? (int)AlertEvent.ShortClockInOutInterval : 0) |
+        (AlertEvRepeatedClockIn ? (int)AlertEvent.RepeatedClockIn : 0);
 
     private void ApplyCompanyAlertEvents(int mask)
     {
@@ -1003,6 +1005,10 @@ public partial class AdministrationViewModel : ViewModelBase, IAdminSectionViewM
         AlertEvNoSchedule = events.HasFlag(AlertEvent.NoScheduleClockIn);
         AlertEvScanRejected = events.HasFlag(AlertEvent.ScanRejected);
         AlertEvAutomaticClockOut = events.HasFlag(AlertEvent.AutomaticClockOut);
+        AlertEvShortClockInOut = events.HasFlag(AlertEvent.ShortClockInOutInterval);
+        AlertEvRepeatedClockIn = events.HasFlag(AlertEvent.RepeatedClockIn);
+        AlertEvShortClockInOut = events.HasFlag(AlertEvent.ShortClockInOutInterval);
+        AlertEvRepeatedClockIn = events.HasFlag(AlertEvent.RepeatedClockIn);
     }
 
     private async Task LoadCompanySettingsAsync()
