@@ -1013,8 +1013,6 @@ public partial class AdministrationViewModel : ViewModelBase, IAdminSectionViewM
         AlertEvAutomaticClockOut = events.HasFlag(AlertEvent.AutomaticClockOut);
         AlertEvShortClockInOut = events.HasFlag(AlertEvent.ShortClockInOutInterval);
         AlertEvRepeatedClockIn = events.HasFlag(AlertEvent.RepeatedClockIn);
-        AlertEvShortClockInOut = events.HasFlag(AlertEvent.ShortClockInOutInterval);
-        AlertEvRepeatedClockIn = events.HasFlag(AlertEvent.RepeatedClockIn);
     }
 
     private async Task LoadCompanySettingsAsync()
