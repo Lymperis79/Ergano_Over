@@ -37,6 +37,7 @@ public partial class TerminalViewModel : ViewModelBase
     private readonly ICacheSyncService _cacheSync;
     private readonly IErganiHealthCheckService _erganiHealthCheck;
     private readonly ICredentialProtector _credentialProtector;
+    private readonly WorkCardIntervalAlertService _intervalAlerts;
     /// <summary>How long the result window of a scan stays on screen.</summary>
     private const int PopupSeconds = 2;
 
@@ -150,7 +151,8 @@ public partial class TerminalViewModel : ViewModelBase
         IEmailAlertService emailAlertService,
         ICacheSyncService cacheSync,
         IErganiHealthCheckService erganiHealthCheck,
-        ICredentialProtector credentialProtector)
+        ICredentialProtector credentialProtector,
+        WorkCardIntervalAlertService intervalAlerts)
     {
         _connectionState = connectionState;
         _retryService = retryService;
@@ -158,6 +160,7 @@ public partial class TerminalViewModel : ViewModelBase
         _cacheSync = cacheSync;
         _erganiHealthCheck = erganiHealthCheck;
         _credentialProtector = credentialProtector;
+        _intervalAlerts = intervalAlerts;
 
         _clockTimer = new System.Timers.Timer(1000);
         _clockTimer.Elapsed += (_, _) => UpdateClock();
@@ -859,6 +862,8 @@ public partial class TerminalViewModel : ViewModelBase
         var isOfficialHoliday = movementType == "Arrival" &&
             CompanyHolidayCalendar.IsEnabled(settings?.OfficialHolidayDatesJson, DateOnly.FromDateTime(now));
         _currentMovementText = movementType == "Arrival" ? Loc[L.Arrival] : Loc[L.Departure];
+        var intervalWarning = await _intervalAlerts.EvaluateAndAlertAsync(
+            companyId, employee.Id, employee.FullName, employee.TaxId, movementType, now);
 
         // Rest/Absent days block the clock-in (company setting; without cached settings the safe default is
         // to block). A departure is never blocked: it closes an arrival that already exists, and blocking
@@ -939,7 +944,7 @@ public partial class TerminalViewModel : ViewModelBase
 
             ShowPopup(ScanPopupKind.Success, Loc[L.ClockInSuccess], employee.FullName,
                 $"{Loc[L.Arrival]}  {now:HH:mm:ss}", shiftText,
-                isOnline ? "" : Loc[L.OfflineMode]);
+                string.Join(" • ", new[] { isOnline ? "" : Loc[L.OfflineMode], intervalWarning ?? string.Empty }.Where(x => !string.IsNullOrWhiteSpace(x))));
         }
         else // Departure
         {
@@ -977,7 +982,7 @@ public partial class TerminalViewModel : ViewModelBase
                 ShowPopup(ScanPopupKind.EarlyDepartureWarning, Loc[L.ClockOutEarly], employee.FullName,
                     $"{Loc[L.Departure]}  {now:HH:mm:ss}",
                     $"{schedule!.EndTime:HH:mm}  •  {string.Format(Loc[L.MinutesEarly], earlyMinutes)}",
-                    isOnline ? "✉️" : Loc[L.OfflineMode]);
+                    string.Join(" • ", new[] { isOnline ? "✉️" : Loc[L.OfflineMode], intervalWarning ?? string.Empty }.Where(x => !string.IsNullOrWhiteSpace(x))));
             }
             else
             {
@@ -987,7 +992,7 @@ public partial class TerminalViewModel : ViewModelBase
 
                 ShowPopup(ScanPopupKind.Success, Loc[L.ClockOutSuccess], employee.FullName,
                     $"{Loc[L.Departure]}  {now:HH:mm:ss}", shiftText,
-                    isOnline ? "" : Loc[L.OfflineMode]);
+                    string.Join(" • ", new[] { isOnline ? "" : Loc[L.OfflineMode], intervalWarning ?? string.Empty }.Where(x => !string.IsNullOrWhiteSpace(x))));
             }
         }
     }
