@@ -375,9 +375,9 @@ public class ErganiDataImportService : IErganiDataImportService
                             : credentials.Usertype,
 
                     ErganiBaseUrl =
-                        string.IsNullOrWhiteSpace(credentials.BaseUrl)
-                            ? ErganiEndpoints.TrialBaseUrl
-                            : credentials.BaseUrl,
+                        !string.IsNullOrWhiteSpace(credentials.BaseUrl)
+                            ? credentials.BaseUrl.Trim()
+                            : existingCompany?.ErganiBaseUrl ?? string.Empty,
 
                     IsActive =
                         existingCompany?.IsActive ?? true,
