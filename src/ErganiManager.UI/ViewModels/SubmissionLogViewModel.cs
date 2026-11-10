@@ -120,6 +120,9 @@ public partial class SubmissionLogViewModel
     public ObservableCollection<SubmissionLogRow> Rows { get; } = new();
     public ObservableCollection<EmployeeFilterOption> EmployeeOptions { get; } = new();
     public ObservableCollection<EmployeeFilterOption> FilteredEmployeeOptions { get; } = new();
+    // CollectionChanged from the AutoCompleteBox can update its Text binding. Guard the
+    // resulting property callback so refreshing the filtered list cannot recurse.
+    private bool _isRefreshingEmployeeOptions;
 
     [ObservableProperty]
     private string _employeeSearchText = string.Empty;
@@ -151,6 +154,12 @@ public partial class SubmissionLogViewModel
 
     private void RefreshFilteredEmployeeOptions()
     {
+        // AutoCompleteBox may change its Text/SelectedItem bindings while its
+        // ItemsSource collection is being reset. Do not allow those callbacks
+        // to enter this method recursively (a StackOverflowException).
+        if (_isRefreshingEmployeeOptions)
+            return;
+
         var query = EmployeeSearchText?.Trim();
         var matches = string.IsNullOrWhiteSpace(query)
             ? EmployeeOptions.ToList()
@@ -161,9 +170,23 @@ public partial class SubmissionLogViewModel
                      e.TaxId.Contains(query, StringComparison.OrdinalIgnoreCase)))
                 .ToList();
 
-        FilteredEmployeeOptions.Clear();
-        foreach (var employee in matches)
-            FilteredEmployeeOptions.Add(employee);
+        // Avoid unnecessary CollectionChanged notifications when the list is
+        // already correct; these notifications can also disturb autocomplete selection.
+        if (FilteredEmployeeOptions.Count == matches.Count &&
+            FilteredEmployeeOptions.Select(e => e.Id).SequenceEqual(matches.Select(e => e.Id)))
+            return;
+
+        _isRefreshingEmployeeOptions = true;
+        try
+        {
+            FilteredEmployeeOptions.Clear();
+            foreach (var employee in matches)
+                FilteredEmployeeOptions.Add(employee);
+        }
+        finally
+        {
+            _isRefreshingEmployeeOptions = false;
+        }
     }
 
     public ObservableCollection<FailedSubmissionRow> FailedSubmissions { get; } = new();
