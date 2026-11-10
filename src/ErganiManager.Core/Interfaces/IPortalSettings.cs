@@ -3,7 +3,7 @@ namespace ErganiManager.Core.Interfaces;
 /// <summary>Configuration for one Ergani web-portal workflow.</summary>
 public sealed class ErganiPortalProfile
 {
-    public string PortalBaseUrl { get; set; } = "https://trialv2eservices.yeka.gr/";
+    public string PortalBaseUrl { get; set; } = "https://eservices.yeka.gr/";
     public string TargetPageUrl { get; set; } = string.Empty;
     public string FromDateFieldId { get; set; } = string.Empty;
     public string ToDateFieldId { get; set; } = string.Empty;
@@ -23,9 +23,9 @@ public sealed class PortalSettings
 
     public ErganiPortalProfile Schedule { get; set; } = new()
     {
-        TargetPageUrl = string.Empty,
-        FromDateFieldId = "ctl00_ctl00_ContentHolder_ContentHolder_ErgazomenosWorkingSearchControl_DateFromEdit",
-        ToDateFieldId = "ctl00_ctl00_ContentHolder_ContentHolder_ErgazomenosWorkingSearchControl_DateToEdit",
+        TargetPageUrl = "https://eservices.yeka.gr/(S(kzfbdn3xgt22oqtyrb2zittw))/Mitroa/ErgazomenosWorkingSearch.aspx",
+        FromDateFieldId = "igtxtctl00_ctl00_ContentHolder_ContentHolder_ErgazomenosWorkingSearchControl_DateFromEdit",
+        ToDateFieldId = "igtxtctl00_ctl00_ContentHolder_ContentHolder_ErgazomenosWorkingSearchControl_DateToEdit",
         AutoSearch = true,
         AutoDownload = true,
         SearchButtonId = "ctl00_ctl00_ContentHolder_ContentHolder_ErgazomenosWorkingSearchControl_SearchControlSearchButton"
@@ -33,7 +33,7 @@ public sealed class PortalSettings
 
     public ErganiPortalProfile WorkCards { get; set; } = new()
     {
-        TargetPageUrl = "https://trialv2eservices.yeka.gr/WTO/Workcard/DailyWorkTimesSearch.aspx",
+        TargetPageUrl = "https://eservices.yeka.gr/WTO/Workcard/DailyWorkTimesSearch.aspx",
         FromDateFieldId = "igtxtctl00_ctl00_ContentHolder_ContentHolder_DailyWorkTimesSearchControl_DateFromEdit",
         ToDateFieldId = "igtxtctl00_ctl00_ContentHolder_ContentHolder_DailyWorkTimesSearchControl_DateToEdit",
         AutoSearch = true,
