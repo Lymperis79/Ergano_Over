@@ -39,14 +39,25 @@ public partial class WorkCardHistoryViewModel : ViewModelBase, IAdminSectionView
     [ObservableProperty]
     private string _employeeSearchText = string.Empty;
 
-    partial void OnEmployeeSearchTextChanged(string value) => RefreshFilteredEmployees();
+    [ObservableProperty]
+    private bool _isEmployeeDropdownOpen;
+
+    partial void OnEmployeeSearchTextChanged(string value)
+    {
+        RefreshFilteredEmployees();
+        IsEmployeeDropdownOpen = !string.IsNullOrWhiteSpace(value);
+    }
 
     partial void OnFilterEmployeeChanged(EmployeeDto? value)
     {
         // Keep the search query empty after selection so reopening the picker shows
         // every company employee, rather than filtering the list to "All employees".
-        if (value is not null && !string.IsNullOrEmpty(EmployeeSearchText))
-            EmployeeSearchText = string.Empty;
+        if (value is not null)
+        {
+            IsEmployeeDropdownOpen = false;
+            if (!string.IsNullOrEmpty(EmployeeSearchText))
+                EmployeeSearchText = string.Empty;
+        }
     }
 
     private void RefreshFilteredEmployees()
