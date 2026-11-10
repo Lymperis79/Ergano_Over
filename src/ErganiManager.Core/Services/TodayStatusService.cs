@@ -202,8 +202,29 @@ public class TodayStatusService : ITodayStatusService
                     Time = arrivalTime, Planned = plannedStart, Minutes = (int)late.TotalMinutes });
         }
 
-        if (!isOfficialHoliday && arrivals.Count == 0 && isWorkDay && plannedStart.HasValue && After(plannedStart.Value) && departures.Count == 0)
-            Add(new TodayIssueDto { Code = TodayIssueCode.NoClockIn, Level = StatusLevel.Error, Planned = plannedStart });
+        // Evaluate every scheduled period independently. A morning arrival must not
+        // satisfy the afternoon period, and a future period must not warn before it starts.
+        if (!isOfficialHoliday && isWorkDay)
+        {
+            foreach (var period in scheduledPeriods)
+            {
+                var hasArrivalInPeriod = arrivals.Any(a =>
+                {
+                    var time = TimeOnly.FromDateTime(a.MovementDateTime);
+                    return time >= period.StartTime && time <= period.EndTime;
+                });
+
+                if (!hasArrivalInPeriod && After(period.StartTime))
+                {
+                    Add(new TodayIssueDto
+                    {
+                        Code = TodayIssueCode.NoClockIn,
+                        Level = StatusLevel.Error,
+                        Planned = period.StartTime
+                    });
+                }
+            }
+        }
 
         if (arrivals.Count == 0 && departures.Count > 0)
             Add(new TodayIssueDto { Code = TodayIssueCode.ClockOutWithoutIn, Level = StatusLevel.Error });
