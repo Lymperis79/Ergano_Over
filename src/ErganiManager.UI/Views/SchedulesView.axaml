@@ -84,7 +84,7 @@
                 <TextBlock Grid.Column="0" Text="{Binding Loc[Employee2]}" VerticalAlignment="Center" Margin="0,0,8,0" />
                 <Grid Grid.Column="1" Width="292">
                     <AutoCompleteBox x:Name="ScheduleEmployeePicker"
-                                 ItemsSource="{Binding SchedulePickerEmployees}"
+                                 ItemsSource="{Binding FilteredEmployees}"
                                  SelectedItem="{Binding SelectedEmployee, Mode=TwoWay}"
                                  ValueMemberBinding="{Binding DisplayName}"
                                  FilterMode="Contains"
@@ -94,7 +94,7 @@
                                  HorizontalAlignment="Stretch"
                                  ToolTip.Tip="Type an employee name or employee number to filter the list">
                     <AutoCompleteBox.ItemTemplate>
-                        <DataTemplate x:DataType="core:EmployeeDto"><TextBlock Text="{Binding DisplayName}" /></DataTemplate>
+                        <DataTemplate x:DataType="core:EmployeeDto"><TextBlock Text="{Binding DisplayName}" FontSize="15" Margin="4,3" /></DataTemplate>
                     </AutoCompleteBox.ItemTemplate>
                 </AutoCompleteBox>
                     <ToggleButton IsChecked="{Binding #ScheduleEmployeePicker.IsDropDownOpen, Mode=TwoWay}"
