@@ -99,35 +99,21 @@
                                        FontSize="12"
                                        Foreground="Gray" />
 
-                            <Grid MinWidth="292" HorizontalAlignment="Left">
-                                <AutoCompleteBox x:Name="WorkCardEmployeePicker" ItemsSource="{Binding FilteredEmployees}"
-                                               SelectedItem="{Binding FilterEmployee, Mode=TwoWay}"
-                                               Text="{Binding EmployeeSearchText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                               ValueMemberBinding="{Binding DisplayName}"
-                                               FilterMode="None"
-                                               MinimumPrefixLength="0"
-                                               IsTextCompletionEnabled="False"
-                                               ClearSelectionOnLostFocus="False"
-                                               HorizontalAlignment="Stretch"
-                                               ToolTip.Tip="Type an employee name or employee number to filter the list">
-                                <AutoCompleteBox.ItemTemplate>
-                                    <DataTemplate x:DataType="core:EmployeeDto">
-                                        <TextBlock Text="{Binding DisplayName}" FontSize="15" Margin="4,3" />
-                                    </DataTemplate>
-                                </AutoCompleteBox.ItemTemplate>
-                            </AutoCompleteBox>
-                                <ToggleButton IsChecked="{Binding #WorkCardEmployeePicker.IsDropDownOpen, Mode=TwoWay}"
-                                              Content="▾"
-                                              Width="30"
-                                              HorizontalAlignment="Right"
-                                              VerticalAlignment="Center"
-                                              VerticalContentAlignment="Center"
-                                              HorizontalContentAlignment="Center"
-                                              Background="Transparent"
-                                              BorderThickness="0"
-                                              Padding="4,0"
-                                              ToolTip.Tip="Open employee list" />
-                            </Grid>
+                            <StackPanel MinWidth="292" Spacing="5">
+                                <TextBox Text="{Binding EmployeeSearchText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                         Watermark="Search by name or AFM"
+                                         MinWidth="292" />
+                                <ComboBox ItemsSource="{Binding FilteredEmployees}"
+                                          SelectedItem="{Binding FilterEmployee, Mode=TwoWay}"
+                                          MinWidth="292"
+                                          HorizontalAlignment="Stretch">
+                                    <ComboBox.ItemTemplate>
+                                        <DataTemplate x:DataType="core:EmployeeDto">
+                                            <TextBlock Text="{Binding DisplayName}" FontSize="15" Margin="4,3" />
+                                        </DataTemplate>
+                                    </ComboBox.ItemTemplate>
+                                </ComboBox>
+                            </StackPanel>
 
                         </StackPanel>
 
