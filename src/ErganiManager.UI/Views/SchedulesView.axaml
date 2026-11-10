@@ -87,14 +87,27 @@
                                  ItemsSource="{Binding FilteredEmployees}"
                                  SelectedItem="{Binding SelectedEmployee, Mode=TwoWay}"
                                  ValueMemberBinding="{Binding DisplayName}"
-                                 FilterMode="Contains"
+                                 FilterMode="None"
                                  MinimumPrefixLength="0"
                                  IsTextCompletionEnabled="False"
                                  ClearSelectionOnLostFocus="False"
                                  HorizontalAlignment="Stretch"
-                                 ToolTip.Tip="Type an employee name or employee number to filter the list">
+                                 ToolTip.Tip="Type an employee name, AFM or employee number to filter the list">
+                    <AutoCompleteBox.Styles>
+                        <!-- Keep the editable text left-aligned even if the application has
+                             a global TextBox alignment style. -->
+                        <Style Selector="TextBox">
+                            <Setter Property="TextAlignment" Value="Left" />
+                        </Style>
+                    </AutoCompleteBox.Styles>
                     <AutoCompleteBox.ItemTemplate>
-                        <DataTemplate x:DataType="core:EmployeeDto"><TextBlock Text="{Binding DisplayName}" FontSize="15" Margin="4,3" /></DataTemplate>
+                        <DataTemplate x:DataType="core:EmployeeDto">
+                            <TextBlock Text="{Binding DisplayName}"
+                                       FontSize="15"
+                                       TextWrapping="NoWrap"
+                                       TextTrimming="CharacterEllipsis"
+                                       Margin="6,4" />
+                        </DataTemplate>
                     </AutoCompleteBox.ItemTemplate>
                 </AutoCompleteBox>
                     <ToggleButton IsChecked="{Binding #ScheduleEmployeePicker.IsDropDownOpen, Mode=TwoWay}"
