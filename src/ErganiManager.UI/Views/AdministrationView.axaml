@@ -356,8 +356,6 @@
                                 <StackPanel Spacing="10">
                                     <TextBlock Text="{Binding Loc[SchedulePortal]}" FontSize="16" FontWeight="SemiBold" />
                                     <TextBlock TextWrapping="Wrap" Foreground="Gray" FontSize="12" Text="{Binding Loc[SchedulePortalDescription]}" />
-                                    <TextBlock Text="{Binding Loc[PortalBaseAddress]}" FontWeight="SemiBold" />
-                                    <TextBox Text="{Binding SchedulePortalBaseUrl}" PlaceholderText="{Binding Loc[PortalBaseAddress]}" />
                                     <TextBlock Text="{Binding Loc[PortalTargetPage]}" FontWeight="SemiBold" />
                                     <TextBox Text="{Binding SchedulePortalTargetUrl}" PlaceholderText="{Binding Loc[PortalTargetPage]}" />
                                     <TextBlock Text="{Binding Loc[PortalFromDateFieldId]}" FontWeight="SemiBold" />
@@ -383,8 +381,6 @@
                                 <StackPanel Spacing="10">
                                     <TextBlock Text="{Binding Loc[WorkCardsPortal]}" FontSize="16" FontWeight="SemiBold" />
                                     <TextBlock TextWrapping="Wrap" Foreground="Gray" FontSize="12" Text="{Binding Loc[WorkCardsPortalDescription]}" />
-                                    <TextBlock Text="{Binding Loc[PortalBaseAddress]}" FontWeight="SemiBold" />
-                                    <TextBox Text="{Binding WorkCardsPortalBaseUrl}" PlaceholderText="{Binding Loc[PortalBaseAddress]}" />
                                     <TextBlock Text="{Binding Loc[PortalTargetPage]}" FontWeight="SemiBold" />
                                     <TextBox Text="{Binding WorkCardsPortalTargetUrl}" PlaceholderText="{Binding Loc[PortalTargetPage]}" />
                                     <TextBlock Text="{Binding Loc[PortalFromDateFieldId]}" FontWeight="SemiBold" />
