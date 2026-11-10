@@ -131,20 +131,22 @@ public partial class SubmissionLogViewModel
 
     partial void OnSelectedEmployeeOptionChanged(EmployeeFilterOption? value)
     {
-        if (value is not null && SelectedEmployeeId != value.Id)
+        if (value is null) return;
+
+        if (SelectedEmployeeId != value.Id)
             SelectedEmployeeId = value.Id;
+
+        // Do not leave "All employees" (or the selected employee's name) as the
+        // autocomplete query; that would hide every other selectable employee.
+        if (!string.IsNullOrEmpty(EmployeeSearchText))
+            EmployeeSearchText = string.Empty;
     }
 
     partial void OnSelectedEmployeeIdChanged(int? value)
     {
         var selected = EmployeeOptions.FirstOrDefault(e => e.Id == (value ?? 0));
-        if (selected is not null)
-        {
-            if (!ReferenceEquals(SelectedEmployeeOption, selected))
-                SelectedEmployeeOption = selected;
-            if (!string.Equals(EmployeeSearchText, selected.Name, StringComparison.Ordinal))
-                EmployeeSearchText = selected.Name;
-        }
+        if (selected is not null && !ReferenceEquals(SelectedEmployeeOption, selected))
+            SelectedEmployeeOption = selected;
     }
 
     private void RefreshFilteredEmployeeOptions()
@@ -550,6 +552,7 @@ public partial class SubmissionLogViewModel
             EmployeeOptions.Clear();
             EmployeeOptions.Add(new EmployeeFilterOption { Id = 0, Name = Loc[L.AllEmployees], TaxId = string.Empty });
             foreach (var employee in employees) EmployeeOptions.Add(employee);
+            EmployeeSearchText = string.Empty;
             RefreshFilteredEmployeeOptions();
             SelectedEmployeeOption = EmployeeOptions.FirstOrDefault(e => e.Id == (SelectedEmployeeId ?? 0))
                 ?? EmployeeOptions.FirstOrDefault();
