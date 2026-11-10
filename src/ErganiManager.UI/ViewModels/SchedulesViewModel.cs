@@ -149,22 +149,41 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
 
     partial void OnEmployeeSearchTextChanged(string value) => RefreshFilteredEmployees();
 
+    private bool _isRefreshingFilteredEmployees;
+
     private void RefreshFilteredEmployees()
     {
+        // Always start with the complete company employee list. AvailableEmployees is
+        // intentionally active-only and must not be used by the calendar picker.
         var query = EmployeeSearchText?.Trim();
+        var source = SchedulePickerEmployees.ToList();
         var matches = string.IsNullOrWhiteSpace(query)
-            ? AvailableEmployees.ToList()
-            : SchedulePickerEmployees.Where(e =>
-                    e is not null &&
-                    ((!string.IsNullOrWhiteSpace(e.FullName) &&
-                      e.DisplayName.Contains(query, StringComparison.CurrentCultureIgnoreCase) ||
-                     (!string.IsNullOrWhiteSpace(e.TaxId) && e.TaxId.Contains(query, StringComparison.OrdinalIgnoreCase))) ||
-                     e.Id.ToString().Contains(query, StringComparison.Ordinal)))
+            ? source
+            : source.Where(e =>
+                    (!string.IsNullOrWhiteSpace(e.DisplayName) &&
+                     e.DisplayName.Contains(query, StringComparison.CurrentCultureIgnoreCase)) ||
+                    (!string.IsNullOrWhiteSpace(e.TaxId) &&
+                     e.TaxId.Contains(query, StringComparison.OrdinalIgnoreCase)) ||
+                    e.Id.ToString().Contains(query, StringComparison.Ordinal))
                 .ToList();
 
-        FilteredEmployees.Clear();
-        foreach (var employee in matches)
-            FilteredEmployees.Add(employee);
+        if (_isRefreshingFilteredEmployees)
+            return;
+
+        if (FilteredEmployees.Select(e => e.Id).SequenceEqual(matches.Select(e => e.Id)))
+            return;
+
+        _isRefreshingFilteredEmployees = true;
+        try
+        {
+            FilteredEmployees.Clear();
+            foreach (var employee in matches)
+                FilteredEmployees.Add(employee);
+        }
+        finally
+        {
+            _isRefreshingFilteredEmployees = false;
+        }
     }
     public ObservableCollection<ErganiManager.Data.Entities.OvertimeJustification> AvailableOvertimeJustifications { get; } =
         new(Enum.GetValues<ErganiManager.Data.Entities.OvertimeJustification>());
