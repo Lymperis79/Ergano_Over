@@ -6,6 +6,7 @@ using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Platform.Storage;
 using Avalonia.Threading;
+using Avalonia.VisualTree;
 using ErganiManager.UI.ViewModels;
 
 namespace ErganiManager.UI.Views;
@@ -77,6 +78,21 @@ public partial class SchedulesView : UserControl
 
         _menuCloseTimer.Stop();
         _menuCloseTimer.Start();
+    }
+
+    private void OnScheduleEmployeePickerGotFocus(object? sender, RoutedEventArgs e)
+    {
+        // Selecting all lets the next keystroke replace the current employee name,
+        // rather than forcing the user to erase it character by character.
+        Dispatcher.UIThread.Post(() =>
+        {
+            if (sender is not AutoCompleteBox picker)
+                return;
+
+            var editor = picker.GetVisualDescendants().OfType<TextBox>().FirstOrDefault();
+            editor?.SelectAll();
+            picker.IsDropDownOpen = true;
+        });
     }
 
     private void OnCellPressed(object? sender, PointerPressedEventArgs e)
