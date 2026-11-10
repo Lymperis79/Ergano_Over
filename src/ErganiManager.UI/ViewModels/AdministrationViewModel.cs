@@ -649,8 +649,8 @@ public partial class AdministrationViewModel : ViewModelBase, IAdminSectionViewM
 
     private ErganiPortalProfile BuildScheduleProfile() => new()
     {
-        PortalBaseUrl = (SchedulePortalBaseUrl ?? string.Empty).Trim(),
-        TargetPageUrl = (SchedulePortalTargetUrl ?? string.Empty).Trim(),
+        PortalBaseUrl = string.Empty,
+        TargetPageUrl = NormalizePortalPath(SchedulePortalTargetUrl),
         FromDateFieldId = (SchedulePortalFromField ?? string.Empty).Trim(),
         ToDateFieldId = (SchedulePortalToField ?? string.Empty).Trim(),
         DateFormat = string.IsNullOrWhiteSpace(SchedulePortalDateFormat) ? "dd/MM/yyyy" : SchedulePortalDateFormat.Trim(),
@@ -662,8 +662,8 @@ public partial class AdministrationViewModel : ViewModelBase, IAdminSectionViewM
 
     private ErganiPortalProfile BuildWorkCardsProfile() => new()
     {
-        PortalBaseUrl = (WorkCardsPortalBaseUrl ?? string.Empty).Trim(),
-        TargetPageUrl = (WorkCardsPortalTargetUrl ?? string.Empty).Trim(),
+        PortalBaseUrl = string.Empty,
+        TargetPageUrl = NormalizePortalPath(WorkCardsPortalTargetUrl),
         FromDateFieldId = (WorkCardsPortalFromField ?? string.Empty).Trim(),
         ToDateFieldId = (WorkCardsPortalToField ?? string.Empty).Trim(),
         DateFormat = string.IsNullOrWhiteSpace(WorkCardsPortalDateFormat) ? "dd/MM/yyyy" : WorkCardsPortalDateFormat.Trim(),
@@ -671,6 +671,14 @@ public partial class AdministrationViewModel : ViewModelBase, IAdminSectionViewM
         AutoDownload = false,
         SearchButtonId = (WorkCardsPortalSearchButton ?? string.Empty).Trim()
     };
+
+    private static string NormalizePortalPath(string? value)
+    {
+        var text = (value ?? string.Empty).Trim();
+        if (Uri.TryCreate(text, UriKind.Absolute, out var absolute))
+            return absolute.PathAndQuery;
+        return text.Length == 0 ? string.Empty : "/" + text.TrimStart('/');
+    }
 
     private bool ValidatePortalUrl(string value, string name, out string message)
     {
