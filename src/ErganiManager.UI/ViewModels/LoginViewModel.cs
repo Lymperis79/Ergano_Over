@@ -91,9 +91,10 @@ public partial class LoginViewModel : ViewModelBase
 
         try
         {
-            // Use the configured company's Ergani URL, or fall back to the trial URL
+            // The company record is the only source of the Ergani API URL.
+            // Do not silently fall back to a trial endpoint when it is not configured.
             var cs = Program.Services.GetRequiredService<IConnectionStateService>();
-            string baseUrl = ErganiEndpoints.TrialBaseUrl;
+            string baseUrl = string.Empty;
 
             if (cs.ConfigExists())
             {
