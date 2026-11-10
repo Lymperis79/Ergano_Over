@@ -151,8 +151,7 @@ IAdminSectionViewModel
         "01";
 
     [ObservableProperty]
-    private string _formErganiBaseUrl =
-        ErganiEndpoints.TrialBaseUrl;
+    private string _formErganiBaseUrl = string.Empty;
 
     [ObservableProperty]
     private bool _formIsActive =
@@ -357,8 +356,7 @@ IAdminSectionViewModel
         FormErganiUsertype =
             "01";
 
-        FormErganiBaseUrl =
-            ErganiEndpoints.TrialBaseUrl;
+        FormErganiBaseUrl = string.Empty;
 
         FormIsActive =
             true;
