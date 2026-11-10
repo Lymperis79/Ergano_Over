@@ -22,7 +22,7 @@ public class Company
     [MaxLength(300)]
     public string ErganiUsertype { get; set; } = "01";
     // Explicit company setting; never silently fall back to the trial API.
-    public string ErganiBaseUrl { get; set; } = string.Empty;
+    public string ErganiBaseUrl { get; set; } = "https://eservices.yeka.gr/WebServicesApi/api";
 
     public bool IsActive { get; set; } = true;
 
