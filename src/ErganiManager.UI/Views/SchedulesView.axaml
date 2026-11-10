@@ -80,7 +80,7 @@
         <!-- Row 1: Controls bar -->
         <Border Grid.Row="1" Background="{DynamicResource CardBrush}" CornerRadius="8" Padding="12" Margin="0,0,0,8">
             <Grid RowDefinitions="Auto,Auto" RowSpacing="8">
-                <Grid Grid.Row="0" ColumnDefinitions="Auto,420,Auto,Auto,*" ColumnSpacing="8">
+                <Grid Grid.Row="0" ColumnDefinitions="Auto,420,*,Auto,Auto,Auto" ColumnSpacing="8">
 
                 <!-- Employee picker -->
                 <TextBlock Grid.Column="0" Text="{Binding Loc[Employee2]}" VerticalAlignment="Center" Margin="0,0,8,0" />
@@ -126,17 +126,17 @@
                 </Grid>
 
                 <!-- View mode -->
-                <Button Grid.Column="2" Content="{Binding Loc[Month]}"
+                <Button Grid.Column="3" Content="{Binding Loc[Month]}"
                         Command="{Binding SetViewModeCommand}" CommandParameter="Month"
                         Margin="12,0,4,0"
                         Classes.accent="{Binding IsMonthView}" />
-                <Button Grid.Column="3" Content="{Binding Loc[Week]}"
+                <Button Grid.Column="4" Content="{Binding Loc[Week]}"
                         Command="{Binding SetViewModeCommand}" CommandParameter="Week"
                         Margin="0,0,12,0"
                         Classes.accent="{Binding IsWeekView}" />
 
                 <!-- Month navigation -->
-                <Panel Grid.Column="4" IsVisible="{Binding IsMonthView}">
+                <Panel Grid.Column="5" IsVisible="{Binding IsMonthView}" HorizontalAlignment="Right">
                     <StackPanel Orientation="Horizontal" Spacing="6">
                         <Button Content="◀" Command="{Binding PreviousMonthCommand}" />
                         <TextBlock Text="{Binding MonthLabel}" FontWeight="SemiBold" Width="130"
@@ -146,7 +146,7 @@
                 </Panel>
 
                 <!-- Week navigation -->
-                <Panel Grid.Column="4" IsVisible="{Binding IsWeekView}">
+                <Panel Grid.Column="5" IsVisible="{Binding IsWeekView}" HorizontalAlignment="Right">
                     <StackPanel Orientation="Horizontal" Spacing="6">
                         <Button Content="◀" Command="{Binding PreviousWeekCommand}" />
                         <TextBlock Text="{Binding WeekLabel}" FontWeight="SemiBold" Width="160"
