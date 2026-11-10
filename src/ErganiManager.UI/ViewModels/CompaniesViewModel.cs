@@ -356,7 +356,7 @@ IAdminSectionViewModel
         FormErganiUsertype =
             "01";
 
-        FormErganiBaseUrl = string.Empty;
+        FormErganiBaseUrl = "https://eservices.yeka.gr/WebServicesApi/api";
 
         FormIsActive =
             true;
