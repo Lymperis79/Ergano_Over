@@ -6,7 +6,9 @@
              x:Class="ErganiManager.UI.Views.SchedulesView"
              x:DataType="vm:SchedulesViewModel">
 
-    <Grid RowDefinitions="Auto,Auto,Auto,*">
+    <ScrollViewer HorizontalScrollBarVisibility="Auto"
+                  VerticalScrollBarVisibility="Disabled">
+      <Grid RowDefinitions="Auto,Auto,Auto,*" MinWidth="1200">
 
         <!-- One shared Menu owns all three hover menus. This lets Avalonia close
              the previously opened submenu when the pointer enters another root item. -->
@@ -906,6 +908,7 @@
             </Border>
         </Border>
 
-    </Grid>
+      </Grid>
+    </ScrollViewer>
 
 </UserControl>
