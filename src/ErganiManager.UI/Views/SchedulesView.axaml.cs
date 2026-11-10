@@ -85,11 +85,9 @@ public partial class SchedulesView : UserControl
         if (DataContext is not SchedulesViewModel vm)
             return;
 
-        // The arrow starts a fresh employee search: clear the current selection
-        // and filter text, then open the complete employee list for typing.
-        vm.SelectedEmployee = null;
-        vm.EmployeeSearchText = string.Empty;
-
+        // Opening the list must not clear the active employee. The user can
+        // browse or type a filter, and the current selection remains in effect
+        // until another employee is explicitly selected.
         Dispatcher.UIThread.Post(() =>
         {
             ScheduleEmployeePicker.IsDropDownOpen = true;
@@ -97,6 +95,7 @@ public partial class SchedulesView : UserControl
                 .OfType<TextBox>()
                 .FirstOrDefault();
             editor?.Focus();
+            editor?.SelectAll();
         });
     }
 
