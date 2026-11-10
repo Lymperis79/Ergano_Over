@@ -84,7 +84,7 @@
                 <TextBlock Grid.Column="0" Text="{Binding Loc[Employee2]}" VerticalAlignment="Center" Margin="0,0,8,0" />
                 <Grid Grid.Column="1" Width="292">
                     <AutoCompleteBox x:Name="ScheduleEmployeePicker"
-                                 ItemsSource="{Binding AvailableEmployees}"
+                                 ItemsSource="{Binding SchedulePickerEmployees}"
                                  SelectedItem="{Binding SelectedEmployee, Mode=TwoWay}"
                                  ValueMemberBinding="{Binding DisplayName}"
                                  FilterMode="Contains"
