@@ -59,6 +59,13 @@ public class TodayMovementDto
     public string? Detail { get; set; }
 }
 
+/// <summary>One continuous planned work period shown on Daily Status.</summary>
+public class TodayPlannedPeriodDto
+{
+    public TimeOnly StartTime { get; set; }
+    public TimeOnly EndTime { get; set; }
+}
+
 /// <summary>One employee on the daily status board.</summary>
 public class TodayEmployeeStatusDto
 {
@@ -70,6 +77,7 @@ public class TodayEmployeeStatusDto
     public TodayScheduleKind ScheduleKind { get; set; }
     public TimeOnly? PlannedStart { get; set; }
     public TimeOnly? PlannedEnd { get; set; }
+    public List<TodayPlannedPeriodDto> PlannedPeriods { get; set; } = new();
     public bool IsHome { get; set; }
     public string? LeaveName { get; set; }
 
