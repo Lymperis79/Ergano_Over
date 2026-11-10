@@ -38,7 +38,9 @@ public class TodayRowViewModel : ObservableObject
     public string ScheduleText => Dto.ScheduleKind switch
     {
         TodayScheduleKind.Leave  => $"🏖 {Dto.LeaveName}",
-        TodayScheduleKind.Work   => $"{Time(Dto.PlannedStart)}–{Time(Dto.PlannedEnd)} {(Dto.IsHome ? "🏠" : "🏢")}",
+        TodayScheduleKind.Work   => (Dto.PlannedPeriods.Count > 0
+            ? string.Join(" / ", Dto.PlannedPeriods.Select(p => p.StartTime.ToString("HH:mm") + "–" + p.EndTime.ToString("HH:mm")))
+            : $"{Time(Dto.PlannedStart)}–{Time(Dto.PlannedEnd)}") + (Dto.IsHome ? " 🏠" : " 🏢"),
         TodayScheduleKind.Rest   => _loc[L.TodayRestDay],
         TodayScheduleKind.Absent => _loc[L.TodayAbsent],
         _                        => _loc[L.TodayNoSchedule]
