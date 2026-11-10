@@ -34,6 +34,7 @@ public class TodayStatusService : ITodayStatusService
         var isOfficialHoliday = CompanyHolidayCalendar.IsEnabled(officialHolidayDatesJson, date);
 
         var schedules = (await db.Schedules
+                .Include(s => s.WorkingPeriods)
                 .Where(s => s.ScheduleDate == date && ids.Contains(s.EmployeeId))
                 .ToListAsync())
             .GroupBy(s => s.EmployeeId).ToDictionary(g => g.Key, g => g.First());
@@ -94,15 +95,26 @@ public class TodayStatusService : ITodayStatusService
         var leaveName = wholeDayLeave == null ? null
             : (leaveType?.LocalizedDescription ?? wholeDayLeave.LeaveTypeCode) + (leaveType?.IsPaid == false ? $" ({ErganiManager.Data.UiText.T("Unpaid")})" : string.Empty);
 
+        // Prefer explicit split periods; legacy StartTime/EndTime are a fallback.
+        var scheduledPeriods = sched?.WorkingPeriods?
+            .OrderBy(p => p.PeriodNumber)
+            .Select(p => new TodayPlannedPeriodDto { StartTime = p.StartTime, EndTime = p.EndTime })
+            .ToList() ?? new List<TodayPlannedPeriodDto>();
+        if (scheduledPeriods.Count == 0 && sched?.StartTime is { } legacyStart && sched.EndTime is { } legacyEnd)
+            scheduledPeriods.Add(new TodayPlannedPeriodDto { StartTime = legacyStart, EndTime = legacyEnd });
+
         var isWorkDay = wholeDayLeave == null && sched != null
             && (sched.WorkType == Entities.WorkType.Office || sched.WorkType == Entities.WorkType.Home)
-            && sched.StartTime.HasValue && sched.EndTime.HasValue;
-        TimeOnly? plannedStart = sched?.StartTime ?? wholeDayLeave?.DeclaredStartTime;
-        TimeOnly? plannedEnd   = sched?.EndTime ?? wholeDayLeave?.DeclaredEndTime;
+            && scheduledPeriods.Count > 0;
+        TimeOnly? plannedStart = wholeDayLeave?.DeclaredStartTime
+            ?? (scheduledPeriods.Count > 0 ? scheduledPeriods[0].StartTime : null);
+        TimeOnly? plannedEnd = wholeDayLeave?.DeclaredEndTime
+            ?? (scheduledPeriods.Count > 0 ? scheduledPeriods[scheduledPeriods.Count - 1].EndTime : null);
 
         // ── plan ─────────────────────────────────────────────
         dto.PlannedStart = wholeDayLeave != null ? plannedStart : isWorkDay ? plannedStart : null;
         dto.PlannedEnd   = wholeDayLeave != null ? plannedEnd : isWorkDay ? plannedEnd : null;
+        dto.PlannedPeriods = isWorkDay ? scheduledPeriods : new List<TodayPlannedPeriodDto>();
         dto.IsHome       = sched?.WorkType == Entities.WorkType.Home;
         dto.LeaveName    = leaveName;
         dto.ScheduleKind = wholeDayLeave != null ? TodayScheduleKind.Leave
