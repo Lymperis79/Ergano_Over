@@ -407,8 +407,13 @@ public class ErganiClient : IErganiClient
 
     private HttpClient BuildClient(string baseUrl)
     {
+        if (!Uri.TryCreate(baseUrl, UriKind.Absolute, out var apiUri) ||
+            (apiUri.Scheme != Uri.UriSchemeHttp && apiUri.Scheme != Uri.UriSchemeHttps))
+            throw new InvalidOperationException(
+                "The selected company's Ergani API URL is missing or invalid. Set it in Company settings.");
+
         var client = _httpClientFactory.CreateClient("ErganiApi");
-        client.BaseAddress = new Uri(baseUrl.TrimEnd('/') + "/");
+        client.BaseAddress = new Uri(apiUri.ToString().TrimEnd('/') + "/");
         client.Timeout     = ErganiEndpoints.RequestTimeout;
         client.DefaultRequestHeaders.Accept.Clear();
         client.DefaultRequestHeaders.Accept.Add(
