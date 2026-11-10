@@ -31,7 +31,7 @@ public class PortalSettingsService : IPortalSettingsService
                             loaded.WorkCards ??= new ErganiPortalProfile
                             {
                                 PortalBaseUrl = loaded.Schedule.PortalBaseUrl,
-                                TargetPageUrl = "https://eservices.yeka.gr/WTO/Workcard/DailyWorkTimesSearch.aspx",
+                                TargetPageUrl = "/WTO/Workcard/DailyWorkTimesSearch.aspx",
                                 FromDateFieldId = "igtxtctl00_ctl00_ContentHolder_ContentHolder_DailyWorkTimesSearchControl_DateFromEdit",
                                 ToDateFieldId = "igtxtctl00_ctl00_ContentHolder_ContentHolder_DailyWorkTimesSearchControl_DateToEdit",
                                 DateFormat = loaded.Schedule.DateFormat,
