@@ -127,7 +127,14 @@ public partial class SubmissionLogViewModel
     [ObservableProperty]
     private string _employeeSearchText = string.Empty;
 
-    partial void OnEmployeeSearchTextChanged(string value) => RefreshFilteredEmployeeOptions();
+    [ObservableProperty]
+    private bool _isEmployeeDropdownOpen;
+
+    partial void OnEmployeeSearchTextChanged(string value)
+    {
+        RefreshFilteredEmployeeOptions();
+        IsEmployeeDropdownOpen = !string.IsNullOrWhiteSpace(value);
+    }
 
     [ObservableProperty]
     private EmployeeFilterOption? _selectedEmployeeOption;
@@ -135,6 +142,8 @@ public partial class SubmissionLogViewModel
     partial void OnSelectedEmployeeOptionChanged(EmployeeFilterOption? value)
     {
         if (value is null) return;
+
+        IsEmployeeDropdownOpen = false;
 
         if (SelectedEmployeeId != value.Id)
             SelectedEmployeeId = value.Id;
