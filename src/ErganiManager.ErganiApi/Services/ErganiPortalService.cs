@@ -9,7 +9,7 @@ using OpenQA.Selenium.Edge;
 namespace ErganiManager.ErganiApi.Services;
 
 /// <summary>
-/// Opens the Ergani web portal (trial or production, set in Administration) in Edge/Chrome, picks the
+/// Opens the Ergani web portal using the selected company's configured ErganiBaseUrl in Edge/Chrome, picks the
 /// login type from the company's User Type, fills the company's saved username/password, logs in and then
 /// opens the configured page so the user can just fill in the dates.
 /// The portal uses cookieless sessions ("/(S(xxxx))/" in the address), so the session part of the address
