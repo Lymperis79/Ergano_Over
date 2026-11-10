@@ -200,6 +200,7 @@
                              MinWidth="292" />
                     <ComboBox ItemsSource="{Binding FilteredEmployeeOptions}"
                               SelectedItem="{Binding SelectedEmployeeOption, Mode=TwoWay}"
+                              IsDropDownOpen="{Binding IsEmployeeDropdownOpen, Mode=TwoWay}"
                               MinWidth="292"
                               HorizontalAlignment="Stretch">
                         <ComboBox.ItemTemplate>
