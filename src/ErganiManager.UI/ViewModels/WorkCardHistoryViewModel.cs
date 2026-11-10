@@ -43,8 +43,10 @@ public partial class WorkCardHistoryViewModel : ViewModelBase, IAdminSectionView
 
     partial void OnFilterEmployeeChanged(EmployeeDto? value)
     {
-        if (value is not null && !string.Equals(EmployeeSearchText, value.DisplayName, StringComparison.Ordinal))
-            EmployeeSearchText = value.DisplayName;
+        // Keep the search query empty after selection so reopening the picker shows
+        // every company employee, rather than filtering the list to "All employees".
+        if (value is not null && !string.IsNullOrEmpty(EmployeeSearchText))
+            EmployeeSearchText = string.Empty;
     }
 
     private void RefreshFilteredEmployees()
