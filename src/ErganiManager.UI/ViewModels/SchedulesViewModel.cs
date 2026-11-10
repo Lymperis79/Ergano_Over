@@ -154,7 +154,7 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
         var query = EmployeeSearchText?.Trim();
         var matches = string.IsNullOrWhiteSpace(query)
             ? AvailableEmployees.ToList()
-            : AvailableEmployees.Where(e =>
+            : SchedulePickerEmployees.Where(e =>
                     e is not null &&
                     ((!string.IsNullOrWhiteSpace(e.FullName) &&
                       e.DisplayName.Contains(query, StringComparison.CurrentCultureIgnoreCase) ||
@@ -544,11 +544,12 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
         {
             SchedulePickerEmployees.Clear();
             foreach (var e in allCompanyEmployees) SchedulePickerEmployees.Add(e);
+            RefreshFilteredEmployees();
             AvailableEmployees.Clear();
             foreach (var e in activeEmployees) AvailableEmployees.Add(e);
             AvailableBranches.Clear();
             foreach (var b in branches) AvailableBranches.Add(b);
-            SelectedEmployee = AvailableEmployees.FirstOrDefault() ?? SchedulePickerEmployees.FirstOrDefault();
+            SelectedEmployee = SchedulePickerEmployees.FirstOrDefault();
             EditingBranch    = AvailableBranches.FirstOrDefault();
         });
 
