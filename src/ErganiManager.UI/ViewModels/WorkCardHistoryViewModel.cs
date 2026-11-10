@@ -183,7 +183,7 @@ public partial class WorkCardHistoryViewModel : ViewModelBase, IAdminSectionView
         }
         catch (Exception ex)
         {
-            StatusMessage = $"❌ {ex.Message}";
+            StatusMessage = $"❌ {ex.GetType().Name}: {ex.GetBaseException().Message}";
         }
     }
 
