@@ -459,11 +459,7 @@ IAdminSectionViewModel
                 ? "01"
                 : company.ErganiUsertype;
 
-        FormErganiBaseUrl =
-            string.IsNullOrWhiteSpace(
-                company.ErganiBaseUrl)
-                ? ErganiEndpoints.TrialBaseUrl
-                : company.ErganiBaseUrl;
+        FormErganiBaseUrl = company.ErganiBaseUrl ?? string.Empty;
 
         FormIsActive =
             company.IsActive;
@@ -650,11 +646,7 @@ IAdminSectionViewModel
                         ? "01"
                         : FormErganiUsertype,
 
-                ErganiBaseUrl =
-                    string.IsNullOrWhiteSpace(
-                        FormErganiBaseUrl)
-                        ? ErganiEndpoints.TrialBaseUrl
-                        : FormErganiBaseUrl.Trim(),
+                ErganiBaseUrl = (FormErganiBaseUrl ?? string.Empty).Trim(),
 
                 IsActive =
                     FormIsActive,
@@ -1174,11 +1166,7 @@ IAdminSectionViewModel
                     ? "01"
                     : FormErganiUsertype,
 
-            BaseUrl =
-                string.IsNullOrWhiteSpace(
-                    FormErganiBaseUrl)
-                    ? ErganiEndpoints.TrialBaseUrl
-                    : FormErganiBaseUrl.Trim()
+            BaseUrl = (FormErganiBaseUrl ?? string.Empty).Trim()
         };
     }
 
