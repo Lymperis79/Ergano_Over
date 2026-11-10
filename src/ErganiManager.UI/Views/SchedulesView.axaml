@@ -87,7 +87,7 @@
                                  ItemsSource="{Binding FilteredEmployees}"
                                  SelectedItem="{Binding SelectedEmployee, Mode=TwoWay}"
                                  ValueMemberBinding="{Binding DisplayName}"
-                                 FilterMode="None"
+                                 FilterMode="Contains"
                                  MinimumPrefixLength="0"
                                  IsTextCompletionEnabled="False"
                                  ClearSelectionOnLostFocus="False"
