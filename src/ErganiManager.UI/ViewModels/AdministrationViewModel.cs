@@ -414,7 +414,7 @@ public partial class AdministrationViewModel : ViewModelBase, IAdminSectionViewM
     [ObservableProperty] private string _autoClockOutStatus = string.Empty;
 
     // Company-specific operational settings (loaded from the active company selected in the main shell).
-    [ObservableProperty] private string _companyErganiBaseUrl = ErganiEndpoints.TrialBaseUrl;
+    [ObservableProperty] private string _companyErganiBaseUrl = string.Empty;
     [ObservableProperty] private int _earlyClockInBlockMinutes = 15;
     [ObservableProperty] private int _earlyDepartureAlertMinutes = 10;
     [ObservableProperty] private bool _shortClockInOutAlertEnabled;
