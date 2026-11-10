@@ -96,7 +96,7 @@ public class TodayStatusService : ITodayStatusService
             : (leaveType?.LocalizedDescription ?? wholeDayLeave.LeaveTypeCode) + (leaveType?.IsPaid == false ? $" ({ErganiManager.Data.UiText.T("Unpaid")})" : string.Empty);
 
         // Prefer explicit split periods; legacy StartTime/EndTime are a fallback.
-        var scheduledPeriods = sched?.WorkingPeriods?
+        var scheduledPeriods = sched?.WorkingPeriods
             .OrderBy(p => p.PeriodNumber)
             .Select(p => new TodayPlannedPeriodDto { StartTime = p.StartTime, EndTime = p.EndTime })
             .ToList() ?? new List<TodayPlannedPeriodDto>();
