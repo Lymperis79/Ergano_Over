@@ -57,8 +57,13 @@ public class ErganiHealthCheckService : IErganiHealthCheckService
 
         try
         {
+            if (!Uri.TryCreate(credentials.BaseUrl, UriKind.Absolute, out var apiUri) ||
+                (apiUri.Scheme != Uri.UriSchemeHttp && apiUri.Scheme != Uri.UriSchemeHttps))
+                throw new InvalidOperationException(
+                    "The selected company's Ergani API URL is missing or invalid. Set it in Company settings.");
+
             var client = _httpClientFactory.CreateClient("ErganiApi");
-            client.BaseAddress = new Uri(credentials.BaseUrl.TrimEnd('/') + "/");
+            client.BaseAddress = new Uri(apiUri.ToString().TrimEnd('/') + "/");
             client.Timeout     = TimeSpan.FromSeconds(15);
             client.DefaultRequestHeaders.Accept.Clear();
             client.DefaultRequestHeaders.Accept.Add(
