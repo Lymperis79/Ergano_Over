@@ -199,7 +199,7 @@
                                        SelectedItem="{Binding SelectedEmployeeOption, Mode=TwoWay}"
                                        Text="{Binding EmployeeSearchText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                        ValueMemberBinding="{Binding Name}"
-                                       FilterMode="Contains"
+                                       FilterMode="None"
                                        MinimumPrefixLength="0"
                                        IsTextCompletionEnabled="False"
                                        ClearSelectionOnLostFocus="False"
@@ -207,7 +207,7 @@
                                        ToolTip.Tip="Type an employee name, ID or tax number to filter the list">
                     <AutoCompleteBox.ItemTemplate>
                         <DataTemplate x:DataType="vm:EmployeeFilterOption">
-                            <TextBlock Text="{Binding Name}" />
+                            <TextBlock Text="{Binding Name}" FontSize="15" Margin="4,3" />
                         </DataTemplate>
                     </AutoCompleteBox.ItemTemplate>
                 </AutoCompleteBox>
