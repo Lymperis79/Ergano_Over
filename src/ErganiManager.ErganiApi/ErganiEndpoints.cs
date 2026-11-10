@@ -12,9 +12,6 @@ public static class ErganiEndpoints
     public const string ProductionBaseUrl =
         "https://eservices.yeka.gr/WebServicesApi/api";
 
-    public const string TrialBaseUrl =
-        "https://trialv2eservices.yeka.gr/WebServicesApi/api";
-
     // ============================================================
     // AUTHENTICATION
     // ============================================================
