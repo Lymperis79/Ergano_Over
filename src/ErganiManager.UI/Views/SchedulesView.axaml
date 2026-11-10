@@ -82,7 +82,7 @@
 
                 <!-- Employee picker -->
                 <TextBlock Grid.Column="0" Text="{Binding Loc[Employee2]}" VerticalAlignment="Center" Margin="0,0,8,0" />
-                <Grid Grid.Column="1" Width="420" MinWidth="360">
+                <Grid Grid.Column="1" Width="292">
                     <AutoCompleteBox x:Name="ScheduleEmployeePicker"
                                  ItemsSource="{Binding FilteredEmployees}"
                                  SelectedItem="{Binding SelectedEmployee, Mode=TwoWay}"
@@ -92,29 +92,24 @@
                                  IsTextCompletionEnabled="False"
                                  ClearSelectionOnLostFocus="False"
                                  HorizontalAlignment="Stretch"
-                                 MinHeight="42"
-                                 FontSize="16"
-                                 GotFocus="OnScheduleEmployeePickerGotFocus"
                                  ToolTip.Tip="Click to select the current text, then type an employee name, AFM or employee number">
                     <AutoCompleteBox.Styles>
                         <!-- Keep the editable text left-aligned even if the application has
                              a global TextBox alignment style. -->
                         <Style Selector="TextBox">
                             <Setter Property="TextAlignment" Value="Left" />
-                            <Setter Property="FontSize" Value="16" />
                         </Style>
                     </AutoCompleteBox.Styles>
                     <AutoCompleteBox.ItemTemplate>
                         <DataTemplate x:DataType="core:EmployeeDto">
                             <TextBlock Text="{Binding DisplayName}"
-                                       FontSize="16"
                                        TextWrapping="NoWrap"
                                        TextTrimming="CharacterEllipsis"
                                        Margin="6,4" />
                         </DataTemplate>
                     </AutoCompleteBox.ItemTemplate>
                 </AutoCompleteBox>
-                    <ToggleButton IsChecked="{Binding #ScheduleEmployeePicker.IsDropDownOpen, Mode=TwoWay}"
+                    <ToggleButton Click="OnScheduleEmployeePickerDropdownClick"
                                   Content="▾"
                                   Width="30"
                                   HorizontalAlignment="Right"
