@@ -20,11 +20,9 @@ public class Company
     public string ErganiPasswordEncrypted { get; set; } = string.Empty;
 
     [MaxLength(300)]
-    // Default mirrors ErganiEndpoints.TrialBaseUrl in ErganiManager.ErganiApi.
-    // Kept as a plain string here (not a cross-project constant reference)
-    // because ErganiManager.Data must not depend on ErganiManager.ErganiApi.
     public string ErganiUsertype { get; set; } = "01";
-    public string ErganiBaseUrl { get; set; } = "https://trialeservices.yeka.gr/WebServicesAPI/api";
+    // Explicit company setting; never silently fall back to the trial API.
+    public string ErganiBaseUrl { get; set; } = string.Empty;
 
     public bool IsActive { get; set; } = true;
 
