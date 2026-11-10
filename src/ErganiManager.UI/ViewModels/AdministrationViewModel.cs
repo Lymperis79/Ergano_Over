@@ -1037,8 +1037,7 @@ public partial class AdministrationViewModel : ViewModelBase, IAdminSectionViewM
                 try
                 {
                     _loadedCompanySettings = company;
-                    CompanyErganiBaseUrl = string.IsNullOrWhiteSpace(company.ErganiBaseUrl)
-                        ? ErganiEndpoints.TrialBaseUrl : company.ErganiBaseUrl;
+                    CompanyErganiBaseUrl = company.ErganiBaseUrl ?? string.Empty;
                     EarlyClockInBlockMinutes = company.EarlyClockInBlockMinutes;
                     EarlyDepartureAlertMinutes = company.EarlyDepartureAlertMinutes;
                     ShortClockInOutAlertEnabled = company.ShortClockInOutAlertEnabled;
