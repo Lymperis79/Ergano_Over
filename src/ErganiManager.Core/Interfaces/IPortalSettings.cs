@@ -23,7 +23,7 @@ public sealed class PortalSettings
 
     public ErganiPortalProfile Schedule { get; set; } = new()
     {
-        TargetPageUrl = "https://eservices.yeka.gr/(S(kzfbdn3xgt22oqtyrb2zittw))/Mitroa/ErgazomenosWorkingSearch.aspx",
+        TargetPageUrl = "/Mitroa/ErgazomenosWorkingSearch.aspx",
         FromDateFieldId = "igtxtctl00_ctl00_ContentHolder_ContentHolder_ErgazomenosWorkingSearchControl_DateFromEdit",
         ToDateFieldId = "igtxtctl00_ctl00_ContentHolder_ContentHolder_ErgazomenosWorkingSearchControl_DateToEdit",
         AutoSearch = true,
@@ -33,7 +33,7 @@ public sealed class PortalSettings
 
     public ErganiPortalProfile WorkCards { get; set; } = new()
     {
-        TargetPageUrl = "https://eservices.yeka.gr/WTO/Workcard/DailyWorkTimesSearch.aspx",
+        TargetPageUrl = "/WTO/Workcard/DailyWorkTimesSearch.aspx",
         FromDateFieldId = "igtxtctl00_ctl00_ContentHolder_ContentHolder_DailyWorkTimesSearchControl_DateFromEdit",
         ToDateFieldId = "igtxtctl00_ctl00_ContentHolder_ContentHolder_DailyWorkTimesSearchControl_DateToEdit",
         AutoSearch = true,
