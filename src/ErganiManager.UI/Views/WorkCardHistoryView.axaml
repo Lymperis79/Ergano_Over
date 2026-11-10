@@ -104,7 +104,7 @@
                                                SelectedItem="{Binding FilterEmployee, Mode=TwoWay}"
                                                Text="{Binding EmployeeSearchText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                                ValueMemberBinding="{Binding DisplayName}"
-                                               FilterMode="Contains"
+                                               FilterMode="None"
                                                MinimumPrefixLength="0"
                                                IsTextCompletionEnabled="False"
                                                ClearSelectionOnLostFocus="False"
@@ -112,7 +112,7 @@
                                                ToolTip.Tip="Type an employee name or employee number to filter the list">
                                 <AutoCompleteBox.ItemTemplate>
                                     <DataTemplate x:DataType="core:EmployeeDto">
-                                        <TextBlock Text="{Binding DisplayName}" />
+                                        <TextBlock Text="{Binding DisplayName}" FontSize="15" Margin="4,3" />
                                     </DataTemplate>
                                 </AutoCompleteBox.ItemTemplate>
                             </AutoCompleteBox>
@@ -270,7 +270,7 @@
 
                                     <TextBlock Text="{Binding EmployeeFullName}"
                                                FontWeight="SemiBold"
-                                               FontSize="13" />
+                                               FontSize="15" />
 
                                     <TextBlock Text="{Binding BranchName}"
                                                FontSize="11"
