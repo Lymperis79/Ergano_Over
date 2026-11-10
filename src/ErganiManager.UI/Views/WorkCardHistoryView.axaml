@@ -101,7 +101,7 @@
 
                             <StackPanel MinWidth="292" Spacing="5">
                                 <TextBox Text="{Binding EmployeeSearchText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                         Watermark="Search by name or AFM"
+                                         PlaceholderText="Search by name or AFM"
                                          MinWidth="292" />
                                 <ComboBox ItemsSource="{Binding FilteredEmployees}"
                                           SelectedItem="{Binding FilterEmployee, Mode=TwoWay}"
