@@ -80,14 +80,15 @@
         <!-- Row 1: Controls bar -->
         <Border Grid.Row="1" Background="{DynamicResource CardBrush}" CornerRadius="8" Padding="12" Margin="0,0,0,8">
             <Grid RowDefinitions="Auto,Auto" RowSpacing="8">
-                <Grid Grid.Row="0" ColumnDefinitions="Auto,*,Auto,Auto,Auto">
+                <Grid Grid.Row="0" ColumnDefinitions="Auto,420,Auto,Auto,*" ColumnSpacing="8">
 
                 <!-- Employee picker -->
                 <TextBlock Grid.Column="0" Text="{Binding Loc[Employee2]}" VerticalAlignment="Center" Margin="0,0,8,0" />
-                <Grid Grid.Column="1" Width="292">
+                <Grid Grid.Column="1" Width="420" HorizontalAlignment="Left">
                     <AutoCompleteBox x:Name="ScheduleEmployeePicker"
                                  ItemsSource="{Binding FilteredEmployees}"
                                  SelectedItem="{Binding SelectedEmployee, Mode=TwoWay}"
+                                 Text="{Binding EmployeeSearchText, Mode=TwoWay}"
                                  ValueMemberBinding="{Binding DisplayName}"
                                  FilterMode="Contains"
                                  MinimumPrefixLength="0"
