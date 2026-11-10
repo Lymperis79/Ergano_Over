@@ -140,6 +140,9 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
     private UserSession? _session;
 
     // ── Employee / navigation ─────────────────────────────────────────────────
+    // All company employees are available for individual calendar selection, including inactive employees.
+    // AvailableEmployees remains active-only for bulk submission and other operational actions.
+    public ObservableCollection<EmployeeDto> SchedulePickerEmployees { get; } = new();
     public ObservableCollection<EmployeeDto> AvailableEmployees { get; } = new();
     public ObservableCollection<EmployeeDto> FilteredEmployees { get; } = new();
     [ObservableProperty] private string _employeeSearchText = string.Empty;
@@ -531,18 +534,21 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
     {
         if (_session?.CompanyId is not int companyId) return;
 
-        var employees = await _employeeService
-            .GetByCompanyAsync(companyId, activeOnly: true).ConfigureAwait(false);
+        var allCompanyEmployees = await _employeeService
+            .GetByCompanyAsync(companyId, activeOnly: false).ConfigureAwait(false);
+        var activeEmployees = allCompanyEmployees.Where(e => e.IsActive).ToList();
         var branches  = await _branchService
             .GetByCompanyAsync(companyId).ConfigureAwait(false);
 
         await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() =>
         {
+            SchedulePickerEmployees.Clear();
+            foreach (var e in allCompanyEmployees) SchedulePickerEmployees.Add(e);
             AvailableEmployees.Clear();
-            foreach (var e in employees) AvailableEmployees.Add(e);
+            foreach (var e in activeEmployees) AvailableEmployees.Add(e);
             AvailableBranches.Clear();
             foreach (var b in branches) AvailableBranches.Add(b);
-            SelectedEmployee = AvailableEmployees.FirstOrDefault();
+            SelectedEmployee = AvailableEmployees.FirstOrDefault() ?? SchedulePickerEmployees.FirstOrDefault();
             EditingBranch    = AvailableBranches.FirstOrDefault();
         });
 
