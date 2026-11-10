@@ -431,8 +431,7 @@ public partial class SubmissionLogViewModel
         catch (Exception ex)
         {
             StatusMessage =
-                Loc[L.ErrorPrefix] +
-                ex.Message;
+                Loc[L.ErrorPrefix] + ex.GetType().Name + ": " + ex.GetBaseException().Message;
         }
         finally
         {
