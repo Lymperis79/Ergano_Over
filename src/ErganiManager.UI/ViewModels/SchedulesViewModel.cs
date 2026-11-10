@@ -620,8 +620,9 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
 
     partial void OnSelectedEmployeeChanged(EmployeeDto? value)
     {
-        if (value is not null && !string.Equals(EmployeeSearchText, value.FullName, StringComparison.Ordinal))
-            EmployeeSearchText = value.DisplayName;
+        // Do not copy the selected employee's display name into the filter query:
+        // doing so reduces the ItemsSource to that one employee and makes the
+        // dropdown appear to contain no other employees when it is reopened.
         _ = RefreshCalendarAsync();
     }
 
