@@ -75,10 +75,7 @@ public sealed class ErganiPortalService : IErganiPortalService
     private async Task<string> OpenProfileAsync(int companyId, ErganiPortalProfile profile,
         DateOnly? from, DateOnly? to, bool downloadAfterSearch)
     {
-        if (!Uri.TryCreate(profile.PortalBaseUrl?.Trim(), UriKind.Absolute, out var baseUri))
-            return "❌ The portal address is not set in Administration.";
-
-        string username, password, usertype;
+        string username, password, usertype, companyApiBaseUrl;
         await using (var db = new AppDbContext(_connectionState.GetDbOptions()))
         {
             var company = await db.Companies.FindAsync(companyId);
@@ -86,7 +83,21 @@ public sealed class ErganiPortalService : IErganiPortalService
             username = company.ErganiUsername;
             password = _protector.Unprotect(company.ErganiPasswordEncrypted);
             usertype = company.ErganiUsertype;
+            companyApiBaseUrl = company.ErganiBaseUrl;
         }
+
+        // Company.ErganiBaseUrl is the single source of truth. It may include
+        // /WebServicesApi/api; browser login uses the origin only.
+        if (!Uri.TryCreate(companyApiBaseUrl?.Trim(), UriKind.Absolute, out var companyApiUri) ||
+            (companyApiUri.Scheme != Uri.UriSchemeHttps && companyApiUri.Scheme != Uri.UriSchemeHttp))
+            return "❌ The selected company's Ergani API URL is missing or invalid. Set it in Company settings.";
+
+        var baseUri = new UriBuilder(companyApiUri.Scheme, companyApiUri.Host, companyApiUri.Port)
+        {
+            Path = "/",
+            Query = string.Empty,
+            Fragment = string.Empty
+        }.Uri;
         if (string.IsNullOrWhiteSpace(username) || string.IsNullOrWhiteSpace(password))
             return "❌ This company has no Ergani username/password saved.";
 
@@ -391,10 +402,12 @@ public sealed class ErganiPortalService : IErganiPortalService
         var session = SessionSegment.Match(currentUrl).Value;               // "" when cookies are used
         var cleaned = SessionSegment.Replace(target.Trim(), string.Empty);
 
+        // Ignore any host embedded in older absolute settings. Only the selected
+        // company's configured host may be used, including for legacy saved values.
         var uri = Uri.TryCreate(cleaned, UriKind.Absolute, out var absolute)
             ? absolute
             : new Uri(baseUri, cleaned.TrimStart('/'));
 
-        return $"{uri.Scheme}://{uri.Authority}{session}{uri.AbsolutePath}{uri.Query}";
+        return $"{baseUri.Scheme}://{baseUri.Authority}{session}{uri.AbsolutePath}{uri.Query}";
     }
 }
