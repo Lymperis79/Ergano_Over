@@ -80,18 +80,23 @@ public partial class SchedulesView : UserControl
         _menuCloseTimer.Start();
     }
 
-    private void OnScheduleEmployeePickerGotFocus(object? sender, RoutedEventArgs e)
+    private void OnScheduleEmployeePickerDropdownClick(object? sender, RoutedEventArgs e)
     {
-        // Selecting all lets the next keystroke replace the current employee name,
-        // rather than forcing the user to erase it character by character.
+        if (DataContext is not SchedulesViewModel vm)
+            return;
+
+        // The arrow starts a fresh employee search: clear the current selection
+        // and filter text, then open the complete employee list for typing.
+        vm.SelectedEmployee = null;
+        vm.EmployeeSearchText = string.Empty;
+
         Dispatcher.UIThread.Post(() =>
         {
-            if (sender is not AutoCompleteBox picker)
-                return;
-
-            var editor = picker.GetVisualDescendants().OfType<TextBox>().FirstOrDefault();
-            editor?.SelectAll();
-            picker.IsDropDownOpen = true;
+            ScheduleEmployeePicker.IsDropDownOpen = true;
+            var editor = ScheduleEmployeePicker.GetVisualDescendants()
+                .OfType<TextBox>()
+                .FirstOrDefault();
+            editor?.Focus();
         });
     }
 
