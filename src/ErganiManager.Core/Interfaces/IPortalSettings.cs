@@ -3,7 +3,7 @@ namespace ErganiManager.Core.Interfaces;
 /// <summary>Configuration for one Ergani web-portal workflow.</summary>
 public sealed class ErganiPortalProfile
 {
-    public string PortalBaseUrl { get; set; } = "https://eservices.yeka.gr/";
+    public string PortalBaseUrl { get; set; } = string.Empty;
     public string TargetPageUrl { get; set; } = string.Empty;
     public string FromDateFieldId { get; set; } = string.Empty;
     public string ToDateFieldId { get; set; } = string.Empty;
