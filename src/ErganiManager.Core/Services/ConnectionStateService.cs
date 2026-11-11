@@ -55,15 +55,6 @@ public class ConnectionStateService : IConnectionStateService
         return builder.Options;
     }
 
-    public async Task EnsureLocalReplicaCreatedAsync()
-    {
-        Directory.CreateDirectory(Path.GetDirectoryName(AppPaths.GetLocalReplicaDbPath())!);
-        await using var replica = new AppDbContext(GetLocalReplicaDbOptions());
-        await replica.Database.EnsureCreatedAsync();
-        await replica.Database.ExecuteSqlRawAsync("PRAGMA journal_mode=WAL;");
-        await replica.Database.ExecuteSqlRawAsync("PRAGMA foreign_keys=ON;");
-    }
-
     public bool ConfigExists() => File.Exists(AppPaths.GetConnectionConfigPath());
 
     public DbConfig? LoadConfig()
