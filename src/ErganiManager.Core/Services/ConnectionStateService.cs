@@ -47,14 +47,6 @@ public class ConnectionStateService : IConnectionStateService
         return _cachedOptions;
     }
 
-    public DbContextOptions<AppDbContext> GetLocalReplicaDbOptions()
-    {
-        var path = AppPaths.GetLocalReplicaDbPath();
-        var builder = new DbContextOptionsBuilder<AppDbContext>();
-        builder.UseSqlite($"Data Source={path};Cache=Shared;Default Timeout=30");
-        return builder.Options;
-    }
-
     public bool ConfigExists() => File.Exists(AppPaths.GetConnectionConfigPath());
 
     public DbConfig? LoadConfig()
