@@ -49,7 +49,7 @@
                                 <RadioButton Content="{Binding Loc[Arrival2]}"
                                              IsChecked="{Binding IsArrival}" />
                                 <RadioButton Content="{Binding Loc[Departure2]}"
-                                             IsChecked="{Binding !IsArrival}" />
+                                             IsChecked="{Binding IsDeparture, Mode=TwoWay}" />
                             </StackPanel>
 
                             <TextBlock Text="{Binding Loc[Date]}" FontWeight="SemiBold" />
