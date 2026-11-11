@@ -31,9 +31,5 @@ public interface IConnectionStateService
     /// <summary>Creates the full local replica schema without modifying the configured main database.</summary>
     Task EnsureLocalReplicaCreatedAsync();
 
-    /// <summary>SQLite options for the full local replica. This never changes the online DB options.</summary>
-    DbContextOptions<AppDbContext> GetLocalReplicaDbOptions();
 
-    /// <summary>Creates the full local replica schema without modifying the configured main database.</summary>
-    Task EnsureLocalReplicaCreatedAsync();
 }
