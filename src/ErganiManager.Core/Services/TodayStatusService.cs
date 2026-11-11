@@ -214,7 +214,16 @@ public class TodayStatusService : ITodayStatusService
                 var hasArrivalInPeriod = arrivals.Any(a =>
                 {
                     var time = TimeOnly.FromDateTime(a.MovementDateTime);
-                    return time >= period.StartTime && time <= period.EndTime;
+                    // An arrival shortly before the scheduled start is valid within
+                    // the configured grace window (e.g. 07:57 for an 08:00 shift).
+                    // Keep the upper bound at the end of the period so a later,
+                    // duplicate arrival cannot satisfy a missed work period.
+                    var timeOfDay = time.ToTimeSpan();
+                    var startOfDay = period.StartTime.ToTimeSpan();
+                    var withinEarlyGrace = timeOfDay < startOfDay
+                        && startOfDay - timeOfDay <= grace;
+                    return (time >= period.StartTime || withinEarlyGrace)
+                        && time <= period.EndTime;
                 });
 
                 if (!hasArrivalInPeriod && After(period.StartTime))
