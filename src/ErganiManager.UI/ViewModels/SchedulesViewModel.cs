@@ -726,8 +726,7 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
         return records.All(o => o.SubmittedToErgani) ? Loc["Sent"] : Loc["Pending"];
     }
 
-    /// <summary>The work line of a calendar cell: for a day longer than 8 hours only the normal part,
-    /// the rest is the overtime line.</summary>
+    /// <summary>The work line of a calendar cell; overtime is shown separately using the company's daily threshold.</summary>
     private static string WorkRangeText(ScheduleDayDto? sched)
     {
         if (sched == null) return string.Empty;
@@ -1564,10 +1563,10 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
         else
             text = string.Format(Loc["Vm.{0} existing schedule entry(ies) of the selected employees will be replaced."], existing);
 
-        // Overtime (hours over 8) follows the end time: unsent records are removed, sent ones stay in Ergani.
+        // Generated overtime follows the company's daily threshold: unsent records may be recalculated, acknowledged records stay in Ergani.
         if (overtimeUnsent > 0)
             text += " " + string.Format(
-                Loc["Vm.{0} unsent overtime record(s) of these employees on these dates will be removed; overtime over 8 hours is created again from the new end times when you send it."],
+                Loc["Vm.{0} unsent generated overtime record(s) of these employees on these dates will be recalculated using the company daily threshold and new end times."],
                 overtimeUnsent);
         if (overtimeSent > 0)
             text += " " + string.Format(
@@ -2904,7 +2903,7 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
                 Loc["Vm.Overtime saved as pending: {0} record(s). Submit them from the Overtime page."], pendingOvertime);
         if (result.OvertimeSubmitted > 0 || result.OvertimeFailed > 0)
         {
-            overtime += " " + string.Format(Loc["Vm. Overtime (hours over 8): {0} sent"], result.OvertimeSubmitted);
+            overtime += " " + string.Format(Loc["Vm. Overtime above the company daily threshold: {0} sent"], result.OvertimeSubmitted);
             if (result.OvertimeFailed > 0)
             {
                 var bad = result.Days.First(d => d.OvertimeFrom.HasValue && !d.OvertimeSubmitted && !string.IsNullOrWhiteSpace(d.OvertimeError));
@@ -3194,8 +3193,8 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
             if (result.Days.Count == 0)
             {
                 StatusMessage = picked.Count > 0
-                    ? Loc["Vm.No overtime (over 8 hours) on the selected day(s)."]
-                    : Loc["Vm.No overtime days found this month (over 8 hours)."];
+                    ? Loc["Vm.No overtime above the company daily threshold on the selected day(s)."]
+                    : Loc["Vm.No overtime days above the company daily threshold found this month."];
                 return;
             }
 
