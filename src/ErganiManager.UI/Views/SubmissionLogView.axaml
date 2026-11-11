@@ -361,6 +361,12 @@
                                                    FontWeight="SemiBold"
                                                    FontSize="13" />
 
+                                        <TextBlock Text="{Binding MovementText}"
+                                                   FontSize="11"
+                                                   FontWeight="Bold"
+                                                   Foreground="{DynamicResource AccentBrush}"
+                                                   IsVisible="{Binding MovementText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+
                                         <TextBlock Text="{Binding SubmissionDate,
                                                                StringFormat='{}{0:dd/MM/yyyy HH:mm:ss}'}"
                                                    FontSize="11"
