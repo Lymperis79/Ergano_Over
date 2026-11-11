@@ -154,6 +154,16 @@ public partial class WorkCardScanViewModel :
     [ObservableProperty] private string _noCompanyMessage = string.Empty;
     [ObservableProperty] private string _barcodeInput = string.Empty;
     [ObservableProperty] private bool _isArrival = true;
+    public bool IsDeparture
+    {
+        get => !IsArrival;
+        set
+        {
+            if (value) IsArrival = false;
+        }
+    }
+    partial void OnIsArrivalChanged(bool value) => OnPropertyChanged(nameof(IsDeparture));
+
     [ObservableProperty] private bool _autoDetect = true;
     [ObservableProperty] private bool _isProcessing;
 
