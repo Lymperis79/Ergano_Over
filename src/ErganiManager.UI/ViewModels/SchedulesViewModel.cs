@@ -633,7 +633,7 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
     private async Task RefreshCalendarAsync()
     {
         if (SelectedEmployee == null) return;
-        await LoadDailyOvertimeThresholdAsync().ConfigureAwait(false);
+        await LoadDailyOvertimeThresholdAsync();
 
         _selectedDates.Clear();
         NotifySelectionChanged();
@@ -656,8 +656,7 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
         var configured = await db.Companies.AsNoTracking()
             .Where(c => c.Id == companyId)
             .Select(c => c.DailyOvertimeThresholdHours)
-            .SingleOrDefaultAsync()
-            .ConfigureAwait(false);
+            .SingleOrDefaultAsync();
 
         _dailyOvertimeThresholdHours = configured is >= 1 and <= 24
             ? configured
@@ -866,6 +865,8 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
             .Concat(await _scheduleService.GetMonthAsync(SelectedEmployee.Id, nextMonth.Year, nextMonth.Month).ConfigureAwait(false))
             .GroupBy(s => s.ScheduleDate).Select(g => g.First()).ToList();
         var restWarnings = BuildRestWarnings(schedules);
+        foreach (var scheduledDay in schedules.Where(d => d.ScheduleDate >= first && d.ScheduleDate <= last))
+            await EnsureScheduleOvertimePendingAsync(scheduledDay).ConfigureAwait(false);
         var leaves = _session?.CompanyId is int companyId
             ? await Holidays.GetCalendarLeavesAsync(companyId, SelectedEmployee.Id, first, last).ConfigureAwait(false)
             : new List<LeaveDto>();
