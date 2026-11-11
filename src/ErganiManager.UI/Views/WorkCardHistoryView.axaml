@@ -202,11 +202,11 @@
                  The outer viewer scrolls horizontally only when the rows exceed that width. -->
             <ScrollViewer x:Name="ResultsHorizontalScroll"
                           Grid.Row="2"
-                          HorizontalScrollBarVisibility="Auto"
+                          HorizontalScrollBarVisibility="Visible"
                           VerticalScrollBarVisibility="Disabled">
                 <!-- The inner vertical viewport keeps the full row width; the outer viewer
                      provides horizontal scrolling instead of clipping the final action buttons. -->
-                <ScrollViewer MinWidth="1580"
+                <ScrollViewer MinWidth="1680"
                               HorizontalScrollBarVisibility="Disabled"
                               VerticalScrollBarVisibility="Auto">
             <ItemsControl ItemsSource="{Binding Records}"
@@ -230,8 +230,8 @@
                                 CornerRadius="6"
                                 Padding="14,10">
 
-                            <Grid MinWidth="1580" HorizontalAlignment="Stretch"
-                                  ColumnDefinitions="Auto,32,320,180,Auto,160,220,150,Auto,Auto,Auto,Auto">
+                            <Grid MinWidth="1680" HorizontalAlignment="Stretch"
+                                  ColumnDefinitions="Auto,32,420,180,Auto,160,220,150,Auto,100,Auto,Auto">
 
                                 <!-- Retry selection -->
 
@@ -260,7 +260,7 @@
                                                FontWeight="SemiBold"
                                                FontSize="15"
                                                TextWrapping="Wrap"
-                                               MinWidth="280" />
+                                               MinWidth="380" />
 
                                     <TextBlock Text="{Binding BranchName}"
                                                FontSize="11"
