@@ -599,7 +599,7 @@ public partial class ReportService
         var daily = report.AddSection(UiText.T("Daily extra-hours detail"),
             (UiText.T("Employee"), 220), (UiText.T("Date"), 110), (UiText.T("Schedule"), 100),
             (UiText.T("Scheduled hours"), 105), (UiText.T("Actual hours"), 100), (UiText.T("Actual − scheduled"), 120),
-            (UiText.T("Extra vs schedule"), 115), (UiText.T("Night hours"), 95), (UiText.T("Over 8h/day"), 100));
+            (UiText.T("Extra vs schedule"), 115), (UiText.T("Night hours"), 95), (UiText.F("Over {0:0.##}h/day", overtimeThresholdHours), 100));
         foreach (var m in time.Months.OrderBy(x => x.EmployeeName, StringComparer.CurrentCultureIgnoreCase).ThenBy(x => x.Year).ThenBy(x => x.Month))
         foreach (var d in m.Days.Where(d => d.Date >= from && d.Date <= to).OrderBy(d => d.Date))
         {
