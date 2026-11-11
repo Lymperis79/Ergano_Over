@@ -690,7 +690,7 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
         return ScheduleHours.GetOvertimeRange(periods.Select(p => (p.StartTime, p.EndTime)), _dailyOvertimeThresholdHours);
     }
 
-    private static string BuildOvertimeText(ScheduleDayDto? sched, List<OvertimeDto>? records)
+    private string BuildOvertimeText(ScheduleDayDto? sched, List<OvertimeDto>? records)
     {
         if (records is { Count: > 0 })
         {
