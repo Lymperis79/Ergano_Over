@@ -441,6 +441,7 @@ public static class L
     public const string TodayIssueNoOutPast    = nameof(TodayIssueNoOutPast);
     public const string TodayIssueEarlyOut     = nameof(TodayIssueEarlyOut);
     public const string TodayIssueEarlyOutMin  = nameof(TodayIssueEarlyOutMin);
+    public const string TodayIssueLateOut      = nameof(TodayIssueLateOut);
     public const string TodayIssueDoubleIn     = nameof(TodayIssueDoubleIn);
     public const string TodayIssueDoubleOut    = nameof(TodayIssueDoubleOut);
     public const string TodayIssueOnLeave      = nameof(TodayIssueOnLeave);
