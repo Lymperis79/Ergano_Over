@@ -138,6 +138,8 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
     private readonly IErganiPortalService _portalService;
     private readonly ILeaveSubmitter _leaveSubmitter;
     private UserSession? _session;
+    // Company-wide daily threshold used by calendar overtime previews and submissions.
+    private double _dailyOvertimeThresholdHours = ScheduleHours.NormalDailyHours;
 
     // ── Employee / navigation ─────────────────────────────────────────────────
     // All company employees are available for individual calendar selection, including inactive employees.
@@ -404,10 +406,10 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
     public double EditingTotalHours => GetEditingPeriods()
         .Where(p => p.End > p.Start).Sum(p => (p.End - p.Start).TotalHours);
     public double PotentialExtraHours => SelectedEmployee == null ? 0 :
-        Math.Max(0, EditingTotalHours - SelectedEmployee.NormalDailyHours);
+        Math.Max(0, EditingTotalHours - _dailyOvertimeThresholdHours);
     public string EditingOvertimeNote => !ShowTimeFields || PotentialExtraHours <= 0 ? string.Empty :
         string.Format(Loc["Vm.⚠ Planned time totals {0:0.##} hours; this is {1:0.##} hour(s) above the employee's normal {2:0.##} hours. Review the correct declaration type in the Overtime form; nothing is automatically classified as overtime."],
-            EditingTotalHours, PotentialExtraHours, SelectedEmployee?.NormalDailyHours ?? 8);
+            EditingTotalHours, PotentialExtraHours, _dailyOvertimeThresholdHours);
 
     private ScheduleDayDto? _editingPreviousDay;
     private ScheduleDayDto? _editingNextDay;
@@ -631,6 +633,7 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
     private async Task RefreshCalendarAsync()
     {
         if (SelectedEmployee == null) return;
+        await LoadDailyOvertimeThresholdAsync().ConfigureAwait(false);
 
         _selectedDates.Clear();
         NotifySelectionChanged();
@@ -639,6 +642,29 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
             await BuildMonthCalendarAsync();
         else
             await BuildWeekCalendarAsync();
+    }
+
+    private async Task LoadDailyOvertimeThresholdAsync()
+    {
+        if (_session?.CompanyId is not int companyId)
+        {
+            _dailyOvertimeThresholdHours = ScheduleHours.NormalDailyHours;
+            return;
+        }
+
+        await using var db = new AppDbContext(_connectionState.GetDbOptions());
+        var configured = await db.Companies.AsNoTracking()
+            .Where(c => c.Id == companyId)
+            .Select(c => c.DailyOvertimeThresholdHours)
+            .SingleOrDefaultAsync()
+            .ConfigureAwait(false);
+
+        _dailyOvertimeThresholdHours = configured is >= 1 and <= 24
+            ? configured
+            : ScheduleHours.NormalDailyHours;
+        OnPropertyChanged(nameof(PotentialExtraHours));
+        OnPropertyChanged(nameof(EditingOvertimeNote));
+        OnPropertyChanged(nameof(HasEditingOvertime));
     }
 
     /// <summary>Overtime records (not cancelled) of the selected employee, grouped by day.</summary>
@@ -654,15 +680,15 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
             .ToDictionary(g => g.Key, g => g.OrderBy(o => o.StartTime).ToList());
     }
 
-    /// <summary>The overtime line of a calendar cell. Saved overtime records win; for a manual day
-    /// longer than 8 hours the part past the normal day is shown (that is what gets submitted).</summary>
-    private static (TimeOnly From, TimeOnly To)? GetScheduledOvertimeRange(ScheduleDayDto day)
+    /// <summary>The overtime line of a calendar cell. Saved overtime records win; otherwise the
+    /// part past the company's configured daily threshold is shown.</summary>
+    private (TimeOnly From, TimeOnly To)? GetScheduledOvertimeRange(ScheduleDayDto day)
     {
         var periods = day.WorkingPeriods?.OrderBy(p => p.PeriodNumber)
             .Select(p => (p.StartTime, p.EndTime)).ToList() ?? new List<(TimeOnly StartTime, TimeOnly EndTime)>();
         if (periods.Count == 0 && day.StartTime is TimeOnly start && day.EndTime is TimeOnly end)
             periods.Add((start, end));
-        return ScheduleHours.GetOvertimeRange(periods.Select(p => (p.StartTime, p.EndTime)));
+        return ScheduleHours.GetOvertimeRange(periods.Select(p => (p.StartTime, p.EndTime)), _dailyOvertimeThresholdHours);
     }
 
     private static string BuildOvertimeText(ScheduleDayDto? sched, List<OvertimeDto>? records)
@@ -2526,7 +2552,7 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
         finally { IsBulkSubmitting = false; }
     }
 
-    /// <summary>Overtime (hours over 8) of ALL employees for the shown month, sent together:
+    /// <summary>Overtime above the company's configured daily threshold for ALL employees in the shown month, sent together:
     /// one Ergani request per branch, so one protocol for all of it.</summary>
     [RelayCommand]
     private async Task PrepareSubmitAllOvertimesAsync()
@@ -2573,7 +2599,7 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
             if (days.Count == 0)
             {
                 IsBulkSubmitDialogOpen = false;
-                StatusMessage = string.Format(Loc["Vm.No unsent overtime (over 8 hours) found for {0}."],
+                StatusMessage = string.Format(Loc["Vm.No unsent overtime (above the configured daily threshold) found for {0}."],
                     first.ToString("MMMM yyyy"));
                 return;
             }
@@ -2595,7 +2621,7 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
                     : string.Join(", ", previousOvertime.Select(o => $"{o.StartTime:HH:mm}–{o.EndTime:HH:mm}"));
                 var targetText = range is { } overtimeRange
                     ? $"{overtimeRange.From:HH:mm}–{overtimeRange.To:HH:mm}"
-                    : Loc["Vm.Overtime over 8 hours"];
+                    : Loc["Vm.Overtime above the configured daily threshold"];
                 BulkSubmitDetails.Add(new BulkSubmitDetailRow
                 {
                     EmployeeName = employeeName,
@@ -2609,7 +2635,7 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
             _pendingOvertimeDays = days;
             _bulkOvertimeMode = true;
             BulkSubmitSummary = string.Format(
-                Loc["Vm.This will send the overtime (over 8 hours) of {0} day(s) for {1} employee(s) in {2} in one request per branch, so you get one protocol."],
+                Loc["Vm.This will send overtime above the configured daily threshold for {0} day(s) and {1} employee(s) in {2}, in one request per branch, so you get one protocol."],
                 days.Count, employeeCount, first.ToString("MMMM yyyy"));
             IsBulkSubmitDialogOpen = true;
             StatusMessage = string.Empty;
