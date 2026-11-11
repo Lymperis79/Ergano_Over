@@ -84,6 +84,7 @@ public class CompanyService : ICompanyService
             ErganiUsertype = dto.ErganiUsertype,
             ErganiBaseUrl = dto.ErganiBaseUrl,
             IsActive = dto.IsActive,
+            DailyOvertimeThresholdHours = dto.DailyOvertimeThresholdHours,
             EarlyClockInBlockMinutes = dto.EarlyClockInBlockMinutes,
             EarlyDepartureAlertMinutes = dto.EarlyDepartureAlertMinutes,
             ShortClockInOutAlertEnabled = dto.ShortClockInOutAlertEnabled,
@@ -128,6 +129,7 @@ public class CompanyService : ICompanyService
         entity.ErganiUsertype = dto.ErganiUsertype;
         entity.ErganiBaseUrl = dto.ErganiBaseUrl;
         entity.IsActive = dto.IsActive;
+        entity.DailyOvertimeThresholdHours = dto.DailyOvertimeThresholdHours;
         entity.EarlyClockInBlockMinutes = dto.EarlyClockInBlockMinutes;
         entity.EarlyDepartureAlertMinutes = dto.EarlyDepartureAlertMinutes;
         entity.ShortClockInOutAlertEnabled = dto.ShortClockInOutAlertEnabled;
@@ -192,6 +194,7 @@ public class CompanyService : ICompanyService
         ErganiUsertype = c.ErganiUsertype,
         ErganiBaseUrl = c.ErganiBaseUrl,
         IsActive = c.IsActive,
+        DailyOvertimeThresholdHours = c.DailyOvertimeThresholdHours,
         EarlyClockInBlockMinutes = c.EarlyClockInBlockMinutes,
         EarlyDepartureAlertMinutes = c.EarlyDepartureAlertMinutes,
         ShortClockInOutAlertEnabled = c.ShortClockInOutAlertEnabled,
