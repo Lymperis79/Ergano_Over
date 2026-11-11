@@ -11,6 +11,9 @@ public class CompanyDto
     public string ErganiBaseUrl { get; set; } = string.Empty;
     public bool IsActive { get; set; } = true;
 
+    /// <summary>Daily hours after which working time is counted as overtime in reports.</summary>
+    public double DailyOvertimeThresholdHours { get; set; } = 8.0;
+
     public int EarlyClockInBlockMinutes { get; set; } = 15;
     public int EarlyDepartureAlertMinutes { get; set; } = 10;
     public bool ShortClockInOutAlertEnabled { get; set; }
