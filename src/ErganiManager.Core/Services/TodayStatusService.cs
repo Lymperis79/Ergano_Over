@@ -196,7 +196,10 @@ public class TodayStatusService : ITodayStatusService
         if (firstArrival != null && isWorkDay && plannedStart.HasValue)
         {
             var arrivalTime = TimeOnly.FromDateTime(firstArrival.MovementDateTime);
-            var late = arrivalTime - plannedStart.Value;
+            // TimeOnly subtraction wraps around midnight. Compare the underlying
+            // time-of-day spans instead so an early arrival (07:57 vs 08:00)
+            // remains -3 minutes rather than becoming +1437 minutes late.
+            var late = arrivalTime.ToTimeSpan() - plannedStart.Value.ToTimeSpan();
             if (late > grace)
                 Add(new TodayIssueDto { Code = TodayIssueCode.LateClockIn, Level = StatusLevel.Warning,
                     Time = arrivalTime, Planned = plannedStart, Minutes = (int)late.TotalMinutes });
