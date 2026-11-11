@@ -204,9 +204,9 @@
                           Grid.Row="2"
                           HorizontalScrollBarVisibility="Auto"
                           VerticalScrollBarVisibility="Disabled">
-                <!-- Match the viewport width when possible; retain a minimum width for narrow windows. -->
-                <ScrollViewer Width="{Binding $parent[ScrollViewer].Bounds.Width}"
-                              MinWidth="1320"
+                <!-- The inner vertical viewport keeps the full row width; the outer viewer
+                     provides horizontal scrolling instead of clipping the final action buttons. -->
+                <ScrollViewer MinWidth="1580"
                               HorizontalScrollBarVisibility="Disabled"
                               VerticalScrollBarVisibility="Auto">
             <ItemsControl ItemsSource="{Binding Records}"
@@ -230,7 +230,8 @@
                                 CornerRadius="6"
                                 Padding="14,10">
 
-                            <Grid MinWidth="1400" HorizontalAlignment="Stretch" ColumnDefinitions="Auto,Auto,*,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto">
+                            <Grid MinWidth="1580" HorizontalAlignment="Stretch"
+                                  ColumnDefinitions="Auto,32,320,180,Auto,160,220,150,Auto,Auto,Auto,Auto">
 
                                 <!-- Retry selection -->
 
@@ -257,7 +258,9 @@
 
                                     <TextBlock Text="{Binding EmployeeFullName}"
                                                FontWeight="SemiBold"
-                                               FontSize="15" />
+                                               FontSize="15"
+                                               TextWrapping="Wrap"
+                                               MinWidth="280" />
 
                                     <TextBlock Text="{Binding BranchName}"
                                                FontSize="11"
