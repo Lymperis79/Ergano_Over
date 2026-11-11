@@ -13,6 +13,8 @@ public class LocalCacheDbContext : DbContext
     public DbSet<CachedSchedule> CachedSchedules => Set<CachedSchedule>();
     public DbSet<PendingSubmission> PendingSubmissions => Set<PendingSubmission>();
     public DbSet<FailedSubmission> FailedSubmissions => Set<FailedSubmission>();
+    public DbSet<LocalSyncChange> LocalSyncChanges => Set<LocalSyncChange>();
+    public DbSet<LocalSyncCheckpoint> LocalSyncCheckpoints => Set<LocalSyncCheckpoint>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -48,6 +50,21 @@ public class LocalCacheDbContext : DbContext
         {
             e.HasIndex(f => f.Resolved);
             e.HasIndex(f => f.CompanyId);
+        });
+
+        modelBuilder.Entity<LocalSyncChange>(e =>
+        {
+            e.HasKey(x => x.Id);
+            e.HasIndex(x => x.ChangeId).IsUnique();
+            e.HasIndex(x => new { x.Status, x.CreatedAtUtc });
+            e.HasIndex(x => new { x.CompanyId, x.EntityType, x.EntityKey });
+            e.Property(x => x.PayloadJson).IsRequired();
+        });
+
+        modelBuilder.Entity<LocalSyncCheckpoint>(e =>
+        {
+            e.HasKey(x => x.Key);
+            e.HasIndex(x => new { x.CompanyId, x.DeviceId });
         });
     }
 }
