@@ -123,6 +123,9 @@
                                     <TextBox Text="{Binding CompanyErganiBaseUrl, Mode=TwoWay}" />
                                     <Separator />
                                     <TextBlock Text="{Binding Loc[TimeRules]}" FontSize="15" FontWeight="SemiBold" />
+                                    <TextBlock Text="Daily overtime starts after (hours)" FontWeight="SemiBold" />
+                                    <NumericUpDown Value="{Binding DailyOvertimeThresholdHours}" Minimum="1" Maximum="24" Increment="0.5" />
+                                    <TextBlock Text="Example: 10 means daily overtime is counted only after 10 worked hours." Foreground="Gray" FontSize="11" TextWrapping="Wrap" />
                                     <TextBlock Text="{Binding Loc[EarlyClockInBlock]}" FontWeight="SemiBold" />
                                     <NumericUpDown Value="{Binding EarlyClockInBlockMinutes}" Minimum="0" Maximum="120" />
                                     <TextBlock Text="{Binding Loc[EarlyDepartureAlert]}" FontWeight="SemiBold" />
