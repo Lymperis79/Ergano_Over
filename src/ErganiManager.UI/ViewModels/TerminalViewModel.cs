@@ -856,8 +856,45 @@ public partial class TerminalViewModel : ViewModelBase
 
         // Arrival or departure, and the schedule that governs this scan. For an overnight shift the
         // departure belongs to the schedule of the day the shift STARTED, not of today.
+        // The local queue is the primary source for offline scans. Also consult the
+        // main database when online: some manual Work Card submissions are written
+        // directly to WorkCards and do not necessarily leave a local PendingSubmission.
+        // Without this second source, the next terminal scan could incorrectly start
+        // another arrival even though Ergani already has an open clock-in.
+        string? latestMainMovement = null;
+        DateTime? latestMainMovementAt = null;
+        if (isOnline)
+        {
+            try
+            {
+                await using var mainDb = new AppDbContext(_connectionState.GetDbOptions());
+                var latestMainWorkCard = await mainDb.WorkCards
+                    .AsNoTracking()
+                    .Where(w => w.EmployeeId == employee.Id &&
+                                w.SubmittedToErgani &&
+                                !w.WasBlockedEarlyAttempt)
+                    .OrderByDescending(w => w.MovementDateTime)
+                    .Select(w => new { w.MovementType, w.MovementDateTime })
+                    .FirstOrDefaultAsync();
+
+                if (latestMainWorkCard != null)
+                {
+                    latestMainMovement = latestMainWorkCard.MovementType.ToString();
+                    latestMainMovementAt = latestMainWorkCard.MovementDateTime;
+                }
+            }
+            catch (Exception ex)
+            {
+                // Keep the terminal usable if the main database is momentarily unavailable.
+                // ShiftResolver will still use the persisted local scan queue.
+                Serilog.Log.Warning(ex, "Could not read the latest submitted Work Card before resolving the next terminal movement.");
+            }
+        }
+
         var shift = await ShiftResolver.ResolveAsync(
-            cache, employee.Id, now, settings?.EarlyClockInBlockMinutes ?? 0);
+            cache, employee.Id, now, settings?.EarlyClockInBlockMinutes ?? 0,
+            latestMainMovement: latestMainMovement,
+            latestMainMovementAt: latestMainMovementAt);
         var movementType = shift.Movement;
         var schedule = shift.Schedule;
         var isOfficialHoliday = movementType == "Arrival" &&
