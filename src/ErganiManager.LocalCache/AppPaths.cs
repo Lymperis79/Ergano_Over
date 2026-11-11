@@ -37,6 +37,13 @@ public static class AppPaths
     public static string GetLocalCacheDbPath() =>
         Path.Combine(GetAppDataFolder(), "local_cache.db");
 
+    /// <summary>
+    /// Full local replica of AppDbContext. Kept separate from local_cache.db because
+    /// that file contains the durable attendance outbox and its own schema lifecycle.
+    /// </summary>
+    public static string GetLocalReplicaDbPath() =>
+        Path.Combine(GetAppDataFolder(), "local_replica.db");
+
     public static string GetLogsFolder()
     {
         var path = Path.Combine(GetAppDataFolder(), "logs");
