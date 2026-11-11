@@ -2567,6 +2567,7 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
 
         try
         {
+            await LoadDailyOvertimeThresholdAsync();
             _bulkHolidayMode = false;
             IsBulkSubmitting = true;
             StatusMessage = Loc["Vm.Checking pending schedules…"];
@@ -2587,6 +2588,8 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
             foreach (var employee in AvailableEmployees)
             {
                 var employeeDays = await _scheduleService.GetMonthAsync(employee.Id, year, month);
+                foreach (var scheduledDay in employeeDays)
+                    await EnsureScheduleOvertimePendingAsync(scheduledDay).ConfigureAwait(false);
                 var withOvertime = employeeDays
                     .Where(d => d.WorkType is AppWorkType.Office or AppWorkType.Home)
                     .Where(d => GetScheduledOvertimeRange(d) is { } r &&
