@@ -575,6 +575,7 @@ public static class EnglishStrings
         [L.TodayIssueNoOutPast] = "No clock-out",
         [L.TodayIssueEarlyOut] = "Early clock-out {0}",
         [L.TodayIssueEarlyOutMin] = "Early clock-out {0} ({1} min early)",
+        [L.TodayIssueLateOut] = "Late clock-out: {0} (planned {1}, +{2} min)",
         [L.TodayIssueDoubleIn] = "Two clock-ins in a row ({0}, {1})",
         [L.TodayIssueDoubleOut] = "Two clock-outs in a row ({0}, {1})",
         [L.TodayIssueOnLeave] = "Clocked in/out while on leave",
