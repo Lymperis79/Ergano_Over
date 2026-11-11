@@ -576,6 +576,7 @@ public static class GreekStrings
         [L.TodayIssueNoOutPast] = "Δεν έγινε αποχώρηση",
         [L.TodayIssueEarlyOut] = "Πρόωρη αποχώρηση {0}",
         [L.TodayIssueEarlyOutMin] = "Πρόωρη αποχώρηση {0} ({1} λεπτά νωρίτερα)",
+        [L.TodayIssueLateOut] = "Καθυστερημένη αποχώρηση: {0} (προγραμματισμένη {1}, +{2} λεπτά)",
         [L.TodayIssueDoubleIn] = "Δύο προσελεύσεις στη σειρά ({0}, {1})",
         [L.TodayIssueDoubleOut] = "Δύο αποχωρήσεις στη σειρά ({0}, {1})",
         [L.TodayIssueOnLeave] = "Καταγραφή προσέλευσης/αποχώρησης ενώ είναι σε άδεια",
