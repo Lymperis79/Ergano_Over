@@ -964,6 +964,8 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
             schedules = schedules.Concat(await _scheduleService.GetMonthAsync(SelectedEmployee.Id, nextDate.Year, nextDate.Month).ConfigureAwait(false)).ToList();
         schedules = schedules.GroupBy(s => s.ScheduleDate).Select(g => g.First()).ToList();
         var restWarnings = BuildRestWarnings(schedules);
+        foreach (var scheduledDay in schedules.Where(d => d.ScheduleDate >= from && d.ScheduleDate <= to))
+            await EnsureScheduleOvertimePendingAsync(scheduledDay).ConfigureAwait(false);
         var byDate = schedules.ToDictionary(s => s.ScheduleDate);
         var leaves = _session?.CompanyId is int companyId
             ? await Holidays.GetCalendarLeavesAsync(companyId, SelectedEmployee.Id, from, to).ConfigureAwait(false)
@@ -1193,7 +1195,7 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
         {
             var generated = await db.Overtimes.Where(o =>
                 o.EmployeeId == schedule.EmployeeId && o.OvertimeDate == schedule.ScheduleDate &&
-                !o.SubmittedToErgani && !o.IsCancelled && o.RequestPayloadJson != null &&
+                !o.SubmittedToErgani && o.Protocol == null && !o.IsCancelled && o.RequestPayloadJson != null &&
                 o.RequestPayloadJson.Contains("\"source\":\"schedule\"")).ToListAsync();
             if (generated.Count > 0)
             {
@@ -1210,7 +1212,7 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
 
         var staleGenerated = await db.Overtimes.Where(o =>
             o.EmployeeId == schedule.EmployeeId && o.OvertimeDate == schedule.ScheduleDate &&
-            !o.SubmittedToErgani && !o.IsCancelled && o.RequestPayloadJson != null &&
+            !o.SubmittedToErgani && o.Protocol == null && !o.IsCancelled && o.RequestPayloadJson != null &&
             o.RequestPayloadJson.Contains("\"source\":\"schedule\"") &&
             (o.StartTime != range.Value.From || o.EndTime != range.Value.To)).ToListAsync();
         if (staleGenerated.Count > 0)
