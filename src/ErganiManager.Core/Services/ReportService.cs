@@ -173,7 +173,11 @@ public partial class ReportService : IReportService
         var summary = await GetTimeSummaryReportAsync(companyId, from, to, employeeId);
         var actualByMonth = summary.Months.ToDictionary(m => (m.EmployeeId, m.Year, m.Month));
 
-        const double normalPerDay = 8.0;
+        var normalPerDay = await db.Companies
+            .Where(c => c.Id == companyId)
+            .Select(c => c.DailyOvertimeThresholdHours)
+            .SingleOrDefaultAsync();
+        if (normalPerDay <= 0 || normalPerDay > 24) normalPerDay = 8.0;
         var scheduledRows = days
             .Select(s =>
             {
