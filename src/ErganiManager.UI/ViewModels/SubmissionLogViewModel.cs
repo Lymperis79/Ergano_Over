@@ -41,6 +41,10 @@ public partial class SubmissionLogRow : ObservableObject
     public string? ResponseRawJson { get; set; }
 
     public string EmployeeNames { get; set; } = string.Empty;
+
+    /// <summary>Attendance movement taken from the submitted Ergani f_type payload value.</summary>
+    public string MovementText { get; set; } = string.Empty;
+
     public bool HasPdf => Success && !string.IsNullOrWhiteSpace(Protocol);
 
     public int RetryCount { get; set; }
@@ -532,6 +536,62 @@ public partial class SubmissionLogViewModel
     private void UpdateSelectedRetryCount() =>
         SelectedRetryCount = Rows.Count(r => r.IsSelected);
 
+    private static string GetMovementText(string? payloadJson)
+    {
+        if (string.IsNullOrWhiteSpace(payloadJson))
+            return string.Empty;
+
+        try
+        {
+            using var document = JsonDocument.Parse(payloadJson);
+            var movementCode = FindMovementCode(document.RootElement);
+            return movementCode switch
+            {
+                "0" => "CLOCK-IN",
+                "1" => "CLOCK-OUT",
+                _ => string.Empty
+            };
+        }
+        catch (JsonException)
+        {
+            return string.Empty;
+        }
+    }
+
+    private static string? FindMovementCode(JsonElement element)
+    {
+        if (element.ValueKind == JsonValueKind.Object)
+        {
+            foreach (var property in element.EnumerateObject())
+            {
+                if (string.Equals(property.Name, "f_type", StringComparison.OrdinalIgnoreCase))
+                {
+                    return property.Value.ValueKind switch
+                    {
+                        JsonValueKind.String => property.Value.GetString(),
+                        JsonValueKind.Number => property.Value.GetRawText(),
+                        _ => null
+                    };
+                }
+
+                var nested = FindMovementCode(property.Value);
+                if (nested != null)
+                    return nested;
+            }
+        }
+        else if (element.ValueKind == JsonValueKind.Array)
+        {
+            foreach (var item in element.EnumerateArray())
+            {
+                var nested = FindMovementCode(item);
+                if (nested != null)
+                    return nested;
+            }
+        }
+
+        return null;
+    }
+
     [RelayCommand]
     private async Task LoadAsync()
     {
@@ -659,6 +719,7 @@ public partial class SubmissionLogViewModel
                     RequestPayloadJson = r.RequestPayloadJson,
                     ResponseRawJson = r.ResponseRawJson,
                     EmployeeNames = GetEmployeeNames(r.RequestPayloadJson, employees),
+                    MovementText = GetMovementText(r.RequestPayloadJson),
                     RetryCount = r.RetryCount,
                     LastRetryAt = r.LastRetryAt
                 };
