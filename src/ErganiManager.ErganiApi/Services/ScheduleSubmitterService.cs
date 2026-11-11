@@ -323,6 +323,10 @@ public class ScheduleSubmitterService : IScheduleSubmitter
         if (days.Count == 0) return outcome;
 
         await using var db = OpenDb();
+        var company = await db.Companies.FindAsync(companyId);
+        var normalDailyHours = company?.DailyOvertimeThresholdHours is >= 1 and <= 24
+            ? company.DailyOvertimeThresholdHours
+            : ScheduleHours.NormalDailyHours;
         var queue = new List<(int Id, ScheduleSubmitDayResult Day)>();
 
         foreach (var day in days.Where(d => d.BranchId > 0).OrderBy(d => d.ScheduleDate))
@@ -332,9 +336,9 @@ public class ScheduleSubmitterService : IScheduleSubmitter
             if (scheduledPeriods.Count == 0 && day.StartTime is TimeOnly legacyStart && day.EndTime is TimeOnly legacyEnd)
                 scheduledPeriods.Add((legacyStart, legacyEnd));
             var scheduled = day.WorkType is AppWorkType.Office or AppWorkType.Home
-                ? ScheduleHours.GetOvertimeRange(scheduledPeriods.Select(p => (p.StartTime, p.EndTime)))
+                ? ScheduleHours.GetOvertimeRange(scheduledPeriods.Select(p => (p.StartTime, p.EndTime)), normalDailyHours)
                 : null;
-            var range = scheduled ?? GetClockedOvertimeRange(day);
+            var range = scheduled ?? GetClockedOvertimeRange(day, normalDailyHours);
             if (range is not { } r) continue;
 
             var dayResult = new ScheduleSubmitDayResult
@@ -355,13 +359,13 @@ public class ScheduleSubmitterService : IScheduleSubmitter
         return outcome;
     }
 
-    /// <summary>Fallback when the schedule has no hours over 8: use the clocked-in times.</summary>
-    private static (TimeOnly From, TimeOnly To)? GetClockedOvertimeRange(ScheduleDayDto day)
+    /// <summary>Fallback when the planned schedule has no overtime: use the clocked-in times and the company threshold.</summary>
+    private static (TimeOnly From, TimeOnly To)? GetClockedOvertimeRange(ScheduleDayDto day, double normalDailyHours)
     {
         if (!day.ActualArrival.HasValue || !day.ActualDeparture.HasValue) return null;
-        if ((day.ActualDeparture.Value - day.ActualArrival.Value).TotalHours <= ScheduleHours.NormalDailyHours) return null;
+        if ((day.ActualDeparture.Value - day.ActualArrival.Value).TotalHours <= normalDailyHours) return null;
 
-        var from = TimeOnly.FromDateTime(day.ActualArrival.Value.AddHours(ScheduleHours.NormalDailyHours));
+        var from = TimeOnly.FromDateTime(day.ActualArrival.Value.AddHours(normalDailyHours));
         var to   = TimeOnly.FromDateTime(day.ActualDeparture.Value);
         return from < to ? (from, to) : null;
     }
