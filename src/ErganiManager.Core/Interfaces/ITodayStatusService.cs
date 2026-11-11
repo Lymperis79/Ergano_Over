@@ -25,6 +25,7 @@ public enum TodayIssueCode
     NoClockOut,         // Planned
     NoClockOutPastDay,
     EarlyClockOut,      // Time, Minutes?
+    LateClockOut,       // Time, Planned, Minutes
     DoubleClockIn,      // Time, Time2
     DoubleClockOut,     // Time, Time2
     ClockedOnLeave,
