@@ -134,6 +134,59 @@ public static class LocalCacheDbContextFactory
                 eventIndex.ExecuteNonQuery();
                 added = true; // Preserve queued rows when the model signature changes for this index.
             }
+            // Durable generic outbox for offline CRUD. Create the tables in-place so
+            // upgrading an existing cache never rebuilds it or drops queued attendance scans.
+            if (!TableExists("LocalSyncChanges"))
+            {
+                using var createChanges = connection.CreateCommand();
+                createChanges.CommandText = """
+                    CREATE TABLE LocalSyncChanges (
+                        Id INTEGER NOT NULL CONSTRAINT PK_LocalSyncChanges PRIMARY KEY AUTOINCREMENT,
+                        ChangeId TEXT NOT NULL,
+                        EntityType TEXT NOT NULL,
+                        Operation TEXT NOT NULL,
+                        EntityKey TEXT NOT NULL,
+                        CompanyId INTEGER NOT NULL,
+                        DeviceId TEXT NOT NULL,
+                        PayloadVersion INTEGER NOT NULL DEFAULT 1,
+                        PayloadJson TEXT NOT NULL,
+                        CreatedAtUtc TEXT NOT NULL,
+                        LastAttemptAtUtc TEXT NULL,
+                        LeaseUntilUtc TEXT NULL,
+                        Status TEXT NOT NULL DEFAULT 'Pending',
+                        AttemptCount INTEGER NOT NULL DEFAULT 0,
+                        LastError TEXT NULL,
+                        BaseServerVersion TEXT NULL,
+                        AppliedAtUtc TEXT NULL,
+                        ServerResultJson TEXT NULL
+                    );
+                    CREATE UNIQUE INDEX IX_LocalSyncChanges_ChangeId ON LocalSyncChanges (ChangeId);
+                    CREATE INDEX IX_LocalSyncChanges_Status_CreatedAtUtc ON LocalSyncChanges (Status, CreatedAtUtc);
+                    CREATE INDEX IX_LocalSyncChanges_CompanyId_EntityType_EntityKey ON LocalSyncChanges (CompanyId, EntityType, EntityKey);
+                    """;
+                createChanges.ExecuteNonQuery();
+                added = true;
+            }
+
+            if (!TableExists("LocalSyncCheckpoints"))
+            {
+                using var createCheckpoints = connection.CreateCommand();
+                createCheckpoints.CommandText = """
+                    CREATE TABLE LocalSyncCheckpoints (
+                        Key TEXT NOT NULL CONSTRAINT PK_LocalSyncCheckpoints PRIMARY KEY,
+                        CompanyId INTEGER NOT NULL,
+                        DeviceId TEXT NOT NULL,
+                        LastPullAtUtc TEXT NULL,
+                        LastPushAtUtc TEXT NULL,
+                        LastSuccessfulSyncAtUtc TEXT NULL,
+                        LastError TEXT NULL
+                    );
+                    CREATE INDEX IX_LocalSyncCheckpoints_CompanyId_DeviceId ON LocalSyncCheckpoints (CompanyId, DeviceId);
+                    """;
+                createCheckpoints.ExecuteNonQuery();
+                added = true;
+            }
+
             // The cached company settings are re-filled from the main database on every sync, so an
             // in-place column is enough (and queued scans are never lost to a rebuild).
             AddColumn("CachedCompanySettings", "AlertEvents",
