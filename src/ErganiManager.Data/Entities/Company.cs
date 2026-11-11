@@ -27,6 +27,9 @@ public class Company
     public bool IsActive { get; set; } = true;
 
     // Time rules
+    /// <summary>Daily hours after which scanned working time is counted as overtime in reports.</summary>
+    public double DailyOvertimeThresholdHours { get; set; } = 8.0;
+
     public int EarlyClockInBlockMinutes { get; set; } = 15;
     public int EarlyDepartureAlertMinutes { get; set; } = 10;
 
