@@ -196,7 +196,7 @@
                 <TextBlock Text="{Binding Loc[Employee]}" FontSize="12" Foreground="Gray" />
                 <StackPanel MinWidth="292" Spacing="5">
                     <TextBox Text="{Binding EmployeeSearchText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                             Watermark="Search by name, ID or AFM"
+                             PlaceholderText="Search by name, ID or AFM"
                              MinWidth="292" />
                     <ComboBox ItemsSource="{Binding FilteredEmployeeOptions}"
                               SelectedItem="{Binding SelectedEmployeeOption, Mode=TwoWay}"
