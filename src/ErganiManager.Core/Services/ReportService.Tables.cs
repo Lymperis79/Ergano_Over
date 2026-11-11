@@ -623,7 +623,7 @@ public partial class ReportService
                 o.EndTime.ToString("HH:mm", Inv), ReportFormat.Hours(o.HoursWorked), o.JustificationLabel,
                 o.SubmittedToErgani ? UiText.T("Yes") : UiText.T("No"), o.Protocol ?? string.Empty);
 
-        report.Summary = UiText.F("Extra time above scheduled hours: {0}. Night work: {1}. Scheduled days exceeding {5:0.##} hours: {2}. Recorded overtime entries: {3} ({4}).",
+        report.Summary = UiText.F("Extra time above scheduled hours: {0}. Night work: {1}. Work days exceeding {5:0.##} hours: {2}. Recorded overtime entries: {3} ({4}).",
             ReportFormat.Hours(totalExtra), ReportFormat.Hours(totalNight), ReportFormat.Hours(totalOverEight), recorded.Count, ReportFormat.Hours(totalRecorded), overtimeThresholdHours) +
             " " + UiText.T("Actual-minus-scheduled time and recorded overtime are separate measures and may overlap; do not add them together as payable hours.");
         monthly.Note = UiText.T("Extra vs schedule is the positive difference between scanned actual hours and scheduled hours; it is not a legal overtime determination.");
