@@ -130,6 +130,8 @@ public class TodayRowViewModel : ObservableObject
                 return i.Minutes.HasValue
                     ? string.Format(_loc[L.TodayIssueEarlyOutMin], Time(i.Time), i.Minutes)
                     : string.Format(_loc[L.TodayIssueEarlyOut], Time(i.Time));
+            case TodayIssueCode.LateClockOut:
+                return string.Format(_loc[L.TodayIssueLateOut], Time(i.Time), Time(i.Planned), i.Minutes);
             case TodayIssueCode.DoubleClockIn:
                 return string.Format(_loc[L.TodayIssueDoubleIn], Time(i.Time), Time(i.Time2));
             case TodayIssueCode.DoubleClockOut:
