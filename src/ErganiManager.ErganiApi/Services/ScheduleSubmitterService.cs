@@ -189,7 +189,7 @@ public class ScheduleSubmitterService : IScheduleSubmitter
         return result;
     }
 
-    /// <summary>Creates (or reuses) the Overtime record for the hours over 8. Returns its id when it
+    /// <summary>Creates (or reuses) the Overtime record for hours above the company's daily threshold. Returns its id when it
     /// still has to be sent to Ergani, or null when it was already sent / could not be prepared
     /// (the day result and counters are updated in that case).</summary>
     private async Task<int?> PrepareOvertimeAsync(
