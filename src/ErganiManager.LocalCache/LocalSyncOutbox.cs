@@ -70,7 +70,7 @@ public sealed class LocalSyncOutbox
         catch (DbUpdateException)
         {
             // A second caller may have inserted the same idempotency key concurrently.
-            await cache.Entry(change).ReloadAsync(cancellationToken);
+            cache.Entry(change).State = EntityState.Detached;
             var duplicate = await cache.LocalSyncChanges
                 .AsNoTracking()
                 .FirstOrDefaultAsync(x => x.ChangeId == changeId, cancellationToken);
