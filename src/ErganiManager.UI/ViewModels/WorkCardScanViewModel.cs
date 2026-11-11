@@ -790,11 +790,49 @@ public partial class WorkCardScanViewModel :
             // the operator is entering a historical/manual movement).
             var companySettings = await cache.CachedCompanySettings.FindAsync(companyId.Value);
 
+            // Match the dedicated Terminal's movement resolution. The local queue is the
+            // primary source for offline events, but successful manual Work Card submissions
+            // are written directly to the main database and may not exist in PendingSubmissions.
+            // Read the latest submitted main-database movement while online so the next
+            // auto-detected scan correctly closes a manually submitted arrival.
+            string? latestMainMovement = null;
+            DateTime? latestMainMovementAt = null;
+            if (_connectionState.CurrentState == AppConnectionState.Normal)
+            {
+                try
+                {
+                    await using var mainDb = new AppDbContext(_connectionState.GetDbOptions());
+                    var latestMainWorkCard = await mainDb.WorkCards
+                        .AsNoTracking()
+                        .Where(w => w.EmployeeId == employee.Id &&
+                                    w.SubmittedToErgani &&
+                                    !w.WasBlockedEarlyAttempt)
+                        .OrderByDescending(w => w.MovementDateTime)
+                        .Select(w => new { w.MovementType, w.MovementDateTime })
+                        .FirstOrDefaultAsync();
+
+                    if (latestMainWorkCard != null)
+                    {
+                        latestMainMovement = latestMainWorkCard.MovementType.ToString();
+                        latestMainMovementAt = latestMainWorkCard.MovementDateTime;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    // Keep scanning available if the main database is momentarily unavailable.
+                    // ShiftResolver will still use the persisted local scan queue.
+                    Serilog.Log.Warning(ex,
+                        "Could not read the latest submitted Work Card before resolving a manual-scan-screen movement.");
+                }
+            }
+
             // Movement (when auto-detected) and the governing schedule. For an overnight shift a departure
             // belongs to the schedule of the day the shift started.
             var shift = await ShiftResolver.ResolveAsync(
                 cache, employee.Id, scanTime, companySettings?.EarlyClockInBlockMinutes ?? 0,
-                AutoDetect ? null : movement);
+                AutoDetect ? null : movement,
+                latestMainMovement: latestMainMovement,
+                latestMainMovementAt: latestMainMovementAt);
             if (AutoDetect) movement = shift.Movement;
             var schedule = shift.Schedule;
             var isOfficialHoliday = movement == "Arrival" &&
