@@ -415,6 +415,7 @@ public partial class AdministrationViewModel : ViewModelBase, IAdminSectionViewM
 
     // Company-specific operational settings (loaded from the active company selected in the main shell).
     [ObservableProperty] private string _companyErganiBaseUrl = string.Empty;
+    [ObservableProperty] private decimal? _dailyOvertimeThresholdHours = 8m;
     [ObservableProperty] private int _earlyClockInBlockMinutes = 15;
     [ObservableProperty] private int _earlyDepartureAlertMinutes = 10;
     [ObservableProperty] private bool _shortClockInOutAlertEnabled;
@@ -1046,6 +1047,7 @@ public partial class AdministrationViewModel : ViewModelBase, IAdminSectionViewM
                 {
                     _loadedCompanySettings = company;
                     CompanyErganiBaseUrl = company.ErganiBaseUrl ?? string.Empty;
+                    DailyOvertimeThresholdHours = (decimal)company.DailyOvertimeThresholdHours;
                     EarlyClockInBlockMinutes = company.EarlyClockInBlockMinutes;
                     EarlyDepartureAlertMinutes = company.EarlyDepartureAlertMinutes;
                     ShortClockInOutAlertEnabled = company.ShortClockInOutAlertEnabled;
@@ -1087,6 +1089,7 @@ public partial class AdministrationViewModel : ViewModelBase, IAdminSectionViewM
     }
 
     partial void OnCompanyErganiBaseUrlChanged(string value) => MarkCompanySettingsDirty();
+    partial void OnDailyOvertimeThresholdHoursChanged(decimal? value) => MarkCompanySettingsDirty();
     partial void OnEarlyClockInBlockMinutesChanged(int value) => MarkCompanySettingsDirty();
     partial void OnEarlyDepartureAlertMinutesChanged(int value) => MarkCompanySettingsDirty();
     partial void OnShortClockInOutAlertEnabledChanged(bool value) => MarkCompanySettingsDirty();
@@ -1145,7 +1148,9 @@ public partial class AdministrationViewModel : ViewModelBase, IAdminSectionViewM
             return;
         }
 
-        if (EarlyClockInBlockMinutes is < 0 or > 120 ||
+        if (DailyOvertimeThresholdHours is not { } overtimeThreshold || overtimeThreshold < 1m || overtimeThreshold > 24m ||
+            overtimeThreshold * 2m != decimal.Truncate(overtimeThreshold * 2m) ||
+            EarlyClockInBlockMinutes is < 0 or > 120 ||
             EarlyDepartureAlertMinutes is < 0 or > 120 ||
             ShortClockInOutAlertMinutes is < 1 or > 240 ||
             RepeatedClockInAlertMinutes is < 1 or > 240 ||
@@ -1161,6 +1166,7 @@ public partial class AdministrationViewModel : ViewModelBase, IAdminSectionViewM
             var company = await _companyService.GetByIdAsync(companyId)
                 ?? throw new InvalidOperationException(Loc["Could not load settings for the selected company."]);
             company.ErganiBaseUrl = CompanyErganiBaseUrl.Trim();
+            company.DailyOvertimeThresholdHours = (double)DailyOvertimeThresholdHours!.Value;
             company.EarlyClockInBlockMinutes = EarlyClockInBlockMinutes;
             company.EarlyDepartureAlertMinutes = EarlyDepartureAlertMinutes;
             company.ShortClockInOutAlertEnabled = ShortClockInOutAlertEnabled;
