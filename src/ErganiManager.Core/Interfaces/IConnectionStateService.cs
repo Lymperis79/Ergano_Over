@@ -24,4 +24,10 @@ public interface IConnectionStateService
     /// <summary>Returns cached DbContextOptions — built once and reused so every
     /// service call doesn't re-read config from disk and rebuild options.</summary>
     DbContextOptions<AppDbContext> GetDbOptions();
+
+    /// <summary>SQLite options for the full local replica. This never changes the online DB options.</summary>
+    DbContextOptions<AppDbContext> GetLocalReplicaDbOptions();
+
+    /// <summary>Creates the full local replica schema without modifying the configured main database.</summary>
+    Task EnsureLocalReplicaCreatedAsync();
 }
