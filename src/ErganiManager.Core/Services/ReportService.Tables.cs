@@ -549,6 +549,12 @@ public partial class ReportService
     private async Task<TableReport> BuildOvertimeAnalysisAsync(int companyId, DateOnly from, DateOnly to, int? employeeId)
     {
         var time = await GetTimeSummaryReportAsync(companyId, from, to, employeeId);
+        await using var settingsDb = new AppDbContext(_connectionState.GetDbOptions());
+        var overtimeThresholdHours = await settingsDb.Companies
+            .Where(c => c.Id == companyId)
+            .Select(c => c.DailyOvertimeThresholdHours)
+            .SingleOrDefaultAsync();
+        if (overtimeThresholdHours <= 0 || overtimeThresholdHours > 24) overtimeThresholdHours = 8.0;
         var overtime = await _overtime.GetByCompanyAsync(companyId, from, to);
         var recorded = overtime
             .Where(o => !o.IsCancelled && (employeeId == null || o.EmployeeId == employeeId))
@@ -559,7 +565,7 @@ public partial class ReportService
             (UiText.T("Employee"), 220), (UiText.T("Month"), 85), (UiText.T("Scheduled hours"), 105),
             (UiText.T("Actual hours"), 100), (UiText.T("Actual − scheduled"), 120),
             (UiText.T("Extra vs schedule"), 115), (UiText.T("Night hours"), 95),
-            (UiText.T("Over 8h/day"), 100), (UiText.T("Recorded overtime"), 120));
+            (UiText.F("Over {0:0.##}h/day", overtimeThresholdHours), 100), (UiText.T("Recorded overtime"), 120));
 
         var overtimeByMonth = recorded.GroupBy(o => (o.EmployeeId, o.OvertimeDate.Year, o.OvertimeDate.Month))
             .ToDictionary(g => g.Key, g => g.Sum(o => o.HoursWorked));
@@ -579,7 +585,7 @@ public partial class ReportService
             var diff = actual - scheduled;
             var extra = Math.Max(0, diff);
             var night = m?.NightHours ?? 0;
-            var overEight = m?.OvertimeHours ?? 0;
+            var overEight = m?.Days.Sum(d => Math.Max(0, (d.ActualHours ?? 0) - overtimeThresholdHours)) ?? 0;
             var rec = overtimeByMonth.TryGetValue((key.EmployeeId, key.Year, key.Month), out var value) ? value : 0;
             monthly.Add(key.EmployeeName, ReportFormat.MonthLabel(key.Year, key.Month), ReportFormat.Hours(scheduled),
                 ReportFormat.Hours(actual), SignedHours(diff), ReportFormat.Hours(extra), ReportFormat.Hours(night),
@@ -606,7 +612,7 @@ public partial class ReportService
                 d.ActualHours.HasValue ? ReportFormat.Hours(actual) : "—",
                 d.ActualHours.HasValue && d.DeclaredHours.HasValue ? SignedHours(diff) : "—",
                 d.ActualHours.HasValue && d.DeclaredHours.HasValue ? ReportFormat.Hours(Math.Max(0, diff)) : "—",
-                ReportFormat.Hours(d.NightHours), ReportFormat.Hours(d.OvertimeHours));
+                ReportFormat.Hours(d.NightHours), ReportFormat.Hours(Math.Max(0, (d.ActualHours ?? 0) - overtimeThresholdHours)));
         }
 
         var detail = report.AddSection(UiText.T("Recorded overtime entries"),
@@ -617,8 +623,8 @@ public partial class ReportService
                 o.EndTime.ToString("HH:mm", Inv), ReportFormat.Hours(o.HoursWorked), o.JustificationLabel,
                 o.SubmittedToErgani ? UiText.T("Yes") : UiText.T("No"), o.Protocol ?? string.Empty);
 
-        report.Summary = UiText.F("Extra time above scheduled hours: {0}. Night work: {1}. Scheduled days exceeding 8 hours: {2}. Recorded overtime entries: {3} ({4}).",
-            ReportFormat.Hours(totalExtra), ReportFormat.Hours(totalNight), ReportFormat.Hours(totalOverEight), recorded.Count, ReportFormat.Hours(totalRecorded)) +
+        report.Summary = UiText.F("Extra time above scheduled hours: {0}. Night work: {1}. Scheduled days exceeding {5:0.##} hours: {2}. Recorded overtime entries: {3} ({4}).",
+            ReportFormat.Hours(totalExtra), ReportFormat.Hours(totalNight), ReportFormat.Hours(totalOverEight), recorded.Count, ReportFormat.Hours(totalRecorded), overtimeThresholdHours) +
             " " + UiText.T("Actual-minus-scheduled time and recorded overtime are separate measures and may overlap; do not add them together as payable hours.");
         monthly.Note = UiText.T("Extra vs schedule is the positive difference between scanned actual hours and scheduled hours; it is not a legal overtime determination.");
         return report;
