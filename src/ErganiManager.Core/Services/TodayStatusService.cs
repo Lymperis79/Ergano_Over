@@ -254,6 +254,23 @@ public class TodayStatusService : ITodayStatusService
             Add(new TodayIssueDto { Code = TodayIssueCode.EarlyClockOut, Level = StatusLevel.Warning,
                 Time = TimeOnly.FromDateTime(c.MovementDateTime), Minutes = c.EarlyDepartureMinutes });
 
+        // A final departure after the scheduled end is a late clock-out.
+        // Use the same configurable grace as late arrivals/early departures.
+        if (isWorkDay && plannedEnd.HasValue && last is { MovementType: "Departure" })
+        {
+            var departureTime = TimeOnly.FromDateTime(last.MovementDateTime);
+            var lateDeparture = departureTime.ToTimeSpan() - plannedEnd.Value.ToTimeSpan();
+            if (lateDeparture > grace)
+                Add(new TodayIssueDto
+                {
+                    Code = TodayIssueCode.LateClockOut,
+                    Level = StatusLevel.Warning,
+                    Time = departureTime,
+                    Planned = plannedEnd,
+                    Minutes = (int)lateDeparture.TotalMinutes
+                });
+        }
+
         for (var i = 1; i < cards.Count; i++)
         {
             if (cards[i].MovementType != cards[i - 1].MovementType) continue;
