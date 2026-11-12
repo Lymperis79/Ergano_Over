@@ -1,5 +1,7 @@
 using System;
 using System.Linq;
+using System.IO;
+using System.Text.Json;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -18,6 +20,8 @@ public partial class LoginViewModel : ViewModelBase
     private readonly IAuthService _authService;
     private readonly IErganiHealthCheckService _erganiHealth;
     private readonly IConnectionStateService _connectionState;
+    private readonly ICredentialProtector _credentialProtector;
+    private static readonly string SavedLoginPath = Path.Combine(ErganiManager.LocalCache.AppPaths.GetAppDataFolder(), "saved-login.dat");
 
     public event EventHandler<UserSession>? LoginSucceeded;
 
@@ -26,6 +30,7 @@ public partial class LoginViewModel : ViewModelBase
     [ObservableProperty] private string _errorMessage = string.Empty;
     [ObservableProperty] private bool _isBusy;
     [ObservableProperty] private bool _isDegradedMode;
+    [ObservableProperty] private bool _rememberCredentials;
 
     /// <summary>Shown when new tables/columns could not be added to the database (see the log for details).</summary>
     [ObservableProperty] private string _upgradeWarning = string.Empty;
@@ -40,11 +45,13 @@ public partial class LoginViewModel : ViewModelBase
         Loc["Vm.⚠️ Database unavailable — working in offline mode. Only previously synced users can log in."];
 
     public LoginViewModel(IAuthService authService, IErganiHealthCheckService erganiHealth,
-        IConnectionStateService connectionState)
+        IConnectionStateService connectionState, ICredentialProtector credentialProtector)
     {
         _authService  = authService;
         _erganiHealth = erganiHealth;
         _connectionState = connectionState;
+        _credentialProtector = credentialProtector;
+        LoadSavedCredentials();
         UpgradeWarning = connectionState.UpgradeWarning ?? string.Empty;
         ErganiStatusText = Loc["Vm.Ergani API: Not checked"];
     }
@@ -65,7 +72,10 @@ public partial class LoginViewModel : ViewModelBase
         {
             var result = await _authService.LoginAsync(Username, Password);
             if (result.Success && result.Session != null)
+            {
+                SaveCredentials();
                 LoginSucceeded?.Invoke(this, result.Session);
+            }
             else
                 ErrorMessage = result.ErrorMessage ?? Loc["Vm.Login failed."];
         }
@@ -78,6 +88,65 @@ public partial class LoginViewModel : ViewModelBase
         {
             UpgradeWarning = _connectionState.UpgradeWarning ?? string.Empty;
             IsBusy = false;
+        }
+    }
+
+
+    private sealed class SavedLogin
+    {
+        public string Username { get; set; } = string.Empty;
+        public string Password { get; set; } = string.Empty;
+    }
+
+    private void LoadSavedCredentials()
+    {
+        try
+        {
+            if (!File.Exists(SavedLoginPath)) return;
+            var encrypted = File.ReadAllText(SavedLoginPath);
+            var json = _credentialProtector.Unprotect(encrypted);
+            var saved = JsonSerializer.Deserialize<SavedLogin>(json);
+            if (saved == null || string.IsNullOrWhiteSpace(saved.Username) || string.IsNullOrEmpty(saved.Password))
+                return;
+
+            Username = saved.Username;
+            Password = saved.Password;
+            RememberCredentials = true;
+        }
+        catch (Exception ex)
+        {
+            // A credential encrypted on another Windows account/installation must
+            // never prevent the login screen from opening.
+            Serilog.Log.Warning(ex, "Could not load saved login credentials.");
+            RememberCredentials = false;
+        }
+    }
+
+    private void SaveCredentials()
+    {
+        try
+        {
+            if (!RememberCredentials)
+            {
+                if (File.Exists(SavedLoginPath)) File.Delete(SavedLoginPath);
+                return;
+            }
+
+            var json = JsonSerializer.Serialize(new SavedLogin
+            {
+                Username = Username.Trim(),
+                Password = Password
+            });
+            var encrypted = _credentialProtector.Protect(json);
+            var temporaryPath = SavedLoginPath + ".tmp";
+            File.WriteAllText(temporaryPath, encrypted);
+            File.Move(temporaryPath, SavedLoginPath, overwrite: true);
+        }
+        catch (Exception ex)
+        {
+            // Authentication has already succeeded; inability to remember the
+            // credentials must not turn a successful login into a failed one.
+            Serilog.Log.Warning(ex, "Could not save login credentials.");
         }
     }
 
