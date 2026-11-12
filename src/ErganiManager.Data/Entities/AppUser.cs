@@ -51,6 +51,9 @@ public class AppUser
     [MaxLength(500)]
     public string? AllowedMenus { get; set; }
 
+    /// <summary>Whether this account is allowed to store its login credentials on this Windows profile.</summary>
+    public bool CanSaveCredentials { get; set; }
+
     public bool IsActive { get; set; } = true;
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime? LastLoginAt { get; set; }
