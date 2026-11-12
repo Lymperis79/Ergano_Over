@@ -28,6 +28,7 @@ public partial class UsersViewModel : ViewModelBase, IAdminSectionViewModel
     [ObservableProperty] private string _formPassword = string.Empty;
     [ObservableProperty] private AppUserRole _formRole = AppUserRole.Operator;
     [ObservableProperty] private BranchDto? _formBranch;
+    [ObservableProperty] private bool _formCanSaveCredentials;
 
     public bool IsFormRoleOperator => FormRole == AppUserRole.Operator;
     public bool IsFormRoleAdmin => FormRole == AppUserRole.Admin;
@@ -188,6 +189,7 @@ public partial class UsersViewModel : ViewModelBase, IAdminSectionViewModel
     {
         FormUsername = string.Empty;
         FormPassword = string.Empty;
+        FormCanSaveCredentials = false;
         FormRole = AppUserRole.Operator;
         FormBranch = AvailableBranches.Count > 0 ? AvailableBranches[0] : null;
         BuildMenuChoices(null);   // every menu ticked by default
@@ -225,6 +227,7 @@ public partial class UsersViewModel : ViewModelBase, IAdminSectionViewModel
                 Role = FormRole,
                 CompanyId = companyId,
                 BranchId = FormRole == AppUserRole.Operator ? FormBranch?.Id : null,
+                CanSaveCredentials = FormCanSaveCredentials,
                 // Menu restrictions apply to administrators and limited users (operators use the scanning terminal).
                 AllowedMenus = ShowMenuPicker ? SelectedMenusOrNull() : null
             });
