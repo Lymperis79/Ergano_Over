@@ -12,6 +12,7 @@ public class AppUserDto
     public int? BranchId { get; set; }
     public string? BranchName { get; set; }
     public bool IsActive { get; set; } = true;
+    public bool CanSaveCredentials { get; set; }
     public DateTime? LastLoginAt { get; set; }
 
     /// <summary>Comma separated menu keys the user may see; null = all menus.</summary>
@@ -26,6 +27,7 @@ public class CreateUserRequest
     public AppUserRole Role { get; set; } = AppUserRole.Operator;
     public int? CompanyId { get; set; }
     public int? BranchId { get; set; }
+    public bool CanSaveCredentials { get; set; }
 
     /// <summary>Menus the user may see (comma separated keys); null = all menus.</summary>
     public string? AllowedMenus { get; set; }
