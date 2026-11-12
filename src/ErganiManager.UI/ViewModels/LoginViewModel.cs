@@ -32,6 +32,7 @@ public partial class LoginViewModel : ViewModelBase
     [ObservableProperty] private bool _isBusy;
     [ObservableProperty] private bool _isDegradedMode;
     [ObservableProperty] private bool _rememberCredentials;
+    [ObservableProperty] private bool _autoLoginEnabled;
 
     /// <summary>Shown when new tables/columns could not be added to the database (see the log for details).</summary>
     [ObservableProperty] private string _upgradeWarning = string.Empty;
@@ -96,6 +97,7 @@ public partial class LoginViewModel : ViewModelBase
     {
         public string Username { get; set; } = string.Empty;
         public string Password { get; set; } = string.Empty;
+        public bool AutoLogin { get; set; }
     }
 
     private void LoadSavedCredentials()
@@ -113,6 +115,7 @@ public partial class LoginViewModel : ViewModelBase
             Username = saved.Username;
             Password = saved.Password;
             RememberCredentials = true;
+            AutoLoginEnabled = saved.AutoLogin;
         }
         catch (Exception ex)
         {
@@ -125,7 +128,17 @@ public partial class LoginViewModel : ViewModelBase
 
     partial void OnRememberCredentialsChanged(bool value)
     {
-        if (!value) DeleteSavedCredentials();
+        if (!value)
+        {
+            AutoLoginEnabled = false;
+            DeleteSavedCredentials();
+        }
+    }
+
+    partial void OnAutoLoginEnabledChanged(bool value)
+    {
+        if (value && !RememberCredentials)
+            AutoLoginEnabled = false;
     }
 
     private void DeleteSavedCredentials()
