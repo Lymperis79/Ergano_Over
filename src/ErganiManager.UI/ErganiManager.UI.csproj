@@ -18,6 +18,7 @@
   <ItemGroup>
     <!-- Explicit reference so the patched version (see Directory.Packages.props) wins over the vulnerable transitive one. -->
     <PackageReference Include="System.Security.Cryptography.Pkcs" />
+    <PackageReference Include="System.Security.Cryptography.ProtectedData" />
     <PackageReference Include="Avalonia" />
     <PackageReference Include="Avalonia.Desktop" />
     <PackageReference Include="Avalonia.Themes.Fluent" />
