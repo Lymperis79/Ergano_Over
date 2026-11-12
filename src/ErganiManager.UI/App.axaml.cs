@@ -287,10 +287,12 @@ public partial class App : Application
     }
 
     public void ShowLogin(
-        IClassicDesktopStyleApplicationLifetime desktop, bool isDegraded)
+        IClassicDesktopStyleApplicationLifetime desktop, bool isDegraded, bool allowAutoLogin = true)
     {
         var vm = Program.Services.GetRequiredService<LoginViewModel>();
         vm.IsDegradedMode = isDegraded;
+        vm.AutoLoginOnOpen = allowAutoLogin;
+        if (!allowAutoLogin) vm.PrepareForLogout();
         vm.LoginSucceeded += (_, session) => OnLoginSucceeded(desktop, session);
 
         TransitionTo(desktop, new LoginView { DataContext = vm });
@@ -429,6 +431,6 @@ public partial class App : Application
         Program.Services.GetRequiredService<IAuthService>().Logout();
         Log.Information("User {Username} signed out.", session.Username);
 
-        ShowLogin(desktop, isDegraded: session.IsOfflineSession);
+        ShowLogin(desktop, isDegraded: session.IsOfflineSession, allowAutoLogin: false);
     }
 }
