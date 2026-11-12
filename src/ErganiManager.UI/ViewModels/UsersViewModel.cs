@@ -218,6 +218,14 @@ public partial class UsersViewModel : ViewModelBase, IAdminSectionViewModel
             return;
         }
 
+        // Operators are branch-scoped. Do not silently create an unassigned
+        // operator if the branch ComboBox has not propagated its selection.
+        if (FormRole == AppUserRole.Operator && AvailableBranches.Count > 0 && FormBranch == null)
+        {
+            StatusMessage = Loc["Vm.Select a branch for this operator."];
+            return;
+        }
+
         try
         {
             await _userService.CreateAsync(new CreateUserRequest
