@@ -166,7 +166,8 @@ public partial class LoginViewModel : ViewModelBase
             var json = JsonSerializer.Serialize(new SavedLogin
             {
                 Username = Username.Trim(),
-                Password = Password
+                Password = Password,
+                AutoLogin = AutoLoginEnabled
             });
             var plainBytes = Encoding.UTF8.GetBytes(json);
             var encrypted = Convert.ToBase64String(ProtectedData.Protect(plainBytes, optionalEntropy: null, scope: DataProtectionScope.CurrentUser));
