@@ -53,6 +53,7 @@ public static class L
     public const string Welcome             = nameof(Welcome);
     public const string Logout              = nameof(Logout);
     public const string RememberUsernameAndPassword = nameof(RememberUsernameAndPassword);
+    public const string LoginAutomatically = nameof(LoginAutomatically);
 
     // DB Setup
     public const string DbSetupTitle        = nameof(DbSetupTitle);
