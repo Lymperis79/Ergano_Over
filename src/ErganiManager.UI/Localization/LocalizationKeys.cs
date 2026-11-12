@@ -52,6 +52,7 @@ public static class L
     public const string InvalidCredentials  = nameof(InvalidCredentials);
     public const string Welcome             = nameof(Welcome);
     public const string Logout              = nameof(Logout);
+    public const string RememberUsernameAndPassword = nameof(RememberUsernameAndPassword);
 
     // DB Setup
     public const string DbSetupTitle        = nameof(DbSetupTitle);
