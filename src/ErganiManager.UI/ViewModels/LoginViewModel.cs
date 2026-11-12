@@ -2,6 +2,8 @@ using System;
 using System.Linq;
 using System.IO;
 using System.Text.Json;
+using System.Text;
+using System.Security.Cryptography;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -20,7 +22,6 @@ public partial class LoginViewModel : ViewModelBase
     private readonly IAuthService _authService;
     private readonly IErganiHealthCheckService _erganiHealth;
     private readonly IConnectionStateService _connectionState;
-    private readonly ICredentialProtector _credentialProtector;
     private static readonly string SavedLoginPath = Path.Combine(ErganiManager.LocalCache.AppPaths.GetAppDataFolder(), "saved-login.dat");
 
     public event EventHandler<UserSession>? LoginSucceeded;
@@ -45,12 +46,11 @@ public partial class LoginViewModel : ViewModelBase
         Loc["Vm.⚠️ Database unavailable — working in offline mode. Only previously synced users can log in."];
 
     public LoginViewModel(IAuthService authService, IErganiHealthCheckService erganiHealth,
-        IConnectionStateService connectionState, ICredentialProtector credentialProtector)
+        IConnectionStateService connectionState)
     {
         _authService  = authService;
         _erganiHealth = erganiHealth;
         _connectionState = connectionState;
-        _credentialProtector = credentialProtector;
         LoadSavedCredentials();
         UpgradeWarning = connectionState.UpgradeWarning ?? string.Empty;
         ErganiStatusText = Loc["Vm.Ergani API: Not checked"];
@@ -103,8 +103,9 @@ public partial class LoginViewModel : ViewModelBase
         try
         {
             if (!File.Exists(SavedLoginPath)) return;
-            var encrypted = File.ReadAllText(SavedLoginPath);
-            var json = _credentialProtector.Unprotect(encrypted);
+            var encrypted = Convert.FromBase64String(File.ReadAllText(SavedLoginPath));
+            var plainBytes = ProtectedData.Unprotect(encrypted, optionalEntropy: null, scope: DataProtectionScope.CurrentUser);
+            var json = Encoding.UTF8.GetString(plainBytes);
             var saved = JsonSerializer.Deserialize<SavedLogin>(json);
             if (saved == null || string.IsNullOrWhiteSpace(saved.Username) || string.IsNullOrEmpty(saved.Password))
                 return;
@@ -137,7 +138,8 @@ public partial class LoginViewModel : ViewModelBase
                 Username = Username.Trim(),
                 Password = Password
             });
-            var encrypted = _credentialProtector.Protect(json);
+            var plainBytes = Encoding.UTF8.GetBytes(json);
+            var encrypted = Convert.ToBase64String(ProtectedData.Protect(plainBytes, optionalEntropy: null, scope: DataProtectionScope.CurrentUser));
             var temporaryPath = SavedLoginPath + ".tmp";
             File.WriteAllText(temporaryPath, encrypted);
             File.Move(temporaryPath, SavedLoginPath, overwrite: true);
