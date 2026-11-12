@@ -12,7 +12,7 @@ public partial class LoginView : Window
         KeyDown += OnWindowKeyDown;
         Opened += (_, _) =>
         {
-            if (DataContext is LoginViewModel vm && vm.AutoLoginEnabled && vm.RememberCredentials)
+            if (DataContext is LoginViewModel vm && vm.AutoLoginOnOpen && vm.AutoLoginEnabled && vm.RememberCredentials)
             {
                 // Start only after the login window is open and bindings are ready.
                 Avalonia.Threading.Dispatcher.UIThread.Post(() =>
