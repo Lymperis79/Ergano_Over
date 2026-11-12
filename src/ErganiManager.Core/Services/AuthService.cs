@@ -118,6 +118,7 @@ public class AuthService : IAuthService
             BranchId = user.BranchId,
             BranchName = user.Branch?.Name,
             AllowedMenus = MenuKeys.Parse(user.AllowedMenus),
+            CanSaveCredentials = user.CanSaveCredentials,
             IsOfflineSession = false
         };
 
@@ -160,6 +161,7 @@ public class AuthService : IAuthService
             BranchId = cachedUser.BranchId,
             BranchName = cachedUser.BranchName,
             AllowedMenus = MenuKeys.Parse(OfflineMenuStore.Get(cachedUser.SourceUserId)),
+            CanSaveCredentials = false,
             IsOfflineSession = true
         };
 
