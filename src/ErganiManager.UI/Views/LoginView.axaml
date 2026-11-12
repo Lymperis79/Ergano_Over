@@ -33,6 +33,8 @@
             <TextBox Text="{Binding Password}" PasswordChar="•"
                      PlaceholderText="{Binding Loc[Password]}" />
 
+            <CheckBox Content="{Binding Loc[RememberUsernameAndPassword]}" IsChecked="{Binding RememberCredentials}" />
+
             <TextBlock Text="{Binding ErrorMessage}" Foreground="Red" TextWrapping="Wrap"
                        IsVisible="{Binding ErrorMessage,
                            Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
