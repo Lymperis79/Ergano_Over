@@ -82,6 +82,7 @@ public class UserManagementService : IUserManagementService
             CompanyId = request.CompanyId,
             BranchId = request.BranchId,
             AllowedMenus = allowedMenus,
+            CanSaveCredentials = request.CanSaveCredentials,
             IsActive = true,
             CreatedAt = DateTime.UtcNow
         };
@@ -169,6 +170,7 @@ public class UserManagementService : IUserManagementService
         BranchName = u.Branch?.Name,
         IsActive = u.IsActive,
         LastLoginAt = u.LastLoginAt,
+        CanSaveCredentials = u.CanSaveCredentials,
         AllowedMenus = u.AllowedMenus
     };
 
