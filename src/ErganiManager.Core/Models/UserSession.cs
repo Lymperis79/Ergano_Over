@@ -47,6 +47,9 @@ public class UserSession
     /// cache because the main database was unreachable.</summary>
     public bool IsOfflineSession { get; set; }
 
+    /// <summary>Whether this account is allowed to use the local remember-credentials option.</summary>
+    public bool CanSaveCredentials { get; set; }
+
     public bool IsSuperAdmin => Role == AppUserRole.Admin && CompanyId == null;
 
     /// <summary>The menus this user may see; null = all.</summary>
