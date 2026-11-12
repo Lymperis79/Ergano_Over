@@ -181,6 +181,7 @@ public static class L
     public const string ResetPassword       = nameof(ResetPassword);
     public const string NewPassword         = nameof(NewPassword);
     public const string LockToBranch        = nameof(LockToBranch);
+    public const string UsersAllowSaveCredentials = nameof(UsersAllowSaveCredentials);
 
     // Terminal
     public const string ScanPrompt          = nameof(ScanPrompt);
