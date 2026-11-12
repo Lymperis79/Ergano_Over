@@ -82,6 +82,7 @@ public static class EnglishStrings
         // ── Auth / Login ──────────────────────────────────────
         [L.AppTitle] = "Ergani Manager",
         [L.SignIn] = "Sign In",
+        [L.RememberUsernameAndPassword] = "Remember username and password",
         [L.Username] = "Username",
         [L.Password] = "Password",
         [L.OfflineBanner] = "⚠️ Database unavailable — working in offline mode. Only previously synced users can log in, and clock-in/out scans will be queued until the connection is restored.",
