@@ -82,6 +82,7 @@ public static class GreekStrings
         // ── Auth / Login ──────────────────────────────────────
         [L.AppTitle] = "Ergani Manager",
         [L.SignIn] = "Είσοδος",
+        [L.RememberUsernameAndPassword] = "Απομνημόνευση ονόματος χρήστη και κωδικού πρόσβασης",
         [L.Username] = "Όνομα χρήστη",
         [L.Password] = "Κωδικός",
         [L.OfflineBanner] = "⚠️ Η βάση δεδομένων δεν είναι διαθέσιμη — λειτουργία εκτός σύνδεσης. Οι καταχωρήσεις θα συγχρονιστούν όταν αποκατασταθεί η σύνδεση.",
