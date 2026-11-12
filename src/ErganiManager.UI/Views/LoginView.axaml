@@ -34,6 +34,8 @@
                      PlaceholderText="{Binding Loc[Password]}" />
 
             <CheckBox Content="{Binding Loc[RememberUsernameAndPassword]}" IsChecked="{Binding RememberCredentials}" />
+            <CheckBox Content="{Binding Loc[LoginAutomatically]}" IsChecked="{Binding AutoLoginEnabled}"
+                      IsEnabled="{Binding RememberCredentials}" Margin="20,0,0,0" />
 
             <TextBlock Text="{Binding ErrorMessage}" Foreground="Red" TextWrapping="Wrap"
                        IsVisible="{Binding ErrorMessage,
