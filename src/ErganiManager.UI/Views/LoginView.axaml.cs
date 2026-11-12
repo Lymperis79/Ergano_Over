@@ -11,7 +11,21 @@ public partial class LoginView : Window
         InitializeComponent();
         KeyDown += OnWindowKeyDown;
         Opened += (_, _) =>
-            Avalonia.Threading.Dispatcher.UIThread.Post(() => UsernameBox.Focus());
+        {
+            if (DataContext is LoginViewModel vm && vm.AutoLoginEnabled && vm.RememberCredentials)
+            {
+                // Start only after the login window is open and bindings are ready.
+                Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+                {
+                    if (vm.LoginCommand.CanExecute(null))
+                        vm.LoginCommand.Execute(null);
+                });
+            }
+            else
+            {
+                Avalonia.Threading.Dispatcher.UIThread.Post(() => UsernameBox.Focus());
+            }
+        };
     }
 
     private void OnWindowKeyDown(object? sender, KeyEventArgs e)
