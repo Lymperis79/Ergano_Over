@@ -123,13 +123,30 @@ public partial class LoginViewModel : ViewModelBase
         }
     }
 
+    partial void OnRememberCredentialsChanged(bool value)
+    {
+        if (!value) DeleteSavedCredentials();
+    }
+
+    private void DeleteSavedCredentials()
+    {
+        try
+        {
+            if (File.Exists(SavedLoginPath)) File.Delete(SavedLoginPath);
+        }
+        catch (Exception ex)
+        {
+            Serilog.Log.Warning(ex, "Could not delete saved login credentials.");
+        }
+    }
+
     private void SaveCredentials()
     {
         try
         {
             if (!RememberCredentials)
             {
-                if (File.Exists(SavedLoginPath)) File.Delete(SavedLoginPath);
+                DeleteSavedCredentials();
                 return;
             }
 
