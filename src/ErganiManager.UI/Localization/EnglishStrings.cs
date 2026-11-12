@@ -275,6 +275,7 @@ public static class EnglishStrings
         [L.Operator] = "Operator",
         [L.ResetPassword] = "Reset Password",
         [L.NewPassword] = "New password (min 8 characters)",
+        [L.UsersAllowSaveCredentials] = "Allow this user to remember their username and password on this PC",
         [L.LockToBranch] = "Lock to Branch (optional)",
 
         // ── Terminal ──────────────────────────────────────────
