@@ -65,6 +65,8 @@
                         <TextBlock Text="{Binding Loc[Password]}" FontWeight="SemiBold" />
                         <TextBox Text="{Binding FormPassword}" PasswordChar="•" />
 
+                        <CheckBox Content="{Binding Loc[UsersAllowSaveCredentials]}" IsChecked="{Binding FormCanSaveCredentials, Mode=TwoWay}" />
+
                         <TextBlock Text="{Binding Loc[Role]}" FontWeight="SemiBold" />
                         <ComboBox ItemsSource="{Binding AvailableRoles}"
                                   SelectedItem="{Binding FormRole}"
