@@ -34,6 +34,7 @@ public partial class LoginViewModel : ViewModelBase
     [ObservableProperty] private bool _rememberCredentials;
     [ObservableProperty] private bool _autoLoginEnabled;
     [ObservableProperty] private bool _autoLoginOnOpen = true;
+    private bool _suppressCredentialDelete;
 
     /// <summary>Shown when new tables/columns could not be added to the database (see the log for details).</summary>
     [ObservableProperty] private string _upgradeWarning = string.Empty;
@@ -132,7 +133,8 @@ public partial class LoginViewModel : ViewModelBase
         if (!value)
         {
             AutoLoginEnabled = false;
-            DeleteSavedCredentials();
+            if (!_suppressCredentialDelete)
+                DeleteSavedCredentials();
         }
     }
 
@@ -156,9 +158,19 @@ public partial class LoginViewModel : ViewModelBase
 
     public void PrepareForLogout()
     {
-        // Keep the encrypted startup preference on disk, but never auto-enter the previous
-        // account immediately after logout. A different user must be able to sign in.
+        // Logout returns to a clean login form, but it must not erase the previously
+        // saved startup account. Auto-login is still honored on the next application start.
         AutoLoginOnOpen = false;
+        _suppressCredentialDelete = true;
+        try
+        {
+            RememberCredentials = false;
+            AutoLoginEnabled = false;
+        }
+        finally
+        {
+            _suppressCredentialDelete = false;
+        }
         Username = string.Empty;
         Password = string.Empty;
         ErrorMessage = string.Empty;
@@ -169,13 +181,11 @@ public partial class LoginViewModel : ViewModelBase
     {
         try
         {
+            // If this login did not opt in (or this account is not permitted to save
+            // credentials), leave the previously saved startup account untouched.
+            // The user can replace it by enabling Remember Credentials on this login.
             if (!session.CanSaveCredentials || !RememberCredentials)
-            {
-                RememberCredentials = false;
-                AutoLoginEnabled = false;
-                DeleteSavedCredentials();
                 return;
-            }
 
             var json = JsonSerializer.Serialize(new SavedLogin
             {
