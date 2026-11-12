@@ -78,7 +78,7 @@
                         <StackPanel IsVisible="{Binding IsFormRoleOperator}" Spacing="10">
                             <TextBlock Text="{Binding Loc[LockToBranch]}" FontWeight="SemiBold" />
                             <ComboBox ItemsSource="{Binding AvailableBranches}"
-                                      SelectedItem="{Binding FormBranch}"
+                                      SelectedItem="{Binding FormBranch, Mode=TwoWay}"
                                       HorizontalAlignment="Stretch">
                                 <ComboBox.ItemTemplate>
                                     <DataTemplate>
