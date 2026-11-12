@@ -58,6 +58,15 @@ public class UserManagementService : IUserManagementService
         if (request.Role == AppUserRole.Operator && request.CompanyId == null)
             throw new InvalidOperationException(ErganiManager.Data.UiText.T("Operator accounts must be assigned to a company."));
 
+        if (request.BranchId.HasValue)
+        {
+            await using var validationDb = OpenDb();
+            var branchBelongsToCompany = await validationDb.Branches.AnyAsync(b =>
+                b.Id == request.BranchId.Value && b.CompanyId == request.CompanyId);
+            if (!branchBelongsToCompany)
+                throw new InvalidOperationException(ErganiManager.Data.UiText.T("The selected branch does not belong to the selected company."));
+        }
+
         // A limited user belongs to one company and must be given at least one menu.
         var allowedMenus = request.AllowedMenus;
         if (request.Role == AppUserRole.Limited)
