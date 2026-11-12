@@ -33,6 +33,7 @@ public partial class LoginViewModel : ViewModelBase
     [ObservableProperty] private bool _isDegradedMode;
     [ObservableProperty] private bool _rememberCredentials;
     [ObservableProperty] private bool _autoLoginEnabled;
+    [ObservableProperty] private bool _autoLoginOnOpen = true;
 
     /// <summary>Shown when new tables/columns could not be added to the database (see the log for details).</summary>
     [ObservableProperty] private string _upgradeWarning = string.Empty;
@@ -74,7 +75,7 @@ public partial class LoginViewModel : ViewModelBase
             var result = await _authService.LoginAsync(Username, Password);
             if (result.Success && result.Session != null)
             {
-                SaveCredentials();
+                SaveCredentials(result.Session);
                 LoginSucceeded?.Invoke(this, result.Session);
             }
             else
@@ -153,12 +154,25 @@ public partial class LoginViewModel : ViewModelBase
         }
     }
 
-    private void SaveCredentials()
+    public void PrepareForLogout()
+    {
+        // Keep the encrypted startup preference on disk, but never auto-enter the previous
+        // account immediately after logout. A different user must be able to sign in.
+        AutoLoginOnOpen = false;
+        Username = string.Empty;
+        Password = string.Empty;
+        ErrorMessage = string.Empty;
+        IsBusy = false;
+    }
+
+    private void SaveCredentials(UserSession session)
     {
         try
         {
-            if (!RememberCredentials)
+            if (!session.CanSaveCredentials || !RememberCredentials)
             {
+                RememberCredentials = false;
+                AutoLoginEnabled = false;
                 DeleteSavedCredentials();
                 return;
             }
