@@ -282,15 +282,24 @@ public class TodayStatusService : ITodayStatusService
                 Add(new TodayIssueDto { Code = TodayIssueCode.NoClockOutPastDay, Level = StatusLevel.Error });
         }
 
-        foreach (var c in departures.Where(d => earlyClockOutWarningMinutes > 0 &&
-                     d.WasEarlyDeparture && d.EarlyDepartureMinutes >= earlyClockOutWarningMinutes))
-            Add(new TodayIssueDto
+        if (earlyClockOutWarningMinutes > 0 && isWorkDay && plannedEnd.HasValue && !isOfficialHoliday)
+        {
+            foreach (var c in departures)
             {
-                Code = TodayIssueCode.EarlyClockOut,
-                Level = StatusLevel.Warning,
-                Time = TimeOnly.FromDateTime(c.MovementDateTime),
-                Minutes = c.EarlyDepartureMinutes
-            });
+                var departureTime = TimeOnly.FromDateTime(c.MovementDateTime);
+                var earlyMinutes = (int)(plannedEnd.Value.ToTimeSpan() - departureTime.ToTimeSpan()).TotalMinutes;
+                if (earlyMinutes < earlyClockOutWarningMinutes) continue;
+
+                Add(new TodayIssueDto
+                {
+                    Code = TodayIssueCode.EarlyClockOut,
+                    Level = StatusLevel.Warning,
+                    Time = departureTime,
+                    Planned = plannedEnd,
+                    Minutes = earlyMinutes
+                });
+            }
+        }
 
         // A final departure after the scheduled end is a late clock-out.
         // Use the same configurable grace as late arrivals/early departures.
