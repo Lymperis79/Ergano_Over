@@ -574,6 +574,7 @@ public static class EnglishStrings
         [L.TodayIssueSendIn] = "Clock-in {0}: {1}",
         [L.TodayIssueSendOut] = "Clock-out {0}: {1}",
         [L.TodayIssueLate] = "Late clock-in: {0} (planned {1}, +{2} min)",
+        [L.TodayIssueEarlyIn] = "Early clock-in: {0} (planned {1}, {2} min early)",
         [L.TodayIssueNoIn] = "No clock-in (planned {0})",
         [L.TodayIssueOutNoIn] = "Clock-out without a clock-in",
         [L.TodayIssueNoOut] = "No clock-out (planned {0})",
