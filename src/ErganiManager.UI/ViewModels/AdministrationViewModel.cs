@@ -418,6 +418,8 @@ public partial class AdministrationViewModel : ViewModelBase, IAdminSectionViewM
     [ObservableProperty] private decimal? _dailyOvertimeThresholdHours = 8m;
     [ObservableProperty] private int _earlyClockInBlockMinutes = 15;
     [ObservableProperty] private int _earlyDepartureAlertMinutes = 10;
+    [ObservableProperty] private int _earlyClockInWarningMinutes;
+    [ObservableProperty] private int _earlyClockOutWarningMinutes;
     [ObservableProperty] private bool _shortClockInOutAlertEnabled;
     [ObservableProperty] private int _shortClockInOutAlertMinutes = 10;
     [ObservableProperty] private bool _repeatedClockInAlertEnabled;
@@ -1050,6 +1052,8 @@ public partial class AdministrationViewModel : ViewModelBase, IAdminSectionViewM
                     DailyOvertimeThresholdHours = (decimal)company.DailyOvertimeThresholdHours;
                     EarlyClockInBlockMinutes = company.EarlyClockInBlockMinutes;
                     EarlyDepartureAlertMinutes = company.EarlyDepartureAlertMinutes;
+                    EarlyClockInWarningMinutes = company.EarlyClockInWarningMinutes;
+                    EarlyClockOutWarningMinutes = company.EarlyClockOutWarningMinutes;
                     ShortClockInOutAlertEnabled = company.ShortClockInOutAlertEnabled;
                     ShortClockInOutAlertMinutes = company.ShortClockInOutAlertMinutes;
                     RepeatedClockInAlertEnabled = company.RepeatedClockInAlertEnabled;
@@ -1092,6 +1096,8 @@ public partial class AdministrationViewModel : ViewModelBase, IAdminSectionViewM
     partial void OnDailyOvertimeThresholdHoursChanged(decimal? value) => MarkCompanySettingsDirty();
     partial void OnEarlyClockInBlockMinutesChanged(int value) => MarkCompanySettingsDirty();
     partial void OnEarlyDepartureAlertMinutesChanged(int value) => MarkCompanySettingsDirty();
+    partial void OnEarlyClockInWarningMinutesChanged(int value) => MarkCompanySettingsDirty();
+    partial void OnEarlyClockOutWarningMinutesChanged(int value) => MarkCompanySettingsDirty();
     partial void OnShortClockInOutAlertEnabledChanged(bool value) => MarkCompanySettingsDirty();
     partial void OnShortClockInOutAlertMinutesChanged(int value) => MarkCompanySettingsDirty();
     partial void OnRepeatedClockInAlertEnabledChanged(bool value) => MarkCompanySettingsDirty();
@@ -1152,6 +1158,8 @@ public partial class AdministrationViewModel : ViewModelBase, IAdminSectionViewM
             overtimeThreshold * 2m != decimal.Truncate(overtimeThreshold * 2m) ||
             EarlyClockInBlockMinutes is < 0 or > 120 ||
             EarlyDepartureAlertMinutes is < 0 or > 120 ||
+            EarlyClockInWarningMinutes is < 0 or > 240 ||
+            EarlyClockOutWarningMinutes is < 0 or > 240 ||
             ShortClockInOutAlertMinutes is < 1 or > 240 ||
             RepeatedClockInAlertMinutes is < 1 or > 240 ||
             ClockInAlertMinutes is < 0 or > 240 ||
@@ -1169,6 +1177,8 @@ public partial class AdministrationViewModel : ViewModelBase, IAdminSectionViewM
             company.DailyOvertimeThresholdHours = (double)DailyOvertimeThresholdHours!.Value;
             company.EarlyClockInBlockMinutes = EarlyClockInBlockMinutes;
             company.EarlyDepartureAlertMinutes = EarlyDepartureAlertMinutes;
+            company.EarlyClockInWarningMinutes = EarlyClockInWarningMinutes;
+            company.EarlyClockOutWarningMinutes = EarlyClockOutWarningMinutes;
             company.ShortClockInOutAlertEnabled = ShortClockInOutAlertEnabled;
             company.ShortClockInOutAlertMinutes = ShortClockInOutAlertMinutes;
             company.RepeatedClockInAlertEnabled = RepeatedClockInAlertEnabled;
