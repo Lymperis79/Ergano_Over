@@ -215,6 +215,8 @@ public static class EnglishStrings
         [L.ReportNightHours] = "Night hours",
         [L.EarlyClockInBlock] = "Block clock-in earlier than (minutes before shift start, 0 = off)",
         [L.EarlyDepartureAlert] = "Alert if clock-out earlier than (minutes before shift end, 0 = off)",
+        [L.EarlyClockInWarning] = "Early clock-in warning threshold (minutes; 0 = off)",
+        [L.EarlyClockOutWarning] = "Early clock-out warning threshold (minutes; 0 = off)",
         [L.BlockNoSchedule] = "Block clock-in when no schedule is on file",
         [L.BlockRestAbsent] = "Block clock-in/out on Rest or Absent days",
         [L.EmailAlerts] = "✉ Email Alerts",
