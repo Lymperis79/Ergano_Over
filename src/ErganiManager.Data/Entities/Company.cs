@@ -33,6 +33,12 @@ public class Company
     public int EarlyClockInBlockMinutes { get; set; } = 15;
     public int EarlyDepartureAlertMinutes { get; set; } = 10;
 
+    /// <summary>Warning-only threshold for arrivals before scheduled start; zero disables it.</summary>
+    public int EarlyClockInWarningMinutes { get; set; } = 0;
+
+    /// <summary>Warning-only threshold for departures before scheduled end; zero disables it.</summary>
+    public int EarlyClockOutWarningMinutes { get; set; } = 0;
+
     /// <summary>Warn when an arrival and its following departure are closer than this threshold.</summary>
     public bool ShortClockInOutAlertEnabled { get; set; }
     public int ShortClockInOutAlertMinutes { get; set; } = 10;
