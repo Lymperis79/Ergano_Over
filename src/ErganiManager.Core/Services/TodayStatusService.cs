@@ -79,7 +79,7 @@ public class TodayStatusService : ITodayStatusService
         var dto = new TodayEmployeeStatusDto
         {
             EmployeeId = emp.Id,
-            FullName   = emp.FullName,
+            FullName = emp.FullName,
             BranchName = emp.Branch?.Name ?? emp.Branch?.Address ?? string.Empty,
             IsOfficialHoliday = isOfficialHoliday
         };
@@ -113,10 +113,10 @@ public class TodayStatusService : ITodayStatusService
 
         // ── plan ─────────────────────────────────────────────
         dto.PlannedStart = wholeDayLeave != null ? plannedStart : isWorkDay ? plannedStart : null;
-        dto.PlannedEnd   = wholeDayLeave != null ? plannedEnd : isWorkDay ? plannedEnd : null;
+        dto.PlannedEnd = wholeDayLeave != null ? plannedEnd : isWorkDay ? plannedEnd : null;
         dto.PlannedPeriods = isWorkDay ? scheduledPeriods : new List<TodayPlannedPeriodDto>();
-        dto.IsHome       = sched?.WorkType == Entities.WorkType.Home;
-        dto.LeaveName    = leaveName;
+        dto.IsHome = sched?.WorkType == Entities.WorkType.Home;
+        dto.LeaveName = leaveName;
         dto.ScheduleKind = wholeDayLeave != null ? TodayScheduleKind.Leave
                          : sched == null ? TodayScheduleKind.None
                          : isWorkDay ? TodayScheduleKind.Work
@@ -127,7 +127,7 @@ public class TodayStatusService : ITodayStatusService
         dto.IsExpectedToday = isWorkDay && !isOfficialHoliday;
 
         // ── clockings ────────────────────────────────────────
-        var arrivals   = cards.Where(c => c.MovementType == "Arrival").ToList();
+        var arrivals = cards.Where(c => c.MovementType == "Arrival").ToList();
         var departures = cards.Where(c => c.MovementType == "Departure").ToList();
 
         TodaySendState SendStateOf(WorkCardHistoryDto c)
@@ -147,11 +147,11 @@ public class TodayStatusService : ITodayStatusService
         dto.Movements = cards.Select(c => new TodayMovementDto
         {
             IsArrival = c.MovementType == "Arrival",
-            Time      = TimeOnly.FromDateTime(c.MovementDateTime),
+            Time = TimeOnly.FromDateTime(c.MovementDateTime),
             SendState = SendStateOf(c),
-            Protocol  = c.Protocol,
-            Attempts  = c.RetryAttempts,
-            Detail    = c.ReviewReason ?? c.RetryError
+            Protocol = c.Protocol,
+            Attempts = c.RetryAttempts,
+            Detail = c.ReviewReason ?? c.RetryError
         }).ToList();
 
         // The status shown for a side is the worst one of that side, so one failed card is never hidden.
@@ -182,10 +182,14 @@ public class TodayStatusService : ITodayStatusService
             if (LevelOf(state) == StatusLevel.Ok) continue;
             Add(new TodayIssueDto
             {
-                Code = TodayIssueCode.SendProblem, Level = LevelOf(state),
+                Code = TodayIssueCode.SendProblem,
+                Level = LevelOf(state),
                 IsArrival = c.MovementType == "Arrival",
                 Time = TimeOnly.FromDateTime(c.MovementDateTime),
-                SendState = state, Protocol = c.Protocol, Attempts = c.RetryAttempts, Detail = c.ReviewReason ?? c.RetryError
+                SendState = state,
+                Protocol = c.Protocol,
+                Attempts = c.RetryAttempts,
+                Detail = c.ReviewReason ?? c.RetryError
             });
         }
 
@@ -201,29 +205,37 @@ public class TodayStatusService : ITodayStatusService
             // remains -3 minutes rather than becoming +1437 minutes late.
             var late = arrivalTime.ToTimeSpan() - plannedStart.Value.ToTimeSpan();
             if (late > grace)
-                Add(new TodayIssueDto { Code = TodayIssueCode.LateClockIn, Level = StatusLevel.Warning,
-                    Time = arrivalTime, Planned = plannedStart, Minutes = (int)late.TotalMinutes });
+                Add(new TodayIssueDto
+                {
+                    Code = TodayIssueCode.LateClockIn,
+                    Level = StatusLevel.Warning,
+                    Time = arrivalTime,
+                    Planned = plannedStart,
+                    Minutes = (int)late.TotalMinutes
+                });
         }
 
-        // Evaluate every scheduled period independently. A morning arrival must not
-        // satisfy the afternoon period, and a future period must not warn before it starts.
+        // Evaluate every scheduled period independently. An early arrival is still a
+        // valid clock-in: the grace setting controls lateness, not whether an arrival
+        // exists. For split shifts, an arrival can satisfy a later period only after
+        // the previous period has ended, so a morning scan cannot hide a missed
+        // afternoon clock-in.
         if (!isOfficialHoliday && isWorkDay)
         {
-            foreach (var period in scheduledPeriods)
+            for (var periodIndex = 0; periodIndex < scheduledPeriods.Count; periodIndex++)
             {
+                var period = scheduledPeriods[periodIndex];
+                var earliestValidTime = periodIndex == 0
+                    ? TimeOnly.MinValue
+                    : scheduledPeriods[periodIndex - 1].EndTime;
+
                 var hasArrivalInPeriod = arrivals.Any(a =>
                 {
                     var time = TimeOnly.FromDateTime(a.MovementDateTime);
-                    // An arrival shortly before the scheduled start is valid within
-                    // the configured grace window (e.g. 07:57 for an 08:00 shift).
-                    // Keep the upper bound at the end of the period so a later,
-                    // duplicate arrival cannot satisfy a missed work period.
-                    var timeOfDay = time.ToTimeSpan();
-                    var startOfDay = period.StartTime.ToTimeSpan();
-                    var withinEarlyGrace = timeOfDay < startOfDay
-                        && startOfDay - timeOfDay <= grace;
-                    return (time >= period.StartTime || withinEarlyGrace)
-                        && time <= period.EndTime;
+                    // The first period accepts any same-day early arrival. Each
+                    // subsequent split period accepts arrivals from the end of the
+                    // preceding period through this period's end.
+                    return time >= earliestValidTime && time <= period.EndTime;
                 });
 
                 if (!hasArrivalInPeriod && After(period.StartTime))
@@ -244,15 +256,24 @@ public class TodayStatusService : ITodayStatusService
         if (last is { MovementType: "Arrival" })
         {
             if (isWorkDay && plannedEnd.HasValue && plannedEnd > plannedStart && After(plannedEnd.Value))
-                Add(new TodayIssueDto { Code = TodayIssueCode.NoClockOut,
-                    Level = isPastDay ? StatusLevel.Error : StatusLevel.Warning, Planned = plannedEnd });
+                Add(new TodayIssueDto
+                {
+                    Code = TodayIssueCode.NoClockOut,
+                    Level = isPastDay ? StatusLevel.Error : StatusLevel.Warning,
+                    Planned = plannedEnd
+                });
             else if (!isWorkDay && isPastDay)
                 Add(new TodayIssueDto { Code = TodayIssueCode.NoClockOutPastDay, Level = StatusLevel.Error });
         }
 
         foreach (var c in departures.Where(d => d.WasEarlyDeparture))
-            Add(new TodayIssueDto { Code = TodayIssueCode.EarlyClockOut, Level = StatusLevel.Warning,
-                Time = TimeOnly.FromDateTime(c.MovementDateTime), Minutes = c.EarlyDepartureMinutes });
+            Add(new TodayIssueDto
+            {
+                Code = TodayIssueCode.EarlyClockOut,
+                Level = StatusLevel.Warning,
+                Time = TimeOnly.FromDateTime(c.MovementDateTime),
+                Minutes = c.EarlyDepartureMinutes
+            });
 
         // A final departure after the scheduled end is a late clock-out.
         // Use the same configurable grace as late arrivals/early departures.
@@ -295,7 +316,7 @@ public class TodayStatusService : ITodayStatusService
         }
 
         dto.Issues = issues;
-        dto.Level  = issues.Count == 0 ? StatusLevel.Ok : (StatusLevel)issues.Max(i => (int)i.Level);
+        dto.Level = issues.Count == 0 ? StatusLevel.Ok : (StatusLevel)issues.Max(i => (int)i.Level);
 
         // ── presence ─────────────────────────────────────────
         if (last is { MovementType: "Arrival" })
