@@ -25,8 +25,8 @@ public sealed class WorkCardIntervalAlertService
     }
 
     /// <summary>
-    /// Sends warning-only alerts when a scan is earlier than its scheduled boundary by
-    /// at least the separately configured threshold. This never blocks or changes submission.
+    /// Sends warning-only alerts when a scan is early by a positive number of minutes
+    /// up to and including the separately configured threshold. This never blocks or changes submission.
     /// </summary>
     public async Task<string?> EvaluateScheduleWarningAsync(
         int companyId, int employeeId, string employeeName, string taxId,
@@ -44,7 +44,7 @@ public sealed class WorkCardIntervalAlertService
             if (scheduled == null || threshold <= 0) return null;
 
             var earlyMinutes = (int)Math.Floor((scheduled.Value - scannedAt).TotalMinutes);
-            if (earlyMinutes < threshold) return null;
+            if (earlyMinutes <= 0 || earlyMinutes > threshold) return null;
 
             var eventType = isArrival ? AlertEvent.EarlyClockIn : AlertEvent.EarlyDeparture;
             var eventName = isArrival ? "Early clock-in" : "Early clock-out";
