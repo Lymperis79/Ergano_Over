@@ -193,6 +193,10 @@ public static class LocalCacheDbContextFactory
                 "ALTER TABLE CachedCompanySettings ADD COLUMN AlertEvents INTEGER NOT NULL DEFAULT 1");
             AddColumn("CachedCompanySettings", "ClockInAlertMinutes",
                 "ALTER TABLE CachedCompanySettings ADD COLUMN ClockInAlertMinutes INTEGER NOT NULL DEFAULT 10");
+            AddColumn("CachedCompanySettings", "EarlyClockInWarningMinutes",
+                "ALTER TABLE CachedCompanySettings ADD COLUMN EarlyClockInWarningMinutes INTEGER NOT NULL DEFAULT 0");
+            AddColumn("CachedCompanySettings", "EarlyClockOutWarningMinutes",
+                "ALTER TABLE CachedCompanySettings ADD COLUMN EarlyClockOutWarningMinutes INTEGER NOT NULL DEFAULT 0");
             AddColumn("CachedCompanySettings", "CompanyName",
                 "ALTER TABLE CachedCompanySettings ADD COLUMN CompanyName TEXT NOT NULL DEFAULT ''");
             AddColumn("CachedCompanySettings", "ShortClockInOutAlertEnabled",
