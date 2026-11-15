@@ -87,6 +87,8 @@ public class CompanyService : ICompanyService
             DailyOvertimeThresholdHours = dto.DailyOvertimeThresholdHours,
             EarlyClockInBlockMinutes = dto.EarlyClockInBlockMinutes,
             EarlyDepartureAlertMinutes = dto.EarlyDepartureAlertMinutes,
+            EarlyClockInWarningMinutes = dto.EarlyClockInWarningMinutes,
+            EarlyClockOutWarningMinutes = dto.EarlyClockOutWarningMinutes,
             ShortClockInOutAlertEnabled = dto.ShortClockInOutAlertEnabled,
             ShortClockInOutAlertMinutes = dto.ShortClockInOutAlertMinutes,
             RepeatedClockInAlertEnabled = dto.RepeatedClockInAlertEnabled,
@@ -132,6 +134,8 @@ public class CompanyService : ICompanyService
         entity.DailyOvertimeThresholdHours = dto.DailyOvertimeThresholdHours;
         entity.EarlyClockInBlockMinutes = dto.EarlyClockInBlockMinutes;
         entity.EarlyDepartureAlertMinutes = dto.EarlyDepartureAlertMinutes;
+        entity.EarlyClockInWarningMinutes = dto.EarlyClockInWarningMinutes;
+        entity.EarlyClockOutWarningMinutes = dto.EarlyClockOutWarningMinutes;
         entity.ShortClockInOutAlertEnabled = dto.ShortClockInOutAlertEnabled;
         entity.ShortClockInOutAlertMinutes = dto.ShortClockInOutAlertMinutes;
         entity.RepeatedClockInAlertEnabled = dto.RepeatedClockInAlertEnabled;
@@ -197,6 +201,8 @@ public class CompanyService : ICompanyService
         DailyOvertimeThresholdHours = c.DailyOvertimeThresholdHours,
         EarlyClockInBlockMinutes = c.EarlyClockInBlockMinutes,
         EarlyDepartureAlertMinutes = c.EarlyDepartureAlertMinutes,
+        EarlyClockInWarningMinutes = c.EarlyClockInWarningMinutes,
+        EarlyClockOutWarningMinutes = c.EarlyClockOutWarningMinutes,
         ShortClockInOutAlertEnabled = c.ShortClockInOutAlertEnabled,
         ShortClockInOutAlertMinutes = c.ShortClockInOutAlertMinutes,
         RepeatedClockInAlertEnabled = c.RepeatedClockInAlertEnabled,
