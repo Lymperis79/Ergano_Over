@@ -119,7 +119,7 @@ public class TodayRowViewModel : ObservableObject
             case TodayIssueCode.LateClockIn:
                 return string.Format(_loc[L.TodayIssueLate], Time(i.Time), Time(i.Planned), i.Minutes);
             case TodayIssueCode.EarlyClockIn:
-                return $"Early clock-in: {Time(i.Time)} (planned {Time(i.Planned)}, {i.Minutes} min early)";
+                return string.Format(_loc[L.TodayIssueEarlyIn], Time(i.Time), Time(i.Planned), i.Minutes);
             case TodayIssueCode.NoClockIn:
                 return string.Format(_loc[L.TodayIssueNoIn], Time(i.Planned));
             case TodayIssueCode.ClockOutWithoutIn:
