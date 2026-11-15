@@ -27,11 +27,16 @@ public class TodayStatusService : ITodayStatusService
             .OrderBy(e => e.LastName).ThenBy(e => e.FirstName)
             .ToListAsync();
         var ids = employees.Select(e => e.Id).ToList();
-        var officialHolidayDatesJson = await db.Companies
+        var companySettings = await db.Companies.AsNoTracking()
             .Where(c => c.Id == companyId)
-            .Select(c => c.OfficialHolidayDatesJson)
+            .Select(c => new
+            {
+                c.OfficialHolidayDatesJson,
+                c.EarlyClockInWarningMinutes,
+                c.EarlyClockOutWarningMinutes
+            })
             .FirstOrDefaultAsync();
-        var isOfficialHoliday = CompanyHolidayCalendar.IsEnabled(officialHolidayDatesJson, date);
+        var isOfficialHoliday = CompanyHolidayCalendar.IsEnabled(companySettings?.OfficialHolidayDatesJson, date);
 
         var schedules = (await db.Schedules
                 .Include(s => s.WorkingPeriods)
@@ -63,7 +68,7 @@ public class TodayStatusService : ITodayStatusService
             schedules.TryGetValue(emp.Id, out var sched);
             leaves.TryGetValue(emp.Id, out var empLeaves);
             cards.TryGetValue(emp.Id, out var empCards);
-            rows.Add(Build(emp, sched, empLeaves ?? new(), empCards ?? new(), nowTime, isPastDay, grace, isOfficialHoliday));
+            rows.Add(Build(emp, sched, empLeaves ?? new(), empCards ?? new(), nowTime, isPastDay, grace, isOfficialHoliday, companySettings?.EarlyClockInWarningMinutes ?? 0, companySettings?.EarlyClockOutWarningMinutes ?? 0));
         }
 
         return rows
@@ -74,7 +79,7 @@ public class TodayStatusService : ITodayStatusService
 
     private static TodayEmployeeStatusDto Build(
         Entities.Employee emp, Entities.EmployeeSchedule? sched, List<Entities.Leave> leaves,
-        List<WorkCardHistoryDto> cards, TimeOnly nowTime, bool isPastDay, TimeSpan grace, bool isOfficialHoliday)
+        List<WorkCardHistoryDto> cards, TimeOnly nowTime, bool isPastDay, TimeSpan grace, bool isOfficialHoliday, int earlyClockInWarningMinutes, int earlyClockOutWarningMinutes)
     {
         var dto = new TodayEmployeeStatusDto
         {
@@ -203,6 +208,17 @@ public class TodayStatusService : ITodayStatusService
             // TimeOnly subtraction wraps around midnight. Compare the underlying
             // time-of-day spans instead so an early arrival (07:57 vs 08:00)
             // remains -3 minutes rather than becoming +1437 minutes late.
+            var early = plannedStart.Value.ToTimeSpan() - arrivalTime.ToTimeSpan();
+            if (!isOfficialHoliday && earlyClockInWarningMinutes > 0 && early.TotalMinutes >= earlyClockInWarningMinutes)
+                Add(new TodayIssueDto
+                {
+                    Code = TodayIssueCode.EarlyClockIn,
+                    Level = StatusLevel.Warning,
+                    Time = arrivalTime,
+                    Planned = plannedStart,
+                    Minutes = (int)early.TotalMinutes
+                });
+
             var late = arrivalTime.ToTimeSpan() - plannedStart.Value.ToTimeSpan();
             if (late > grace)
                 Add(new TodayIssueDto
@@ -266,7 +282,8 @@ public class TodayStatusService : ITodayStatusService
                 Add(new TodayIssueDto { Code = TodayIssueCode.NoClockOutPastDay, Level = StatusLevel.Error });
         }
 
-        foreach (var c in departures.Where(d => d.WasEarlyDeparture))
+        foreach (var c in departures.Where(d => earlyClockOutWarningMinutes > 0 &&
+                     d.WasEarlyDeparture && d.EarlyDepartureMinutes >= earlyClockOutWarningMinutes))
             Add(new TodayIssueDto
             {
                 Code = TodayIssueCode.EarlyClockOut,
