@@ -20,6 +20,7 @@ public enum TodayIssueCode
 {
     SendProblem,        // IsArrival, Time, SendState, Detail (+ Protocol/Attempts)
     LateClockIn,        // Time, Planned, Minutes
+    EarlyClockIn,       // Time, Planned, Minutes
     NoClockIn,          // Planned
     ClockOutWithoutIn,
     NoClockOut,         // Planned
