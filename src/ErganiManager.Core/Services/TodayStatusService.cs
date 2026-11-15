@@ -209,7 +209,7 @@ public class TodayStatusService : ITodayStatusService
             // time-of-day spans instead so an early arrival (07:57 vs 08:00)
             // remains -3 minutes rather than becoming +1437 minutes late.
             var early = plannedStart.Value.ToTimeSpan() - arrivalTime.ToTimeSpan();
-            if (!isOfficialHoliday && earlyClockInWarningMinutes > 0 && early.TotalMinutes >= earlyClockInWarningMinutes)
+            if (!isOfficialHoliday && earlyClockInWarningMinutes > 0 && early.TotalMinutes > 0 && early.TotalMinutes <= earlyClockInWarningMinutes)
                 Add(new TodayIssueDto
                 {
                     Code = TodayIssueCode.EarlyClockIn,
@@ -288,7 +288,7 @@ public class TodayStatusService : ITodayStatusService
             {
                 var departureTime = TimeOnly.FromDateTime(c.MovementDateTime);
                 var earlyMinutes = (int)(plannedEnd.Value.ToTimeSpan() - departureTime.ToTimeSpan()).TotalMinutes;
-                if (earlyMinutes < earlyClockOutWarningMinutes) continue;
+                if (earlyMinutes <= 0 || earlyMinutes > earlyClockOutWarningMinutes) continue;
 
                 Add(new TodayIssueDto
                 {
