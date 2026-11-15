@@ -120,6 +120,8 @@ public static class L
     public const string NightSettingsApply  = nameof(NightSettingsApply);
     public const string EarlyClockInBlock   = nameof(EarlyClockInBlock);
     public const string EarlyDepartureAlert = nameof(EarlyDepartureAlert);
+    public const string EarlyClockInWarning = nameof(EarlyClockInWarning);
+    public const string EarlyClockOutWarning = nameof(EarlyClockOutWarning);
     public const string BlockNoSchedule     = nameof(BlockNoSchedule);
     public const string BlockRestAbsent     = nameof(BlockRestAbsent);
     public const string EmailAlerts         = nameof(EmailAlerts);
@@ -438,6 +440,7 @@ public static class L
     public const string TodayIssueSendIn       = nameof(TodayIssueSendIn);
     public const string TodayIssueSendOut      = nameof(TodayIssueSendOut);
     public const string TodayIssueLate         = nameof(TodayIssueLate);
+    public const string TodayIssueEarlyIn      = nameof(TodayIssueEarlyIn);
     public const string TodayIssueNoIn         = nameof(TodayIssueNoIn);
     public const string TodayIssueOutNoIn      = nameof(TodayIssueOutNoIn);
     public const string TodayIssueNoOut        = nameof(TodayIssueNoOut);
