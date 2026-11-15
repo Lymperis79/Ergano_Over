@@ -118,6 +118,8 @@ public class TodayRowViewModel : ObservableObject
                 return string.IsNullOrWhiteSpace(i.Detail) ? text : $"{text} ({i.Detail})";
             case TodayIssueCode.LateClockIn:
                 return string.Format(_loc[L.TodayIssueLate], Time(i.Time), Time(i.Planned), i.Minutes);
+            case TodayIssueCode.EarlyClockIn:
+                return $"Early clock-in: {Time(i.Time)} (planned {Time(i.Planned)}, {i.Minutes} min early)";
             case TodayIssueCode.NoClockIn:
                 return string.Format(_loc[L.TodayIssueNoIn], Time(i.Planned));
             case TodayIssueCode.ClockOutWithoutIn:
