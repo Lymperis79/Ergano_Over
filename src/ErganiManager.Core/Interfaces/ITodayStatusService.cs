@@ -114,7 +114,11 @@ public class TodayEmployeeStatusDto
     // and warnings; the overall row level remains Error when any error exists,
     // but that must not hide warnings from the warning summary counter.
     public bool IsError => Issues.Any(issue => issue.Level == StatusLevel.Error);
-    public bool IsWarning => Issues.Any(issue => issue.Level == StatusLevel.Warning);
+    // Visual severity is exclusive: red takes priority over amber.
+    public bool IsWarning => !IsError && HasWarning;
+    // Keep warning detection independent so the summary still counts an
+    // employee who has both an error and a warning.
+    public bool HasWarning => Issues.Any(issue => issue.Level == StatusLevel.Warning);
     public bool HasIssues => Issues.Count > 0;
 }
 
