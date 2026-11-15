@@ -110,8 +110,11 @@ public class TodayEmployeeStatusDto
     public bool IsExpectedToday { get; set; }
     public bool IsOfficialHoliday { get; set; }
 
-    public bool IsError => Level == StatusLevel.Error;
-    public bool IsWarning => Level == StatusLevel.Warning;
+    // Count each severity independently. An employee can have both errors
+    // and warnings; the overall row level remains Error when any error exists,
+    // but that must not hide warnings from the warning summary counter.
+    public bool IsError => Issues.Any(issue => issue.Level == StatusLevel.Error);
+    public bool IsWarning => Issues.Any(issue => issue.Level == StatusLevel.Warning);
     public bool HasIssues => Issues.Count > 0;
 }
 
