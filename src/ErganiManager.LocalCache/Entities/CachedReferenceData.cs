@@ -12,6 +12,8 @@ public class CachedCompanySettings
 
     public int EarlyClockInBlockMinutes { get; set; } = 15;
     public int EarlyDepartureAlertMinutes { get; set; } = 10;
+    public int EarlyClockInWarningMinutes { get; set; } = 0;
+    public int EarlyClockOutWarningMinutes { get; set; } = 0;
     public bool ShortClockInOutAlertEnabled { get; set; }
     public int ShortClockInOutAlertMinutes { get; set; } = 10;
     public bool RepeatedClockInAlertEnabled { get; set; }
