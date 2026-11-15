@@ -127,7 +127,7 @@ public partial class TodayBoardViewModel : ViewModelBase, IAdminSectionViewModel
         LeftCount       = _all.Count(r => r.HasLeft);
         NotArrivedCount = _all.Count(r => r.IsNotArrived);
         ErrorCount      = _all.Count(r => r.IsError);
-        WarningCount    = _all.Count(r => r.IsWarning);
+        WarningCount    = _all.Count(r => r.HasWarning);
 
         Rows.Clear();
         foreach (var r in _allRows.Where(r => !OnlyProblems || r.HasIssues))
