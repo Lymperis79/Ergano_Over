@@ -205,25 +205,27 @@ public class TodayStatusService : ITodayStatusService
                     Time = arrivalTime, Planned = plannedStart, Minutes = (int)late.TotalMinutes });
         }
 
-        // Evaluate every scheduled period independently. A morning arrival must not
-        // satisfy the afternoon period, and a future period must not warn before it starts.
+        // Evaluate every scheduled period independently. An early arrival is still a
+        // valid clock-in: the grace setting controls lateness, not whether an arrival
+        // exists. For split shifts, an arrival can satisfy a later period only after
+        // the previous period has ended, so a morning scan cannot hide a missed
+        // afternoon clock-in.
         if (!isOfficialHoliday && isWorkDay)
         {
-            foreach (var period in scheduledPeriods)
+            for (var periodIndex = 0; periodIndex < scheduledPeriods.Count; periodIndex++)
             {
+                var period = scheduledPeriods[periodIndex];
+                var earliestValidTime = periodIndex == 0
+                    ? TimeOnly.MinValue
+                    : scheduledPeriods[periodIndex - 1].EndTime;
+
                 var hasArrivalInPeriod = arrivals.Any(a =>
                 {
                     var time = TimeOnly.FromDateTime(a.MovementDateTime);
-                    // An arrival shortly before the scheduled start is valid within
-                    // the configured grace window (e.g. 07:57 for an 08:00 shift).
-                    // Keep the upper bound at the end of the period so a later,
-                    // duplicate arrival cannot satisfy a missed work period.
-                    var timeOfDay = time.ToTimeSpan();
-                    var startOfDay = period.StartTime.ToTimeSpan();
-                    var withinEarlyGrace = timeOfDay < startOfDay
-                        && startOfDay - timeOfDay <= grace;
-                    return (time >= period.StartTime || withinEarlyGrace)
-                        && time <= period.EndTime;
+                    // The first period accepts any same-day early arrival. Each
+                    // subsequent split period accepts arrivals from the end of the
+                    // preceding period through this period's end.
+                    return time >= earliestValidTime && time <= period.EndTime;
                 });
 
                 if (!hasArrivalInPeriod && After(period.StartTime))
