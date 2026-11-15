@@ -24,6 +24,57 @@ public sealed class WorkCardIntervalAlertService
         _logger = logger;
     }
 
+    /// <summary>
+    /// Sends warning-only alerts when a scan is earlier than its scheduled boundary by
+    /// at least the separately configured threshold. This never blocks or changes submission.
+    /// </summary>
+    public async Task<string?> EvaluateScheduleWarningAsync(
+        int companyId, int employeeId, string employeeName, string taxId,
+        string movement, DateTime scannedAt, DateTime? scheduledStart, DateTime? scheduledEnd)
+    {
+        try
+        {
+            using var cache = LocalCacheDbContextFactory.Create();
+            var settings = await cache.CachedCompanySettings.FindAsync(companyId);
+            if (settings == null) return null;
+
+            var isArrival = movement == "Arrival";
+            var scheduled = isArrival ? scheduledStart : scheduledEnd;
+            var threshold = isArrival ? settings.EarlyClockInWarningMinutes : settings.EarlyClockOutWarningMinutes;
+            if (scheduled == null || threshold <= 0) return null;
+
+            var earlyMinutes = (int)Math.Floor((scheduled.Value - scannedAt).TotalMinutes);
+            if (earlyMinutes < threshold) return null;
+
+            var eventType = isArrival ? AlertEvent.EarlyClockIn : AlertEvent.EarlyDeparture;
+            var eventName = isArrival ? "Early clock-in" : "Early clock-out";
+            var companyName = string.IsNullOrWhiteSpace(settings.CompanyName) ? $"Company #{companyId}" : settings.CompanyName;
+            var warning = $"{eventName}: {employeeName}, {earlyMinutes} minutes before scheduled {movement.ToLowerInvariant()}. Warning only; scan submission continues.";
+
+            var alert = new AlertMessage
+            {
+                Event = eventType,
+                Title = $"{eventName} — {employeeName}",
+                OccurredAt = scannedAt
+            }
+            .Add("Company", companyName)
+            .Add("Employee", $"{employeeName} (AFM: {taxId})")
+            .Add("Scheduled time", scheduled.Value.ToString("yyyy-MM-dd HH:mm"))
+            .Add("Actual scan", scannedAt.ToString("yyyy-MM-dd HH:mm"))
+            .Add("Early by", $"{earlyMinutes} minutes")
+            .Add("Configured warning threshold", $"{threshold} minutes")
+            .Add("Action", "Warning only — attendance submission continues.");
+
+            _ = _alerts.SendAlertAsync(companyId, alert);
+            return warning;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Early attendance warning check failed for company {CompanyId}, employee {EmployeeId}.", companyId, employeeId);
+            return null;
+        }
+    }
+
     public async Task<string?> EvaluateAndAlertAsync(
         int companyId, int employeeId, string employeeName, string taxId,
         string movement, DateTime scannedAt)
