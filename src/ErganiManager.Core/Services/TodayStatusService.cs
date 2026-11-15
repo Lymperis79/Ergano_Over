@@ -209,11 +209,16 @@ public class TodayStatusService : ITodayStatusService
             // time-of-day spans instead so an early arrival (07:57 vs 08:00)
             // remains -3 minutes rather than becoming +1437 minutes late.
             var early = plannedStart.Value.ToTimeSpan() - arrivalTime.ToTimeSpan();
-            if (!isOfficialHoliday && earlyClockInWarningMinutes > 0 && early.TotalMinutes > 0 && early.TotalMinutes <= earlyClockInWarningMinutes)
+            if (!isOfficialHoliday && earlyClockInWarningMinutes > 0 && early.TotalMinutes > 0)
                 Add(new TodayIssueDto
                 {
                     Code = TodayIssueCode.EarlyClockIn,
-                    Level = StatusLevel.Warning,
+                    // Early arrivals within the configured window are warnings.
+                    // Arrivals earlier than that window are errors, but this is
+                    // a Daily Status classification only; it does not block the scan.
+                    Level = early.TotalMinutes <= earlyClockInWarningMinutes
+                        ? StatusLevel.Warning
+                        : StatusLevel.Error,
                     Time = arrivalTime,
                     Planned = plannedStart,
                     Minutes = (int)early.TotalMinutes
