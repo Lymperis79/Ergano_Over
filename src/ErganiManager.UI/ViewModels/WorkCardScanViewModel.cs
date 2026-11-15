@@ -882,6 +882,13 @@ public partial class WorkCardScanViewModel :
              */
             var intervalWarning = await _intervalAlerts.EvaluateAndAlertAsync(
                 companyId.Value, employee.Id, employee.FullName, employee.TaxId, movement, scanTime);
+            var scheduleWarning = await _intervalAlerts.EvaluateScheduleWarningAsync(
+                companyId.Value, employee.Id, employee.FullName, employee.TaxId, movement, scanTime,
+                shift.ShiftStart, shift.ShiftEnd);
+            if (!string.IsNullOrWhiteSpace(scheduleWarning))
+                intervalWarning = string.IsNullOrWhiteSpace(intervalWarning)
+                    ? scheduleWarning
+                    : intervalWarning + Environment.NewLine + scheduleWarning;
 
             var request =
                 new WorkCardSubmissionRequest
