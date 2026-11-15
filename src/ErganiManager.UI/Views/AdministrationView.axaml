@@ -131,9 +131,9 @@
                                     <TextBlock Text="{Binding Loc[EarlyDepartureAlert]}" FontWeight="SemiBold" />
                                     <NumericUpDown Value="{Binding EarlyDepartureAlertMinutes}" Minimum="0" Maximum="120" />
                                     <Separator />
-                                    <TextBlock Text="Early clock-in warning threshold (minutes; 0 = off)" FontWeight="SemiBold" />
+                                    <TextBlock Text="{Binding Loc[EarlyClockInWarning]}" FontWeight="SemiBold" />
                                     <NumericUpDown Value="{Binding EarlyClockInWarningMinutes}" Minimum="0" Maximum="240" />
-                                    <TextBlock Text="Early clock-out warning threshold (minutes; 0 = off)" FontWeight="SemiBold" />
+                                    <TextBlock Text="{Binding Loc[EarlyClockOutWarning]}" FontWeight="SemiBold" />
                                     <NumericUpDown Value="{Binding EarlyClockOutWarningMinutes}" Minimum="0" Maximum="240" />
                                     <CheckBox Content="{Binding Loc[ShortClockInOutRuleTitle]}" IsChecked="{Binding ShortClockInOutAlertEnabled}" />
                                     <StackPanel Orientation="Horizontal" Spacing="8" IsVisible="{Binding ShortClockInOutAlertEnabled}">
