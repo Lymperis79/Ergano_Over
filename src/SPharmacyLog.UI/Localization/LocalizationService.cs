@@ -420,7 +420,7 @@ public sealed class LocalizationService : ILocalizationService
         ["Subscription created."] = "Η συνδρομή δημιουργήθηκε.",
         ["Subscription status changed."] = "Η κατάσταση της συνδρομής άλλαξε.",
         ["Original creator unavailable; audit metadata initialized during migration."] = "Ο αρχικός δημιουργός δεν είναι διαθέσιμος· τα στοιχεία ελέγχου αρχικοποιήθηκαν κατά τη μεταφορά.",
-        ["Choose Active or Executed status."] = "Επιλέξτε κατάσταση Ενεργή ή Εκτελεσμένη."
+        ["Choose Active or Executed status."] = "Επιλέξτε κατάσταση Ενεργή ή Εκτελεσμένη.",
         ["Scan this barcode with your scanner"] = "Σαρώστε αυτό το barcode με τον σαρωτή σας"
 
     };
