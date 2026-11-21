@@ -2450,7 +2450,8 @@ public partial class MainWindow : Window
             }
 
             await using var db = new PharmacyDbContext(PharmacyDb.Options());
-            if (await db.Users.AnyAsync(item => item.Username == name && item.Id != (existing?.Id ?? 0)))
+            var existingUserId = existing?.Id ?? 0;
+            if (await db.Users.AnyAsync(item => item.Username == name && item.Id != existingUserId))
             {
                 status.Text = Tr.Loc.TranslateText("This username is already in use.");
                 return;
