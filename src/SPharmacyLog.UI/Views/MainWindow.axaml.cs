@@ -505,6 +505,7 @@ public partial class MainWindow : Window
             matchField.Text = Tr.Loc.TranslateText(matchField.Text);
         if (calendarMonthTitle is not null)
             calendarMonthTitle.Text = displayedMonth.ToString("MMMM yyyy");
+        UpdateCustomerTabsVisibility();
         isApplyingTranslations = false;
     }
 
@@ -1250,7 +1251,7 @@ public partial class MainWindow : Window
         newButton.Click += (_, _) =>
         {
             ClearCustomerForm(showNewCustomerForm: true);
-            customerTabs.SelectedIndex = 0;
+            customerTabs.SelectedItem = customerDetailsTab;
             customerFields["CustomerNumber"].Focus();
         };
         left.Children.Add(newButton);
