@@ -21,21 +21,21 @@ public sealed class AppearanceWindow : Window
         var root = new StackPanel { Margin = new Thickness(22), Spacing = 14 };
         root.Children.Add(new TextBlock { Text = "Interface appearance", FontSize = 20, FontWeight = FontWeight.SemiBold });
         root.Children.Add(new TextBlock { Text = "Background style", FontSize = 13, FontWeight = FontWeight.Bold });
-        var themes = new WrapPanel { Spacing = 8 };
+        var themes = new WrapPanel();
         foreach (var preset in AppearanceService.Presets)
         {
-            var button = new Button { Content = preset.Key, Padding = new Thickness(12, 8), MinWidth = 105 };
+            var button = new Button { Content = preset.Key, Padding = new Thickness(12, 8), MinWidth = 105, Margin = new Thickness(4) };
             button.Click += (_, _) => AppearanceService.Choose(theme: preset.Key);
             themes.Children.Add(button);
         }
         root.Children.Add(themes);
         root.Children.Add(new TextBlock { Text = "Accent color", FontSize = 13, FontWeight = FontWeight.Bold, Margin = new Thickness(0, 6, 0, 0) });
-        var accents = new WrapPanel { Spacing = 10 };
+        var accents = new WrapPanel();
         foreach (var hex in AppearanceService.AccentColors)
         {
             var color = Color.Parse(hex);
             var swatch = new Border { Width = 42, Height = 42, CornerRadius = new CornerRadius(21), Background = new SolidColorBrush(color), BorderBrush = new SolidColorBrush(Color.Parse("#D5DEE8")), BorderThickness = new Thickness(1) };
-            var button = new Button { Content = swatch, Padding = new Thickness(3), Background = Brushes.Transparent, BorderThickness = new Thickness(1) };
+            var button = new Button { Content = swatch, Padding = new Thickness(3), Background = Brushes.Transparent, BorderThickness = new Thickness(1), Margin = new Thickness(5) };
             button.Click += (_, _) => AppearanceService.Choose(accent: hex);
             accents.Children.Add(button);
         }
