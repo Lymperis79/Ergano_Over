@@ -267,10 +267,6 @@ public partial class MainWindow : Window
         var paymentsTab = BuildPaymentsTab();
         var ledgerTab = BuildLedgerTab();
         customerTabs = new TabControl { Items = { overviewTab, details, borrowingTab, subscriptionsTab, paymentsTab, ledgerTab }, Margin = new Thickness(12) };
-        customerTabs.SelectionChanged += async (_, _) =>
-        {
-            if (selectedCustomerId.HasValue) await RefreshCustomerWorkspaceAsync();
-        };
         // Use a Grid rather than a StackPanel so the TabControl receives a finite
         // height. Otherwise its tab content (including the Borrowings ScrollViewer)
         // is measured with infinite height and cannot scroll vertically.
