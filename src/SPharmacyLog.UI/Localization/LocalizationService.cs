@@ -109,6 +109,8 @@ public sealed class LocalizationService : ILocalizationService
 
     private static readonly IReadOnlyDictionary<string, string> UiGreek = new Dictionary<string, string>
     {
+        ["Export to Excel"] = "Εξαγωγή σε Excel",
+        ["Export report to Excel"] = "Εξαγωγή αναφοράς σε Excel",
         ["Dashboard"] = "Πίνακας ελέγχου",
         ["Total customers"] = "Σύνολο πελατών",
         ["Active subscriptions"] = "Ενεργές συνδρομές",
