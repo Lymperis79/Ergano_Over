@@ -153,6 +153,7 @@ public partial class MainWindow : Window
             AddNavigationButton("Navigation.Users", () => _ = ShowUsersAsync());
             AddNavigationButton("Company settings", OpenCompanySettings);
             AddNavigationButton("Weather settings", OpenWeatherSettings);
+            AddNavigationButton("Navigation.ApplicationSettings", OpenApplicationSettings);
             AddNavigationButton("Database synchronization", OpenCustomerDatabaseSync);
         }
     }
@@ -295,6 +296,16 @@ public partial class MainWindow : Window
         var saved = await dialog.ShowDialog<bool>(this);
         if (saved)
             ShowDashboard();
+    }
+
+    private async void OpenApplicationSettings()
+    {
+        if (viewModel.User.Role != PharmacyRole.Admin) return;
+        var dialog = new ApplicationSettingsWindow();
+        AttachDialogLocalization(dialog);
+        var saved = await dialog.ShowDialog<bool>(this);
+        if (saved && showingExpiryCalendar && calendarMonthTitle is not null)
+            await RenderCalendarAsync(calendarMonthTitle);
     }
 
     private async void OpenCustomerDatabaseSync()
@@ -532,7 +543,10 @@ public partial class MainWindow : Window
         var notesByDate = visibleNotes
             .GroupBy(note => note.CalendarDate.Date)
             .ToDictionary(group => group.Key, group => group.ToList());
-        var holidaysByDate = GetGreekPublicHolidays(displayedMonth.Year);
+        var showOfficialHolidays = ApplicationSettingsService.Load().ShowOfficialHolidays;
+        var holidaysByDate = showOfficialHolidays
+            ? GetGreekPublicHolidays(displayedMonth.Year)
+            : new Dictionary<DateTime, string>();
 
         calendarPanel.Children.Clear();
         var grid = new Grid
@@ -766,9 +780,12 @@ public partial class MainWindow : Window
             .Concat(subscriptions.Select(subscription =>
                 $"{GetSubscriptionNumber(subscription)} | {subscription.Customer?.CustomerNumber} | {subscription.Customer?.FullName} | {subscription.Title} | due {subscription.NextDueDate:dd/MM/yyyy}"))
             .ToList();
-        var holidays = GetGreekPublicHolidays(SelectedCalendarDate.Year);
-        if (holidays.TryGetValue(SelectedCalendarDate.Date, out var holidayName))
-            dayItems.Insert(0, "★ " + Tr.Loc.TranslateText(holidayName));
+        if (ApplicationSettingsService.Load().ShowOfficialHolidays)
+        {
+            var holidays = GetGreekPublicHolidays(SelectedCalendarDate.Year);
+            if (holidays.TryGetValue(SelectedCalendarDate.Date, out var holidayName))
+                dayItems.Insert(0, "★ " + Tr.Loc.TranslateText(holidayName));
+        }
         dayRecords.ItemsSource = dayItems;
 
         var username = viewModel.User.Username;
