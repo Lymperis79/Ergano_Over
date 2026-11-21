@@ -4,9 +4,8 @@ namespace SPharmacyLog.UI.Services;
 
 /// <summary>
 /// Parses GS1 element strings from pharmaceutical DataMatrix scanners.
-/// Variable-length AIs (10 and 21) must be terminated by ASCII 29 when
-/// another AI follows. The original scanner payload is stored separately and
-/// is never modified by this parser.
+/// Variable-length AIs must be terminated by ASCII 29 when another AI follows.
+/// The caller retains the exact original scanner payload separately.
 /// </summary>
 public static class Gs1DataMatrixParser
 {
@@ -16,7 +15,9 @@ public static class Gs1DataMatrixParser
         string Gtin14,
         string SerialNumber,
         DateTime ExpiryDate,
-        string BatchLot);
+        string BatchLot,
+        string? Nhrn715,
+        string? ResolvedEofBarcode);
 
     public static bool TryParse(string rawPayload, out ParsedPack? result, out string error)
     {
@@ -29,20 +30,27 @@ public static class Gs1DataMatrixParser
             return false;
         }
 
-        // ]d2 is the common GS1 DataMatrix symbology identifier. It is
-        // deliberately removed only from the parsing copy, never the stored raw value.
-        var payload = rawPayload.StartsWith("]d2", StringComparison.Ordinal)
-            ? rawPayload[3..]
-            : rawPayload;
+        // Remove only recognized symbology identifiers from the parsing copy.
+        var payload = rawPayload.Trim();
+        foreach (var prefix in new[] { "]d2", "]C1", "]e0", "]Q3" })
+        {
+            if (payload.StartsWith(prefix, StringComparison.Ordinal))
+            {
+                payload = payload[prefix.Length..];
+                break;
+            }
+        }
 
-        // Also accept human-readable separator spellings for test/paste workflows.
+        // Human-readable separator spellings are accepted for test/paste workflows.
         payload = payload.Replace("\\u001d", GroupSeparator.ToString(), StringComparison.OrdinalIgnoreCase)
                          .Replace("<GS>", GroupSeparator.ToString(), StringComparison.OrdinalIgnoreCase);
 
         string? gtin = null;
         string? serial = null;
         string? lot = null;
+        string? nhrn715 = null;
         DateTime? expiry = null;
+        var seenAis = new HashSet<string>(StringComparer.Ordinal);
         var position = 0;
 
         while (position < payload.Length)
@@ -53,68 +61,71 @@ public static class Gs1DataMatrixParser
                 continue;
             }
 
-            if (position + 2 > payload.Length)
+            // AI 715 is a three-digit NHRN AI. Check it before reading two-digit AIs.
+            if (payload.AsSpan(position).StartsWith("715", StringComparison.Ordinal))
             {
-                error = "Incomplete GS1 Application Identifier at the end of the scan.";
-                return false;
+                const string ai = "715";
+                if (!seenAis.Add(ai))
+                    return Fail("AI (715) occurs more than once in the same scan.", out error);
+
+                position += ai.Length;
+                if (!TryReadVariable(payload, ref position, 20, out nhrn715, out error, ai))
+                    return false;
+                continue;
             }
 
-            var ai = payload.Substring(position, 2);
+            if (position + 2 > payload.Length)
+                return Fail("Incomplete GS1 Application Identifier at the end of the scan.", out error);
+
+            var ai2 = payload.Substring(position, 2);
             position += 2;
 
-            switch (ai)
+            if (!seenAis.Add(ai2))
+                return Fail($"AI ({ai2}) occurs more than once in the same scan.", out error);
+
+            switch (ai2)
             {
                 case "01":
                     if (!TryReadFixed(payload, ref position, 14, out var gtinValue) ||
-                        gtinValue.Any(ch => !char.IsDigit(ch)))
-                    {
-                        error = "AI (01) must contain exactly 14 numeric GTIN digits.";
-                        return false;
-                    }
+                        !IsAsciiDigits(gtinValue))
+                        return Fail("AI (01) must contain exactly 14 numeric GTIN digits.", out error);
                     gtin = gtinValue;
                     break;
 
                 case "17":
                     if (!TryReadFixed(payload, ref position, 6, out var dateValue) ||
                         !TryParseGs1Expiry(dateValue, out var parsedExpiry))
-                    {
-                        error = "AI (17) must contain a valid YYMMDD expiry date.";
-                        return false;
-                    }
+                        return Fail("AI (17) must contain a valid YYMMDD expiry date.", out error);
                     expiry = parsedExpiry;
                     break;
 
                 case "10":
                 case "21":
-                    var variableValue = ReadVariable(payload, ref position);
-                    if (variableValue.Length == 0)
-                    {
-                        error = $"AI ({ai}) is present but its value is empty.";
+                    if (!TryReadVariable(payload, ref position, 20, out var variableValue, out error, ai2))
                         return false;
-                    }
-                    if (variableValue.Length > 20)
-                    {
-                        error = $"AI ({ai}) exceeds the GS1 maximum of 20 characters.";
-                        return false;
-                    }
-                    if (ai == "10") lot = variableValue;
+                    if (string.IsNullOrWhiteSpace(variableValue))
+                        return Fail($"AI ({ai2}) is present but its value is empty.", out error);
+                    if (ai2 == "10") lot = variableValue;
                     else serial = variableValue;
                     break;
 
                 default:
-                    error = $"Unsupported GS1 Application Identifier ({ai}). This screen currently expects AIs 01, 10, 17 and 21.";
-                    return false;
+                    return Fail($"Unsupported GS1 Application Identifier ({ai2}). The scanner currently supports AIs 01, 10, 17, 21 and optional 715.", out error);
             }
         }
 
         if (string.IsNullOrWhiteSpace(gtin) || string.IsNullOrWhiteSpace(serial) ||
             string.IsNullOrWhiteSpace(lot) || !expiry.HasValue)
-        {
-            error = "The scan must contain all four fields: GTIN (01), serial (21), expiry (17) and batch/lot (10).";
-            return false;
-        }
+            return Fail("The scan must contain all four fields: GTIN (01), serial (21), expiry (17) and batch/lot (10).", out error);
 
-        result = new ParsedPack(gtin, serial, expiry.Value, lot);
+        result = new ParsedPack(
+            gtin,
+            serial,
+            expiry.Value,
+            lot,
+            nhrn715,
+            TryResolveGreekEofBarcode(gtin));
+
         return true;
     }
 
@@ -122,45 +133,100 @@ public static class Gs1DataMatrixParser
     {
         value = string.Empty;
         if (position + length > payload.Length) return false;
+
         value = payload.Substring(position, length);
+        if (value.Contains(GroupSeparator))
+            return false;
+
         position += length;
-        return value.All(ch => ch != GroupSeparator);
+        return true;
     }
 
-    private static string ReadVariable(string payload, ref int position)
+    private static bool TryReadVariable(
+        string payload,
+        ref int position,
+        int maxLength,
+        out string value,
+        out string error,
+        string ai)
     {
+        value = string.Empty;
+        error = string.Empty;
+
         var separator = payload.IndexOf(GroupSeparator, position);
-        if (separator < 0)
+        var end = separator < 0 ? payload.Length : separator;
+        var length = end - position;
+
+        if (length == 0)
         {
-            var remaining = payload[position..];
-            position = payload.Length;
-            return remaining;
+            error = $"AI ({ai}) is present but its value is empty.";
+            return false;
         }
 
-        var value = payload[position..separator];
-        position = separator + 1;
-        return value;
+        if (length > maxLength)
+        {
+            error = $"AI ({ai}) exceeds the GS1 maximum of {maxLength} characters.";
+            return false;
+        }
+
+        value = payload.Substring(position, length);
+        position = separator < 0 ? end : separator + 1;
+        return true;
     }
 
     private static bool TryParseGs1Expiry(string value, out DateTime expiry)
     {
         expiry = default;
-        if (value.Length != 6 || value.Any(ch => !char.IsDigit(ch))) return false;
+        if (value.Length != 6 || !IsAsciiDigits(value)) return false;
 
         var shortYear = int.Parse(value[..2], CultureInfo.InvariantCulture);
         var month = int.Parse(value.Substring(2, 2), CultureInfo.InvariantCulture);
         var day = int.Parse(value.Substring(4, 2), CultureInfo.InvariantCulture);
 
-        // GS1 uses 00-49 => 2000-2049 and 50-99 => 1950-1999.
+        // GS1 century rule: 00-49 => 2000-2049; 50-99 => 1950-1999.
         var year = shortYear <= 49 ? 2000 + shortYear : 1900 + shortYear;
-        if (month < 1 || month > 12) return false;
+        if (month is < 1 or > 12) return false;
 
-        // GS1 AI (17) permits DD=00 to mean the final day of that month.
-        var finalDay = DateTime.DaysInMonth(year, month);
-        if (day == 0) day = finalDay;
-        if (day < 1 || day > finalDay) return false;
+        var lastDay = DateTime.DaysInMonth(year, month);
+        if (day == 0) day = lastDay;
+        if (day < 1 || day > lastDay) return false;
 
         expiry = new DateTime(year, month, day);
         return true;
+    }
+
+    private static string? TryResolveGreekEofBarcode(string gtin14)
+    {
+        // GS1 Greece defines the Greek medicine identifier as EAN-13 280 + 9 EOF
+        // digits + check digit. In GTIN-14 it is zero-padded as 0280...
+        if (gtin14.Length != 14 || !gtin14.StartsWith("0280", StringComparison.Ordinal))
+            return null;
+
+        var ean13 = gtin14[1..];
+        return IsValidEan13(ean13) ? ean13 : null;
+    }
+
+    private static bool IsValidEan13(string value)
+    {
+        if (value.Length != 13 || !IsAsciiDigits(value)) return false;
+
+        var sum = 0;
+        for (var i = 0; i < 12; i++)
+        {
+            var digit = value[i] - '0';
+            sum += digit * (i % 2 == 0 ? 1 : 3);
+        }
+
+        var checkDigit = (10 - (sum % 10)) % 10;
+        return checkDigit == value[12] - '0';
+    }
+
+    private static bool IsAsciiDigits(string value) =>
+        value.Length > 0 && value.All(ch => ch is >= '0' and <= '9');
+
+    private static bool Fail(string message, out string error)
+    {
+        error = message;
+        return false;
     }
 }
