@@ -254,6 +254,7 @@ public partial class MainWindow : Window
         pageHost.Content = layout;
         _ = SearchCustomersAsync();
         ClearCustomerForm();
+        ApplyTranslations();
     }
 
     private TabItem BuildCustomerDetailsTab()
@@ -367,7 +368,7 @@ public partial class MainWindow : Window
         AddGs1Detail(detailsGrid, "Pack status", "HmvoStatus", 3, 0);
         AddGs1Detail(detailsGrid, "Medicine catalogue match", "MedicineMatch", 3, 1);
         gs1ParsedFields["HmvoStatus"].Text = SerializedPackStatuses.Active;
-        gs1ParsedFields["MedicineMatch"].Text = "Not matched";
+        gs1ParsedFields["MedicineMatch"].Text = Tr.Loc.TranslateText("Not matched");
         var eofPanel = new StackPanel { Spacing = 3, Margin = new Thickness(5) };
         eofPanel.Children.Add(new TextBlock { Text = "Greek EOF / NTIN barcode (optional mapping)" });
         gs1EofEan13Input = new TextBox { Watermark = "13-digit 0280... EOF barcode", MaxLength = 13 };
@@ -430,7 +431,7 @@ public partial class MainWindow : Window
     {
         if (borrowingList.SelectedIndex < 0 || borrowingList.SelectedIndex >= currentBorrowings.Count)
         {
-            borrowingSelectionDetails.Text = "Select an existing borrowing to view its saved GS1 scan details.";
+            borrowingSelectionDetails.Text = Tr.Loc.TranslateText("Select an existing borrowing to view its saved GS1 scan details.");
             return;
         }
 
@@ -438,12 +439,12 @@ public partial class MainWindow : Window
         var pack = borrowing.SerializedPackScan;
         if (pack is null)
         {
-            borrowingSelectionDetails.Text = $"Selected item: {borrowing.MedicineName}. This is a legacy borrowing without a linked GS1 DataMatrix scan.";
+            borrowingSelectionDetails.Text = Tr.Loc.TranslateText($"Selected item: {borrowing.MedicineName}. This is a legacy borrowing without a linked GS1 DataMatrix scan.");
             return;
         }
 
         var raw = pack.RawGs1String.Replace(Gs1DataMatrixParser.GroupSeparator.ToString(), "<GS>", StringComparison.Ordinal);
-        borrowingSelectionDetails.Text =
+        borrowingSelectionDetails.Text = Tr.Loc.TranslateText(
             $"SAVED GS1 PACK DETAILS\nMedicine: {borrowing.MedicineName}\nGTIN-14: {pack.Gtin14}\nEOF / NTIN: {pack.EofEan13 ?? "—"}\nSerial number: {pack.SerialNumber}\nExpiry: {pack.ExpiryDate:dd/MM/yyyy}\nBatch / lot: {pack.BatchLot}\nPack status: {pack.HmvoStatus}\nScanned at: {pack.ScannedAt:dd/MM/yyyy HH:mm:ss}\nRaw scanner payload: {raw}";
     }
 
@@ -475,7 +476,7 @@ public partial class MainWindow : Window
         {
             currentParsedPack = null;
             gs1ScanStatus.Foreground = Brushes.OrangeRed;
-            gs1ScanStatus.Text = error;
+            gs1ScanStatus.Text = Tr.Loc.TranslateText(error);
             ClearGs1ParsedFields();
             return;
         }
@@ -490,14 +491,14 @@ public partial class MainWindow : Window
         gs1ParsedFields["BatchLot"].Text = parsed.BatchLot;
         gs1ParsedFields["RawPayload"].Text = raw.Replace(Gs1DataMatrixParser.GroupSeparator.ToString(), "<GS>", StringComparison.Ordinal);
         gs1ScanStatus.Foreground = Brushes.LightGreen;
-        gs1ScanStatus.Text = "GS1 scan parsed successfully. Review the extracted details before saving the borrowing.";
+        gs1ScanStatus.Text = Tr.Loc.TranslateText("GS1 scan parsed successfully. Review the extracted details before saving the borrowing.");
 
         await using var db = new PharmacyDbContext(PharmacyDb.Options());
         var alreadyScanned = await db.SerializedPackScans.AnyAsync(x => x.Gtin14 == parsed.Gtin14 && x.SerialNumber == parsed.SerialNumber);
         if (alreadyScanned)
         {
             gs1ScanStatus.Foreground = Brushes.OrangeRed;
-            gs1ScanStatus.Text = "This GTIN + serial number has already been registered. This physical pack cannot be added again.";
+            gs1ScanStatus.Text = Tr.Loc.TranslateText("This GTIN + serial number has already been registered. This physical pack cannot be added again.");
             return;
         }
 
@@ -518,12 +519,12 @@ public partial class MainWindow : Window
             if (!string.IsNullOrWhiteSpace(eofBarcode))
                 gs1EofEan13Input.Text = eofBarcode;
             gs1ParsedFields["MedicineMatch"].Text = medicine.Name;
-            gs1ScanStatus.Text += $" Medicine matched: {medicine.Name}.";
+            gs1ScanStatus.Text = Tr.Loc.TranslateText(gs1ScanStatus.Text + $" Medicine matched: {medicine.Name}.");
         }
         else
         {
-            gs1ParsedFields["MedicineMatch"].Text = "Not matched — enter medicine manually";
-            gs1ScanStatus.Text += " No medicine catalogue match yet; you can enter the medicine name and EOF barcode manually.";
+            gs1ParsedFields["MedicineMatch"].Text = Tr.Loc.TranslateText("Not matched — enter medicine manually");
+            gs1ScanStatus.Text = Tr.Loc.TranslateText(gs1ScanStatus.Text + " No medicine catalogue match yet; you can enter the medicine name and EOF barcode manually.");
         }
     }
 
@@ -531,7 +532,7 @@ public partial class MainWindow : Window
     {
         foreach (var field in gs1ParsedFields.Values) field.Text = string.Empty;
         if (gs1ParsedFields.TryGetValue("HmvoStatus", out var status)) status.Text = SerializedPackStatuses.Active;
-        if (gs1ParsedFields.TryGetValue("MedicineMatch", out var match)) match.Text = "Not matched";
+        if (gs1ParsedFields.TryGetValue("MedicineMatch", out var match)) match.Text = Tr.Loc.TranslateText("Not matched");
     }
 
     private TabItem BuildSubscriptionsTab()
