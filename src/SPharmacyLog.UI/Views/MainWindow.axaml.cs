@@ -428,10 +428,11 @@ public partial class MainWindow : Window
             MinHeight = 48, MaxHeight = 75, FontFamily = new FontFamily("Consolas")
         };
         var scanStatus = new TextBlock { Text = isEdit ? "The original serialized pack scan is retained unchanged." : "Ready for a GS1 DataMatrix scan.", TextWrapping = TextWrapping.Wrap, Foreground = Brushes.Gray };
+        DateTime? scanCapturedAtUtc = null;
         var scanDateText = new TextBox
         {
             Text = existing is null ? "Will be recorded when the borrowing is saved." :
-                (existing.SerializedPackScan?.ScannedAt ?? existing.BorrowedAt).ToLocalTime().ToString("dd/MM/yyyy HH:mm:ss"),
+                (existing.SerializedPackScan is null ? existing.BorrowedAt : existing.SerializedPackScan.ScannedAt.ToLocalTime()).ToString("dd/MM/yyyy HH:mm:ss"),
             IsReadOnly = true,
             MinHeight = 34
         };
@@ -478,7 +479,8 @@ public partial class MainWindow : Window
                 scanStatus.Text = Tr.Loc.TranslateText(error);
                 return;
             }
-            scanDateText.Text = DateTime.Now.ToString("dd/MM/yyyy HH:mm:ss");
+            scanCapturedAtUtc = DateTime.UtcNow;
+            scanDateText.Text = scanCapturedAtUtc.Value.ToLocalTime().ToString("dd/MM/yyyy HH:mm:ss");
             await using var lookupDb = new PharmacyDbContext(PharmacyDb.Options());
             gtinInput.Text = parsedPack.Gtin14;
             serialInput.Text = parsedPack.SerialNumber;
@@ -627,14 +629,14 @@ public partial class MainWindow : Window
                         EofEan13 = string.IsNullOrWhiteSpace(eof) ? null : eof,
                         SerialNumber = correctedSerial, ExpiryDate = correctedExpiry!.Value,
                         BatchLot = correctedLot, HmvoStatus = SerializedPackStatuses.Active,
-                        ScannedAt = DateTime.UtcNow, MedicineId = matched.Id
+                        ScannedAt = scanCapturedAtUtc ?? DateTime.UtcNow, MedicineId = matched.Id
                     };
                 }
                 db.Borrowings.Add(new BorrowingRecord
                 {
                     CustomerId = selectedCustomerId.Value, MedicineName = name, OriginalBarcode = parsedPack is null ? null : correctedGtin,
                     SerializedPackScan = serializedPack, Quantity = quantity, InternalBarcode = "BOR-" + Guid.NewGuid().ToString("N"),
-                    BorrowedAt = DateTime.Now, Notes = fields["Notes"].Text?.Trim()
+                    BorrowedAt = scanCapturedAtUtc?.ToLocalTime() ?? DateTime.Now, Notes = fields["Notes"].Text?.Trim()
                 });
             }
             await db.SaveChangesAsync();
