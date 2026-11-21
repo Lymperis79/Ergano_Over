@@ -166,6 +166,22 @@ public sealed class PharmacyDbContext : DbContext
             .HasIndex(subscription => subscription.Status);
 
         modelBuilder.Entity<SubscriptionAuditEntry>()
+            .Property(entry => entry.Action)
+            .HasMaxLength(255);
+
+        modelBuilder.Entity<SubscriptionAuditEntry>()
+            .Property(entry => entry.ChangedBy)
+            .HasMaxLength(255);
+
+        modelBuilder.Entity<Subscription>()
+            .Property(subscription => subscription.CreatedBy)
+            .HasMaxLength(255);
+
+        modelBuilder.Entity<Subscription>()
+            .Property(subscription => subscription.LastModifiedBy)
+            .HasMaxLength(255);
+
+        modelBuilder.Entity<SubscriptionAuditEntry>()
             .HasIndex(entry => new { entry.SubscriptionId, entry.ChangedAt });
 
         modelBuilder.Entity<SubscriptionAuditEntry>()
