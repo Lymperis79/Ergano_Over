@@ -421,6 +421,8 @@ public sealed class LocalizationService : ILocalizationService
         ["Subscription status changed."] = "Η κατάσταση της συνδρομής άλλαξε.",
         ["Original creator unavailable; audit metadata initialized during migration."] = "Ο αρχικός δημιουργός δεν είναι διαθέσιμος· τα στοιχεία ελέγχου αρχικοποιήθηκαν κατά τη μεταφορά.",
         ["Choose Active or Executed status."] = "Επιλέξτε κατάσταση Ενεργή ή Εκτελεσμένη.",
+        ["View details"] = "Προβολή στοιχείων",
+        ["Select a subscription first."] = "Επιλέξτε πρώτα μια συνδρομή.",
         ["Scan this barcode with your scanner"] = "Σαρώστε αυτό το barcode με τον σαρωτή σας"
 
     };
