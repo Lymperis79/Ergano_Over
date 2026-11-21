@@ -145,6 +145,7 @@ public partial class MainWindow : Window
     {
         void TranslateDialog()
         {
+            dialog.Title = Tr.Loc.TranslateText(dialog.Title);
             foreach (var control in dialog.GetVisualDescendants().OfType<Control>())
             {
                 switch (control)
@@ -155,8 +156,11 @@ public partial class MainWindow : Window
                     case Button button when button.Content is string content:
                         button.Content = Tr.Loc.TranslateText(content);
                         break;
-                    case TextBox textBox when !string.IsNullOrEmpty(textBox.PlaceholderText):
-                        textBox.PlaceholderText = Tr.Loc.TranslateText(textBox.PlaceholderText);
+                    case TextBox textBox:
+                        if (!string.IsNullOrEmpty(textBox.PlaceholderText))
+                            textBox.PlaceholderText = Tr.Loc.TranslateText(textBox.PlaceholderText);
+                        if (textBox.Text is "Monthly" or "Μηνιαία" or "Cash" or "Μετρητά" or "Card" or "Κάρτα" or "Transfer" or "Μεταφορά")
+                            textBox.Text = Tr.Loc.TranslateText(textBox.Text);
                         break;
                     case ComboBox comboBox:
                         if (comboBox.ItemsSource is IEnumerable<string> options)
