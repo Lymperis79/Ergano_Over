@@ -155,7 +155,14 @@ public partial class MainWindow : Window
 
     private void AddNavigationButton(string labelKey, Action action)
     {
-        var button = new Button { Content = Tr.Loc[labelKey], Classes = { "nav" }, MinWidth = 190 };
+        // Some sidebar labels are literal UI phrases stored in UiGreek rather
+        // than resource keys. Resolve normal resource keys first, then translate
+        // the literal phrase when the resource lookup returns its missing-key marker.
+        var label = Tr.Loc[labelKey];
+        if (label == $"[{labelKey}]")
+            label = Tr.Loc.TranslateText(labelKey);
+
+        var button = new Button { Content = label, Classes = { "nav" }, MinWidth = 190 };
         button.Click += (_, _) => action();
         NavigationPanel.Children.Add(button);
     }
