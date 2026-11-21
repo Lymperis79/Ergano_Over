@@ -185,11 +185,28 @@ public partial class MainWindow : Window
         {
             if (selectedCustomerId.HasValue) await RefreshCustomerWorkspaceAsync();
         };
-        var right = new StackPanel { Margin = new Thickness(12, 0, 12, 0), Spacing = 8 };
+        // Use a Grid rather than a StackPanel so the TabControl receives a finite
+        // height. Otherwise its tab content (including the Borrowings ScrollViewer)
+        // is measured with infinite height and cannot scroll vertically.
+        var right = new Grid
+        {
+            Margin = new Thickness(12, 0, 12, 0),
+            RowDefinitions = new RowDefinitions("*,Auto")
+        };
+        customerTabs.HorizontalAlignment = HorizontalAlignment.Stretch;
+        customerTabs.VerticalAlignment = VerticalAlignment.Stretch;
         right.Children.Add(customerTabs);
+        Grid.SetRow(customerStatus, 1);
         right.Children.Add(customerStatus);
-        var layout = new Grid { ColumnDefinitions = new ColumnDefinitions("290,*"), Margin = new Thickness(18) };
-        layout.Children.Add(left); Grid.SetColumn(right, 1); layout.Children.Add(right);
+        var layout = new Grid
+        {
+            ColumnDefinitions = new ColumnDefinitions("290,*"),
+            RowDefinitions = new RowDefinitions("*"),
+            Margin = new Thickness(18)
+        };
+        layout.Children.Add(left);
+        Grid.SetColumn(right, 1);
+        layout.Children.Add(right);
         pageHost.Content = layout;
         _ = SearchCustomersAsync();
         ClearCustomerForm();
@@ -330,6 +347,9 @@ public partial class MainWindow : Window
 
         var panel = new StackPanel
         {
+            // Keep a useful minimum content width so narrow workspaces can scroll
+            // horizontally instead of compressing the scan and data-entry controls.
+            MinWidth = 760,
             Spacing = 10,
             Children =
             {
@@ -341,7 +361,15 @@ public partial class MainWindow : Window
                 new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, Children = { add, returned } }
             }
         };
-        return new TabItem { Header = "Borrowings", Content = new ScrollViewer { Content = panel } };
+        var borrowingScrollViewer = new ScrollViewer
+        {
+            Content = panel,
+            HorizontalScrollBarVisibility = ScrollBarVisibility.Auto,
+            VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
+            HorizontalAlignment = HorizontalAlignment.Stretch,
+            VerticalAlignment = VerticalAlignment.Stretch
+        };
+        return new TabItem { Header = "Borrowings", Content = borrowingScrollViewer };
     }
 
     private void UpdateGs1ScanEcho()
