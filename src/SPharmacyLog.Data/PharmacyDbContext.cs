@@ -18,6 +18,7 @@ public sealed class PharmacyDbContext : DbContext
     public DbSet<SerializedPackScan> SerializedPackScans => Set<SerializedPackScan>();
     public DbSet<BorrowingRecord> Borrowings => Set<BorrowingRecord>();
     public DbSet<Subscription> Subscriptions => Set<Subscription>();
+    public DbSet<SubscriptionAuditEntry> SubscriptionAuditEntries => Set<SubscriptionAuditEntry>();
     public DbSet<Payment> Payments => Set<Payment>();
     public DbSet<LedgerEntry> LedgerEntries => Set<LedgerEntry>();
 
@@ -160,6 +161,18 @@ public sealed class PharmacyDbContext : DbContext
             .HasOne(subscription => subscription.Customer)
             .WithMany(customer => customer.Subscriptions)
             .HasForeignKey(subscription => subscription.CustomerId);
+
+        modelBuilder.Entity<Subscription>()
+            .HasIndex(subscription => subscription.Status);
+
+        modelBuilder.Entity<SubscriptionAuditEntry>()
+            .HasIndex(entry => new { entry.SubscriptionId, entry.ChangedAt });
+
+        modelBuilder.Entity<SubscriptionAuditEntry>()
+            .HasOne(entry => entry.Subscription)
+            .WithMany(subscription => subscription.AuditEntries)
+            .HasForeignKey(entry => entry.SubscriptionId)
+            .OnDelete(DeleteBehavior.Cascade);
 
         modelBuilder.Entity<Payment>()
             .HasOne(payment => payment.Customer)
