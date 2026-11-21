@@ -58,6 +58,7 @@ public partial class MainWindow : Window
     private readonly MainWindowViewModel viewModel;
     private ComboBox languageBox = null!;
     private bool isApplyingTranslations;
+    private string? activeNavigationKey;
     private readonly ContentControl pageHost;
     private TextBlock dailySummary = new();
     private ListBox dayRecords = new();
@@ -199,6 +200,28 @@ public partial class MainWindow : Window
             AddNavigationButton("Navigation.ApplicationSettings", OpenApplicationSettings, "⚙");
             AddNavigationButton("Database synchronization", OpenCustomerDatabaseSync, "⇄");
         }
+
+        // Keep the selected item highlighted when the menu is rebuilt (for example,
+        // after changing the application language).
+        var firstNavigationButton = NavigationPanel.Children.OfType<Button>().FirstOrDefault();
+        activeNavigationKey ??= firstNavigationButton?.Tag as string;
+        UpdateActiveNavigationVisual();
+    }
+
+    private void UpdateActiveNavigationVisual()
+    {
+        foreach (var button in NavigationPanel.Children.OfType<Button>())
+        {
+            var isSelected = string.Equals(button.Tag as string, activeNavigationKey, StringComparison.Ordinal);
+            if (isSelected)
+            {
+                if (!button.Classes.Contains("selected")) button.Classes.Add("selected");
+            }
+            else
+            {
+                button.Classes.Remove("selected");
+            }
+        }
     }
 
     private void AddNavigationButton(string labelKey, Action action, string iconGlyph)
@@ -238,9 +261,15 @@ public partial class MainWindow : Window
             Content = content,
             Classes = { "nav" },
             MinWidth = 190,
-            HorizontalContentAlignment = HorizontalAlignment.Left
+            HorizontalContentAlignment = HorizontalAlignment.Left,
+            Tag = labelKey
         };
-        button.Click += (_, _) => action();
+        button.Click += (_, _) =>
+        {
+            activeNavigationKey = labelKey;
+            UpdateActiveNavigationVisual();
+            action();
+        };
         NavigationPanel.Children.Add(button);
     }
 
