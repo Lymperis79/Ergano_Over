@@ -178,5 +178,4 @@ public partial class MainWindow : Window
         };
     }
 
-    private void InitializeComponent() => AvaloniaXamlLoader.Load(this);
 }
