@@ -1,4 +1,5 @@
 using SPharmacyLog.Core;
+using SPharmacyLog.Data.Entities;
 using SPharmacyLog.UI.Localization;
 
 namespace SPharmacyLog.UI.ViewModels;
