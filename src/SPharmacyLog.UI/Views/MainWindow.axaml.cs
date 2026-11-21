@@ -425,14 +425,28 @@ public partial class MainWindow : Window
             MinHeight = 48, MaxHeight = 75, FontFamily = new FontFamily("Consolas")
         };
         var scanStatus = new TextBlock { Text = isEdit ? "The original serialized pack scan is retained unchanged." : "Ready for a GS1 DataMatrix scan.", TextWrapping = TextWrapping.Wrap, Foreground = Brushes.Gray };
-        var parsed = new Dictionary<string, TextBlock>();
         Gs1DataMatrixParser.ParsedPack? parsedPack = null;
+        var gtinInput = new TextBox { MaxLength = 14, PlaceholderText = "14-digit GTIN", IsEnabled = !isEdit };
+        var serialInput = new TextBox { PlaceholderText = "Serial number (AI 21)", IsEnabled = !isEdit };
+        var expiryInput = new TextBox { PlaceholderText = "Expiry date (yyyy-MM-dd)", IsEnabled = !isEdit };
+        var lotInput = new TextBox { PlaceholderText = "Batch / Lot (AI 10)", IsEnabled = !isEdit };
         var eofInput = new TextBox { MaxLength = 13, PlaceholderText = "Optional 13-digit Greek EOF / NTIN barcode", IsEnabled = !isEdit };
         var scanPanel = new StackPanel { Spacing = 7 };
         scanPanel.Children.Add(new TextBlock { Text = "GS1 DATAMATRIX SCAN", FontWeight = FontWeight.SemiBold });
         scanPanel.Children.Add(scanInput);
+        scanPanel.Children.Add(new TextBlock { Text = "Raw barcode (GS separator shown as <GS>):", FontSize = 12, Foreground = Brushes.LightGray });
         scanPanel.Children.Add(scanEcho);
-        scanPanel.Children.Add(eofInput);
+        scanPanel.Children.Add(new TextBlock { Text = "Parsed fields — verify or correct before saving:", FontWeight = FontWeight.SemiBold, Margin = new Thickness(0, 5, 0, 0) });
+        void AddScanField(string label, TextBox box)
+        {
+            scanPanel.Children.Add(new TextBlock { Text = label, FontSize = 12, Foreground = Brushes.LightGray });
+            scanPanel.Children.Add(box);
+        }
+        AddScanField("GTIN (AI 01)", gtinInput);
+        AddScanField("Serial number (AI 21)", serialInput);
+        AddScanField("Expiry date (AI 17)", expiryInput);
+        AddScanField("Batch / Lot (AI 10)", lotInput);
+        AddScanField("EOF / EAN-13", eofInput);
         scanPanel.Children.Add(scanStatus);
         scanInput.TextChanged += (_, _) => scanEcho.Text = (scanInput.Text ?? string.Empty)
             .Replace(Gs1DataMatrixParser.GroupSeparator.ToString(), "<GS>", StringComparison.Ordinal);
@@ -448,6 +462,10 @@ public partial class MainWindow : Window
                 return;
             }
             await using var lookupDb = new PharmacyDbContext(PharmacyDb.Options());
+            gtinInput.Text = parsedPack.Gtin14;
+            serialInput.Text = parsedPack.SerialNumber;
+            expiryInput.Text = parsedPack.ExpiryDate.ToString("yyyy-MM-dd");
+            lotInput.Text = parsedPack.BatchLot;
             var match = await lookupDb.MedicineBarcodes.Include(x => x.Medicine)
                 .FirstOrDefaultAsync(x => x.BarcodeValue == parsedPack.Gtin14 ||
                     (!string.IsNullOrWhiteSpace(parsedPack.ResolvedEofBarcode) && x.BarcodeValue == parsedPack.ResolvedEofBarcode));
@@ -523,10 +541,23 @@ public partial class MainWindow : Window
                 status.Text = "Enter a valid quantity.";
                 return;
             }
-            if (parsedPack is not null && quantity != 1)
+            var correctedGtin = gtinInput.Text?.Trim() ?? string.Empty;
+            var correctedSerial = serialInput.Text?.Trim() ?? string.Empty;
+            var correctedLot = lotInput.Text?.Trim() ?? string.Empty;
+            DateTime? correctedExpiry = null;
+            if (parsedPack is not null)
             {
-                status.Text = "A serialized DataMatrix identifies one physical pack. Quantity must be 1.";
-                return;
+                if (correctedGtin.Length != 14 || correctedGtin.Any(ch => !char.IsDigit(ch)))
+                { status.Text = "GTIN must contain exactly 14 digits."; return; }
+                if (string.IsNullOrWhiteSpace(correctedSerial) || correctedSerial.Length > 20)
+                { status.Text = "Enter a serial number of up to 20 characters."; return; }
+                if (!DateTime.TryParse(expiryInput.Text, out var parsedExpiry))
+                { status.Text = "Enter a valid expiry date (yyyy-MM-dd)."; return; }
+                correctedExpiry = parsedExpiry.Date;
+                if (correctedLot.Length > 20)
+                { status.Text = "Batch / Lot must not exceed 20 characters."; return; }
+                if (quantity != 1)
+                { status.Text = "A serialized DataMatrix identifies one physical pack. Quantity must be 1."; return; }
             }
             DateTime? due = DateTime.TryParse(fields["DueDate"].Text, out var dueDate) ? dueDate : null;
             decimal? value = decimal.TryParse(fields["Value"].Text, System.Globalization.NumberStyles.Number, System.Globalization.CultureInfo.InvariantCulture, out var amount) ? amount : null;
@@ -570,22 +601,22 @@ public partial class MainWindow : Window
                 }
                 if (parsedPack is not null)
                 {
-                    if (await db.SerializedPackScans.AnyAsync(x => x.Gtin14 == parsedPack.Gtin14 && x.SerialNumber == parsedPack.SerialNumber))
+                    if (await db.SerializedPackScans.AnyAsync(x => x.Gtin14 == correctedGtin && x.SerialNumber == correctedSerial))
                     { status.Text = "This physical pack (GTIN + serial number) has already been scanned."; return; }
                     var eof = string.IsNullOrWhiteSpace(eofInput.Text) ? parsedPack.ResolvedEofBarcode : eofInput.Text.Trim();
                     if (!string.IsNullOrWhiteSpace(eof) && (eof.Length != 13 || eof.Any(ch => !char.IsDigit(ch))))
                     { status.Text = "The EOF / NTIN barcode must contain exactly 13 digits."; return; }
                     var matched = await db.MedicineBarcodes.Include(x => x.Medicine)
-                        .Where(x => x.BarcodeValue == parsedPack.Gtin14 || (!string.IsNullOrWhiteSpace(eof) && x.BarcodeValue == eof))
+                        .Where(x => x.BarcodeValue == correctedGtin || (!string.IsNullOrWhiteSpace(eof) && x.BarcodeValue == eof))
                         .Select(x => x.Medicine).FirstOrDefaultAsync()
-                        ?? await db.Medicines.FirstOrDefaultAsync(x => x.Barcode == parsedPack.Gtin14 || (!string.IsNullOrWhiteSpace(eof) && x.Barcode == eof));
+                        ?? await db.Medicines.FirstOrDefaultAsync(x => x.Barcode == correctedGtin || (!string.IsNullOrWhiteSpace(eof) && x.Barcode == eof));
                     if (matched is null)
                     {
-                        matched = new MedicineCatalogItem { Name = name, Barcode = parsedPack.Gtin14, IsActive = true };
+                        matched = new MedicineCatalogItem { Name = name, Barcode = correctedGtin, IsActive = true };
                         db.Medicines.Add(matched);
                         await db.SaveChangesAsync();
                     }
-                    foreach (var mapping in new[] { (Value: parsedPack.Gtin14, Type: "GTIN14"), (Value: eof, Type: "EOF_EAN13") })
+                    foreach (var mapping in new[] { (Value: correctedGtin, Type: "GTIN14"), (Value: eof, Type: "EOF_EAN13") })
                     {
                         if (string.IsNullOrWhiteSpace(mapping.Value)) continue;
                         var current = await db.MedicineBarcodes.FirstOrDefaultAsync(x => x.BarcodeValue == mapping.Value);
@@ -596,16 +627,16 @@ public partial class MainWindow : Window
                     }
                     serializedPack = new SerializedPackScan
                     {
-                        RawGs1String = scanInput.Text ?? string.Empty, Gtin14 = parsedPack.Gtin14,
+                        RawGs1String = scanInput.Text ?? string.Empty, Gtin14 = correctedGtin,
                         EofEan13 = string.IsNullOrWhiteSpace(eof) ? null : eof,
-                        SerialNumber = parsedPack.SerialNumber, ExpiryDate = parsedPack.ExpiryDate,
-                        BatchLot = parsedPack.BatchLot, HmvoStatus = SerializedPackStatuses.Active,
+                        SerialNumber = correctedSerial, ExpiryDate = correctedExpiry!.Value,
+                        BatchLot = correctedLot, HmvoStatus = SerializedPackStatuses.Active,
                         ScannedAt = DateTime.UtcNow, MedicineId = matched.Id
                     };
                 }
                 db.Borrowings.Add(new BorrowingRecord
                 {
-                    CustomerId = selectedCustomerId.Value, MedicineName = name, OriginalBarcode = parsedPack?.Gtin14,
+                    CustomerId = selectedCustomerId.Value, MedicineName = name, OriginalBarcode = parsedPack is null ? (fields["MedicineBarcode"].Text?.Trim()) : correctedGtin,
                     SerializedPackScan = serializedPack, Quantity = quantity, InternalBarcode = internalBarcode,
                     DueDate = due, Value = value, Notes = fields["Notes"].Text?.Trim()
                 });
