@@ -4,6 +4,11 @@ using Avalonia.Controls.Primitives;
 using Avalonia.Layout;
 using Avalonia.Input;
 using Avalonia.Media;
+using Avalonia.Media.Imaging;
+using Avalonia.Platform;
+using System.Runtime.InteropServices;
+using ZXing;
+using ZXing.DataMatrix;
 using Avalonia.VisualTree;
 using Microsoft.EntityFrameworkCore;
 using SPharmacyLog.Data;
@@ -229,6 +234,7 @@ public partial class MainWindow : Window
     private ListBox ledgerList = null!;
     private List<BorrowingRecord> currentBorrowings = new();
     private TextBlock borrowingSelectionDetails = null!;
+    private Image borrowingBarcodeImage = null!;
     private TextBox gs1ScanInput = null!;
     private TextBox gs1ScanEcho = null!;
     private TextBox gs1EofEan13Input = null!;
@@ -328,6 +334,11 @@ public partial class MainWindow : Window
             Text = "Select an existing borrowing to view its saved GS1 scan details.",
             TextWrapping = TextWrapping.Wrap,
             Margin = new Thickness(4, 0, 4, 8)
+        };
+        borrowingBarcodeImage = new Image
+        {
+            Width = 220, Height = 220, Stretch = Stretch.Uniform, IsVisible = false,
+            HorizontalAlignment = HorizontalAlignment.Left, Margin = new Thickness(4, 0, 4, 8)
         };
         borrowingList.SelectionChanged += (_, _) => ShowSelectedBorrowingScanDetails();
 
@@ -439,6 +450,8 @@ public partial class MainWindow : Window
             {
                 borrowingList,
                 borrowingSelectionDetails,
+                new TextBlock { Text = "GS1 DataMatrix barcode", FontWeight = FontWeight.SemiBold, Margin = new Thickness(4, 0, 4, 0) },
+                borrowingBarcodeImage,
                 scanPanel,
                 detailsGrid,
                 fields,
@@ -458,13 +471,13 @@ public partial class MainWindow : Window
 
     private void ShowSelectedBorrowingScanDetails()
     {
-        // Selection details are rendered from the records already loaded by
-        // RefreshCustomerWorkspaceAsync. This handler must remain synchronous
-        // and must never open a DbContext or refresh the customer workspace.
+        // Render only from the already-loaded record; do not query or reload data here.
         var index = borrowingList.SelectedIndex;
         if (index < 0 || index >= currentBorrowings.Count)
         {
             borrowingSelectionDetails.Text = "Select an existing borrowing to view its saved GS1 scan details.";
+            borrowingBarcodeImage.Source = null;
+            borrowingBarcodeImage.IsVisible = false;
             return;
         }
 
@@ -472,9 +485,9 @@ public partial class MainWindow : Window
         var scan = borrowing.SerializedPackScan;
         if (scan is null)
         {
-            borrowingSelectionDetails.Text =
-                $"Selected borrowing: {borrowing.MedicineName}\n" +
-                "This is a legacy borrowing record and has no saved GS1 DataMatrix scan.";
+            borrowingSelectionDetails.Text = $"Selected borrowing: {borrowing.MedicineName}\nThis is a legacy borrowing record and has no saved GS1 DataMatrix scan.";
+            borrowingBarcodeImage.Source = null;
+            borrowingBarcodeImage.IsVisible = false;
             return;
         }
 
@@ -489,8 +502,46 @@ public partial class MainWindow : Window
             $"Pack status: {scan.HmvoStatus}\n" +
             $"Scanned at: {scan.ScannedAt:dd/MM/yyyy HH:mm:ss} UTC\n" +
             $"Original scanner payload: {scan.RawGs1String}";
+
+        try
+        {
+            borrowingBarcodeImage.Source = CreateGs1DataMatrixBitmap(scan.RawGs1String);
+            borrowingBarcodeImage.IsVisible = true;
+        }
+        catch (Exception ex)
+        {
+            borrowingBarcodeImage.Source = null;
+            borrowingBarcodeImage.IsVisible = false;
+            borrowingSelectionDetails.Text += $"\n\nBarcode preview could not be generated: {ex.Message}";
+        }
     }
 
+    private static WriteableBitmap CreateGs1DataMatrixBitmap(string rawPayload)
+    {
+        var hints = new Dictionary<EncodeHintType, object>
+        {
+            [EncodeHintType.GS1_FORMAT] = true,
+            [EncodeHintType.MARGIN] = 4
+        };
+        var matrix = new DataMatrixWriter().Encode(rawPayload, BarcodeFormat.DATA_MATRIX, 0, 0, hints);
+        const int scale = 5;
+        var width = matrix.Width * scale;
+        var height = matrix.Height * scale;
+        var bitmap = new WriteableBitmap(new PixelSize(width, height), new Vector(96, 96), PixelFormat.Bgra8888, AlphaFormat.Opaque);
+        using (var framebuffer = bitmap.Lock())
+        {
+            var pixels = new byte[framebuffer.RowBytes * height];
+            for (var y = 0; y < height; y++)
+            for (var x = 0; x < width; x++)
+            {
+                var value = matrix[x / scale, y / scale] ? (byte)0 : (byte)255;
+                var offset = y * framebuffer.RowBytes + x * 4;
+                pixels[offset] = value; pixels[offset + 1] = value; pixels[offset + 2] = value; pixels[offset + 3] = 255;
+            }
+            Marshal.Copy(pixels, 0, framebuffer.Address, pixels.Length);
+        }
+        return bitmap;
+    }
     private void UpdateGs1ScanEcho()
     {
         if (gs1ScanEcho is null || gs1ScanInput is null) return;
