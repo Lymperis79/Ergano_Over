@@ -406,6 +406,8 @@ public partial class MainWindow : Window
     private ListBox ledgerList = null!;
     private List<BorrowingRecord> currentBorrowings = new();
     private List<Subscription> currentSubscriptions = new();
+    private List<Subscription> currentExecutedSubscriptions = new();
+    private ListBox subscriptionHistoryList = null!;
     private List<Payment> currentPayments = new();
     private List<LedgerEntry> currentLedgerEntries = new();
     private ListBox customerHistoryList = null!;
@@ -1087,19 +1089,32 @@ public partial class MainWindow : Window
 
     private TabItem BuildCustomerHistoryTab()
     {
-        customerHistoryList = new ListBox { MinHeight = 240 };
+        customerHistoryList = new ListBox { MinHeight = 180 };
+        subscriptionHistoryList = new ListBox { MinHeight = 150 };
+        subscriptionHistoryList.SelectionChanged += async (_, _) =>
+        {
+            var index = subscriptionHistoryList.SelectedIndex;
+            if (index >= 0 && index < currentExecutedSubscriptions.Count)
+                await OpenSubscriptionDetailsAsync(currentExecutedSubscriptions[index].Id);
+        };
         return new TabItem
         {
             Header = "History",
-            Content = new StackPanel
+            Content = new ScrollViewer
             {
-                Spacing = 10,
-                Margin = new Thickness(8),
-                Children =
+                Content = new StackPanel
                 {
-                    new TextBlock { Text = "CUSTOMER MEDICINE & PRESCRIPTION HISTORY", FontSize = 18, FontWeight = FontWeight.Bold },
-                    new TextBlock { Text = "All borrowing records (including returned items) and prescriptions, ordered by date.", TextWrapping = TextWrapping.Wrap, Foreground = Brushes.LightGray },
-                    customerHistoryList
+                    Spacing = 10,
+                    Margin = new Thickness(8),
+                    Children =
+                    {
+                        new TextBlock { Text = "CUSTOMER MEDICINE & PRESCRIPTION HISTORY", FontSize = 18, FontWeight = FontWeight.Bold },
+                        new TextBlock { Text = "All borrowing records (including returned items) and prescriptions, ordered by date.", TextWrapping = TextWrapping.Wrap, Foreground = Brushes.LightGray },
+                        customerHistoryList,
+                        new TextBlock { Text = "EXECUTED SUBSCRIPTIONS HISTORY", FontSize = 16, FontWeight = FontWeight.Bold, Margin = new Thickness(0, 8, 0, 0) },
+                        new TextBlock { Text = "Executed subscriptions are kept here and can be opened to review their audit history.", TextWrapping = TextWrapping.Wrap, Foreground = Brushes.LightGray },
+                        subscriptionHistoryList
+                    }
                 }
             }
         };
@@ -1200,13 +1215,15 @@ public partial class MainWindow : Window
         var allBorrowings = await db.Borrowings.AsNoTracking().Include(x => x.SerializedPackScan).Where(x => x.CustomerId == id).OrderByDescending(x => x.BorrowedAt).ToListAsync();
         var borrowings = allBorrowings.Where(x => x.Status == BorrowingStatus.Borrowed).ToList();
         var prescriptions = await db.Prescriptions.AsNoTracking().Where(x => x.CustomerId == id).OrderByDescending(x => x.CreatedAt).ToListAsync();
-        var subscriptions = await db.Subscriptions.AsNoTracking().Where(x => x.CustomerId == id).OrderByDescending(x => x.StartDate).ToListAsync();
+        var allSubscriptions = await db.Subscriptions.AsNoTracking().Where(x => x.CustomerId == id).OrderByDescending(x => x.StartDate).ToListAsync();
+        var subscriptions = allSubscriptions.Where(x => x.Status == SubscriptionStatus.Active).ToList();
+        var executedSubscriptions = allSubscriptions.Where(x => x.Status == SubscriptionStatus.Executed).ToList();
         var payments = await db.Payments.AsNoTracking().Where(x => x.CustomerId == id).OrderByDescending(x => x.PaidAt).ToListAsync();
         var ledger = await db.LedgerEntries.AsNoTracking().Where(x => x.CustomerId == id).OrderByDescending(x => x.EntryDate).ToListAsync();
         var charges = ledger.Where(x => x.Type == LedgerEntryType.Charge || x.Type == LedgerEntryType.Adjustment).Sum(x => x.Amount);
         var credits = ledger.Where(x => x.Type == LedgerEntryType.Payment || x.Type == LedgerEntryType.Reversal).Sum(x => x.Amount);
         var balance = charges - credits;
-        customerOverview.Text = $"{customer.CustomerNumber}  |  {customer.FullName}\n{customer.Address}, {customer.City} {customer.Postcode}\nTelephone: {customer.Telephone ?? customer.Phone}  |  Mobile: {customer.Mobile}\nEmail: {customer.Email}\n\nBORROWINGS: {allBorrowings.Count} total, {borrowings.Count} currently borrowed\nSUBSCRIPTIONS: {subscriptions.Count(x => x.Status == SubscriptionStatus.Active)} active of {subscriptions.Count}\nPAYMENTS: {payments.Count} recorded  |  Total paid: {payments.Sum(x => x.Amount):C}\nACCOUNT BALANCE: {balance:C}\n\nRecent activity:\n{string.Join("\n", ledger.Take(5).Select(x => $"{x.EntryDate:dd/MM/yyyy}  {x.Type}  {x.Amount:C}  {x.Description}"))}";
+        customerOverview.Text = $"{customer.CustomerNumber}  |  {customer.FullName}\n{customer.Address}, {customer.City} {customer.Postcode}\nTelephone: {customer.Telephone ?? customer.Phone}  |  Mobile: {customer.Mobile}\nEmail: {customer.Email}\n\nBORROWINGS: {allBorrowings.Count} total, {borrowings.Count} currently borrowed\nSUBSCRIPTIONS: {subscriptions.Count} active | {executedSubscriptions.Count} executed\nPAYMENTS: {payments.Count} recorded  |  Total paid: {payments.Sum(x => x.Amount):C}\nACCOUNT BALANCE: {balance:C}\n\nRecent activity:\n{string.Join("\n", ledger.Take(5).Select(x => $"{x.EntryDate:dd/MM/yyyy}  {x.Type}  {x.Amount:C}  {x.Description}"))}";
         currentBorrowings = borrowings;
         borrowingList.ItemsSource = borrowings.Select(x =>
             x.SerializedPackScan is null
@@ -1223,9 +1240,11 @@ public partial class MainWindow : Window
                 Text = $"{x.CreatedAt:dd/MM/yyyy HH:mm} | PRESCRIPTION | {x.MedicineName} | No. {x.PrescriptionNumber ?? "-"} | {x.Status} | Valid until {x.ExpiryDate:dd/MM/yyyy}"
             })).OrderByDescending(x => x.Date).Select(x => x.Text).ToList();
         currentSubscriptions = subscriptions;
+        currentExecutedSubscriptions = executedSubscriptions;
         currentPayments = payments;
         currentLedgerEntries = ledger;
-        subscriptionList.ItemsSource = subscriptions.Select(x => $"{GetSubscriptionNumber(x)} | {x.Title} | {x.Status} | Next: {x.NextDueDate:dd/MM/yyyy} | Expires: {x.ExpiryDate?.ToString("dd/MM/yyyy") ?? "—"} | {x.Frequency}").ToList();
+        subscriptionList.ItemsSource = subscriptions.Select(x => $"{GetSubscriptionNumber(x)} | {x.Title} | {Tr.Loc.TranslateText(x.Status.ToString())} | Next: {x.NextDueDate:dd/MM/yyyy} | Expires: {x.ExpiryDate?.ToString("dd/MM/yyyy") ?? "—"} | {x.Frequency}").ToList();
+        subscriptionHistoryList.ItemsSource = executedSubscriptions.Select(x => $"{GetSubscriptionNumber(x)} | {x.Title} | Executed on {x.LastModifiedAt.ToLocalTime():dd/MM/yyyy HH:mm}").ToList();
         paymentList.ItemsSource = payments.Select(x => $"{x.PaidAt:dd/MM/yyyy HH:mm} | {x.Amount:C} | {x.Method} | {x.Reference}").ToList();
         ledgerList.ItemsSource = ledger.Select(x => $"{x.EntryDate:dd/MM/yyyy HH:mm} | {x.Type} | {x.Amount:C} | {x.Description}").ToList();
         ApplyTranslations();
@@ -1403,6 +1422,22 @@ public partial class MainWindow : Window
         var customer = subscription.Customer!;
         var subscriptionNumber = GetSubscriptionNumber(subscription);
         var barcodeBitmap = CreateSubscriptionBarcodeBitmap(subscriptionNumber);
+        var statusSelector = new ComboBox
+        {
+            MinHeight = 34,
+            ItemsSource = new[] { SubscriptionStatus.Active.ToString(), SubscriptionStatus.Executed.ToString() },
+            SelectedItem = subscription.Status == SubscriptionStatus.Executed ? SubscriptionStatus.Executed.ToString() : SubscriptionStatus.Active.ToString()
+        };
+        var auditEntries = await db.SubscriptionAuditEntries.AsNoTracking()
+            .Where(entry => entry.SubscriptionId == subscription.Id)
+            .OrderByDescending(entry => entry.ChangedAt)
+            .ToListAsync();
+        var auditList = new ListBox
+        {
+            MinHeight = 110,
+            ItemsSource = auditEntries.Select(entry =>
+                $"{entry.ChangedAt.ToLocalTime():dd/MM/yyyy HH:mm:ss} | {entry.Action} | {entry.ChangedBy} | {entry.Details}").ToList()
+        };
         var details = new StackPanel
         {
             Spacing = 8,
@@ -1419,19 +1454,26 @@ public partial class MainWindow : Window
                 new TextBlock { Text = $"{Tr.Loc.TranslateText("Start date")}: {subscription.StartDate:dd/MM/yyyy}" },
                 new TextBlock { Text = $"{Tr.Loc.TranslateText("Next due date")}: {subscription.NextDueDate:dd/MM/yyyy}" },
                 new TextBlock { Text = $"{Tr.Loc.TranslateText("Expiry date")}: {subscription.ExpiryDate?.ToString("dd/MM/yyyy") ?? "—"}" },
-                new TextBlock { Text = $"{Tr.Loc.TranslateText("Frequency")}: {subscription.Frequency} | {Tr.Loc.TranslateText("Status")}: {Tr.Loc.TranslateText(subscription.Status.ToString())}" },
-                new TextBlock { Text = $"{Tr.Loc.TranslateText("Notes")}: {subscription.Notes}", TextWrapping = TextWrapping.Wrap }
+                new TextBlock { Text = $"{Tr.Loc.TranslateText("Frequency")}: {subscription.Frequency}" },
+                new TextBlock { Text = $"{Tr.Loc.TranslateText("Status")}" },
+                statusSelector,
+                new TextBlock { Text = $"{Tr.Loc.TranslateText("Created by")}: {subscription.CreatedBy} | {subscription.CreatedAt.ToLocalTime():dd/MM/yyyy HH:mm:ss}", TextWrapping = TextWrapping.Wrap },
+                new TextBlock { Text = $"{Tr.Loc.TranslateText("Last changed by")}: {subscription.LastModifiedBy} | {subscription.LastModifiedAt.ToLocalTime():dd/MM/yyyy HH:mm:ss}", TextWrapping = TextWrapping.Wrap },
+                new TextBlock { Text = $"{Tr.Loc.TranslateText("Notes")}: {subscription.Notes}", TextWrapping = TextWrapping.Wrap },
+                new TextBlock { Text = Tr.Loc.TranslateText("Audit history"), FontSize = 16, FontWeight = FontWeight.Bold },
+                auditList
             }
         };
         var openCustomer = new Button { Content = Tr.Loc.TranslateText("Open customer"), MinWidth = 135 };
         var editSubscription = new Button { Content = Tr.Loc.TranslateText("Edit subscription"), Classes = { "accent" }, MinWidth = 150 };
+        var saveStatus = new Button { Content = Tr.Loc.TranslateText("Save status"), Classes = { "accent" }, MinWidth = 110 };
         var close = new Button { Content = Tr.Loc.TranslateText("Close"), MinWidth = 90 };
         var actions = new StackPanel
         {
             Orientation = Orientation.Horizontal,
             HorizontalAlignment = HorizontalAlignment.Right,
             Spacing = 8,
-            Children = { openCustomer, editSubscription, close }
+            Children = { openCustomer, editSubscription, saveStatus, close }
         };
         var content = new Grid
         {
@@ -1457,6 +1499,40 @@ public partial class MainWindow : Window
         };
         AttachDialogLocalization(popup);
         close.Click += (_, _) => popup.Close();
+        saveStatus.Click += async (_, _) =>
+        {
+            if (!Enum.TryParse<SubscriptionStatus>(statusSelector.SelectedItem?.ToString(), out var newStatus) ||
+                newStatus is not (SubscriptionStatus.Active or SubscriptionStatus.Executed))
+                return;
+            if (newStatus == subscription.Status) return;
+
+            await using var updateDb = new PharmacyDbContext(PharmacyDb.Options());
+            var current = await updateDb.Subscriptions.FirstOrDefaultAsync(item => item.Id == subscriptionId);
+            if (current is null) { popup.Close(); return; }
+            var oldStatus = current.Status;
+            var now = DateTime.UtcNow;
+            var actor = viewModel.User.Username;
+            current.Status = newStatus;
+            current.LastModifiedAt = now;
+            current.LastModifiedBy = actor;
+            updateDb.SubscriptionAuditEntries.Add(new SubscriptionAuditEntry
+            {
+                SubscriptionId = current.Id,
+                Action = "Status changed",
+                PreviousStatus = (int)oldStatus,
+                NewStatus = (int)newStatus,
+                ChangedBy = actor,
+                ChangedAt = now,
+                Details = $"Status changed from {oldStatus} to {newStatus}."
+            });
+            await updateDb.SaveChangesAsync();
+            popup.Close();
+            if (selectedCustomerId == current.CustomerId)
+                await RefreshCustomerWorkspaceAsync();
+            if (showingExpiryCalendar && calendarMonthTitle is not null)
+                await RenderCalendarAsync(calendarMonthTitle);
+            await OpenSubscriptionDetailsAsync(subscriptionId);
+        };
         openCustomer.Click += async (_, _) =>
         {
             popup.Close();
@@ -1527,6 +1603,12 @@ public partial class MainWindow : Window
         var expiry = new TextBox { Text = existing?.ExpiryDate?.ToString("yyyy-MM-dd") ?? "", PlaceholderText = "Expiry date (optional)", MinHeight = 34 };
         var frequency = new TextBox { Text = existing?.Frequency ?? "Monthly", PlaceholderText = "Frequency", MinHeight = 34 };
         var notes = new TextBox { Text = existing?.Notes ?? "", PlaceholderText = "Notes", MinHeight = 70, AcceptsReturn = true, TextWrapping = TextWrapping.Wrap };
+        var subscriptionStatus = new ComboBox
+        {
+            MinHeight = 34,
+            ItemsSource = new[] { SubscriptionStatus.Active.ToString(), SubscriptionStatus.Executed.ToString() },
+            SelectedItem = existing?.Status == SubscriptionStatus.Executed ? SubscriptionStatus.Executed.ToString() : SubscriptionStatus.Active.ToString()
+        };
         var form = new StackPanel { Spacing = 7, Margin = new Thickness(16), Children =
         {
             new TextBlock { Text = isEdit ? "EDIT SUBSCRIPTION" : "ADD SUBSCRIPTION", FontSize = 19, FontWeight = FontWeight.Bold },
@@ -1535,6 +1617,7 @@ public partial class MainWindow : Window
             new TextBlock { Text = "Next due date (yyyy-MM-dd)" }, due,
             new TextBlock { Text = "Expiry date (yyyy-MM-dd, optional)" }, expiry,
             new TextBlock { Text = "Frequency" }, frequency,
+            new TextBlock { Text = "Status" }, subscriptionStatus,
             new TextBlock { Text = "Notes" }, notes
         } };
         var status = new TextBlock { TextWrapping = TextWrapping.Wrap, Foreground = Brushes.Orange };
@@ -1553,18 +1636,37 @@ public partial class MainWindow : Window
                 expiryDate = parsedExpiry.Date;
             }
             await using var db = new PharmacyDbContext(PharmacyDb.Options());
+            if (!Enum.TryParse<SubscriptionStatus>(subscriptionStatus.SelectedItem?.ToString(), out var selectedStatus) ||
+                selectedStatus is not (SubscriptionStatus.Active or SubscriptionStatus.Executed))
+            { status.Text = "Choose Active or Executed status."; return; }
+
             Subscription? record;
+            SubscriptionStatus? previousStatus = null;
+            var now = DateTime.UtcNow;
+            var actor = viewModel.User.Username;
             if (isEdit)
             {
                 record = await db.Subscriptions.FirstOrDefaultAsync(x => x.Id == existing!.Id && x.CustomerId == selectedCustomerId.Value);
                 if (record is null) { status.Text = "The subscription could not be found."; return; }
+                previousStatus = record.Status;
             }
             else
             {
-                record = new Subscription { CustomerId = selectedCustomerId.Value, Status = SubscriptionStatus.Active };
+                record = new Subscription
+                {
+                    CustomerId = selectedCustomerId.Value,
+                    Status = selectedStatus,
+                    CreatedAt = now,
+                    CreatedBy = actor,
+                    LastModifiedAt = now,
+                    LastModifiedBy = actor
+                };
                 db.Subscriptions.Add(record);
             }
             record.Title = title.Text.Trim();
+            record.Status = selectedStatus;
+            record.LastModifiedAt = now;
+            record.LastModifiedBy = actor;
             record.StartDate = startDate.Date;
             record.NextDueDate = dueDate.Date;
             record.ExpiryDate = expiryDate;
@@ -1572,10 +1674,20 @@ public partial class MainWindow : Window
             record.Notes = notes.Text?.Trim();
             await db.SaveChangesAsync();
             if (string.IsNullOrWhiteSpace(record.Barcode))
-            {
                 record.Barcode = GetSubscriptionNumber(record);
-                await db.SaveChangesAsync();
-            }
+            db.SubscriptionAuditEntries.Add(new SubscriptionAuditEntry
+            {
+                SubscriptionId = record.Id,
+                Action = isEdit ? (previousStatus != selectedStatus ? "Status changed" : "Updated") : "Created",
+                PreviousStatus = previousStatus.HasValue ? (int)previousStatus.Value : null,
+                NewStatus = (int)selectedStatus,
+                ChangedBy = actor,
+                ChangedAt = now,
+                Details = isEdit && previousStatus != selectedStatus
+                    ? $"Status changed from {previousStatus} to {selectedStatus}."
+                    : isEdit ? "Subscription details updated." : "Subscription created."
+            });
+            await db.SaveChangesAsync();
             dialog.Close();
             SetActivityStatus(isEdit ? "Subscription updated." : "Subscription added.");
             await RefreshCustomerWorkspaceAsync();
