@@ -130,6 +130,8 @@ public sealed class LocalizationService : ILocalizationService
         ["Cancel"] = "Ακύρωση",
         ["Close"] = "Κλείσιμο",
         ["Company settings"] = "Στοιχεία εταιρείας",
+        ["Show inactive customers"] = "Εμφάνιση ανενεργών πελατών",
+        ["Customer is active"] = "Ο πελάτης είναι ενεργός",
         ["Company identity"] = "Ταυτότητα εταιρείας",
         ["Company name"] = "Επωνυμία εταιρείας",
         ["Enter company name"] = "Εισαγάγετε την επωνυμία της εταιρείας",
