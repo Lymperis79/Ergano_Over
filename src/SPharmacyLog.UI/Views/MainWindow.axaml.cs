@@ -234,6 +234,9 @@ public partial class MainWindow : Window
     private ListBox paymentList = null!;
     private ListBox ledgerList = null!;
     private List<BorrowingRecord> currentBorrowings = new();
+    private List<Subscription> currentSubscriptions = new();
+    private List<Payment> currentPayments = new();
+    private List<LedgerEntry> currentLedgerEntries = new();
     private ListBox customerHistoryList = null!;
     private TextBlock borrowingSelectionDetails = null!;
     private Image borrowingBarcodeImage = null!;
@@ -930,42 +933,62 @@ public partial class MainWindow : Window
 
     private TabItem BuildSubscriptionsTab()
     {
-        subscriptionList = new ListBox { MinHeight = 180 };
-        var fields = new StackPanel { Spacing = 6 };
-        AddActivityField(fields, "Subscription title", "SubscriptionTitle");
-        AddActivityField(fields, "Start date (yyyy-MM-dd)", "SubscriptionStart", DateTime.Today.ToString("yyyy-MM-dd"));
-        AddActivityField(fields, "Next due date (yyyy-MM-dd)", "SubscriptionDue");
-        AddActivityField(fields, "Expiry date (yyyy-MM-dd, optional)", "SubscriptionExpiry");
-        AddActivityField(fields, "Frequency", "SubscriptionFrequency", "Monthly");
-        AddActivityField(fields, "Notes", "SubscriptionNotes");
-        var add = new Button { Content = "＋ Add subscription", Classes = { "accent" } };
-        add.Click += async (_, _) => await AddSubscriptionAsync();
-        return new TabItem { Header = "Subscriptions", Content = new StackPanel { Spacing = 10, Children = { subscriptionList, fields, add } } };
+        subscriptionList = new ListBox { MinHeight = 220 };
+        var add = new Button { Content = "＋ Add subscription", Classes = { "accent" }, MinWidth = 145, MinHeight = 38 };
+        add.Click += async (_, _) => await OpenSubscriptionEditorAsync(null);
+        var edit = new Button { Content = "Edit selected", MinWidth = 125, MinHeight = 38 };
+        edit.Click += async (_, _) =>
+        {
+            if (subscriptionList.SelectedIndex < 0 || subscriptionList.SelectedIndex >= currentSubscriptions.Count)
+            { SetActivityStatus("Select a subscription to edit."); return; }
+            await OpenSubscriptionEditorAsync(currentSubscriptions[subscriptionList.SelectedIndex]);
+        };
+        var actions = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, Children = { add, edit } };
+        return new TabItem { Header = "Subscriptions", Content = new StackPanel { Spacing = 10, Margin = new Thickness(8), Children =
+        {
+            new TextBlock { Text = "CUSTOMER SUBSCRIPTIONS", FontSize = 18, FontWeight = FontWeight.Bold },
+            actions, subscriptionList
+        } } };
     }
 
     private TabItem BuildPaymentsTab()
     {
-        paymentList = new ListBox { MinHeight = 180 };
-        var fields = new StackPanel { Spacing = 6 };
-        AddActivityField(fields, "Payment amount", "PaymentAmount");
-        AddActivityField(fields, "Method (Cash / Card / Transfer)", "PaymentMethod", "Cash");
-        AddActivityField(fields, "Reference", "PaymentReference");
-        AddActivityField(fields, "Notes", "PaymentNotes");
-        var add = new Button { Content = "＋ Record payment", Classes = { "accent" } };
-        add.Click += async (_, _) => await AddPaymentAsync();
-        return new TabItem { Header = "Payments", Content = new StackPanel { Spacing = 10, Children = { paymentList, fields, add } } };
+        paymentList = new ListBox { MinHeight = 220 };
+        var add = new Button { Content = "＋ Record payment", Classes = { "accent" }, MinWidth = 145, MinHeight = 38 };
+        add.Click += async (_, _) => await OpenPaymentEditorAsync(null);
+        var edit = new Button { Content = "Edit selected", MinWidth = 125, MinHeight = 38 };
+        edit.Click += async (_, _) =>
+        {
+            if (paymentList.SelectedIndex < 0 || paymentList.SelectedIndex >= currentPayments.Count)
+            { SetActivityStatus("Select a payment to edit."); return; }
+            await OpenPaymentEditorAsync(currentPayments[paymentList.SelectedIndex]);
+        };
+        var actions = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, Children = { add, edit } };
+        return new TabItem { Header = "Payments", Content = new StackPanel { Spacing = 10, Margin = new Thickness(8), Children =
+        {
+            new TextBlock { Text = "CUSTOMER PAYMENTS", FontSize = 18, FontWeight = FontWeight.Bold },
+            actions, paymentList
+        } } };
     }
 
     private TabItem BuildLedgerTab()
     {
-        ledgerList = new ListBox { MinHeight = 180 };
-        var fields = new StackPanel { Spacing = 6 };
-        AddActivityField(fields, "Entry type (Charge / Adjustment / Reversal)", "LedgerType", "Charge");
-        AddActivityField(fields, "Amount (positive number)", "LedgerAmount");
-        AddActivityField(fields, "Description", "LedgerDescription");
-        var add = new Button { Content = "＋ Add ledger entry", Classes = { "accent" } };
-        add.Click += async (_, _) => await AddLedgerEntryAsync();
-        return new TabItem { Header = "Ledger", Content = new StackPanel { Spacing = 10, Children = { ledgerList, fields, add } } };
+        ledgerList = new ListBox { MinHeight = 220 };
+        var add = new Button { Content = "＋ Add ledger entry", Classes = { "accent" }, MinWidth = 145, MinHeight = 38 };
+        add.Click += async (_, _) => await OpenLedgerEditorAsync(null);
+        var edit = new Button { Content = "Edit selected", MinWidth = 125, MinHeight = 38 };
+        edit.Click += async (_, _) =>
+        {
+            if (ledgerList.SelectedIndex < 0 || ledgerList.SelectedIndex >= currentLedgerEntries.Count)
+            { SetActivityStatus("Select a ledger entry to edit."); return; }
+            await OpenLedgerEditorAsync(currentLedgerEntries[ledgerList.SelectedIndex]);
+        };
+        var actions = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, Children = { add, edit } };
+        return new TabItem { Header = "Ledger", Content = new StackPanel { Spacing = 10, Margin = new Thickness(8), Children =
+        {
+            new TextBlock { Text = "CUSTOMER ACCOUNT LEDGER", FontSize = 18, FontWeight = FontWeight.Bold },
+            actions, ledgerList
+        } } };
     }
 
     private void AddActivityField(StackPanel parent, string label, string key, string? defaultValue = null)
@@ -1025,9 +1048,12 @@ public partial class MainWindow : Window
                 Date = x.CreatedAt,
                 Text = $"{x.CreatedAt:dd/MM/yyyy HH:mm} | PRESCRIPTION | {x.MedicineName} | No. {x.PrescriptionNumber ?? "-"} | {x.Status} | Valid until {x.ExpiryDate:dd/MM/yyyy}"
             })).OrderByDescending(x => x.Date).Select(x => x.Text).ToList();
+        currentSubscriptions = subscriptions;
+        currentPayments = payments;
+        currentLedgerEntries = ledger;
         subscriptionList.ItemsSource = subscriptions.Select(x => $"{x.Title} | {x.Status} | Next: {x.NextDueDate:dd/MM/yyyy} | Expires: {x.ExpiryDate:dd/MM/yyyy} | {x.Frequency}").ToList();
-        paymentList.ItemsSource = payments.Select(x => $"{x.PaidAt:dd/MM/yyyy} | {x.Amount:C} | {x.Method} | {x.Reference}").ToList();
-        ledgerList.ItemsSource = ledger.Select(x => $"{x.EntryDate:dd/MM/yyyy} | {x.Type} | {x.Amount:C} | {x.Description}").ToList();
+        paymentList.ItemsSource = payments.Select(x => $"{x.PaidAt:dd/MM/yyyy HH:mm} | {x.Amount:C} | {x.Method} | {x.Reference}").ToList();
+        ledgerList.ItemsSource = ledger.Select(x => $"{x.EntryDate:dd/MM/yyyy HH:mm} | {x.Type} | {x.Amount:C} | {x.Description}").ToList();
         ApplyTranslations();
     }
 
@@ -1180,6 +1206,233 @@ public partial class MainWindow : Window
         if (record.SerializedPackScan is not null)
             record.SerializedPackScan.HmvoStatus = SerializedPackStatuses.Returned;
         await db.SaveChangesAsync(); SetActivityStatus("Item marked as returned."); await RefreshCustomerWorkspaceAsync();
+    }
+
+    private async Task OpenSubscriptionEditorAsync(Subscription? existing)
+    {
+        if (!selectedCustomerId.HasValue) { SetActivityStatus("Save or select a customer first."); return; }
+        var isEdit = existing is not null;
+        var title = new TextBox { Text = existing?.Title ?? "", PlaceholderText = "Subscription title", MinHeight = 34 };
+        var start = new TextBox { Text = (existing?.StartDate ?? DateTime.Today).ToString("yyyy-MM-dd"), PlaceholderText = "Start date (yyyy-MM-dd)", MinHeight = 34 };
+        var due = new TextBox { Text = existing?.NextDueDate.ToString("yyyy-MM-dd") ?? "", PlaceholderText = "Next due date (yyyy-MM-dd)", MinHeight = 34 };
+        var expiry = new TextBox { Text = existing?.ExpiryDate?.ToString("yyyy-MM-dd") ?? "", PlaceholderText = "Expiry date (optional)", MinHeight = 34 };
+        var frequency = new TextBox { Text = existing?.Frequency ?? "Monthly", PlaceholderText = "Frequency", MinHeight = 34 };
+        var notes = new TextBox { Text = existing?.Notes ?? "", PlaceholderText = "Notes", MinHeight = 70, AcceptsReturn = true, TextWrapping = TextWrapping.Wrap };
+        var form = new StackPanel { Spacing = 7, Margin = new Thickness(16), Children =
+        {
+            new TextBlock { Text = isEdit ? "EDIT SUBSCRIPTION" : "ADD SUBSCRIPTION", FontSize = 19, FontWeight = FontWeight.Bold },
+            new TextBlock { Text = "Subscription title" }, title,
+            new TextBlock { Text = "Start date (yyyy-MM-dd)" }, start,
+            new TextBlock { Text = "Next due date (yyyy-MM-dd)" }, due,
+            new TextBlock { Text = "Expiry date (yyyy-MM-dd, optional)" }, expiry,
+            new TextBlock { Text = "Frequency" }, frequency,
+            new TextBlock { Text = "Notes" }, notes
+        } };
+        var status = new TextBlock { TextWrapping = TextWrapping.Wrap, Foreground = Brushes.Orange };
+        var save = new Button { Content = "Save", Classes = { "accent" }, MinWidth = 110 };
+        var cancel = new Button { Content = "Cancel", MinWidth = 100 };
+        var dialog = CreateActivityEditorWindow(isEdit ? "Edit subscription" : "Add subscription", form, status, save, cancel, 540, 650);
+        cancel.Click += (_, _) => dialog.Close();
+        save.Click += async (_, _) =>
+        {
+            if (string.IsNullOrWhiteSpace(title.Text) || !DateTime.TryParse(start.Text, out var startDate) || !DateTime.TryParse(due.Text, out var dueDate))
+            { status.Text = "Enter a title and valid start and next due dates."; return; }
+            DateTime? expiryDate = null;
+            if (!string.IsNullOrWhiteSpace(expiry.Text))
+            {
+                if (!DateTime.TryParse(expiry.Text, out var parsedExpiry)) { status.Text = "Enter a valid expiry date."; return; }
+                expiryDate = parsedExpiry.Date;
+            }
+            await using var db = new PharmacyDbContext(PharmacyDb.Options());
+            Subscription record;
+            if (isEdit)
+            {
+                record = await db.Subscriptions.FirstOrDefaultAsync(x => x.Id == existing!.Id && x.CustomerId == selectedCustomerId.Value);
+                if (record is null) { status.Text = "The subscription could not be found."; return; }
+            }
+            else
+            {
+                record = new Subscription { CustomerId = selectedCustomerId.Value, Status = SubscriptionStatus.Active };
+                db.Subscriptions.Add(record);
+            }
+            record.Title = title.Text.Trim();
+            record.StartDate = startDate.Date;
+            record.NextDueDate = dueDate.Date;
+            record.ExpiryDate = expiryDate;
+            record.Frequency = string.IsNullOrWhiteSpace(frequency.Text) ? "Monthly" : frequency.Text.Trim();
+            record.Notes = notes.Text?.Trim();
+            await db.SaveChangesAsync();
+            dialog.Close();
+            SetActivityStatus(isEdit ? "Subscription updated." : "Subscription added.");
+            await RefreshCustomerWorkspaceAsync();
+        };
+        await dialog.ShowDialog(this);
+    }
+
+    private async Task OpenPaymentEditorAsync(Payment? existing)
+    {
+        if (!selectedCustomerId.HasValue) { SetActivityStatus("Save or select a customer first."); return; }
+        var isEdit = existing is not null;
+        var amount = new TextBox { Text = existing?.Amount.ToString("0.00") ?? "", PlaceholderText = "Amount", MinHeight = 34 };
+        var method = new TextBox { Text = existing?.Method ?? "Cash", PlaceholderText = "Method (Cash / Card / Transfer)", MinHeight = 34 };
+        var reference = new TextBox { Text = existing?.Reference ?? "", PlaceholderText = "Reference", MinHeight = 34 };
+        var paidAt = new TextBox { Text = (existing?.PaidAt ?? DateTime.Now).ToString("yyyy-MM-dd HH:mm"), PlaceholderText = "Payment date (yyyy-MM-dd HH:mm)", MinHeight = 34 };
+        var notes = new TextBox { Text = existing?.Notes ?? "", PlaceholderText = "Notes", MinHeight = 70, AcceptsReturn = true, TextWrapping = TextWrapping.Wrap };
+        var form = new StackPanel { Spacing = 7, Margin = new Thickness(16), Children =
+        {
+            new TextBlock { Text = isEdit ? "EDIT PAYMENT" : "RECORD PAYMENT", FontSize = 19, FontWeight = FontWeight.Bold },
+            new TextBlock { Text = "Amount" }, amount,
+            new TextBlock { Text = "Method (Cash / Card / Transfer)" }, method,
+            new TextBlock { Text = "Reference" }, reference,
+            new TextBlock { Text = "Payment date (yyyy-MM-dd HH:mm)" }, paidAt,
+            new TextBlock { Text = "Notes" }, notes
+        } };
+        var status = new TextBlock { TextWrapping = TextWrapping.Wrap, Foreground = Brushes.Orange };
+        var save = new Button { Content = "Save", Classes = { "accent" }, MinWidth = 110 };
+        var cancel = new Button { Content = "Cancel", MinWidth = 100 };
+        var dialog = CreateActivityEditorWindow(isEdit ? "Edit payment" : "Record payment", form, status, save, cancel, 540, 650);
+        cancel.Click += (_, _) => dialog.Close();
+        save.Click += async (_, _) =>
+        {
+            if (!decimal.TryParse(amount.Text, out var parsedAmount) || parsedAmount <= 0 || !DateTime.TryParse(paidAt.Text, out var parsedPaidAt))
+            { status.Text = "Enter a positive amount and valid payment date."; return; }
+            await using var db = new PharmacyDbContext(PharmacyDb.Options());
+            Payment record;
+            decimal oldAmount = 0;
+            string? oldReference = null;
+            if (isEdit)
+            {
+                record = await db.Payments.FirstOrDefaultAsync(x => x.Id == existing!.Id && x.CustomerId == selectedCustomerId.Value);
+                if (record is null) { status.Text = "The payment could not be found."; return; }
+                oldAmount = record.Amount;
+                oldReference = record.Reference;
+            }
+            else
+            {
+                record = new Payment { CustomerId = selectedCustomerId.Value };
+                db.Payments.Add(record);
+            }
+            record.Amount = parsedAmount;
+            record.Method = string.IsNullOrWhiteSpace(method.Text) ? "Cash" : method.Text.Trim();
+            record.Reference = reference.Text?.Trim();
+            record.PaidAt = parsedPaidAt;
+            record.Notes = notes.Text?.Trim();
+            if (isEdit)
+            {
+                var linkedLedger = await db.LedgerEntries.FirstOrDefaultAsync(x => x.CustomerId == selectedCustomerId.Value &&
+                    x.Type == LedgerEntryType.Payment && x.SourceReference == oldReference &&
+                    x.Amount == oldAmount);
+                if (linkedLedger is not null)
+                {
+                    linkedLedger.Amount = parsedAmount;
+                    linkedLedger.EntryDate = parsedPaidAt;
+                    linkedLedger.SourceReference = record.Reference;
+                    linkedLedger.Description = $"Payment - {record.Method}";
+                }
+            }
+            else
+            {
+                db.LedgerEntries.Add(new LedgerEntry
+                {
+                    CustomerId = selectedCustomerId.Value, Type = LedgerEntryType.Payment,
+                    Amount = parsedAmount, EntryDate = parsedPaidAt,
+                    Description = $"Payment - {record.Method}", SourceReference = record.Reference,
+                    RecordedBy = viewModel.User.Username
+                });
+            }
+            await db.SaveChangesAsync();
+            dialog.Close();
+            SetActivityStatus(isEdit ? "Payment updated." : "Payment recorded and ledger updated.");
+            await RefreshCustomerWorkspaceAsync();
+        };
+        await dialog.ShowDialog(this);
+    }
+
+    private async Task OpenLedgerEditorAsync(LedgerEntry? existing)
+    {
+        if (!selectedCustomerId.HasValue) { SetActivityStatus("Save or select a customer first."); return; }
+        var isEdit = existing is not null;
+        var type = new ComboBox
+        {
+            MinHeight = 34,
+            ItemsSource = new[] { "Charge", "Adjustment", "Reversal" },
+            SelectedItem = existing?.Type.ToString() ?? "Charge"
+        };
+        var amount = new TextBox { Text = existing?.Amount.ToString("0.00") ?? "", PlaceholderText = "Amount", MinHeight = 34 };
+        var description = new TextBox { Text = existing?.Description ?? "", PlaceholderText = "Description", MinHeight = 34 };
+        var entryDate = new TextBox { Text = (existing?.EntryDate ?? DateTime.Now).ToString("yyyy-MM-dd HH:mm"), PlaceholderText = "Entry date (yyyy-MM-dd HH:mm)", MinHeight = 34 };
+        var form = new StackPanel { Spacing = 7, Margin = new Thickness(16), Children =
+        {
+            new TextBlock { Text = isEdit ? "EDIT LEDGER ENTRY" : "ADD LEDGER ENTRY", FontSize = 19, FontWeight = FontWeight.Bold },
+            new TextBlock { Text = "Entry type" }, type,
+            new TextBlock { Text = "Amount (positive number)" }, amount,
+            new TextBlock { Text = "Description" }, description,
+            new TextBlock { Text = "Entry date (yyyy-MM-dd HH:mm)" }, entryDate
+        } };
+        var status = new TextBlock { TextWrapping = TextWrapping.Wrap, Foreground = Brushes.Orange };
+        var save = new Button { Content = "Save", Classes = { "accent" }, MinWidth = 110 };
+        var cancel = new Button { Content = "Cancel", MinWidth = 100 };
+        var dialog = CreateActivityEditorWindow(isEdit ? "Edit ledger entry" : "Add ledger entry", form, status, save, cancel, 540, 560);
+        cancel.Click += (_, _) => dialog.Close();
+        save.Click += async (_, _) =>
+        {
+            if (!Enum.TryParse<LedgerEntryType>(type.SelectedItem?.ToString(), true, out var parsedType) ||
+                parsedType == LedgerEntryType.Payment ||
+                !decimal.TryParse(amount.Text, out var parsedAmount) || parsedAmount <= 0 ||
+                string.IsNullOrWhiteSpace(description.Text) ||
+                !DateTime.TryParse(entryDate.Text, out var parsedDate))
+            { status.Text = "Choose a valid entry type, positive amount, description and date."; return; }
+            await using var db = new PharmacyDbContext(PharmacyDb.Options());
+            LedgerEntry record;
+            if (isEdit)
+            {
+                record = await db.LedgerEntries.FirstOrDefaultAsync(x => x.Id == existing!.Id && x.CustomerId == selectedCustomerId.Value);
+                if (record is null) { status.Text = "The ledger entry could not be found."; return; }
+                if (record.Type == LedgerEntryType.Payment)
+                { status.Text = "Payment ledger entries must be edited from the Payments tab."; return; }
+            }
+            else
+            {
+                record = new LedgerEntry { CustomerId = selectedCustomerId.Value, RecordedBy = viewModel.User.Username };
+                db.LedgerEntries.Add(record);
+            }
+            record.Type = parsedType;
+            record.Amount = parsedAmount;
+            record.Description = description.Text.Trim();
+            record.EntryDate = parsedDate;
+            await db.SaveChangesAsync();
+            dialog.Close();
+            SetActivityStatus(isEdit ? "Ledger entry updated." : "Ledger entry added.");
+            await RefreshCustomerWorkspaceAsync();
+        };
+        await dialog.ShowDialog(this);
+    }
+
+    private static Window CreateActivityEditorWindow(string title, Control form, TextBlock status, Button save, Button cancel, double width, double height)
+    {
+        var content = new Grid
+        {
+            RowDefinitions = CreateRows(GridLength.Star, GridLength.Auto),
+            Children =
+            {
+                new ScrollViewer { Content = form, VerticalScrollBarVisibility = ScrollBarVisibility.Auto },
+                new StackPanel
+                {
+                    Spacing = 8, Margin = new Thickness(16),
+                    Children =
+                    {
+                        status,
+                        new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right, Spacing = 8, Children = { save, cancel } }
+                    }
+                }
+            }
+        };
+        Grid.SetRow(content.Children[1], 1);
+        return new Window
+        {
+            Title = title, Width = width, Height = height, MinWidth = 480, MinHeight = 420,
+            WindowStartupLocation = WindowStartupLocation.CenterOwner, CanResize = true, Content = content
+        };
     }
 
     private async Task AddSubscriptionAsync()
