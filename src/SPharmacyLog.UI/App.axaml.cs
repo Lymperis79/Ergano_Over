@@ -16,6 +16,8 @@ public partial class App : Application
 
     public override async void OnFrameworkInitializationCompleted()
     {
+        AppearanceService.Load();
+        AppearanceService.Apply();
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
             var startupWindow = new Window
