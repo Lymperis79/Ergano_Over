@@ -1250,14 +1250,12 @@ public partial class MainWindow : Window
         var borrowingTab = BuildBorrowingsTab();
         var historyTab = BuildCustomerHistoryTab();
         var subscriptionsTab = BuildSubscriptionsTab();
-        var paymentsTab = BuildPaymentsTab();
         var ledgerTab = BuildLedgerTab();
         borrowingTab.IsVisible = CanAccessMenu(MenuBorrowing);
         historyTab.IsVisible = CanAccessMenu(MenuBorrowing);
         subscriptionsTab.IsVisible = CanAccessMenu(MenuSubscriptions);
-        paymentsTab.IsVisible = CanAccessMenu(MenuPayments);
         ledgerTab.IsVisible = CanAccessMenu(MenuPayments);
-        customerTabs = new TabControl { Items = { overviewTab, details, borrowingTab, historyTab, subscriptionsTab, paymentsTab, ledgerTab }, Margin = new Thickness(12) };
+        customerTabs = new TabControl { Items = { overviewTab, details, borrowingTab, historyTab, subscriptionsTab, ledgerTab }, Margin = new Thickness(12) };
         // Use a Grid rather than a StackPanel so the TabControl receives a finite
         // height. Otherwise its tab content (including the Borrowings ScrollViewer)
         // is measured with infinite height and cannot scroll vertically.
@@ -2086,7 +2084,6 @@ public partial class MainWindow : Window
         currentLedgerEntries = ledger;
         subscriptionList.ItemsSource = subscriptions.Select(x => $"{GetSubscriptionNumber(x)} | {x.Title} | {Tr.Loc.TranslateText(x.Status.ToString())} | Next: {x.NextDueDate:dd/MM/yyyy} | Expires: {x.ExpiryDate?.ToString("dd/MM/yyyy") ?? "—"} | {x.Frequency}").ToList();
         subscriptionHistoryList.ItemsSource = executedSubscriptions.Select(x => $"{GetSubscriptionNumber(x)} | {x.Title} | Last changed {ToLocalSubscriptionTime(x.LastModifiedAt):dd/MM/yyyy HH:mm}").ToList();
-        paymentList.ItemsSource = payments.Select(x => $"{x.PaidAt:dd/MM/yyyy HH:mm} | {x.Amount:C} | {x.Method} | {x.Reference}").ToList();
         ledgerList.ItemsSource = ledger.Select(x => $"{x.EntryDate:dd/MM/yyyy HH:mm} | {x.Type} | {x.Amount:C} | {x.Description}").ToList();
         ApplyTranslations();
     }
