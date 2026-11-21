@@ -145,7 +145,7 @@ public partial class MainWindow : Window
     {
         void TranslateDialog()
         {
-            dialog.Title = Tr.Loc.TranslateText(dialog.Title);
+            dialog.Title = Tr.Loc.TranslateText(dialog.Title ?? string.Empty);
             foreach (var control in dialog.GetVisualDescendants().OfType<Control>())
             {
                 switch (control)
