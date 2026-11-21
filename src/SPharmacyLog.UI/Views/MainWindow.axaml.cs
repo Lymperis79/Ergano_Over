@@ -1021,7 +1021,7 @@ public partial class MainWindow : Window
                 record = new CalendarNote
                 {
                     CalendarDate = calendarDate.Date,
-                    CreatedBy = viewModel.User.Username,
+                    CreatedBy = viewModel.User.Username ?? string.Empty,
                     CreatedAt = DateTime.UtcNow
                 };
                 db.CalendarNotes.Add(record);
