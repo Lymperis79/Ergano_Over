@@ -22,11 +22,5 @@
     <ProjectReference Include="..\ErganiManager.Licensing\ErganiManager.Licensing.csproj" />
   </ItemGroup>
 
-  <!-- Keep each Avalonia XAML code-behind file nested under its matching .axaml view in Visual Studio. -->
-  <ItemGroup>
-    <Compile Update="Views\**\*.axaml.cs">
-      <DependentUpon>%(Filename)</DependentUpon>
-    </Compile>
-  </ItemGroup>
 
 </Project>
