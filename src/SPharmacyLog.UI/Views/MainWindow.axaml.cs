@@ -151,7 +151,7 @@ public partial class MainWindow : Window
 
     private void ShowCustomers()
     {
-        customerFields.Clear(); activityFields.Clear(); selectedCustomerId = null;
+        customerFields.Clear(); activityFields.Clear(); gs1ParsedFields.Clear(); selectedCustomerId = null; currentParsedPack = null;
         customerSearch = new TextBox { Watermark = Tr.Loc["Customers.Search"], Margin = new Thickness(0, 0, 0, 10) };
         customerList = new ListBox { MinWidth = 300 };
         customerStatus = new TextBlock { Foreground = Brushes.LightGreen, Margin = new Thickness(0, 8, 0, 0) };
@@ -254,7 +254,16 @@ public partial class MainWindow : Window
             {
                 new TextBlock { Text = "PHARMACEUTICAL PACK SCAN", FontSize = 16, FontWeight = FontWeight.Bold },
                 new TextBlock { Text = "Scan the 2D DataMatrix. The original scanner text is retained exactly; the fields below are extracted from GS1 Application Identifiers.", TextWrapping = TextWrapping.Wrap },
-                gs1ScanInput,
+                new StackPanel
+                {
+                    Orientation = Orientation.Horizontal,
+                    Spacing = 8,
+                    Children =
+                    {
+                        gs1ScanInput,
+                        CreateGs1ParseButton()
+                    }
+                },
                 gs1ScanStatus
             }
         };
@@ -262,18 +271,22 @@ public partial class MainWindow : Window
         var detailsGrid = new Grid
         {
             ColumnDefinitions = new ColumnDefinitions("*,*"),
-            RowDefinitions = new RowDefinitions("Auto,Auto,Auto,Auto")
+            RowDefinitions = new RowDefinitions("Auto,Auto,Auto,Auto,Auto")
         };
         AddGs1Detail(detailsGrid, "GTIN-14 (AI 01)", "Gtin14", 0, 0);
         AddGs1Detail(detailsGrid, "Serial number (AI 21)", "SerialNumber", 0, 1);
         AddGs1Detail(detailsGrid, "Expiry date (AI 17)", "ExpiryDate", 1, 0);
         AddGs1Detail(detailsGrid, "Batch / lot (AI 10)", "BatchLot", 1, 1);
         AddGs1Detail(detailsGrid, "Raw scanner payload", "RawPayload", 2, 0, 2);
+        AddGs1Detail(detailsGrid, "Pack status", "HmvoStatus", 3, 0);
+        AddGs1Detail(detailsGrid, "Medicine catalogue match", "MedicineMatch", 3, 1);
+        gs1ParsedFields["HmvoStatus"].Text = SerializedPackStatuses.Active;
+        gs1ParsedFields["MedicineMatch"].Text = "Not matched";
         var eofPanel = new StackPanel { Spacing = 3, Margin = new Thickness(5) };
         eofPanel.Children.Add(new TextBlock { Text = "Greek EOF / NTIN barcode (optional mapping)" });
         gs1EofEan13Input = new TextBox { Watermark = "13-digit 0280... EOF barcode", MaxLength = 13 };
         eofPanel.Children.Add(gs1EofEan13Input);
-        Grid.SetRow(eofPanel, 3);
+        Grid.SetRow(eofPanel, 4);
         Grid.SetColumnSpan(eofPanel, 2);
         detailsGrid.Children.Add(eofPanel);
 
@@ -303,6 +316,13 @@ public partial class MainWindow : Window
             }
         };
         return new TabItem { Header = "Borrowings", Content = new ScrollViewer { Content = panel } };
+    }
+
+    private Button CreateGs1ParseButton()
+    {
+        var button = new Button { Content = "Parse scan", MinWidth = 110 };
+        button.Click += async (_, _) => await PreviewGs1ScanAsync();
+        return button;
     }
 
     private void AddGs1Detail(Grid grid, string label, string key, int row, int column, int columnSpan = 1)
@@ -356,10 +376,12 @@ public partial class MainWindow : Window
                 .FirstOrDefaultAsync();
             if (!string.IsNullOrWhiteSpace(eofBarcode))
                 gs1EofEan13Input.Text = eofBarcode;
+            gs1ParsedFields["MedicineMatch"].Text = medicine.Name;
             gs1ScanStatus.Text += $" Medicine matched: {medicine.Name}.";
         }
         else
         {
+            gs1ParsedFields["MedicineMatch"].Text = "Not matched — enter medicine manually";
             gs1ScanStatus.Text += " No medicine catalogue match yet; you can enter the medicine name and EOF barcode manually.";
         }
     }
@@ -367,6 +389,8 @@ public partial class MainWindow : Window
     private void ClearGs1ParsedFields()
     {
         foreach (var field in gs1ParsedFields.Values) field.Text = string.Empty;
+        if (gs1ParsedFields.TryGetValue("HmvoStatus", out var status)) status.Text = SerializedPackStatuses.Active;
+        if (gs1ParsedFields.TryGetValue("MedicineMatch", out var match)) match.Text = "Not matched";
     }
 
     private TabItem BuildSubscriptionsTab()
