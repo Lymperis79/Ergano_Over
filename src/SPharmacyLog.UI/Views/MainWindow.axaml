@@ -8,6 +8,7 @@
       <StackPanel Orientation="Horizontal" Spacing="12">
         <TextBlock Text="S Pharmacy Log" FontSize="24" FontWeight="Bold" />
         <TextBlock x:Name="UserLabel" VerticalAlignment="Center" Foreground="Gray" />
+        <ComboBox x:Name="LanguageBox" Width="120" SelectedIndex="0" SelectionChanged="OnLanguageChanged"><ComboBoxItem Content="English"/><ComboBoxItem Content="Ελληνικά"/></ComboBox>
       </StackPanel>
       <StackPanel x:Name="NavigationPanel" Orientation="Horizontal" Spacing="6" />
     </StackPanel>
