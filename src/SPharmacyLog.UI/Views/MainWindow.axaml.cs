@@ -733,7 +733,7 @@ public partial class MainWindow : Window
         var d = (19 * c + 15) % 30;
         var e = (2 * a + 4 * b - d + 34) % 7;
         var month = (d + e + 114) / 31;
-        var day = ((d + e + 114) % 31) + 1;
+        var day = (d + e + 114) % 31;
         var offset = year >= 2100 ? 14 : 13;
         var orthodoxEaster = new DateTime(year, month, day).AddDays(offset);
 
