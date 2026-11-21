@@ -63,6 +63,7 @@ public partial class MainWindow : Window
         viewModel = new MainWindowViewModel(user);
         DataContext = viewModel;
         UserLabel.Text = viewModel.UserDisplay;
+        ApplyCompanyBranding();
         Tr.Loc.LanguageChanged += (_, _) =>
         {
             BuildNavigation();
@@ -77,9 +78,6 @@ public partial class MainWindow : Window
         if (CanAccessMenu(MenuDashboard)) ShowDashboard();
         else if (CanAccessMenu(MenuCalendar)) ShowExpiryCalendar();
         else if (CanAccessMenu(MenuCustomers)) ShowCustomers();
-        else if (CanAccessMenu(MenuBorrowing)) ShowPlaceholder(Tr.Loc["Navigation.Borrowing"]);
-        else if (CanAccessMenu(MenuSubscriptions)) ShowPlaceholder(Tr.Loc["Navigation.Subscriptions"]);
-        else if (CanAccessMenu(MenuPayments)) ShowPlaceholder(Tr.Loc["Navigation.Payments"]);
         else if (CanAccessMenu(MenuReports)) ShowReports();
         else ShowNoMenuAccess();
     }
@@ -104,7 +102,11 @@ public partial class MainWindow : Window
             Margin = new Thickness(4, 12, 0, 0)
         });
 
-        foreach (var item in ConfigurableMenus.Where(item => item.Key != MenuReports))
+        foreach (var item in ConfigurableMenus.Where(item =>
+                     item.Key != MenuReports &&
+                     item.Key != MenuBorrowing &&
+                     item.Key != MenuSubscriptions &&
+                     item.Key != MenuPayments))
         {
             if (!CanAccessMenu(item.Key)) continue;
             Action action = item.Key switch
@@ -144,6 +146,7 @@ public partial class MainWindow : Window
                 Margin = new Thickness(4, 12, 0, 0)
             });
             AddNavigationButton("Navigation.Users", () => _ = ShowUsersAsync());
+            AddNavigationButton("Company settings", OpenCompanySettings);
             AddNavigationButton("Weather settings", OpenWeatherSettings);
         }
     }
@@ -241,6 +244,34 @@ public partial class MainWindow : Window
             todaySummary.Text = "Unable to load today's status: " + ex.Message;
         }
         ApplyTranslations();
+    }
+
+    private void ApplyCompanyBranding()
+    {
+        var settings = CompanySettingsService.Load();
+        CompanyNameLabel.Text = string.IsNullOrWhiteSpace(settings.Name) ? "S Pharmacy Log" : settings.Name;
+        CompanyLogo.Source = null;
+        CompanyLogo.IsVisible = false;
+        CompanyDefaultIcon.IsVisible = true;
+        if (!string.IsNullOrWhiteSpace(settings.LogoFile) && File.Exists(settings.LogoFile))
+        {
+            try
+            {
+                CompanyLogo.Source = new Bitmap(settings.LogoFile);
+                CompanyLogo.IsVisible = true;
+                CompanyDefaultIcon.IsVisible = false;
+            }
+            catch { }
+        }
+    }
+
+    private async void OpenCompanySettings()
+    {
+        if (viewModel.User.Role != PharmacyRole.Admin) return;
+        var dialog = new CompanySettingsWindow();
+        AttachDialogLocalization(dialog);
+        var saved = await dialog.ShowDialog<bool>(this);
+        if (saved) ApplyCompanyBranding();
     }
 
     private async void OpenWeatherSettings()
