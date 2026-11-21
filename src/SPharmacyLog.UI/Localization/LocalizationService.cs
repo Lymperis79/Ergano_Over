@@ -313,19 +313,32 @@ public sealed class LocalizationService : ILocalizationService
     {
         if (string.IsNullOrEmpty(text)) return text;
 
-        if (CurrentLanguage == AppLanguage.Greek && UiGreek.TryGetValue(text, out var exactGreek))
-            return exactGreek;
+        // Include both keyed application resources and literal UI phrases. This
+        // lets controls created in one language switch back without rebuilding.
+        var translations = English.Keys
+            .Where(Greek.ContainsKey)
+            .Select(key => new KeyValuePair<string, string>(English[key], Greek[key]))
+            .Concat(UiGreek)
+            .GroupBy(pair => pair.Key, StringComparer.Ordinal)
+            .Select(group => group.First())
+            .ToList();
 
-        if (CurrentLanguage == AppLanguage.English)
+        if (CurrentLanguage == AppLanguage.Greek)
         {
-            var exactEnglish = UiGreek.FirstOrDefault(pair => pair.Value == text);
+            var exactGreek = translations.FirstOrDefault(pair => pair.Key == text);
+            if (!string.IsNullOrEmpty(exactGreek.Key))
+                return exactGreek.Value;
+        }
+        else
+        {
+            var exactEnglish = translations.FirstOrDefault(pair => pair.Value == text);
             if (!string.IsNullOrEmpty(exactEnglish.Key))
                 return exactEnglish.Key;
         }
 
         // For composite text, translate phrases and labelled values only. This
         // avoids changing a customer's actual name, address or other entered data.
-        var safePhrases = UiGreek.Where(pair => IsSafePhrase(pair.Key));
+        var safePhrases = translations.Where(pair => IsSafePhrase(pair.Key));
         var normalized = text;
         foreach (var pair in safePhrases.OrderByDescending(pair => pair.Value.Length))
             normalized = normalized.Replace(pair.Value, pair.Key, StringComparison.Ordinal);
