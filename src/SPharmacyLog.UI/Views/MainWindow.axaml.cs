@@ -532,6 +532,7 @@ public partial class MainWindow : Window
         var notesByDate = visibleNotes
             .GroupBy(note => note.CalendarDate.Date)
             .ToDictionary(group => group.Key, group => group.ToList());
+        var holidaysByDate = GetGreekPublicHolidays(displayedMonth.Year);
 
         calendarPanel.Children.Clear();
         var grid = new Grid
@@ -603,6 +604,18 @@ public partial class MainWindow : Window
                     }
                     if (dayNotes.Count > 2)
                         dayContent.Children.Add(new TextBlock { Text = $"+{dayNotes.Count - 2} notes", FontSize = 9, Foreground = Brushes.Gray });
+                }
+
+                if (holidaysByDate.TryGetValue(date, out var holidayName))
+                {
+                    dayContent.Children.Add(new TextBlock
+                    {
+                        Text = "★ " + Tr.Loc.TranslateText(holidayName),
+                        FontSize = 10,
+                        FontWeight = FontWeight.SemiBold,
+                        Foreground = new SolidColorBrush(Color.Parse("#F2C66D")),
+                        TextWrapping = TextWrapping.Wrap
+                    });
                 }
 
                 if (subscriptionsByDate.TryGetValue(date, out var daySubscriptions))
@@ -698,6 +711,39 @@ public partial class MainWindow : Window
         await LoadSelectedDayAsync();
     }
 
+    private static Dictionary<DateTime, string> GetGreekPublicHolidays(int year)
+    {
+        var holidays = new Dictionary<DateTime, string>
+        {
+            [new DateTime(year, 1, 1)] = "New Year's Day",
+            [new DateTime(year, 1, 6)] = "Epiphany",
+            [new DateTime(year, 3, 25)] = "Greek Independence Day",
+            [new DateTime(year, 5, 1)] = "Labour Day",
+            [new DateTime(year, 8, 15)] = "Assumption of the Virgin Mary",
+            [new DateTime(year, 10, 28)] = "Ohi Day",
+            [new DateTime(year, 12, 25)] = "Christmas Day",
+            [new DateTime(year, 12, 26)] = "Synaxis of the Mother of God"
+        };
+
+        // Orthodox Easter is calculated on the Julian calendar and converted
+        // to the Gregorian calendar (13 days in 1900–2099, 14 days in 2100–2199).
+        var a = year % 4;
+        var b = year % 7;
+        var c = year % 19;
+        var d = (19 * c + 15) % 30;
+        var e = (2 * a + 4 * b - d + 34) % 7;
+        var month = (d + e + 114) / 31;
+        var day = ((d + e + 114) % 31) + 1;
+        var offset = year >= 2100 ? 14 : 13;
+        var orthodoxEaster = new DateTime(year, month, day).AddDays(offset);
+
+        holidays[orthodoxEaster.AddDays(-48)] = "Clean Monday";
+        holidays[orthodoxEaster.AddDays(-2)] = "Good Friday";
+        holidays[orthodoxEaster] = "Orthodox Easter Sunday";
+        holidays[orthodoxEaster.AddDays(1)] = "Easter Monday";
+        return holidays;
+    }
+
     private DateTime SelectedCalendarDate { get; set; } = DateTime.Today;
 
     private async Task LoadSelectedDayAsync()
@@ -717,6 +763,9 @@ public partial class MainWindow : Window
             .Concat(subscriptions.Select(subscription =>
                 $"{GetSubscriptionNumber(subscription)} | {subscription.Customer?.CustomerNumber} | {subscription.Customer?.FullName} | {subscription.Title} | due {subscription.NextDueDate:dd/MM/yyyy}"))
             .ToList();
+        var holidays = GetGreekPublicHolidays(SelectedCalendarDate.Year);
+        if (holidays.TryGetValue(SelectedCalendarDate.Date, out var holidayName))
+            dayItems.Insert(0, "★ " + Tr.Loc.TranslateText(holidayName));
         dayRecords.ItemsSource = dayItems;
 
         var username = viewModel.User.Username;
@@ -736,38 +785,107 @@ public partial class MainWindow : Window
             });
             foreach (var note in notes)
             {
-                var noteButton = new Button
+                var isOwner = string.Equals(note.CreatedBy, viewModel.User.Username, StringComparison.Ordinal);
+                var details = new StackPanel
                 {
-                    HorizontalAlignment = HorizontalAlignment.Stretch,
-                    HorizontalContentAlignment = HorizontalAlignment.Stretch,
-                    Padding = new Thickness(10),
-                    Background = new SolidColorBrush(Color.Parse("#202F40")),
-                    BorderBrush = new SolidColorBrush(Color.Parse("#3A536B")),
-                    BorderThickness = new Thickness(1),
-                    Content = new StackPanel
+                    Spacing = 3,
+                    Children =
                     {
-                        Spacing = 3,
-                        Children =
+                        new TextBlock { Text = note.Header, FontWeight = FontWeight.Bold },
+                        new TextBlock { Text = note.Note, TextWrapping = TextWrapping.Wrap },
+                        new TextBlock
                         {
-                            new TextBlock { Text = note.Header, FontWeight = FontWeight.Bold },
-                            new TextBlock { Text = note.Note, TextWrapping = TextWrapping.Wrap },
-                            new TextBlock
-                            {
-                                Text = $"{(note.IsShared ? Tr.Loc.TranslateText("Visible to everyone") : Tr.Loc.TranslateText("Private note"))} · {note.CreatedBy} · {DateTime.SpecifyKind(note.CreatedAt, DateTimeKind.Utc).ToLocalTime():dd/MM/yyyy HH:mm}",
-                                FontSize = 10,
-                                Foreground = Brushes.LightGray
-                            }
+                            Text = $"{(note.IsShared ? Tr.Loc.TranslateText("Visible to everyone") : Tr.Loc.TranslateText("Private note"))} · {note.CreatedBy} · {DateTime.SpecifyKind(note.CreatedAt, DateTimeKind.Utc).ToLocalTime():dd/MM/yyyy HH:mm}",
+                            FontSize = 10,
+                            Foreground = Brushes.LightGray
                         }
                     }
                 };
-                noteButton.Click += async (_, _) =>
+                var noteRow = new Grid
                 {
-                    if (note.CreatedBy == viewModel.User.Username)
-                        await OpenCalendarNoteEditorAsync(SelectedCalendarDate, note);
-                    else
-                        await ShowUserMessageAsync(Tr.Loc.TranslateText("Only the creator can edit this note."));
+                    ColumnDefinitions = new ColumnDefinitions
+                    {
+                        new ColumnDefinition(GridLength.Star),
+                        new ColumnDefinition(GridLength.Auto),
+                        new ColumnDefinition(GridLength.Auto)
+                    },
+                    Background = new SolidColorBrush(Color.Parse("#202F40")),
+                    Margin = new Thickness(0, 2)
                 };
-                calendarNotesPanel.Children.Add(noteButton);
+                var detailsBorder = new Border
+                {
+                    Padding = new Thickness(10),
+                    Child = details
+                };
+                noteRow.Children.Add(detailsBorder);
+                if (isOwner)
+                {
+                    var editButton = new Button
+                    {
+                        Content = Tr.Loc.TranslateText("Edit"),
+                        MinWidth = 76,
+                        Margin = new Thickness(4),
+                        VerticalAlignment = VerticalAlignment.Center
+                    };
+                    editButton.Click += async (_, _) => await OpenCalendarNoteEditorAsync(note.CalendarDate, note);
+                    Grid.SetColumn(editButton, 1);
+                    noteRow.Children.Add(editButton);
+
+                    var deleteButton = new Button
+                    {
+                        Content = Tr.Loc.TranslateText("Delete"),
+                        MinWidth = 76,
+                        Margin = new Thickness(4),
+                        VerticalAlignment = VerticalAlignment.Center
+                    };
+                    deleteButton.Click += async (_, _) =>
+                    {
+                        var confirm = new Window
+                        {
+                            Title = Tr.Loc.TranslateText("Delete calendar note"),
+                            Width = 390,
+                            Height = 170,
+                            WindowStartupLocation = WindowStartupLocation.CenterOwner,
+                            CanResize = false
+                        };
+                        var yes = new Button { Content = Tr.Loc.TranslateText("Delete"), MinWidth = 90 };
+                        var no = new Button { Content = Tr.Loc.TranslateText("Cancel"), MinWidth = 90 };
+                        yes.Click += (_, _) => confirm.Close(true);
+                        no.Click += (_, _) => confirm.Close(false);
+                        confirm.Content = new StackPanel
+                        {
+                            Margin = new Thickness(18),
+                            Spacing = 14,
+                            Children =
+                            {
+                                new TextBlock { Text = Tr.Loc.TranslateText("Delete this calendar note?"), TextWrapping = TextWrapping.Wrap },
+                                new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right, Spacing = 8, Children = { no, yes } }
+                            }
+                        };
+                        AttachDialogLocalization(confirm);
+                        if (await confirm.ShowDialog<bool>(this))
+                        {
+                            await using var deleteDb = new PharmacyDbContext(PharmacyDb.Options());
+                            var current = await deleteDb.CalendarNotes.FirstOrDefaultAsync(item => item.Id == note.Id);
+                            if (current is not null && current.CreatedBy == viewModel.User.Username)
+                            {
+                                deleteDb.CalendarNotes.Remove(current);
+                                await deleteDb.SaveChangesAsync();
+                                if (calendarMonthTitle is not null)
+                                    await RenderCalendarAsync(calendarMonthTitle);
+                            }
+                        }
+                    };
+                    Grid.SetColumn(deleteButton, 2);
+                    noteRow.Children.Add(deleteButton);
+                }
+                calendarNotesPanel.Children.Add(new Border
+                {
+                    BorderBrush = new SolidColorBrush(Color.Parse("#3A536B")),
+                    BorderThickness = new Thickness(1),
+                    CornerRadius = new CornerRadius(6),
+                    Child = noteRow
+                });
             }
         }
         dailySummary.Text = string.Format(Tr.Loc["Calendar.DaySummary"], SelectedCalendarDate.ToString("dddd, dd MMM yyyy"), records.Count)
