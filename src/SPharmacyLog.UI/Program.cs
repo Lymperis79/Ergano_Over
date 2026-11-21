@@ -1,1 +1,21 @@
-using Avalonia;namespace SPharmacyLog.UI;internal static class Program{[STAThread]public static void Main(string[] args)=>AppBuilder.Configure<App>().UsePlatformDetect().WithInterFont().LogToTrace().StartWithClassicDesktopLifetime(args);}
+using Avalonia;
+
+namespace SPharmacyLog.UI;
+
+internal static class Program
+{
+    [STAThread]
+    public static void Main(string[] args)
+    {
+        BuildAvaloniaApp()
+            .StartWithClassicDesktopLifetime(args);
+    }
+
+    private static AppBuilder BuildAvaloniaApp()
+    {
+        return AppBuilder.Configure<App>()
+            .UsePlatformDetect()
+            .WithInterFont()
+            .LogToTrace();
+    }
+}
