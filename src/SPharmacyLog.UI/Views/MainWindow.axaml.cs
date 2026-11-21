@@ -2624,14 +2624,26 @@ public partial class MainWindow : Window
             FontSize = 12,
             Margin = new Thickness(2, -2, 2, 4)
         };
-        string DescribeLedgerType(string? selectedType) => Tr.Loc.TranslateText(selectedType switch
+        string DescribeLedgerType(string? selectedType)
         {
-            "Charge" => "Charge: Adds an amount the customer owes; increases the balance.",
-            "Payment" => "Payment: Records money received; reduces the balance and appears in Payment History.",
-            "Adjustment" => "Adjustment: Corrects the customer balance, for example a discount or accounting correction.",
-            "Reversal" => "Reversal: Records a cancellation or reversal of a previous transaction.",
-            _ => "Choose what this ledger entry represents."
-        });
+            var english = selectedType switch
+            {
+                "Charge" => "Adds an amount the customer owes; increases the balance.",
+                "Payment" => "Records money received; reduces the balance and appears in Payment History.",
+                "Adjustment" => "Adds a positive balance correction; increases the amount owed.",
+                "Reversal" => "Records a credit to offset a previous transaction; reduces the balance. It does not automatically delete the original transaction.",
+                _ => "Choose what this ledger entry represents."
+            };
+            var greek = selectedType switch
+            {
+                "Charge" => "Προσθέτει ποσό που οφείλει ο πελάτης και αυξάνει το υπόλοιπο.",
+                "Payment" => "Καταγράφει χρήματα που εισπράχθηκαν, μειώνει το υπόλοιπο και εμφανίζεται στο ιστορικό πληρωμών.",
+                "Adjustment" => "Προσθέτει θετική διόρθωση στο υπόλοιπο και αυξάνει το οφειλόμενο ποσό.",
+                "Reversal" => "Καταγράφει πίστωση για αντιλογισμό προηγούμενης συναλλαγής και μειώνει το υπόλοιπο. Δεν διαγράφει αυτόματα την αρχική συναλλαγή.",
+                _ => "Επιλέξτε τι αντιπροσωπεύει αυτή η εγγραφή."
+            };
+            return Tr.Loc.CurrentLanguage == AppLanguage.Greek ? greek : english;
+        }
         void UpdateLedgerTypeDescription() => typeDescription.Text = DescribeLedgerType(type.SelectedItem?.ToString());
         type.SelectionChanged += (_, _) => UpdateLedgerTypeDescription();
         UpdateLedgerTypeDescription();
