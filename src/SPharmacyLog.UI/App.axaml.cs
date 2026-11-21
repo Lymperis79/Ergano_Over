@@ -1,1 +1,83 @@
-using Avalonia;using Avalonia.Controls;using Avalonia.Controls.ApplicationLifetimes;using Avalonia.Markup.Xaml;using Microsoft.EntityFrameworkCore;using SPharmacyLog.Data;using SPharmacyLog.UI.Views;using SPharmacyLog.UI.Services;namespace SPharmacyLog.UI;public partial class App:Application{public override void Initialize()=>AvaloniaXamlLoader.Load(this);public override async void OnFrameworkInitializationCompleted(){if(ApplicationLifetime is IClassicDesktopStyleApplicationLifetime d){var startup=new Window{Title="S Pharmacy Log",Width=1,Height=1,Opacity=0,ShowInTaskbar=false};d.MainWindow=startup;startup.Show();try{if(!PharmacyLicenseManager.Load()){var activation=new LicenseActivationWindow();await activation.ShowDialog(startup);if(!PharmacyLicenseManager.Result.IsValid){d.Shutdown();return;}}await using var db=new PharmacyDbContext(PharmacyDb.Options());await db.Database.MigrateAsync();var login=new LoginWindow();d.MainWindow=login;login.Show();startup.Close();}catch(Exception ex){var err=new Window{Title="S Pharmacy Log startup error",Width=600,Height=240,Content=new TextBlock{Text=ex.Message,Margin=new Thickness(24),TextWrapping=Avalonia.Media.TextWrapping.Wrap}};d.MainWindow=err;err.Show();startup.Close();}}base.OnFrameworkInitializationCompleted();}}
+using Avalonia;
+using Avalonia.Controls;
+using Avalonia.Controls.ApplicationLifetimes;
+using Avalonia.Media;
+using Avalonia.Markup.Xaml;
+using Microsoft.EntityFrameworkCore;
+using SPharmacyLog.Data;
+using SPharmacyLog.UI.Services;
+using SPharmacyLog.UI.Views;
+
+namespace SPharmacyLog.UI;
+
+public partial class App : Application
+{
+    public override void Initialize()
+    {
+        AvaloniaXamlLoader.Load(this);
+    }
+
+    public override async void OnFrameworkInitializationCompleted()
+    {
+        if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
+        {
+            var startupWindow = new Window
+            {
+                Title = "S Pharmacy Log",
+                Width = 1,
+                Height = 1,
+                Opacity = 0,
+                ShowInTaskbar = false
+            };
+
+            desktop.MainWindow = startupWindow;
+            startupWindow.Show();
+
+            try
+            {
+                if (!PharmacyLicenseManager.Load())
+                {
+                    var activationWindow = new LicenseActivationWindow();
+                    await activationWindow.ShowDialog(startupWindow);
+
+                    if (!PharmacyLicenseManager.Result.IsValid)
+                    {
+                        desktop.Shutdown();
+                        return;
+                    }
+                }
+
+                await using (var database = new PharmacyDbContext(PharmacyDb.Options()))
+                {
+                    await database.Database.MigrateAsync();
+                }
+
+                var loginWindow = new LoginWindow();
+                desktop.MainWindow = loginWindow;
+                loginWindow.Show();
+                startupWindow.Close();
+            }
+            catch (Exception exception)
+            {
+                var errorWindow = new Window
+                {
+                    Title = "S Pharmacy Log startup error",
+                    Width = 600,
+                    Height = 240,
+                    Content = new TextBlock
+                    {
+                        Text = exception.Message,
+                        Margin = new Thickness(24),
+                        TextWrapping = TextWrapping.Wrap
+                    }
+                };
+
+                desktop.MainWindow = errorWindow;
+                errorWindow.Show();
+                startupWindow.Close();
+            }
+        }
+
+        base.OnFrameworkInitializationCompleted();
+    }
+}

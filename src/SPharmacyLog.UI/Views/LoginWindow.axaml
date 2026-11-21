@@ -1,0 +1,17 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="SPharmacyLog.UI.Views.LoginWindow"
+        Title="S Pharmacy Log" Width="460" Height="500" CanResize="False"
+        WindowStartupLocation="CenterScreen">
+  <Grid RowDefinitions="*,Auto">
+    <StackPanel Grid.Row="0" VerticalAlignment="Center" HorizontalAlignment="Center" Width="320" Spacing="14">
+      <TextBlock Text="S Pharmacy Log" FontSize="30" FontWeight="Bold" HorizontalAlignment="Center"/>
+      <TextBlock Text="Prescription, customer and medicine tracking" Foreground="Gray" HorizontalAlignment="Center" TextWrapping="Wrap"/>
+      <TextBox x:Name="UsernameBox" PlaceholderText="Username"/>
+      <TextBox x:Name="PasswordBox" PlaceholderText="Password" PasswordChar="•"/>
+      <TextBlock x:Name="MessageText" TextWrapping="Wrap" Foreground="OrangeRed"/>
+      <Button x:Name="SubmitButton" Content="Sign in" HorizontalAlignment="Stretch" Click="OnSubmitClick"/>
+    </StackPanel>
+    <TextBlock Grid.Row="1" Text="S Pharmacy Log" HorizontalAlignment="Center" Margin="0,0,0,18" Foreground="Gray"/>
+  </Grid>
+</Window>

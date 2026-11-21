@@ -1,0 +1,17 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="SPharmacyLog.UI.Views.MainWindow"
+        Title="S Pharmacy Log" Width="1120" Height="760" MinWidth="900" MinHeight="600"
+        WindowStartupLocation="CenterScreen">
+  <DockPanel>
+    <StackPanel DockPanel.Dock="Top" Margin="12" Spacing="8">
+      <StackPanel Orientation="Horizontal" Spacing="12">
+        <TextBlock Text="S Pharmacy Log" FontSize="24" FontWeight="Bold" />
+        <TextBlock x:Name="UserLabel" VerticalAlignment="Center" Foreground="Gray" />
+        <ComboBox x:Name="LanguageBox" Width="120" SelectedIndex="0" SelectionChanged="OnLanguageChanged"><ComboBoxItem Content="English"/><ComboBoxItem Content="Ελληνικά"/></ComboBox>
+      </StackPanel>
+      <StackPanel x:Name="NavigationPanel" Orientation="Horizontal" Spacing="6" />
+    </StackPanel>
+    <ContentControl x:Name="PageHost" />
+  </DockPanel>
+</Window>

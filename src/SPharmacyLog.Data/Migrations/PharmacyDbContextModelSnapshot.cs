@@ -1,14 +1,152 @@
-using Microsoft.EntityFrameworkCore;using Microsoft.EntityFrameworkCore.Infrastructure;using SPharmacyLog.Data.Entities;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
+using SPharmacyLog.Data.Entities;
+
 namespace SPharmacyLog.Data.Migrations;
+
 [DbContext(typeof(PharmacyDbContext))]
-public sealed class PharmacyDbContextModelSnapshot:ModelSnapshot{
-protected override void BuildModel(ModelBuilder b){b.HasAnnotation("ProductVersion","10.0.13");
-b.Entity<PharmacyUser>(e=>{e.ToTable("Users");e.HasKey(x=>x.Id);e.Property(x=>x.Id).ValueGeneratedOnAdd();e.Property(x=>x.Username).IsRequired();e.Property(x=>x.PasswordHash).IsRequired();e.Property(x=>x.Role).HasConversion<int>();e.Property(x=>x.IsActive);e.Property(x=>x.CanSaveCredentials);e.Property(x=>x.CreatedAt);e.HasIndex(x=>x.Username).IsUnique();});
-b.Entity<Customer>(e=>{e.ToTable("Customers");e.HasKey(x=>x.Id);e.Property(x=>x.Id).ValueGeneratedOnAdd();e.Property(x=>x.CustomerNumber).IsRequired();e.Property(x=>x.FullName).IsRequired();e.Property(x=>x.Phone).IsRequired();e.Property(x=>x.IsActive);e.Property(x=>x.CreatedAt);e.HasIndex(x=>x.CustomerNumber).IsUnique();});
-b.Entity<Prescription>(e=>{e.ToTable("Prescriptions");e.HasKey(x=>x.Id);e.Property(x=>x.Id).ValueGeneratedOnAdd();e.Property(x=>x.MedicineName).IsRequired();e.Property(x=>x.Status).HasConversion<int>();e.Property(x=>x.StartDate);e.Property(x=>x.ExpiryDate);e.Property(x=>x.CreatedAt);e.HasIndex(x=>x.ExpiryDate);e.HasOne(x=>x.Customer).WithMany(x=>x.Prescriptions).HasForeignKey(x=>x.CustomerId).OnDelete(DeleteBehavior.Cascade);});
-b.Entity<MedicineCatalogItem>(e=>{e.ToTable("Medicines");e.HasKey(x=>x.Id);e.Property(x=>x.Id).ValueGeneratedOnAdd();e.Property(x=>x.Name).IsRequired();e.Property(x=>x.IsActive);});
-b.Entity<BorrowingRecord>(e=>{e.ToTable("Borrowings");e.HasKey(x=>x.Id);e.Property(x=>x.Id).ValueGeneratedOnAdd();e.Property(x=>x.MedicineName).IsRequired();e.Property(x=>x.InternalBarcode).IsRequired();e.Property(x=>x.Status).HasConversion<int>();e.Property(x=>x.BorrowedAt);e.Property(x=>x.Quantity);e.HasIndex(x=>x.InternalBarcode).IsUnique();e.HasOne(x=>x.Customer).WithMany(x=>x.Borrowings).HasForeignKey(x=>x.CustomerId).OnDelete(DeleteBehavior.Cascade);});
-b.Entity<Subscription>(e=>{e.ToTable("Subscriptions");e.HasKey(x=>x.Id);e.Property(x=>x.Id).ValueGeneratedOnAdd();e.Property(x=>x.Title).IsRequired();e.Property(x=>x.Frequency).IsRequired();e.Property(x=>x.Status).HasConversion<int>();e.HasOne(x=>x.Customer).WithMany(x=>x.Subscriptions).HasForeignKey(x=>x.CustomerId).OnDelete(DeleteBehavior.Cascade);});
-b.Entity<Payment>(e=>{e.ToTable("Payments");e.HasKey(x=>x.Id);e.Property(x=>x.Id).ValueGeneratedOnAdd();e.Property(x=>x.Amount);e.Property(x=>x.Method).IsRequired();e.Property(x=>x.RecordedBy).IsRequired();e.HasOne(x=>x.Customer).WithMany(x=>x.Payments).HasForeignKey(x=>x.CustomerId).OnDelete(DeleteBehavior.Cascade);});
-b.Entity<LedgerEntry>(e=>{e.ToTable("LedgerEntries");e.HasKey(x=>x.Id);e.Property(x=>x.Id).ValueGeneratedOnAdd();e.Property(x=>x.Type).HasConversion<int>();e.Property(x=>x.Amount);e.Property(x=>x.Description).IsRequired();e.Property(x=>x.RecordedBy).IsRequired();e.HasIndex(x=>new{x.CustomerId,x.EntryDate});e.HasOne(x=>x.Customer).WithMany(x=>x.LedgerEntries).HasForeignKey(x=>x.CustomerId).OnDelete(DeleteBehavior.Cascade);});
-}}
+public sealed class PharmacyDbContextModelSnapshot : ModelSnapshot
+{
+    protected override void BuildModel(ModelBuilder modelBuilder)
+    {
+        modelBuilder.HasAnnotation("ProductVersion", "10.0.13");
+        modelBuilder.HasAnnotation("Relational:MaxIdentifierLength", 64);
+
+        modelBuilder.Entity<PharmacyUser>(entity =>
+        {
+            entity.ToTable("Users");
+            entity.HasKey(user => user.Id);
+            entity.Property(user => user.Id).ValueGeneratedOnAdd();
+            entity.Property(user => user.Username).IsRequired();
+            entity.Property(user => user.PasswordHash).IsRequired();
+            entity.Property(user => user.Role).HasConversion<int>();
+            entity.Property(user => user.AllowedMenus);
+            entity.Property(user => user.IsActive);
+            entity.Property(user => user.CanSaveCredentials);
+            entity.Property(user => user.CreatedAt);
+            entity.HasIndex(user => user.Username).IsUnique();
+        });
+
+        modelBuilder.Entity<Customer>(entity =>
+        {
+            entity.ToTable("Customers");
+            entity.HasKey(customer => customer.Id);
+            entity.Property(customer => customer.Id).ValueGeneratedOnAdd();
+            entity.Property(customer => customer.CustomerNumber).IsRequired();
+            entity.Property(customer => customer.FullName).IsRequired();
+            entity.Property(customer => customer.Phone).IsRequired();
+            entity.Property(customer => customer.Address);
+            entity.Property(customer => customer.Notes);
+            entity.Property(customer => customer.IsActive);
+            entity.Property(customer => customer.CreatedAt);
+            entity.HasIndex(customer => customer.CustomerNumber).IsUnique();
+        });
+
+        modelBuilder.Entity<Prescription>(entity =>
+        {
+            entity.ToTable("Prescriptions");
+            entity.HasKey(prescription => prescription.Id);
+            entity.Property(prescription => prescription.Id).ValueGeneratedOnAdd();
+            entity.Property(prescription => prescription.PrescriptionNumber);
+            entity.Property(prescription => prescription.MedicineName).IsRequired();
+            entity.Property(prescription => prescription.Barcode);
+            entity.Property(prescription => prescription.StartDate);
+            entity.Property(prescription => prescription.ExpiryDate);
+            entity.Property(prescription => prescription.Status).HasConversion<int>();
+            entity.Property(prescription => prescription.Notes);
+            entity.Property(prescription => prescription.CreatedAt);
+            entity.HasIndex(prescription => prescription.ExpiryDate);
+            entity.HasOne(prescription => prescription.Customer)
+                .WithMany(customer => customer.Prescriptions)
+                .HasForeignKey(prescription => prescription.CustomerId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<MedicineCatalogItem>(entity =>
+        {
+            entity.ToTable("Medicines");
+            entity.HasKey(medicine => medicine.Id);
+            entity.Property(medicine => medicine.Id).ValueGeneratedOnAdd();
+            entity.Property(medicine => medicine.Name).IsRequired();
+            entity.Property(medicine => medicine.Barcode);
+            entity.Property(medicine => medicine.Notes);
+            entity.Property(medicine => medicine.IsActive);
+        });
+
+        modelBuilder.Entity<BorrowingRecord>(entity =>
+        {
+            entity.ToTable("Borrowings");
+            entity.HasKey(borrowing => borrowing.Id);
+            entity.Property(borrowing => borrowing.Id).ValueGeneratedOnAdd();
+            entity.Property(borrowing => borrowing.MedicineName).IsRequired();
+            entity.Property(borrowing => borrowing.OriginalBarcode);
+            entity.Property(borrowing => borrowing.InternalBarcode).IsRequired();
+            entity.Property(borrowing => borrowing.Quantity);
+            entity.Property(borrowing => borrowing.BorrowedAt);
+            entity.Property(borrowing => borrowing.DueDate);
+            entity.Property(borrowing => borrowing.ReturnedAt);
+            entity.Property(borrowing => borrowing.Status).HasConversion<int>();
+            entity.Property(borrowing => borrowing.Value);
+            entity.Property(borrowing => borrowing.Notes);
+            entity.HasIndex(borrowing => borrowing.InternalBarcode).IsUnique();
+            entity.HasOne(borrowing => borrowing.Customer)
+                .WithMany(customer => customer.Borrowings)
+                .HasForeignKey(borrowing => borrowing.CustomerId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<Subscription>(entity =>
+        {
+            entity.ToTable("Subscriptions");
+            entity.HasKey(subscription => subscription.Id);
+            entity.Property(subscription => subscription.Id).ValueGeneratedOnAdd();
+            entity.Property(subscription => subscription.Title).IsRequired();
+            entity.Property(subscription => subscription.Barcode);
+            entity.Property(subscription => subscription.StartDate);
+            entity.Property(subscription => subscription.NextDueDate);
+            entity.Property(subscription => subscription.ExpiryDate);
+            entity.Property(subscription => subscription.Frequency).IsRequired();
+            entity.Property(subscription => subscription.Status).HasConversion<int>();
+            entity.Property(subscription => subscription.Notes);
+            entity.HasOne(subscription => subscription.Customer)
+                .WithMany(customer => customer.Subscriptions)
+                .HasForeignKey(subscription => subscription.CustomerId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<Payment>(entity =>
+        {
+            entity.ToTable("Payments");
+            entity.HasKey(payment => payment.Id);
+            entity.Property(payment => payment.Id).ValueGeneratedOnAdd();
+            entity.Property(payment => payment.Amount);
+            entity.Property(payment => payment.PaidAt);
+            entity.Property(payment => payment.Method).IsRequired();
+            entity.Property(payment => payment.Reference);
+            entity.Property(payment => payment.Notes);
+            entity.Property(payment => payment.RecordedBy).IsRequired();
+            entity.HasOne(payment => payment.Customer)
+                .WithMany(customer => customer.Payments)
+                .HasForeignKey(payment => payment.CustomerId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<LedgerEntry>(entity =>
+        {
+            entity.ToTable("LedgerEntries");
+            entity.HasKey(entry => entry.Id);
+            entity.Property(entry => entry.Id).ValueGeneratedOnAdd();
+            entity.Property(entry => entry.Type).HasConversion<int>();
+            entity.Property(entry => entry.Amount);
+            entity.Property(entry => entry.EntryDate);
+            entity.Property(entry => entry.Description).IsRequired();
+            entity.Property(entry => entry.SourceReference);
+            entity.Property(entry => entry.RecordedBy).IsRequired();
+            entity.HasIndex(entry => new { entry.CustomerId, entry.EntryDate });
+            entity.HasOne(entry => entry.Customer)
+                .WithMany(customer => customer.LedgerEntries)
+                .HasForeignKey(entry => entry.CustomerId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+    }
+}
