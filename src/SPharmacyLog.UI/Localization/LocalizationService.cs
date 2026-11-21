@@ -251,6 +251,8 @@ public sealed class LocalizationService : ILocalizationService
         ["Create accounts, assign roles, choose visible workspace menus and manage access."] = "Δημιουργήστε λογαριασμούς, ορίστε ρόλους και επιλέξτε τα μενού στα οποία έχει πρόσβαση κάθε χρήστης.",
         ["No users found."] = "Δεν βρέθηκαν χρήστες.",
         ["Created {0}"] = "Δημιουργήθηκε {0}",
+        ["All workspace menus"] = "Όλα τα μενού εργασίας",
+        ["Menus: {0} selected"] = "Μενού: {0} επιλεγμένα",
         ["Users"] = "Χρήστες",
         ["New user"] = "Νέος χρήστης",
         ["Edit user"] = "Επεξεργασία χρήστη",
