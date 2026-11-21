@@ -73,8 +73,32 @@ public sealed class LocalizationService : ILocalizationService
         ["Calendar.DaySummary"] = "{0} — {1} ενεργές συνταγές λήγουν",
         ["Common.Queued"] = "Η ενότητα θα υλοποιηθεί σε επόμενο στάδιο.",
         ["Language.English"] = "Αγγλικά",
-        ["Language.Greek"] = "Ελληνικά"
-    };
+        ["Language.Greek"] = "Ελληνικά",
+        ["Dashboard"] = "Πίνακας ελέγχου",
+        ["Total customers"] = "Σύνολο πελατών",
+        ["Active subscriptions"] = "Ενεργές συνδρομές",
+        ["Subscriptions due today"] = "Συνδρομές που λήγουν σήμερα",
+        ["Overdue open subscriptions"] = "Εκπρόθεσμες εκκρεμείς συνδρομές",
+        ["Today's status"] = "Σημερινή κατάσταση",
+        ["Weather"] = "Καιρός",
+        ["Weather: loading…"] = "Καιρός: φόρτωση…",
+        ["Weather settings"] = "Ρυθμίσεις καιρού",
+        ["Weather display"] = "Εμφάνιση καιρού",
+        ["Choose a city or enter coordinates as latitude, longitude."] = "Επιλέξτε πόλη ή εισαγάγετε συντεταγμένες ως γεωγραφικό πλάτος, μήκος.",
+        ["City, country or latitude, longitude"] = "Πόλη, χώρα ή γεωγραφικό πλάτος, μήκος",
+        ["Fields shown on the dashboard"] = "Πεδία που εμφανίζονται στον πίνακα ελέγχου",
+        ["Show location"] = "Εμφάνιση τοποθεσίας",
+        ["Show temperature"] = "Εμφάνιση θερμοκρασίας",
+        ["Show weather condition"] = "Εμφάνιση καιρικών συνθηκών",
+        ["Show feels-like temperature"] = "Εμφάνιση αισθητής θερμοκρασίας",
+        ["Show humidity"] = "Εμφάνιση υγρασίας",
+        ["Show wind speed"] = "Εμφάνιση ταχύτητας ανέμου",
+        ["Feels like"] = "Αίσθηση θερμοκρασίας",
+        ["Humidity"] = "Υγρασία",
+        ["Wind"] = "Άνεμος",
+        ["Save"] = "Αποθήκευση",
+        ["Cancel"] = "Ακύρωση",
+        ["Close"] = "Κλείσιμο"
 
 
     private static readonly IReadOnlyDictionary<string, string> UiGreek = new Dictionary<string, string>
