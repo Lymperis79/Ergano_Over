@@ -32,6 +32,7 @@ public partial class MainWindow : Window
     private TextBlock? calendarMonthTitle;
     private bool showingExpiryCalendar;
     private bool suppressCustomerSelectionChanged;
+    private bool skipNextCustomerSearch;
     private readonly Dictionary<string, TextBox> customerFields = new();
     private ListBox customerList = null!;
     private TextBox customerSearch = null!;
@@ -480,7 +481,8 @@ public partial class MainWindow : Window
         Grid.SetColumn(right, 1);
         layout.Children.Add(right);
         pageHost.Content = layout;
-        _ = SearchCustomersAsync();
+        if (skipNextCustomerSearch) skipNextCustomerSearch = false;
+        else _ = SearchCustomersAsync();
         ClearCustomerForm();
         ApplyTranslations();
     }
@@ -1398,8 +1400,9 @@ public partial class MainWindow : Window
             await db.SaveChangesAsync();
         }
 
-        var customer = subscription.Customer;
-        var barcodeBitmap = CreateSubscriptionBarcodeBitmap(subscription.Barcode);
+        var customer = subscription.Customer!;
+        var subscriptionNumber = GetSubscriptionNumber(subscription);
+        var barcodeBitmap = CreateSubscriptionBarcodeBitmap(subscriptionNumber);
         var details = new StackPanel
         {
             Spacing = 8,
@@ -1407,7 +1410,7 @@ public partial class MainWindow : Window
             Children =
             {
                 new TextBlock { Text = subscription.Title, FontSize = 22, FontWeight = FontWeight.Bold, TextWrapping = TextWrapping.Wrap },
-                new TextBlock { Text = $"{Tr.Loc.TranslateText("Subscription number")}: {subscription.Barcode}", FontSize = 15, FontWeight = FontWeight.SemiBold },
+                new TextBlock { Text = $"{Tr.Loc.TranslateText("Subscription number")}: {subscriptionNumber}", FontSize = 15, FontWeight = FontWeight.SemiBold },
                 new Image { Source = barcodeBitmap, Width = 230, Height = 190, Stretch = Stretch.Uniform, HorizontalAlignment = HorizontalAlignment.Center },
                 new TextBlock { Text = $"{Tr.Loc.TranslateText("Customer")}: {customer.CustomerNumber} | {customer.FullName}", TextWrapping = TextWrapping.Wrap },
                 new TextBlock { Text = $"{Tr.Loc.TranslateText("Address")}: {customer.Address}, {customer.City} {customer.Postcode}", TextWrapping = TextWrapping.Wrap },
@@ -1469,6 +1472,7 @@ public partial class MainWindow : Window
 
     private async Task OpenCustomerFromSubscriptionAsync(int customerId, Subscription? editSubscription)
     {
+        skipNextCustomerSearch = true;
         ShowCustomers();
         await SearchCustomersAsync();
         var customerItem = customerList.Items.OfType<CustomerListItem>().FirstOrDefault(item => item.Id == customerId);
