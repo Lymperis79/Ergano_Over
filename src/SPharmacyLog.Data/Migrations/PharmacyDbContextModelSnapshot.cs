@@ -10,6 +10,7 @@ public sealed class PharmacyDbContextModelSnapshot : ModelSnapshot
     protected override void BuildModel(ModelBuilder modelBuilder)
     {
         modelBuilder.HasAnnotation("ProductVersion", "10.0.13");
+        modelBuilder.HasAnnotation("Relational:MaxIdentifierLength", 64);
 
         modelBuilder.Entity<PharmacyUser>(entity =>
         {
