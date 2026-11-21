@@ -109,7 +109,7 @@ public sealed class AddSubscriptionStatusAndAudit : Migration
                     Details text NULL,
                     INDEX IX_SubscriptionAuditEntries_SubscriptionId_ChangedAt (SubscriptionId, ChangedAt),
                     CONSTRAINT FK_SubscriptionAuditEntries_Subscriptions_SubscriptionId
-                        FOREIGN KEY (SubscriptionId) REFERENCES Subscriptions(Id) ON DELETE CASCADE
+                        FOREIGN KEY (SubscriptionId) REFERENCES Subscriptions(Id) ON DELETE RESTRICT
                 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
                 INSERT INTO SubscriptionAuditEntries
                     (SubscriptionId, Action, PreviousStatus, NewStatus, ChangedBy, ChangedAt, Details)
