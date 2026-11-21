@@ -393,7 +393,6 @@ public sealed class LocalizationService : ILocalizationService
         ["GS1 scan parsed."] = "Η σάρωση GS1 αναλύθηκε.",
         ["Medicine borrowing added."] = "Ο δανεισμός φαρμάκου προστέθηκε.",
         ["Borrowing updated."] = "Ο δανεισμός ενημερώθηκε.",
-        ["Medicine name is required."] = "Το όνομα του φαρμάκου είναι υποχρεωτικό."
         ["Scan this barcode with your scanner"] = "Σαρώστε αυτό το barcode με τον σαρωτή σας"
 
     };
