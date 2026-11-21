@@ -1553,7 +1553,7 @@ public partial class MainWindow : Window
                 expiryDate = parsedExpiry.Date;
             }
             await using var db = new PharmacyDbContext(PharmacyDb.Options());
-            Subscription record;
+            Subscription? record;
             if (isEdit)
             {
                 record = await db.Subscriptions.FirstOrDefaultAsync(x => x.Id == existing!.Id && x.CustomerId == selectedCustomerId.Value);
@@ -1611,7 +1611,7 @@ public partial class MainWindow : Window
             if (!decimal.TryParse(amount.Text, out var parsedAmount) || parsedAmount <= 0 || !DateTime.TryParse(paidAt.Text, out var parsedPaidAt))
             { status.Text = "Enter a positive amount and valid payment date."; return; }
             await using var db = new PharmacyDbContext(PharmacyDb.Options());
-            Payment record;
+            Payment? record;
             decimal oldAmount = 0;
             string? oldReference = null;
             if (isEdit)
@@ -1697,7 +1697,7 @@ public partial class MainWindow : Window
                 !DateTime.TryParse(entryDate.Text, out var parsedDate))
             { status.Text = "Choose a valid entry type, positive amount, description and date."; return; }
             await using var db = new PharmacyDbContext(PharmacyDb.Options());
-            LedgerEntry record;
+            LedgerEntry? record;
             if (isEdit)
             {
                 record = await db.LedgerEntries.FirstOrDefaultAsync(x => x.Id == existing!.Id && x.CustomerId == selectedCustomerId.Value);
