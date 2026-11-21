@@ -60,5 +60,18 @@
       <Setter Property="Padding" Value="12,10"/>
       <Setter Property="Foreground" Value="#C8D4E2"/>
     </Style>
+    <Style Selector="Button.nav:pointerover">
+      <Setter Property="Background" Value="{DynamicResource HoverBrush}"/>
+    </Style>
+    <Style Selector="Button.nav.selected">
+      <Setter Property="Background" Value="{DynamicResource NavActiveBrush}"/>
+      <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}"/>
+      <Setter Property="BorderThickness" Value="1"/>
+      <Setter Property="Foreground" Value="White"/>
+      <Setter Property="FontWeight" Value="SemiBold"/>
+    </Style>
+    <Style Selector="Button.nav.selected:pointerover">
+      <Setter Property="Background" Value="{DynamicResource NavActiveHoverBrush}"/>
+    </Style>
   </Application.Styles>
 </Application>
