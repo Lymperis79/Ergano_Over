@@ -92,10 +92,12 @@ public sealed class DatabaseSetupWindow : Window
         adminFields.IsVisible = false;
         root.Children.Add(new Border { Background = new Avalonia.Media.SolidColorBrush(Avalonia.Media.Color.Parse("#202733")), BorderBrush = new Avalonia.Media.SolidColorBrush(Avalonia.Media.Color.Parse("#354152")), BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(12), Padding = new Thickness(18), Child = adminFields });
 
-        status.Foreground = new Avalonia.Media.SolidColorBrush(Avalonia.Media.Color.Parse("#F0A65A"));\n        root.Children.Add(status);
+        status.Foreground = new Avalonia.Media.SolidColorBrush(Avalonia.Media.Color.Parse("#F0A65A"));
+        root.Children.Add(status);
         var actions = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right, Spacing = 10 };
         actions.Children.Add(testButton);
-        continueButton.Classes.Add("accent");\n        actions.Children.Add(continueButton);
+        continueButton.Classes.Add("accent");
+        actions.Children.Add(continueButton);
         root.Children.Add(actions);
         root.Children.Add(createAdminButton);
         createAdminButton.IsVisible = false;
