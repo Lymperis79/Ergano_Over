@@ -1128,6 +1128,13 @@ public partial class MainWindow : Window
         subscriptionList = new ListBox { MinHeight = 220 };
         var add = new Button { Content = "＋ Add subscription", Classes = { "accent" }, MinWidth = 145, MinHeight = 38 };
         add.Click += async (_, _) => await OpenSubscriptionEditorAsync(null);
+        var view = new Button { Content = "View details", MinWidth = 125, MinHeight = 38 };
+        view.Click += async (_, _) =>
+        {
+            if (subscriptionList.SelectedIndex < 0 || subscriptionList.SelectedIndex >= currentSubscriptions.Count)
+            { SetActivityStatus("Select a subscription first."); return; }
+            await OpenSubscriptionDetailsAsync(currentSubscriptions[subscriptionList.SelectedIndex].Id);
+        };
         var edit = new Button { Content = "Edit selected", MinWidth = 125, MinHeight = 38 };
         edit.Click += async (_, _) =>
         {
@@ -1135,7 +1142,7 @@ public partial class MainWindow : Window
             { SetActivityStatus("Select a subscription to edit."); return; }
             await OpenSubscriptionEditorAsync(currentSubscriptions[subscriptionList.SelectedIndex]);
         };
-        var actions = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, Children = { add, edit } };
+        var actions = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, Children = { add, view, edit } };
         return new TabItem { Header = "Subscriptions", Content = new StackPanel { Spacing = 10, Margin = new Thickness(8), Children =
         {
             new TextBlock { Text = "CUSTOMER SUBSCRIPTIONS", FontSize = 18, FontWeight = FontWeight.Bold },
