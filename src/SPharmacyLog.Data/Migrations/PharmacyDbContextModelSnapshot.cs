@@ -83,6 +83,43 @@ public sealed class PharmacyDbContextModelSnapshot : ModelSnapshot
             entity.Property(medicine => medicine.IsActive);
         });
 
+        modelBuilder.Entity<MedicineBarcode>(entity =>
+        {
+            entity.ToTable("MedicineBarcodes");
+            entity.HasKey(barcode => barcode.Id);
+            entity.Property(barcode => barcode.Id).ValueGeneratedOnAdd();
+            entity.Property(barcode => barcode.BarcodeValue).IsRequired().HasMaxLength(64);
+            entity.Property(barcode => barcode.BarcodeType).IsRequired().HasMaxLength(24);
+            entity.HasIndex(barcode => barcode.BarcodeValue).IsUnique();
+            entity.HasIndex(barcode => barcode.MedicineId);
+            entity.HasOne(barcode => barcode.Medicine)
+                .WithMany(medicine => medicine.Barcodes)
+                .HasForeignKey(barcode => barcode.MedicineId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<SerializedPackScan>(entity =>
+        {
+            entity.ToTable("SerializedPackScans");
+            entity.HasKey(pack => pack.Id);
+            entity.Property(pack => pack.Id).ValueGeneratedOnAdd();
+            entity.Property(pack => pack.RawGs1String).IsRequired().HasMaxLength(255);
+            entity.Property(pack => pack.Gtin14).IsRequired().HasMaxLength(14).IsFixedLength();
+            entity.Property(pack => pack.EofEan13).HasMaxLength(13).IsFixedLength();
+            entity.Property(pack => pack.SerialNumber).IsRequired().HasMaxLength(20);
+            entity.Property(pack => pack.ExpiryDate).HasColumnType("date");
+            entity.Property(pack => pack.BatchLot).IsRequired().HasMaxLength(20);
+            entity.Property(pack => pack.HmvoStatus).IsRequired().HasMaxLength(20).HasDefaultValue("ACTIVE");
+            entity.Property(pack => pack.ScannedAt);
+            entity.HasIndex(pack => new { pack.Gtin14, pack.SerialNumber }).IsUnique();
+            entity.HasIndex(pack => pack.EofEan13);
+            entity.HasIndex(pack => pack.MedicineId);
+            entity.HasOne(pack => pack.Medicine)
+                .WithMany(medicine => medicine.SerializedPacks)
+                .HasForeignKey(pack => pack.MedicineId)
+                .OnDelete(DeleteBehavior.SetNull);
+        });
+
         modelBuilder.Entity<BorrowingRecord>(entity =>
         {
             entity.ToTable("Borrowings");
@@ -90,6 +127,7 @@ public sealed class PharmacyDbContextModelSnapshot : ModelSnapshot
             entity.Property(borrowing => borrowing.Id).ValueGeneratedOnAdd();
             entity.Property(borrowing => borrowing.MedicineName).IsRequired();
             entity.Property(borrowing => borrowing.OriginalBarcode);
+            entity.Property(borrowing => borrowing.SerializedPackScanId);
             entity.Property(borrowing => borrowing.InternalBarcode).IsRequired();
             entity.Property(borrowing => borrowing.Quantity);
             entity.Property(borrowing => borrowing.BorrowedAt);
@@ -100,10 +138,15 @@ public sealed class PharmacyDbContextModelSnapshot : ModelSnapshot
             entity.Property(borrowing => borrowing.Notes);
             entity.HasIndex(borrowing => borrowing.InternalBarcode).IsUnique();
             entity.HasIndex(borrowing => borrowing.CustomerId);
+            entity.HasIndex(borrowing => borrowing.SerializedPackScanId);
             entity.HasOne(borrowing => borrowing.Customer)
                 .WithMany(customer => customer.Borrowings)
                 .HasForeignKey(borrowing => borrowing.CustomerId)
                 .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(borrowing => borrowing.SerializedPackScan)
+                .WithMany(pack => pack.Borrowings)
+                .HasForeignKey(borrowing => borrowing.SerializedPackScanId)
+                .OnDelete(DeleteBehavior.Restrict);
         });
 
         modelBuilder.Entity<Subscription>(entity =>
