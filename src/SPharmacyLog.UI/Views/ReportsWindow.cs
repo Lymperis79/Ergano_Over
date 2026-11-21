@@ -7,6 +7,7 @@ using Microsoft.EntityFrameworkCore;
 using SPharmacyLog.Data;
 using SPharmacyLog.Data.Entities;
 using SPharmacyLog.UI.Localization;
+using SPharmacyLog.UI.Services;
 
 namespace SPharmacyLog.UI.Views;
 
