@@ -2,6 +2,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Layout;
 using Avalonia.Media;
+using Avalonia.Platform.Storage;
 using Microsoft.EntityFrameworkCore;
 using SPharmacyLog.Data;
 using SPharmacyLog.Data.Entities;
@@ -21,6 +22,7 @@ public sealed class ReportsWindow : Window
     private readonly ListBox results = new() { MinHeight = 300 };
     private readonly StackPanel customerFilterPanel = new() { Spacing = 4 };
     private readonly StackPanel dateFilterPanel = new() { Spacing = 4 };
+    private readonly Button exportButton = new() { Content = Tr.Loc.TranslateText("Export to Excel"), MinWidth = 150, MinHeight = 38, IsEnabled = false };
 
     public ReportsWindow()
     {
@@ -56,6 +58,7 @@ public sealed class ReportsWindow : Window
             Classes = { "accent" }
         };
         generate.Click += async (_, _) => await GenerateReportAsync();
+        exportButton.Click += async (_, _) => await ExportReportAsync();
         reportType.SelectionChanged += (_, _) => UpdateFilterVisibility();
 
         var content = new StackPanel
@@ -66,7 +69,7 @@ public sealed class ReportsWindow : Window
             {
                 new TextBlock { Text = Tr.Loc.TranslateText("Reports"), FontSize = 24, FontWeight = FontWeight.Bold },
                 filters,
-                generate,
+                new StackPanel { Orientation = Orientation.Horizontal, Spacing = 10, Children = { generate, exportButton } },
                 new Border
                 {
                     Padding = new Thickness(12),
@@ -86,6 +89,32 @@ public sealed class ReportsWindow : Window
             UpdateFilterVisibility();
             await GenerateReportAsync();
         };
+    }
+
+
+    private async Task ExportReportAsync()
+    {
+        var selectedItem = reportType.SelectedItem as ComboBoxItem;
+        var reportName = selectedItem?.Content?.ToString() ?? "Report";
+        var safeName = string.Concat(reportName.Select(character =>
+            Path.GetInvalidFileNameChars().Contains(character) ? '_' : character));
+        var file = await StorageProvider.SaveFilePickerAsync(new FilePickerSaveOptions
+        {
+            Title = Tr.Loc.TranslateText("Export report to Excel"),
+            SuggestedFileName = $"{safeName}_{DateTime.Now:yyyyMMdd_HHmm}.xlsx",
+            DefaultExtension = "xlsx",
+            FileTypeChoices = new[]
+            {
+                new FilePickerFileType("Excel Workbook") { Patterns = new[] { "*.xlsx" } }
+            }
+        });
+        if (file is null) return;
+
+        var detailLines = results.ItemsSource is IEnumerable<string> lines
+            ? lines.ToList()
+            : new List<string>();
+        await using var output = await file.OpenWriteAsync();
+        await ExcelReportExporter.WriteAsync(output, reportName, summary.Text ?? string.Empty, detailLines);
     }
 
     private void UpdateFilterVisibility()
@@ -115,6 +144,7 @@ public sealed class ReportsWindow : Window
     private async Task GenerateReportAsync()
     {
         var selected = (reportType.SelectedItem as ComboBoxItem)?.Tag?.ToString();
+        exportButton.IsEnabled = false;
         try
         {
             switch (selected)
@@ -133,6 +163,7 @@ public sealed class ReportsWindow : Window
                     results.ItemsSource = Array.Empty<string>();
                     break;
             }
+            exportButton.IsEnabled = true;
         }
         catch (Exception ex)
         {
