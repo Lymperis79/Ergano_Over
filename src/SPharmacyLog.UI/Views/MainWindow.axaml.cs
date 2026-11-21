@@ -668,6 +668,17 @@ public partial class MainWindow : Window
                     {
                         e.Handled = true;
                         SelectedCalendarDate = date;
+                        foreach (var pair in calendarDateCells)
+                        {
+                            pair.Value.BorderThickness = pair.Key == date ? new Thickness(2) : new Thickness(1);
+                            pair.Value.BorderBrush = pair.Key == date
+                                ? new SolidColorBrush(Color.Parse("#21A1D8"))
+                                : new SolidColorBrush(Color.Parse("#34495E"));
+                            pair.Value.Background = pair.Key == date
+                                ? new SolidColorBrush(Color.Parse("#243C52"))
+                                : new SolidColorBrush(Color.Parse("#172536"));
+                        }
+                        await LoadSelectedDayAsync();
                         await OpenCalendarNoteEditorAsync(date);
                     }
                 }, RoutingStrategies.Bubble, handledEventsToo: true);
