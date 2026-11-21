@@ -165,7 +165,7 @@ public partial class MainWindow : Window
 
         var weatherRow = new Grid { ColumnDefinitions = CreateColumns(GridLength.Star, GridLength.Auto), Background = new SolidColorBrush(Color.Parse("#202733")), Margin = new Thickness(0, 2, 0, 4) };
         var weatherText = new TextBlock { Text = "Weather: loading…", VerticalAlignment = VerticalAlignment.Center, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(14, 12) };
-        var weatherRefresh = new Button { Content = "↻", ToolTip = "Refresh weather", Margin = new Thickness(6), VerticalAlignment = VerticalAlignment.Center };
+        var weatherRefresh = new Button { Content = "↻", Margin = new Thickness(6), VerticalAlignment = VerticalAlignment.Center };
         weatherRow.Children.Add(weatherText);
         Grid.SetColumn(weatherRefresh, 1); weatherRow.Children.Add(weatherRefresh);
         root.Children.Add(new Border { Child = weatherRow, CornerRadius = new CornerRadius(9), BorderThickness = new Thickness(1), BorderBrush = new SolidColorBrush(Color.Parse("#354152")) });
