@@ -178,7 +178,7 @@ public sealed class LocalizationService : ILocalizationService
         ["Login failed. Check the username, password, and account status."] = "Αποτυχία σύνδεσης. Ελέγξτε το όνομα χρήστη, τον κωδικό και την κατάσταση του λογαριασμού.",
         ["Administrator created. Sign in with the new credentials."] = "Ο διαχειριστής δημιουργήθηκε. Συνδεθείτε με τα νέα στοιχεία.",
         ["Mon"] = "Δευ", ["Tue"] = "Τρί", ["Wed"] = "Τετ", ["Thu"] = "Πέμ", ["Fri"] = "Παρ", ["Sat"] = "Σάβ", ["Sun"] = "Κυρ",
-        ["expires"] = "λήγει", ["Qty"] = "Ποσ.", ["Due"] = "Προθεσμία", ["Next:"] = "Επόμενο:", ["Expires:"] = "Λήξη:",
+        ["expires"] = "λήγει", ["Qty"] = "Ποσ.", ["Due"] = "Προθεσμία", ["Next:"] = "Επόμενο:", ["Expires:"] = "Λήγει:",
         ["Selected item:"] = "Επιλεγμένο αντικείμενο:", ["This is a legacy borrowing without a linked GS1 DataMatrix scan."] = "Πρόκειται για παλαιότερο δανεισμό χωρίς συνδεδεμένη σάρωση GS1 DataMatrix.",
         ["SAVED GS1 PACK DETAILS"] = "ΑΠΟΘΗΚΕΥΜΕΝΑ ΣΤΟΙΧΕΙΑ ΣΥΣΚΕΥΑΣΙΑΣ GS1",
         ["Medicine:"] = "Φάρμακο:", ["EOF / NTIN:"] = "EOF / NTIN:", ["Serial number:"] = "Σειριακός αριθμός:",
@@ -202,6 +202,8 @@ public sealed class LocalizationService : ILocalizationService
         ["Medicine matched:"] = "Αντιστοιχισμένο φάρμακο:",
         ["ACTIVE"] = "ΕΝΕΡΓΗ",
         ["RETURNED"] = "ΕΠΙΣΤΡΑΦΗΚΕ",
+        ["Username"] = "Όνομα χρήστη",
+        ["Password"] = "Κωδικός πρόσβασης",
         ["S Pharmacy Log — Database setup"] = "S Pharmacy Log — Ρύθμιση βάσης δεδομένων",
         ["Database setup"] = "Ρύθμιση βάσης δεδομένων",
         ["Choose where S Pharmacy Log stores its data. You can use a local SQLite file or a shared SQL Server / MariaDB database."] = "Επιλέξτε πού θα αποθηκεύει τα δεδομένα το S Pharmacy Log. Μπορείτε να χρησιμοποιήσετε τοπικό αρχείο SQLite ή κοινόχρηστη βάση SQL Server / MariaDB.",
@@ -234,7 +236,7 @@ public sealed class LocalizationService : ILocalizationService
         ["Applying database migrations. Existing data will be preserved..."] = "Εφαρμογή μεταναστεύσεων βάσης δεδομένων. Τα υπάρχοντα δεδομένα θα διατηρηθούν...",
         ["Database is ready. Existing user accounts were found."] = "Η βάση δεδομένων είναι έτοιμη. Βρέθηκαν υπάρχοντες λογαριασμοί χρηστών.",
         ["Database is ready. Create the first administrator to finish setup."] = "Η βάση δεδομένων είναι έτοιμη. Δημιουργήστε τον πρώτο διαχειριστή για να ολοκληρωθεί η ρύθμιση.",
-        ["The database is ready. Create the first administrator to finish setup."] = "Η βάση δεδομένων είναι έτοιμη. Δημιουργήστε τον πρώτο διαχειριστή για να ολοκληρωθεί η ρύθμιση.",
+        ["The database is ready. Create the first administrator to finish setup."] = "Η βάση δεδομένων είναι έτοιμη. Δημιουργήστε τον πρώτο διαχειριστή για ολοκλήρωση.",
         ["Enter an administrator username."] = "Εισαγάγετε όνομα χρήστη διαχειριστή.",
         ["The password must contain at least 8 characters."] = "Ο κωδικός πρέπει να περιέχει τουλάχιστον 8 χαρακτήρες.",
         ["The passwords do not match."] = "Οι κωδικοί δεν ταιριάζουν.",
@@ -267,7 +269,8 @@ public sealed class LocalizationService : ILocalizationService
         ["PC code selected. Press Ctrl+C to copy it."] = "Ο κωδικός υπολογιστή επιλέχθηκε. Πατήστε Ctrl+C για αντιγραφή.",
         ["Load licence file"] = "Φόρτωση αρχείου άδειας",
         ["Licence files"] = "Αρχεία άδειας",
-        ["Licence activated successfully."] = "Η άδεια ενεργοποιήθηκε επιτυχώς."
+        ["Licence activated successfully."] = "Η άδεια ενεργοποιήθηκε επιτυχώς.",
+        ["Activation failed:"] = "Αποτυχία ενεργοποίησης:"
     };
 
     public string TranslateText(string text)
