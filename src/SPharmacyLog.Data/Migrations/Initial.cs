@@ -10,7 +10,7 @@ public sealed partial class Initial : Migration
 {
     protected override void Up(MigrationBuilder migrationBuilder)
     {
-        if (ActiveProvider.Contains("Sqlite", StringComparison.OrdinalIgnoreCase))
+        if ((ActiveProvider ?? string.Empty).Contains("Sqlite", StringComparison.OrdinalIgnoreCase))
         {
             CreateSqliteSchema(migrationBuilder);
             return;
