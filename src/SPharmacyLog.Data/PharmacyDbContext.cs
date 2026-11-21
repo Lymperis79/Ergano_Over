@@ -188,7 +188,7 @@ public sealed class PharmacyDbContext : DbContext
             .HasOne(entry => entry.Subscription)
             .WithMany(subscription => subscription.AuditEntries)
             .HasForeignKey(entry => entry.SubscriptionId)
-            .OnDelete(DeleteBehavior.Cascade);
+            .OnDelete(DeleteBehavior.Restrict);
 
         modelBuilder.Entity<Payment>()
             .HasOne(payment => payment.Customer)
