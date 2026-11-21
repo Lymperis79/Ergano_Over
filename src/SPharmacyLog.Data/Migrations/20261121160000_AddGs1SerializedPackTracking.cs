@@ -37,11 +37,6 @@ public sealed class AddGs1SerializedPackTracking : Migration
                 GROUP BY Barcode
                 HAVING COUNT(*) = 1;
 
-                INSERT INTO MedicineBarcodes (MedicineId, BarcodeValue, BarcodeType)
-                SELECT MIN(Id), Barcode, 'LEGACY' FROM Medicines
-                WHERE Barcode IS NOT NULL AND TRIM(Barcode) <> ''
-                GROUP BY Barcode HAVING COUNT(*) = 1;
-
                 CREATE TABLE SerializedPackScans (
                     Id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
                     RawGs1String TEXT NOT NULL CHECK(length(RawGs1String) <= 255),
@@ -60,6 +55,7 @@ public sealed class AddGs1SerializedPackTracking : Migration
                     ON SerializedPackScans(Gtin14, SerialNumber);
                 CREATE INDEX IX_SerializedPackScans_EofEan13 ON SerializedPackScans(EofEan13);
                 CREATE INDEX IX_SerializedPackScans_MedicineId ON SerializedPackScans(MedicineId);
+                CREATE INDEX IX_SerializedPackScans_HmvoStatus_ExpiryDate ON SerializedPackScans(HmvoStatus, ExpiryDate);
 
                 ALTER TABLE Borrowings
                     ADD COLUMN SerializedPackScanId INTEGER NULL
@@ -106,6 +102,7 @@ public sealed class AddGs1SerializedPackTracking : Migration
                     ON [SerializedPackScans]([Gtin14], [SerialNumber]);
                 CREATE INDEX [IX_SerializedPackScans_EofEan13] ON [SerializedPackScans]([EofEan13]);
                 CREATE INDEX [IX_SerializedPackScans_MedicineId] ON [SerializedPackScans]([MedicineId]);
+                CREATE INDEX [IX_SerializedPackScans_HmvoStatus_ExpiryDate] ON [SerializedPackScans]([HmvoStatus], [ExpiryDate]);
 
                 ALTER TABLE [Borrowings] ADD [SerializedPackScanId] int NULL;
                 ALTER TABLE [Borrowings] ADD CONSTRAINT [FK_Borrowings_SerializedPackScans_SerializedPackScanId]
@@ -129,6 +126,11 @@ public sealed class AddGs1SerializedPackTracking : Migration
                         FOREIGN KEY (MedicineId) REFERENCES Medicines(Id) ON DELETE CASCADE
                 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+                INSERT INTO MedicineBarcodes (MedicineId, BarcodeValue, BarcodeType)
+                SELECT MIN(Id), Barcode, 'LEGACY' FROM Medicines
+                WHERE Barcode IS NOT NULL AND TRIM(Barcode) <> ''
+                GROUP BY Barcode HAVING COUNT(*) = 1;
+
                 CREATE TABLE SerializedPackScans (
                     Id int NOT NULL AUTO_INCREMENT PRIMARY KEY,
                     RawGs1String varchar(255) NOT NULL,
@@ -143,6 +145,7 @@ public sealed class AddGs1SerializedPackTracking : Migration
                     UNIQUE INDEX IX_SerializedPackScans_Gtin14_SerialNumber (Gtin14, SerialNumber),
                     INDEX IX_SerializedPackScans_EofEan13 (EofEan13),
                     INDEX IX_SerializedPackScans_MedicineId (MedicineId),
+                    INDEX IX_SerializedPackScans_HmvoStatus_ExpiryDate (HmvoStatus, ExpiryDate),
                     CONSTRAINT FK_SerializedPackScans_Medicines_MedicineId
                         FOREIGN KEY (MedicineId) REFERENCES Medicines(Id) ON DELETE SET NULL
                 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
