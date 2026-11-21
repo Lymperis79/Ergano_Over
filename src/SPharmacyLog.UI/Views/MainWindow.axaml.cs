@@ -2,7 +2,6 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Layout;
 using Avalonia.Media;
-using Avalonia.Markup.Xaml;
 using Microsoft.EntityFrameworkCore;
 using SPharmacyLog.Data;
 using SPharmacyLog.Data.Entities;
