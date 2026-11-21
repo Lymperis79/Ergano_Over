@@ -316,10 +316,13 @@ public partial class MainWindow : Window
         await dialog.ShowDialog(this);
     }
 
-    private void ShowReports()
+    private async void ShowReports()
     {
         if (!CanAccessMenu(MenuReports)) { ShowNoMenuAccess(); return; }
-        ShowPlaceholder(Tr.Loc["Navigation.Reports"]);
+        showingExpiryCalendar = false;
+        var dialog = new ReportsWindow();
+        AttachDialogLocalization(dialog);
+        await dialog.ShowDialog(this);
     }
 
     private void ShowNoMenuAccess()
