@@ -1186,6 +1186,7 @@ public partial class MainWindow : Window
     }
 
     private TabControl customerTabs = null!;
+    private TabItem customerDetailsTab = null!;
     private TextBlock customerOverview = null!;
     private readonly Dictionary<string, TextBox> activityFields = new();
     private ListBox borrowingList = null!;
@@ -1208,6 +1209,7 @@ public partial class MainWindow : Window
     private TextBlock gs1ScanStatus = null!;
     private readonly Dictionary<string, TextBox> gs1ParsedFields = new();
     private Gs1DataMatrixParser.ParsedPack? currentParsedPack;
+    private bool isCreatingNewCustomer;
 
     private void ShowCustomers()
     {
@@ -1238,8 +1240,8 @@ public partial class MainWindow : Window
         var newButton = new Button { Content = Tr.Loc["Customers.New"], Classes = { "accent" }, HorizontalAlignment = HorizontalAlignment.Stretch, MinHeight = 40 };
         newButton.Click += (_, _) =>
         {
-            ClearCustomerForm();
-            customerTabs.SelectedIndex = 1;
+            ClearCustomerForm(showNewCustomerForm: true);
+            customerTabs.SelectedIndex = 0;
             customerFields["CustomerNumber"].Focus();
         };
         left.Children.Add(newButton);
@@ -1248,6 +1250,7 @@ public partial class MainWindow : Window
         left.Children.Add(customerList);
 
         var details = BuildCustomerDetailsTab();
+        customerDetailsTab = details;
         customerOverview = new TextBlock { Text = "Select a customer to see their account summary.", TextWrapping = TextWrapping.Wrap, Margin = new Thickness(12) };
         var overviewTab = new TabItem { Header = "Overview", Content = new StackPanel { Spacing = 12, Children = { customerOverview } } };
         var borrowingTab = BuildBorrowingsTab();
@@ -1284,7 +1287,7 @@ public partial class MainWindow : Window
         pageHost.Content = layout;
         if (skipNextCustomerSearch) skipNextCustomerSearch = false;
         else _ = SearchCustomersAsync();
-        ClearCustomerForm();
+        ClearCustomerForm(showNewCustomerForm: false);
         ApplyTranslations();
     }
 
@@ -1312,7 +1315,7 @@ public partial class MainWindow : Window
         var save = new Button { Content = Tr.Loc["Customers.Save"], Classes = { "accent" }, MinWidth = 150 };
         save.Click += async (_, _) => await SaveCustomerAsync();
         var clear = new Button { Content = Tr.Loc["Customers.Clear"], MinWidth = 100 };
-        clear.Click += (_, _) => ClearCustomerForm();
+        clear.Click += (_, _) => ClearCustomerForm(showNewCustomerForm: true);
         var actions = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 10, Margin = new Thickness(5, 14, 0, 0) };
         actions.Children.Add(save); actions.Children.Add(clear);
         var panel = new StackPanel { Spacing = 8, Children = { new TextBlock { Text = Tr.Loc["Customers.Details"], FontSize = 18, FontWeight = FontWeight.Bold }, fieldsGrid, customerActiveCheckBox, actions } };
@@ -2967,7 +2970,10 @@ public partial class MainWindow : Window
     {
         await using var db = new PharmacyDbContext(PharmacyDb.Options());
         var c = await db.Customers.AsNoTracking().FirstOrDefaultAsync(x => x.Id == id); if (c is null) return;
-        selectedCustomerId = c.Id; var parts = SplitLegacyName(c);
+        selectedCustomerId = c.Id;
+        isCreatingNewCustomer = false;
+        UpdateCustomerTabsVisibility();
+        var parts = SplitLegacyName(c);
         SetField("CustomerNumber", c.CustomerNumber); SetField("FirstName", c.FirstName ?? parts.First); SetField("Surname", c.Surname ?? parts.Last);
         SetField("Address", c.Address); SetField("City", c.City); SetField("Postcode", c.Postcode);
         SetField("Telephone", c.Telephone ?? c.Phone); SetField("Mobile", c.Mobile); SetField("Email", c.Email);
@@ -2976,12 +2982,39 @@ public partial class MainWindow : Window
         customerStatus.Text = string.Format(Tr.Loc["Customers.Editing"], c.CustomerNumber);
     }
 
-    private void ClearCustomerForm()
+    private void ClearCustomerForm(bool showNewCustomerForm = true)
     {
-        selectedCustomerId = null; foreach (var field in customerFields.Values) field.Text = "";
+        selectedCustomerId = null;
+        isCreatingNewCustomer = showNewCustomerForm;
+        foreach (var field in customerFields.Values) field.Text = "";
         if (customerActiveCheckBox is not null) customerActiveCheckBox.IsChecked = true;
-        customerStatus.Text = Tr.Loc["Customers.NewStatus"]; customerStatus.Foreground = Brushes.LightGreen;
+        customerStatus.Text = Tr.Loc["Customers.NewStatus"];
+        customerStatus.Foreground = Brushes.LightGreen;
         if (customerList is not null) customerList.SelectedItem = null;
+        UpdateCustomerTabsVisibility();
+    }
+
+    private void UpdateCustomerTabsVisibility()
+    {
+        if (customerTabs is null) return;
+        var hasCustomer = selectedCustomerId.HasValue;
+        customerTabs.IsVisible = hasCustomer || isCreatingNewCustomer;
+        foreach (var tab in customerTabs.Items.OfType<TabItem>())
+        {
+            if (!hasCustomer)
+            {
+                tab.IsVisible = isCreatingNewCustomer && ReferenceEquals(tab, customerDetailsTab);
+                continue;
+            }
+
+            var header = tab.Header?.ToString() ?? string.Empty;
+            tab.IsVisible = ReferenceEquals(tab, customerDetailsTab)
+                || header is "Overview" or "Επισκόπηση"
+                || (header is "Borrowings" or "Δανεισμοί" && CanAccessMenu(MenuBorrowing))
+                || (header is "History" or "Ιστορικό" && CanAccessMenu(MenuBorrowing))
+                || (header is "Subscriptions" or "Συνδρομές" && CanAccessMenu(MenuSubscriptions))
+                || (header is "Ledger" or "Καρτέλα" && CanAccessMenu(MenuPayments));
+        }
     }
 
     private void SetField(string key, string? value) { if (customerFields.TryGetValue(key, out var field)) field.Text = value ?? ""; }
@@ -3004,6 +3037,8 @@ public partial class MainWindow : Window
         if (!selectedCustomerId.HasValue) db.Customers.Add(customer);
         await db.SaveChangesAsync();
         selectedCustomerId = customer.Id;
+        isCreatingNewCustomer = false;
+        UpdateCustomerTabsVisibility();
         customerStatus.Foreground = Brushes.LightGreen;
         customerStatus.Text = string.Format(Tr.Loc["Customers.Saved"], customer.CustomerNumber);
         await SearchCustomersAsync();
