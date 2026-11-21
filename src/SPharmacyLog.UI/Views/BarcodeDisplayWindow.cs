@@ -3,6 +3,7 @@ using Avalonia.Controls;
 using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.Media.Imaging;
+using SPharmacyLog.UI.Localization;
 
 namespace SPharmacyLog.UI.Views;
 
@@ -13,7 +14,9 @@ public sealed class BarcodeDisplayWindow : Window
 
     public BarcodeDisplayWindow(string medicineName, WriteableBitmap barcodeBitmap)
     {
-        Title = "Medicine barcode";
+        Title = Tr.Loc.TranslateText("Medicine barcode");
+        Tr.Loc.LanguageChanged += OnLanguageChanged;
+        Closed += (_, _) => Tr.Loc.LanguageChanged -= OnLanguageChanged;
         Width = 260;
         Height = 290;
         MinWidth = 220;
@@ -58,7 +61,7 @@ public sealed class BarcodeDisplayWindow : Window
                     barcodeImage,
                     new TextBlock
                     {
-                        Text = "Scan this barcode with your scanner",
+                        Text = Tr.Loc.TranslateText("Scan this barcode with your scanner"),
                         FontSize = 12,
                         Foreground = Brushes.LightGray,
                         TextAlignment = TextAlignment.Center,
@@ -68,6 +71,13 @@ public sealed class BarcodeDisplayWindow : Window
                 }
             }
         };
+    }
+
+    private void OnLanguageChanged(object? sender, EventArgs e)
+    {
+        Title = Tr.Loc.TranslateText("Medicine barcode");
+        if (Content is Border border && border.Child is StackPanel panel && panel.Children.Count > 2 && panel.Children[2] is TextBlock instruction)
+            instruction.Text = Tr.Loc.TranslateText("Scan this barcode with your scanner");
     }
 
     public void UpdateBarcode(string medicineName, WriteableBitmap barcodeBitmap)
