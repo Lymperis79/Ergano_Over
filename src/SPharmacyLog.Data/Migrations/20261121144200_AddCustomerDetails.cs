@@ -12,15 +12,15 @@ public sealed class AddCustomerDetails : Migration
 {
     protected override void Up(MigrationBuilder migrationBuilder)
     {
-        migrationBuilder.AddColumn<string>(name: "FirstName", table: "Customers", type: "TEXT", nullable: true);
-        migrationBuilder.AddColumn<string>(name: "Surname", table: "Customers", type: "TEXT", nullable: true);
-        migrationBuilder.AddColumn<string>(name: "Telephone", table: "Customers", type: "TEXT", nullable: true);
-        migrationBuilder.AddColumn<string>(name: "Mobile", table: "Customers", type: "TEXT", nullable: true);
-        migrationBuilder.AddColumn<string>(name: "Email", table: "Customers", type: "TEXT", nullable: true);
-        migrationBuilder.AddColumn<string>(name: "Amka", table: "Customers", type: "TEXT", nullable: true);
-        migrationBuilder.AddColumn<string>(name: "Insurance", table: "Customers", type: "TEXT", nullable: true);
-        migrationBuilder.AddColumn<string>(name: "City", table: "Customers", type: "TEXT", nullable: true);
-        migrationBuilder.AddColumn<string>(name: "Postcode", table: "Customers", type: "TEXT", nullable: true);
+        migrationBuilder.AddColumn<string>(name: "FirstName", table: "Customers", nullable: true);
+        migrationBuilder.AddColumn<string>(name: "Surname", table: "Customers", nullable: true);
+        migrationBuilder.AddColumn<string>(name: "Telephone", table: "Customers", nullable: true);
+        migrationBuilder.AddColumn<string>(name: "Mobile", table: "Customers", nullable: true);
+        migrationBuilder.AddColumn<string>(name: "Email", table: "Customers", nullable: true);
+        migrationBuilder.AddColumn<string>(name: "Amka", table: "Customers", nullable: true);
+        migrationBuilder.AddColumn<string>(name: "Insurance", table: "Customers", nullable: true);
+        migrationBuilder.AddColumn<string>(name: "City", table: "Customers", nullable: true);
+        migrationBuilder.AddColumn<string>(name: "Postcode", table: "Customers", nullable: true);
     }
 
     protected override void Down(MigrationBuilder migrationBuilder)
