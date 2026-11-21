@@ -428,6 +428,13 @@ public partial class MainWindow : Window
             MinHeight = 48, MaxHeight = 75, FontFamily = new FontFamily("Consolas")
         };
         var scanStatus = new TextBlock { Text = isEdit ? "The original serialized pack scan is retained unchanged." : "Ready for a GS1 DataMatrix scan.", TextWrapping = TextWrapping.Wrap, Foreground = Brushes.Gray };
+        var scanDateText = new TextBox
+        {
+            Text = existing is null ? "Will be recorded when the borrowing is saved." :
+                (existing.SerializedPackScan?.ScannedAt ?? existing.BorrowedAt).ToLocalTime().ToString("dd/MM/yyyy HH:mm:ss"),
+            IsReadOnly = true,
+            MinHeight = 34
+        };
         Gs1DataMatrixParser.ParsedPack? parsedPack = null;
         var gtinInput = new TextBox { MaxLength = 14, PlaceholderText = "14-digit GTIN", IsEnabled = !isEdit };
         var serialInput = new TextBox { PlaceholderText = "Serial number (AI 21)", IsEnabled = !isEdit };
@@ -471,6 +478,7 @@ public partial class MainWindow : Window
                 scanStatus.Text = Tr.Loc.TranslateText(error);
                 return;
             }
+            scanDateText.Text = DateTime.Now.ToString("dd/MM/yyyy HH:mm:ss");
             await using var lookupDb = new PharmacyDbContext(PharmacyDb.Options());
             gtinInput.Text = parsedPack.Gtin14;
             serialInput.Text = parsedPack.SerialNumber;
@@ -505,13 +513,7 @@ public partial class MainWindow : Window
             form.Children.Add(medicineNameGroup);
         }
         AddField(form, "Quantity", "Quantity", (existing?.Quantity ?? 1).ToString());
-        var scanDateText = new TextBox
-        {
-            Text = existing is null ? "Will be recorded when the borrowing is saved." :
-                (existing.SerializedPackScan?.ScannedAt ?? existing.BorrowedAt).ToLocalTime().ToString("dd/MM/yyyy HH:mm:ss"),
-            IsReadOnly = true,
-            MinHeight = 34
-        };
+
         var scanDateGroup = new StackPanel { Spacing = 4, Margin = new Thickness(0, 3) };
         scanDateGroup.Children.Add(new TextBlock { Text = "Scan / borrowing date", Foreground = Brushes.LightGray, FontSize = 12 });
         scanDateGroup.Children.Add(scanDateText);
