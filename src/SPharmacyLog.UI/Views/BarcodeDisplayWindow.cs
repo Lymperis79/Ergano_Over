@@ -14,10 +14,10 @@ public sealed class BarcodeDisplayWindow : Window
     public BarcodeDisplayWindow(string medicineName, WriteableBitmap barcodeBitmap)
     {
         Title = "Medicine barcode";
-        Width = 360;
-        Height = 390;
-        MinWidth = 320;
-        MinHeight = 350;
+        Width = 260;
+        Height = 290;
+        MinWidth = 220;
+        MinHeight = 250;
         CanResize = false;
         ShowInTaskbar = false;
         Topmost = true;
@@ -31,14 +31,14 @@ public sealed class BarcodeDisplayWindow : Window
             TextAlignment = TextAlignment.Center,
             TextWrapping = TextWrapping.Wrap,
             HorizontalAlignment = HorizontalAlignment.Stretch,
-            Margin = new Thickness(8, 4, 8, 12)
+            Margin = new Thickness(8, 4, 8, 8)
         };
 
         barcodeImage = new Image
         {
             Source = barcodeBitmap,
-            Width = 300,
-            Height = 300,
+            Width = 200,
+            Height = 200,
             Stretch = Stretch.Uniform,
             HorizontalAlignment = HorizontalAlignment.Center,
             VerticalAlignment = VerticalAlignment.Center
