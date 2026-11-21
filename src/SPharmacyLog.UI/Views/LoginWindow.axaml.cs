@@ -1,6 +1,5 @@
 using Avalonia.Controls;
 using Avalonia.Interactivity;
-using Avalonia.Markup.Xaml;
 using SPharmacyLog.UI.Localization;
 using SPharmacyLog.UI.ViewModels;
 
@@ -21,10 +20,6 @@ public partial class LoginWindow : Window
         ApplyTranslations();
     }
 
-    private void InitializeComponent()
-    {
-        AvaloniaXamlLoader.Load(this);
-    }
 
     private async Task InitializeLoginAsync()
     {
