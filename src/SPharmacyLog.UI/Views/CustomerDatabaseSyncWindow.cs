@@ -10,11 +10,11 @@ namespace SPharmacyLog.UI.Views;
 
 public sealed class CustomerDatabaseSyncWindow : Window
 {
-    private readonly TextBox server = new() { Watermark = "SQL Server / instance" };
-    private readonly TextBox database = new() { Watermark = "Database name" };
+    private readonly TextBox server = new() { PlaceholderText = "SQL Server / instance" };
+    private readonly TextBox database = new() { PlaceholderText = "Database name" };
     private readonly CheckBox integrated = new() { Content = "Windows authentication", IsChecked = true };
-    private readonly TextBox username = new() { Watermark = "SQL username" };
-    private readonly TextBox password = new() { Watermark = "SQL password", PasswordChar = '●' };
+    private readonly TextBox username = new() { PlaceholderText = "SQL username" };
+    private readonly TextBox password = new() { PlaceholderText = "SQL password", PasswordChar = '●' };
     private readonly ComboBox table = new() { MinWidth = 300 };
     private readonly ComboBox filterColumn = new() { MinWidth = 190 };
     private readonly TextBox filterValue = new() { Text = "ΠΕΛ", Width = 150 };
@@ -34,7 +34,7 @@ public sealed class CustomerDatabaseSyncWindow : Window
         ("Postcode", "Postcode", "TAX_KOD"),
         ("Telephone", "Telephone", "THLEF"),
         ("Mobile", "Mobile", ""),
-        ("Phone", "Phone (legacy field)", ""),
+        ("Phone", "Phone (legacy field)", "THLEF"),
         ("Email", "Email", ""),
         ("Amka", "AMKA", "PEL_PRO_AMKA"),
         ("Insurance", "Insurance code", "PEL_PRO_CODE_AT")
