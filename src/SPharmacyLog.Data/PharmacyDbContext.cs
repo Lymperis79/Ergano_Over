@@ -21,10 +21,22 @@ public sealed class PharmacyDbContext : DbContext
     public DbSet<SubscriptionAuditEntry> SubscriptionAuditEntries => Set<SubscriptionAuditEntry>();
     public DbSet<Payment> Payments => Set<Payment>();
     public DbSet<LedgerEntry> LedgerEntries => Set<LedgerEntry>();
+    public DbSet<CalendarNote> CalendarNotes => Set<CalendarNote>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
+
+        modelBuilder.Entity<CalendarNote>()
+            .Property(note => note.Header)
+            .HasMaxLength(200);
+
+        modelBuilder.Entity<CalendarNote>()
+            .Property(note => note.CreatedBy)
+            .HasMaxLength(255);
+
+        modelBuilder.Entity<CalendarNote>()
+            .HasIndex(note => new { note.CalendarDate, note.IsShared, note.CreatedBy });
 
         modelBuilder.Entity<PharmacyUser>()
             .HasIndex(user => user.Username)
