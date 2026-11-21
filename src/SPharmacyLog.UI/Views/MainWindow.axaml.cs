@@ -109,6 +109,7 @@ public partial class MainWindow : Window
         TranslateListItems(borrowingList);
         TranslateListItems(customerHistoryList);
         TranslateListItems(subscriptionList);
+        TranslateListItems(subscriptionHistoryList);
         TranslateListItems(paymentList);
         TranslateListItems(ledgerList);
         foreach (var key in new[] { "SubscriptionFrequency", "PaymentMethod", "LedgerType" })
@@ -1706,7 +1707,9 @@ public partial class MainWindow : Window
             {
                 SubscriptionId = record.Id,
                 Action = isEdit ? (previousStatus != selectedStatus ? "Status changed" : "Updated") : "Created",
-                PreviousStatus = previousStatus.HasValue ? (int)previousStatus.Value : null,
+                PreviousStatus = previousStatus.HasValue && previousStatus.Value != selectedStatus
+                    ? (int)previousStatus.Value
+                    : null,
                 NewStatus = (int)selectedStatus,
                 ChangedBy = actor,
                 ChangedAt = now,
