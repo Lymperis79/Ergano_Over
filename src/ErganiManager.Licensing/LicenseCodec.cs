@@ -11,6 +11,7 @@ public enum LicenseCheck
     Missing,
     InvalidFormat,
     BadSignature,
+    ModuleNotLicensed,
     WrongMachine,
     Expired,
     /// <summary>The system date was set back to stretch an expiring license.</summary>

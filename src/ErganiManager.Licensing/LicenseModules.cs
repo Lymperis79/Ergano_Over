@@ -13,10 +13,11 @@ public static class LicenseModules
     public const string Reports   = "Reports";     // reports and the Excel export
     public const string Logs      = "Logs";        // API log and email log
     public const string Terminal  = "Terminal";    // the clock-in terminal (scan window)
+    public const string SPharmacyLog = "SPharmacyLog"; // S Pharmacy Log standalone app
 
     public const string All = "*";
 
-    public static readonly IReadOnlyList<string> Names = new[] { Schedules, WorkCards, Overtime, Reports, Logs, Terminal };
+    public static readonly IReadOnlyList<string> Names = new[] { Schedules, WorkCards, Overtime, Reports, Logs, Terminal, SPharmacyLog };
 
     /// <summary>The module a menu (the keys of MenuKeys / the section names) belongs to; null = base program.</summary>
     public static string? ModuleOfMenu(string menuKey) => menuKey switch

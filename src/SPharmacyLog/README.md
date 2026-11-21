@@ -1,15 +1,27 @@
 # S Pharmacy Log
 
-A separate Avalonia desktop app inside the ErganiManager solution. Its SQLite database is isolated from ErganiManager and stored under the current user's LocalAppData folder.
+A standalone Avalonia desktop application in the same solution, using the same layered structure as ErganiManager.
 
-## Initial implementation
-- First-run administrator creation and BCrypt password verification.
-- Independent pharmacy data schema: users, customers, prescriptions, medicine catalogue, borrowing records, subscriptions, payments and customer ledger.
-- Initial prescription expiry calendar: select a date and view active prescriptions expiring that day.
-- Starter navigation placeholders for the remaining modules.
+## Project layers
+- **SPharmacyLog.Data** — EF Core entities, SQLite DbContext and migration history.
+- **SPharmacyLog.Core** — authentication and business services.
+- **SPharmacyLog.UI** — Avalonia desktop application and views.
 
-## Run
-From the repository root:
-`dotnet run --project src/SPharmacyLog/SPharmacyLog.csproj`
+## Database and migrations
+Pharmacy data is stored in its own SQLite database at `%LOCALAPPDATA%\\SPharmacyLog\\pharmacy.db`, independent of ErganiManager's database.
+EF Core migrations run during startup. The initial migration creates users, customers, prescriptions, medicines, borrowing records, subscriptions, payments and ledger entries.
+A design-time context factory is included for future migration commands.
 
-This is an early foundation. User permissions and CRUD workflows are still being built.
+## Licensing
+Uses the shared ErganiManager signed-license system. The license generator now includes the `SPharmacyLog` product module, and the app rejects licenses that do not contain that module (or the wildcard `*`). Activation is saved in the pharmacy app's own LocalAppData folder.
+
+## Current functional starter
+- First-run administrator account creation (password minimum 8 characters, BCrypt).
+- Login validation.
+- Month-view prescription expiry calendar with per-day active prescription counts and a selected-day list.
+- Navigation placeholders for Customers, Borrowing, Subscriptions, Payments/Ledger and Users.
+
+## Build and run
+`dotnet run --project src/SPharmacyLog.UI/SPharmacyLog.UI.csproj`
+
+This branch has not been built in a local .NET environment yet.
