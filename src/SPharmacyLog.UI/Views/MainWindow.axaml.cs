@@ -560,6 +560,11 @@ public partial class MainWindow : Window
         var subscriptionsTab = BuildSubscriptionsTab();
         var paymentsTab = BuildPaymentsTab();
         var ledgerTab = BuildLedgerTab();
+        borrowingTab.IsVisible = CanAccessMenu(MenuBorrowing);
+        historyTab.IsVisible = CanAccessMenu(MenuBorrowing) || CanAccessMenu(MenuSubscriptions);
+        subscriptionsTab.IsVisible = CanAccessMenu(MenuSubscriptions);
+        paymentsTab.IsVisible = CanAccessMenu(MenuPayments);
+        ledgerTab.IsVisible = CanAccessMenu(MenuPayments);
         customerTabs = new TabControl { Items = { overviewTab, details, borrowingTab, historyTab, subscriptionsTab, paymentsTab, ledgerTab }, Margin = new Thickness(12) };
         // Use a Grid rather than a StackPanel so the TabControl receives a finite
         // height. Otherwise its tab content (including the Borrowings ScrollViewer)
@@ -1333,7 +1338,24 @@ public partial class MainWindow : Window
         var charges = ledger.Where(x => x.Type == LedgerEntryType.Charge || x.Type == LedgerEntryType.Adjustment).Sum(x => x.Amount);
         var credits = ledger.Where(x => x.Type == LedgerEntryType.Payment || x.Type == LedgerEntryType.Reversal).Sum(x => x.Amount);
         var balance = charges - credits;
-        customerOverview.Text = $"{customer.CustomerNumber}  |  {customer.FullName}\n{customer.Address}, {customer.City} {customer.Postcode}\nTelephone: {customer.Telephone ?? customer.Phone}  |  Mobile: {customer.Mobile}\nEmail: {customer.Email}\n\nBORROWINGS: {allBorrowings.Count} total, {borrowings.Count} currently borrowed\nSUBSCRIPTIONS: {subscriptions.Count} active | {executedSubscriptions.Count} executed\nPAYMENTS: {payments.Count} recorded  |  Total paid: {payments.Sum(x => x.Amount):C}\nACCOUNT BALANCE: {balance:C}\n\nRecent activity:\n{string.Join("\n", ledger.Take(5).Select(x => $"{x.EntryDate:dd/MM/yyyy}  {x.Type}  {x.Amount:C}  {x.Description}"))}";
+        var overviewLines = new List<string>
+        {
+            $"{customer.CustomerNumber}  |  {customer.FullName}",
+            $"{customer.Address}, {customer.City} {customer.Postcode}",
+            $"Telephone: {customer.Telephone ?? customer.Phone}  |  Mobile: {customer.Mobile}",
+            $"Email: {customer.Email}"
+        };
+        if (CanAccessMenu(MenuBorrowing))
+            overviewLines.Add($"BORROWINGS: {allBorrowings.Count} total, {borrowings.Count} currently borrowed");
+        if (CanAccessMenu(MenuSubscriptions))
+            overviewLines.Add($"SUBSCRIPTIONS: {subscriptions.Count} active | {executedSubscriptions.Count} executed");
+        if (CanAccessMenu(MenuPayments))
+        {
+            overviewLines.Add($"PAYMENTS: {payments.Count} recorded  |  Total paid: {payments.Sum(x => x.Amount):C}");
+            overviewLines.Add($"ACCOUNT BALANCE: {balance:C}");
+            overviewLines.AddRange(ledger.Take(5).Select(x => $"{x.EntryDate:dd/MM/yyyy}  {x.Type}  {x.Amount:C}  {x.Description}"));
+        }
+        customerOverview.Text = string.Join("\n", overviewLines);
         currentBorrowings = borrowings;
         borrowingList.ItemsSource = borrowings.Select(x =>
             x.SerializedPackScan is null
@@ -1708,6 +1730,7 @@ public partial class MainWindow : Window
 
     private async Task OpenCustomerFromSubscriptionAsync(int customerId, Subscription? editSubscription)
     {
+        if (!CanAccessMenu(MenuCustomers)) return;
         skipNextCustomerSearch = true;
         ShowCustomers();
         await SearchCustomersAsync();
@@ -1755,6 +1778,7 @@ public partial class MainWindow : Window
 
     private async Task OpenSubscriptionEditorAsync(Subscription? existing)
     {
+        if (!CanAccessMenu(MenuSubscriptions)) return;
         if (!selectedCustomerId.HasValue) { SetActivityStatus("Save or select a customer first."); return; }
         var isEdit = existing is not null;
         var title = new TextBox { Text = existing?.Title ?? "", PlaceholderText = "Subscription title", MinHeight = 34 };
