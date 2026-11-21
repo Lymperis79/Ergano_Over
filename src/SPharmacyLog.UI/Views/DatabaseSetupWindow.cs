@@ -1,6 +1,8 @@
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Layout;
+using Avalonia.VisualTree;
+using SPharmacyLog.UI.Localization;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Data.SqlClient;
 using MySqlConnector;
@@ -17,6 +19,8 @@ namespace SPharmacyLog.UI.Views;
 /// </summary>
 public sealed class DatabaseSetupWindow : Window
 {
+    private readonly ComboBox languageBox = new();
+    private bool isApplyingTranslations;
     private readonly ComboBox provider = new() { ItemsSource = Enum.GetValues<DatabaseProvider>(), SelectedIndex = 0 };
     private readonly TextBox sqlitePath = new() { Text = PharmacyDb.DefaultSqlitePath };
     private readonly TextBox sqlHost = new() { Text = @"localhost\SQLEXPRESS" };
@@ -51,6 +55,17 @@ public sealed class DatabaseSetupWindow : Window
         if (existing is not null) Populate(existing);
 
         var root = new StackPanel { Margin = new Thickness(24), Spacing = 16 };
+        languageBox.Width = 130;
+        languageBox.HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Right;
+        languageBox.Items.Add(new ComboBoxItem { Content = "English" });
+        languageBox.Items.Add(new ComboBoxItem { Content = "Ελληνικά" });
+        languageBox.SelectionChanged += (_, _) =>
+        {
+            if (isApplyingTranslations) return;
+            if (languageBox.SelectedIndex == 1) Tr.Loc.SetLanguage(AppLanguage.Greek);
+            else if (languageBox.SelectedIndex == 0) Tr.Loc.SetLanguage(AppLanguage.English);
+        };
+        root.Children.Add(languageBox);
         root.Children.Add(new TextBlock { Text = "Database setup", FontSize = 26, FontWeight = Avalonia.Media.FontWeight.Bold, Foreground = new Avalonia.Media.SolidColorBrush(Avalonia.Media.Color.Parse("#73D0FA")) });
         root.Children.Add(new TextBlock
         {
@@ -116,6 +131,35 @@ public sealed class DatabaseSetupWindow : Window
             ShowAdminStep();
         else
             RefreshProviderFields();
+
+        Tr.Loc.LanguageChanged += (_, _) => ApplyTranslations();
+        ApplyTranslations();
+    }
+
+    private void ApplyTranslations()
+    {
+        isApplyingTranslations = true;
+        Title = Tr.Loc.TranslateText("S Pharmacy Log — Database setup");
+        languageBox.SelectedIndex = Tr.Loc.CurrentLanguage == AppLanguage.Greek ? 1 : 0;
+        foreach (var control in this.GetVisualDescendants().OfType<Control>())
+        {
+            switch (control)
+            {
+                case TextBlock textBlock when !string.IsNullOrEmpty(textBlock.Text):
+                    textBlock.Text = Tr.Loc.TranslateText(textBlock.Text);
+                    break;
+                case Button button when button.Content is string buttonText:
+                    button.Content = Tr.Loc.TranslateText(buttonText);
+                    break;
+                case CheckBox checkBox when checkBox.Content is string checkText:
+                    checkBox.Content = Tr.Loc.TranslateText(checkText);
+                    break;
+                case TextBox textBox when !string.IsNullOrEmpty(textBox.Watermark):
+                    textBox.Watermark = Tr.Loc.TranslateText(textBox.Watermark);
+                    break;
+            }
+        }
+        isApplyingTranslations = false;
     }
 
     private static TextBlock Label(string text) =>
@@ -209,7 +253,7 @@ public sealed class DatabaseSetupWindow : Window
             }
         }
         catch (Exception ex) { status.Text = $"Connection test failed: {ex.Message}"; }
-        finally { testButton.IsEnabled = continueButton.IsEnabled = true; }
+        finally { testButton.IsEnabled = continueButton.IsEnabled = true; ApplyTranslations(); }
     }
 
     private async Task SaveAndContinueAsync()
@@ -267,6 +311,7 @@ public sealed class DatabaseSetupWindow : Window
         adminFields.IsVisible = true;
         createAdminButton.IsVisible = true;
         status.Text = "The database is ready. Create the first administrator to finish setup.";
+        ApplyTranslations();
     }
 
     private async Task CreateAdminAsync()
@@ -300,6 +345,6 @@ public sealed class DatabaseSetupWindow : Window
             Close();
         }
         catch (Exception ex) { status.Text = ex.Message; }
-        finally { createAdminButton.IsEnabled = true; }
+        finally { createAdminButton.IsEnabled = true; ApplyTranslations(); }
     }
 }
