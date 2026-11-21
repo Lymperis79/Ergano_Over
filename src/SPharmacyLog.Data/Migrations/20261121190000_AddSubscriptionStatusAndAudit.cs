@@ -128,6 +128,7 @@ public sealed class AddSubscriptionStatusAndAudit : Migration
         if (ActiveProvider.Contains("Sqlite", StringComparison.OrdinalIgnoreCase))
         {
             migrationBuilder.Sql("""
+                UPDATE Subscriptions SET Status = CASE WHEN Status = 0 THEN 0 ELSE 2 END;
                 DROP TABLE IF EXISTS SubscriptionAuditEntries;
                 DROP INDEX IF EXISTS IX_Subscriptions_Status;
                 ALTER TABLE Subscriptions DROP COLUMN CreatedAt;
@@ -141,6 +142,7 @@ public sealed class AddSubscriptionStatusAndAudit : Migration
         if (ActiveProvider.Contains("SqlServer", StringComparison.OrdinalIgnoreCase))
         {
             migrationBuilder.Sql("""
+                UPDATE [Subscriptions] SET [Status] = CASE WHEN [Status] = 0 THEN 0 ELSE 2 END;
                 DROP TABLE [SubscriptionAuditEntries];
                 DROP INDEX [IX_Subscriptions_Status] ON [Subscriptions];
                 ALTER TABLE [Subscriptions] DROP CONSTRAINT [DF_Subscriptions_CreatedAt];
@@ -155,6 +157,7 @@ public sealed class AddSubscriptionStatusAndAudit : Migration
         if (ActiveProvider.Contains("MySql", StringComparison.OrdinalIgnoreCase))
         {
             migrationBuilder.Sql("""
+                UPDATE Subscriptions SET Status = CASE WHEN Status = 0 THEN 0 ELSE 2 END;
                 DROP TABLE SubscriptionAuditEntries;
                 DROP INDEX IX_Subscriptions_Status ON Subscriptions;
                 ALTER TABLE Subscriptions
