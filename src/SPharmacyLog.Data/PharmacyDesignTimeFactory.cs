@@ -1,0 +1,1 @@
+using Microsoft.EntityFrameworkCore;using Microsoft.EntityFrameworkCore.Design;namespace SPharmacyLog.Data;public sealed class PharmacyDesignTimeFactory:IDesignTimeDbContextFactory<PharmacyDbContext>{public PharmacyDbContext CreateDbContext(string[] args)=>new(new DbContextOptionsBuilder<PharmacyDbContext>().UseSqlite("Data Source=pharmacy-design.db").Options);}
