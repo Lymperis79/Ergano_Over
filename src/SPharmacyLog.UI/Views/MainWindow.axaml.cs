@@ -2248,6 +2248,17 @@ public partial class MainWindow : Window
                 Foreground = user.IsActive ? Brushes.LightGreen : Brushes.Orange,
                 FontSize = 12
             });
+            var allowedMenuCount = string.IsNullOrWhiteSpace(user.AllowedMenus)
+                ? ConfigurableMenus.Length
+                : user.AllowedMenus.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).Distinct(StringComparer.Ordinal).Count();
+            info.Children.Add(new TextBlock
+            {
+                Text = allowedMenuCount >= ConfigurableMenus.Length
+                    ? Tr.Loc.TranslateText("All workspace menus")
+                    : string.Format(Tr.Loc.TranslateText("Menus: {0} selected"), allowedMenuCount),
+                Foreground = Brushes.LightGray,
+                FontSize = 11
+            });
             info.Children.Add(new TextBlock
             {
                 Text = string.Format(Tr.Loc.TranslateText("Created {0}"), DateTime.SpecifyKind(user.CreatedAt, DateTimeKind.Utc).ToLocalTime().ToString("dd/MM/yyyy HH:mm")),
