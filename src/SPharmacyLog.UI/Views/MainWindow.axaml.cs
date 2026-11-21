@@ -378,6 +378,41 @@ public partial class MainWindow : Window
         returned.Click += async (_, _) => await ReturnSelectedBorrowingAsync();
         var actions = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, Children = { add, edit, returned } };
 
+        var selectedBorrowingLayout = new Grid
+        {
+            ColumnDefinitions = CreateColumns(GridLength.Star, new GridLength(240)),
+            RowDefinitions = CreateRows(GridLength.Auto),
+            ColumnSpacing = 16,
+            Margin = new Thickness(4, 8, 4, 4)
+        };
+        var detailsPanel = new StackPanel
+        {
+            Spacing = 6,
+            Children =
+            {
+                new TextBlock { Text = "SELECTED BORROWING DETAILS", FontWeight = FontWeight.SemiBold },
+                borrowingSelectionDetails
+            }
+        };
+        var barcodePanel = new StackPanel
+        {
+            Spacing = 6,
+            HorizontalAlignment = HorizontalAlignment.Center,
+            Children =
+            {
+                new TextBlock
+                {
+                    Text = "GS1 DataMatrix barcode",
+                    FontWeight = FontWeight.SemiBold,
+                    HorizontalAlignment = HorizontalAlignment.Center
+                },
+                borrowingBarcodeImage
+            }
+        };
+        Grid.SetColumn(barcodePanel, 1);
+        selectedBorrowingLayout.Children.Add(detailsPanel);
+        selectedBorrowingLayout.Children.Add(barcodePanel);
+
         var panel = new StackPanel
         {
             Spacing = 10,
@@ -388,10 +423,7 @@ public partial class MainWindow : Window
                 new TextBlock { Text = "Add a medicine or edit an existing borrowing. Scan a GS1 DataMatrix inside the editor when registering a serialized pack.", TextWrapping = TextWrapping.Wrap, Foreground = Brushes.LightGray },
                 actions,
                 borrowingList,
-                new TextBlock { Text = "SELECTED BORROWING DETAILS", FontWeight = FontWeight.SemiBold, Margin = new Thickness(4, 8, 4, 0) },
-                borrowingSelectionDetails,
-                new TextBlock { Text = "GS1 DataMatrix barcode", FontWeight = FontWeight.SemiBold },
-                borrowingBarcodeImage
+                selectedBorrowingLayout
             }
         };
         return new TabItem
