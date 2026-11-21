@@ -13,8 +13,11 @@ public sealed class MainWindow : Window
     private readonly PharmacyUser _user;
     private readonly ContentControl _content = new();
     private readonly TextBlock _status = new();
-    private readonly DatePicker _expiryDate = new() { SelectedDate = DateTime.Today };
+    private readonly StackPanel _calendarGrid = new() { Spacing = 3 };
     private readonly ListBox _expiring = new();
+    private DateTime _month = new(DateTime.Today.Year, DateTime.Today.Month, 1);
+    private DateTime _selectedDate = DateTime.Today;
+    private Dictionary<DateTime, int> _expiryCounts = new();
 
     public MainWindow(PharmacyUser user)
     {
@@ -43,27 +46,85 @@ public sealed class MainWindow : Window
 
     private void ShowExpiryCalendar()
     {
-        var panel = new StackPanel { Margin = new Thickness(18), Spacing = 12 };
+        var panel = new StackPanel { Margin = new Thickness(18), Spacing = 10 };
         panel.Children.Add(new TextBlock { Text = "Prescription expiry calendar", FontSize = 24, FontWeight = FontWeight.Bold });
-        panel.Children.Add(new TextBlock { Text = "Select a date to see prescriptions expiring that day. Active prescriptions are indexed by expiry date.", Foreground = Brushes.Gray });
-        var row = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 10 };
-        var refresh = new Button { Content = "Show expiring on selected day" };
-        refresh.Click += async (_, _) => await LoadExpiringAsync();
-        row.Children.Add(_expiryDate); row.Children.Add(refresh);
-        panel.Children.Add(row); panel.Children.Add(_status); panel.Children.Add(_expiring);
+        panel.Children.Add(new TextBlock { Text = "Each day displays the number of active prescriptions expiring on that date. Select a day to see the details.", Foreground = Brushes.Gray });
+        var monthHeader = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Center, Spacing = 12 };
+        var prev = new Button { Content = "‹ Previous" };
+        var next = new Button { Content = "Next ›" };
+        var monthTitle = new TextBlock { FontSize = 18, FontWeight = FontWeight.SemiBold, VerticalAlignment = VerticalAlignment.Center, MinWidth = 180, TextAlignment = TextAlignment.Center };
+        prev.Click += async (_, _) => { _month = _month.AddMonths(-1); await RenderCalendarAsync(monthTitle); };
+        next.Click += async (_, _) => { _month = _month.AddMonths(1); await RenderCalendarAsync(monthTitle); };
+        monthHeader.Children.Add(prev); monthHeader.Children.Add(monthTitle); monthHeader.Children.Add(next);
+        panel.Children.Add(monthHeader);
+        var weekHeader = new Grid { ColumnDefinitions = new ColumnDefinitions("*,*,*,*,*,*,*") };
+        var weekdays = new[] { "Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun" };
+        for (int i = 0; i < weekdays.Length; i++)
+        {
+            var t = new TextBlock { Text = weekdays[i], HorizontalAlignment = HorizontalAlignment.Center, FontWeight = FontWeight.SemiBold, Margin = new Thickness(3) };
+            Grid.SetColumn(t, i); weekHeader.Children.Add(t);
+        }
+        panel.Children.Add(weekHeader);
+        _calendarGrid.Children.Clear();
+        panel.Children.Add(_calendarGrid);
+        _status.FontSize = 16;
+        panel.Children.Add(_status);
+        _expiring.MaxHeight = 250;
+        panel.Children.Add(_expiring);
         _content.Content = panel;
-        _ = LoadExpiringAsync();
+        _ = RenderCalendarAsync(monthTitle);
+    }
+
+    private async Task RenderCalendarAsync(TextBlock title)
+    {
+        title.Text = _month.ToString("MMMM yyyy");
+        await using var db = new PharmacyDbContext(Program.DbOptions());
+        var monthStart = _month.Date;
+        var monthEnd = monthStart.AddMonths(1);
+        _expiryCounts = await db.Prescriptions.Where(p => p.Status == PrescriptionStatus.Active &&
+                p.ExpiryDate >= monthStart && p.ExpiryDate < monthEnd)
+            .GroupBy(p => p.ExpiryDate.Date).Select(g => new { Date = g.Key, Count = g.Count() })
+            .ToDictionaryAsync(x => x.Date, x => x.Count);
+
+        _calendarGrid.Children.Clear();
+        var grid = new Grid { ColumnDefinitions = new ColumnDefinitions("*,*,*,*,*,*,*"), RowDefinitions = new RowDefinitions("Auto,Auto,Auto,Auto,Auto,Auto") };
+        var mondayOffset = ((int)_month.DayOfWeek + 6) % 7;
+        var dayCount = DateTime.DaysInMonth(_month.Year, _month.Month);
+        for (int cell = 0; cell < 42; cell++)
+        {
+            int day = cell - mondayOffset + 1;
+            var cellStack = new StackPanel { Spacing = 2, HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center };
+            var button = new Button { MinHeight = 58, HorizontalAlignment = HorizontalAlignment.Stretch, HorizontalContentAlignment = HorizontalAlignment.Center, Padding = new Thickness(4) };
+            if (day >= 1 && day <= dayCount)
+            {
+                var date = new DateTime(_month.Year, _month.Month, day);
+                var count = _expiryCounts.GetValueOrDefault(date);
+                cellStack.Children.Add(new TextBlock { Text = day.ToString(), FontWeight = date == _selectedDate ? FontWeight.Bold : FontWeight.Normal, HorizontalAlignment = HorizontalAlignment.Center });
+                cellStack.Children.Add(new TextBlock { Text = count > 0 ? $"⚠ {count} expiring" : "—", FontSize = 11, Foreground = count > 0 ? Brushes.Orange : Brushes.Gray, HorizontalAlignment = HorizontalAlignment.Center });
+                button.Content = cellStack;
+                button.Background = date == _selectedDate ? Brushes.SteelBlue : null;
+                button.Click += async (_, _) => { _selectedDate = date; await RenderCalendarAsync(title); await LoadExpiringAsync(); };
+            }
+            else
+            {
+                button.IsEnabled = false;
+                button.Opacity = 0.15;
+            }
+            Grid.SetColumn(button, cell % 7); Grid.SetRow(button, cell / 7);
+            grid.Children.Add(button);
+        }
+        _calendarGrid.Children.Add(grid);
+        await LoadExpiringAsync();
     }
 
     private async Task LoadExpiringAsync()
     {
-        var date = _expiryDate.SelectedDate?.Date ?? DateTime.Today;
         await using var db = new PharmacyDbContext(Program.DbOptions());
         var list = await db.Prescriptions.Include(p => p.Customer)
-            .Where(p => p.ExpiryDate.Date == date && p.Status == PrescriptionStatus.Active)
+            .Where(p => p.ExpiryDate >= _selectedDate.Date && p.ExpiryDate < _selectedDate.Date.AddDays(1) && p.Status == PrescriptionStatus.Active)
             .OrderBy(p => p.Customer!.FullName).ThenBy(p => p.MedicineName).ToListAsync();
         _expiring.ItemsSource = list.Select(p => $"{p.Customer?.CustomerNumber} | {p.Customer?.FullName} | {p.MedicineName} | Rx: {p.PrescriptionNumber ?? "—"} | Expires: {p.ExpiryDate:dd/MM/yyyy}").ToList();
-        _status.Text = $"{date:dddd, dd MMMM yyyy} — {list.Count} active prescription(s) expiring";
+        _status.Text = $"{_selectedDate:dddd, dd MMMM yyyy} — {list.Count} active prescription(s) expiring";
         _status.FontWeight = FontWeight.SemiBold;
     }
 
