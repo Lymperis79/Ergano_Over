@@ -1421,13 +1421,11 @@ public partial class MainWindow : Window
         var selector = new ComboBox { MinHeight = 34 };
         selector.Items.Add(new ComboBoxItem
         {
-            Content = Tr.Loc.TranslateText(SubscriptionStatus.Active.ToString()),
-            Tag = SubscriptionStatus.Active
+            Content = Tr.Loc.TranslateText(SubscriptionStatus.Active.ToString())
         });
         selector.Items.Add(new ComboBoxItem
         {
-            Content = Tr.Loc.TranslateText(SubscriptionStatus.Executed.ToString()),
-            Tag = SubscriptionStatus.Executed
+            Content = Tr.Loc.TranslateText(SubscriptionStatus.Executed.ToString())
         });
         selector.SelectedIndex = selectedStatus == SubscriptionStatus.Executed ? 1 : 0;
         return selector;
@@ -1435,11 +1433,15 @@ public partial class MainWindow : Window
 
     private static bool TryReadSubscriptionStatus(ComboBox selector, out SubscriptionStatus status)
     {
-        if (selector.SelectedItem is ComboBoxItem item &&
-            item.Tag is SubscriptionStatus selected &&
-            selected is SubscriptionStatus.Active or SubscriptionStatus.Executed)
+        if (selector.SelectedIndex == 0)
         {
-            status = selected;
+            status = SubscriptionStatus.Active;
+            return true;
+        }
+
+        if (selector.SelectedIndex == 1)
+        {
+            status = SubscriptionStatus.Executed;
             return true;
         }
 
