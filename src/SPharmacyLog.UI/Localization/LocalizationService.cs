@@ -283,7 +283,15 @@ public sealed class LocalizationService : ILocalizationService
         ["Load licence file"] = "Φόρτωση αρχείου άδειας",
         ["Licence files"] = "Αρχεία άδειας",
         ["Licence activated successfully."] = "Η άδεια ενεργοποιήθηκε επιτυχώς.",
-        ["Activation failed:"] = "Αποτυχία ενεργοποίησης:"
+        ["Activation failed:"] = "Αποτυχία ενεργοποίησης:",
+        ["GS1 scan is incomplete or invalid:"] = "Η σάρωση GS1 είναι ελλιπής ή μη έγκυρη:",
+        ["Payment - "] = "Πληρωμή - ",
+        ["Connection failed:"] = "Αποτυχία σύνδεσης:",
+        ["Connection test failed:"] = "Αποτυχία ελέγχου σύνδεσης:",
+        ["Setup could not be completed:"] = "Δεν ήταν δυνατή η ολοκλήρωση της ρύθμισης:",
+        [" is present but its value is empty."] = " υπάρχει αλλά η τιμή του είναι κενή.",
+        [" exceeds the GS1 maximum of 20 characters."] = " υπερβαίνει το μέγιστο όριο των 20 χαρακτήρων GS1.",
+        ["). This screen currently expects AIs 01, 10, 17 and 21."] = "). Αυτή η οθόνη αναμένει τα AI 01, 10, 17 και 21."
     };
 
     public string TranslateText(string text)
