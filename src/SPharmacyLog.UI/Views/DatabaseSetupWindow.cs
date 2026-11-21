@@ -101,7 +101,10 @@ public sealed class DatabaseSetupWindow : Window
         Content = new ScrollViewer { Content = root, Padding = new Thickness(0), MaxHeight = 780 };
 
         provider.SelectionChanged += (_, _) => RefreshProviderFields();
-        windowsAuth.IsCheckedChanged += (_, _) => RefreshProviderFields();
+        windowsAuth.PropertyChanged += (_, args) =>
+        {
+            if (args.Property.Name == nameof(CheckBox.IsChecked)) RefreshProviderFields();
+        };
         testButton.Click += async (_, _) => await TestConnectionAsync();
         continueButton.Click += async (_, _) => await SaveAndContinueAsync();
         createAdminButton.Click += async (_, _) => await CreateAdminAsync();
