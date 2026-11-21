@@ -56,9 +56,9 @@ public sealed class AddSubscriptionStatusAndAudit : Migration
             migrationBuilder.Sql("""
                 ALTER TABLE [Subscriptions] ADD
                     [CreatedAt] datetime2 NOT NULL CONSTRAINT [DF_Subscriptions_CreatedAt] DEFAULT (SYSUTCDATETIME()),
-                    [CreatedBy] nvarchar(max) NOT NULL CONSTRAINT [DF_Subscriptions_CreatedBy] DEFAULT (N'system'),
+                    [CreatedBy] nvarchar(255) NOT NULL CONSTRAINT [DF_Subscriptions_CreatedBy] DEFAULT (N'system'),
                     [LastModifiedAt] datetime2 NOT NULL CONSTRAINT [DF_Subscriptions_LastModifiedAt] DEFAULT (SYSUTCDATETIME()),
-                    [LastModifiedBy] nvarchar(max) NOT NULL CONSTRAINT [DF_Subscriptions_LastModifiedBy] DEFAULT (N'system');
+                    [LastModifiedBy] nvarchar(255) NOT NULL CONSTRAINT [DF_Subscriptions_LastModifiedBy] DEFAULT (N'system');
 
                 UPDATE [Subscriptions] SET [Status] = CASE WHEN [Status] = 0 THEN 0 ELSE 1 END;
                 CREATE INDEX [IX_Subscriptions_Status] ON [Subscriptions]([Status]);
@@ -66,10 +66,10 @@ public sealed class AddSubscriptionStatusAndAudit : Migration
                 CREATE TABLE [SubscriptionAuditEntries] (
                     [Id] int IDENTITY(1,1) NOT NULL CONSTRAINT [PK_SubscriptionAuditEntries] PRIMARY KEY,
                     [SubscriptionId] int NOT NULL,
-                    [Action] nvarchar(max) NOT NULL,
+                    [Action] nvarchar(255) NOT NULL,
                     [PreviousStatus] int NULL,
                     [NewStatus] int NOT NULL,
-                    [ChangedBy] nvarchar(max) NOT NULL,
+                    [ChangedBy] nvarchar(255) NOT NULL,
                     [ChangedAt] datetime2 NOT NULL,
                     [Details] nvarchar(max) NULL,
                     CONSTRAINT [FK_SubscriptionAuditEntries_Subscriptions_SubscriptionId]
