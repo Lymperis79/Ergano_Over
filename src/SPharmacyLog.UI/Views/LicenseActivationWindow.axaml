@@ -1,27 +1,33 @@
-<Window xmlns="https://github.com/avaloniaui"
-        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        x:Class="SPharmacyLog.UI.Views.LicenseActivationWindow"
-        Title="S Pharmacy Log — Licence activation"
-        Width="700" SizeToContent="Height" CanResize="False"
-        WindowStartupLocation="CenterScreen">
-  <StackPanel Margin="28" Spacing="14">
-    <TextBlock x:Name="TitleText" Text="Activate S Pharmacy Log" FontSize="22" FontWeight="Bold"/>
-    <TextBlock x:Name="IntroText" Text="Enter the licence key issued for this PC." TextWrapping="Wrap" Opacity="0.8"/>
-    <Border x:Name="InfoBorder" IsVisible="False" Background="#202020" CornerRadius="8" Padding="14">
-      <TextBlock x:Name="InfoText" TextWrapping="Wrap"/>
+<Window xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" x:Class="SPharmacyLog.UI.Views.LicenseActivationWindow" Title="S Pharmacy Log — Licence activation" Width="720" SizeToContent="Height" CanResize="False" WindowStartupLocation="CenterScreen" Background="{DynamicResource WindowBrush}">
+  <ScrollViewer Padding="28">
+    <Border Classes="card" Padding="24">
+      <StackPanel Spacing="14">
+        <StackPanel Orientation="Horizontal" Spacing="12">
+          <Border Width="48" Height="48" CornerRadius="12" Background="{DynamicResource AccentSoftBrush}">
+            <TextBlock Text="🔐" FontSize="23" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+          </Border>
+          <StackPanel VerticalAlignment="Center" Spacing="2">
+            <TextBlock x:Name="TitleText" Text="Activate S Pharmacy Log" FontSize="23" FontWeight="Bold"/>
+            <TextBlock x:Name="IntroText" Text="Enter the licence key issued for this PC." TextWrapping="Wrap" Foreground="#91A1B5"/>
+          </StackPanel>
+        </StackPanel>
+        <Border x:Name="InfoBorder" IsVisible="False" Background="{DynamicResource AccentFaintBrush}" BorderBrush="{DynamicResource LineBrush}" BorderThickness="1" CornerRadius="8" Padding="14">
+          <TextBlock x:Name="InfoText" TextWrapping="Wrap"/>
+        </Border>
+        <TextBlock Text="PC code" FontSize="12" Foreground="#91A1B5" FontWeight="SemiBold"/>
+        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+          <TextBox x:Name="PcCodeBox" IsReadOnly="True" FontFamily="Consolas" FontSize="16"/>
+          <Button Grid.Column="1" Content="Copy code" Click="OnCopyClick"/>
+        </Grid>
+        <TextBlock Text="Licence key" FontSize="12" Foreground="#91A1B5" FontWeight="SemiBold"/>
+        <TextBox x:Name="KeyBox" AcceptsReturn="True" TextWrapping="Wrap" Height="120" FontFamily="Consolas" FontSize="12"/>
+        <TextBlock x:Name="StatusText" TextWrapping="Wrap" Foreground="#F0A65A"/>
+        <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
+          <Button x:Name="LoadButton" Content="Load licence file…" Click="OnLoadClick"/>
+          <Button x:Name="ActivateButton" Content="Activate" Classes="accent" Click="OnActivateClick"/>
+          <Button x:Name="ExitButton" Content="Exit" Click="OnExitClick"/>
+        </StackPanel>
+      </StackPanel>
     </Border>
-    <TextBlock Text="PC code" FontSize="12" Opacity="0.7"/>
-    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
-      <TextBox x:Name="PcCodeBox" IsReadOnly="True" FontFamily="Consolas" FontSize="17"/>
-      <Button x:Name="CopyButton" Grid.Column="1" Content="Copy PC code" Click="OnCopyClick"/>
-    </Grid>
-    <TextBlock Text="Licence key" FontSize="12" Opacity="0.7"/>
-    <TextBox x:Name="KeyBox" AcceptsReturn="True" TextWrapping="Wrap" Height="120" FontFamily="Consolas" FontSize="12"/>
-    <TextBlock x:Name="StatusText" TextWrapping="Wrap"/>
-    <StackPanel Orientation="Horizontal" Spacing="10" HorizontalAlignment="Right">
-      <Button x:Name="LoadButton" Content="Load licence file…" Click="OnLoadClick"/>
-      <Button x:Name="ActivateButton" Content="Activate" Click="OnActivateClick"/>
-      <Button x:Name="ExitButton" Content="Exit" Click="OnExitClick"/>
-    </StackPanel>
-  </StackPanel>
+  </ScrollViewer>
 </Window>
