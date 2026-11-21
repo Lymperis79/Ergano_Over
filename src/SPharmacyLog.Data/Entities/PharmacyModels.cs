@@ -28,9 +28,7 @@ public enum BorrowingStatus
 public enum SubscriptionStatus
 {
     Active = 0,
-    Paused = 1, // Retained for compatibility with existing records.
-    Executed = 2,
-    Cancelled = 3 // Retained for compatibility with existing records.
+    Executed = 1
 }
 
 public enum LedgerEntryType
