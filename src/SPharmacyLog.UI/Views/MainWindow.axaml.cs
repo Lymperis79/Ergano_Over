@@ -2671,4 +2671,10 @@ public partial class MainWindow : Window
         showingExpiryCalendar = false;
         pageHost.Content = new StackPanel { Margin = new Thickness(20), Children = { new TextBlock { Text = title, FontSize = 24, FontWeight = FontWeight.Bold }, new TextBlock { Text = Tr.Loc["Common.Queued"] } } };
     }
+
+    private async void OnAppearanceClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        var appearance = new AppearanceWindow();
+        await appearance.ShowDialog(this);
+    }
 }
