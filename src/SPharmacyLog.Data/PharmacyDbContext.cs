@@ -48,6 +48,47 @@ public sealed class PharmacyDbContext : DbContext
             .HasIndex(barcode => barcode.MedicineId);
 
         modelBuilder.Entity<SerializedPackScan>()
+            .Property(pack => pack.RawGs1String)
+            .HasMaxLength(255)
+            .IsUnicode(false);
+
+        modelBuilder.Entity<SerializedPackScan>()
+            .Property(pack => pack.Gtin14)
+            .HasMaxLength(14)
+            .IsFixedLength()
+            .IsUnicode(false);
+
+        modelBuilder.Entity<SerializedPackScan>()
+            .Property(pack => pack.EofEan13)
+            .HasMaxLength(13)
+            .IsFixedLength()
+            .IsUnicode(false);
+
+        modelBuilder.Entity<SerializedPackScan>()
+            .Property(pack => pack.SerialNumber)
+            .HasMaxLength(20)
+            .IsUnicode(false);
+
+        modelBuilder.Entity<SerializedPackScan>()
+            .Property(pack => pack.BatchLot)
+            .HasMaxLength(20)
+            .IsUnicode(false);
+
+        modelBuilder.Entity<SerializedPackScan>()
+            .Property(pack => pack.HmvoStatus)
+            .HasMaxLength(20)
+            .IsUnicode(false)
+            .HasDefaultValue(SerializedPackStatuses.Active);
+
+        modelBuilder.Entity<SerializedPackScan>()
+            .Property(pack => pack.ScannedAt)
+            .HasDefaultValueSql("CURRENT_TIMESTAMP");
+
+        modelBuilder.Entity<SerializedPackScan>()
+            .Property(pack => pack.ExpiryDate)
+            .HasColumnType("date");
+
+        modelBuilder.Entity<SerializedPackScan>()
             .HasIndex(pack => new { pack.Gtin14, pack.SerialNumber })
             .IsUnique();
 
