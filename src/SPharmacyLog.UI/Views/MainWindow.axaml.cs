@@ -150,6 +150,7 @@ public partial class MainWindow : Window
             AddNavigationButton("Navigation.Users", () => _ = ShowUsersAsync());
             AddNavigationButton("Company settings", OpenCompanySettings);
             AddNavigationButton("Weather settings", OpenWeatherSettings);
+            AddNavigationButton("Database synchronization", OpenCustomerDatabaseSync);
         }
     }
 
@@ -291,6 +292,14 @@ public partial class MainWindow : Window
         var saved = await dialog.ShowDialog<bool>(this);
         if (saved)
             ShowDashboard();
+    }
+
+    private async void OpenCustomerDatabaseSync()
+    {
+        if (viewModel.User.Role != PharmacyRole.Admin) return;
+        var dialog = new CustomerDatabaseSyncWindow();
+        AttachDialogLocalization(dialog);
+        await dialog.ShowDialog(this);
     }
 
     private void ShowReports()
