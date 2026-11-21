@@ -53,8 +53,8 @@ public partial class LoginWindow : Window
                 case Button button when button.Content is string content:
                     button.Content = Tr.Loc.TranslateText(content);
                     break;
-                case TextBox textBox when !string.IsNullOrEmpty(textBox.Watermark):
-                    textBox.Watermark = Tr.Loc.TranslateText(textBox.Watermark);
+                case TextBox textBox when !string.IsNullOrEmpty(textBox.PlaceholderText):
+                    textBox.PlaceholderText = Tr.Loc.TranslateText(textBox.PlaceholderText);
                     break;
                 case ComboBoxItem comboItem when comboItem.Content is string itemText:
                     comboItem.Content = Tr.Loc.TranslateText(itemText);
