@@ -329,13 +329,9 @@ public partial class MainWindow : Window
             TextWrapping = TextWrapping.Wrap,
             Margin = new Thickness(4, 0, 4, 8)
         };
-        borrowingList.SelectionChanged += (_, _) =>
-        {
-            // Defer detail rendering until the ListBox has completed its selection
-            // change. This keeps database/UI work out of the selection event itself.
-            Avalonia.Threading.Dispatcher.UIThread.Post(ShowSelectedBorrowingScanDetails);
-        };
-
+        // Selection handling is intentionally disabled while isolating the UI freeze.
+        // The list remains usable for selecting a row, but selection does not trigger
+        // detail rendering or any additional UI/database work.
         // A scanner configured as USB keyboard/HID writes directly into this field.
         // Most scanners send Enter after the DataMatrix payload.
         gs1ScanInput = new TextBox
@@ -469,54 +465,6 @@ public partial class MainWindow : Window
         gs1ScanEcho.Text = string.IsNullOrEmpty(raw)
             ? string.Empty
             : raw.Replace(Gs1DataMatrixParser.GroupSeparator.ToString(), "<GS>", StringComparison.Ordinal);
-    }
-
-    private void ShowSelectedBorrowingScanDetails()
-    {
-        try
-        {
-            var selectedIndex = borrowingList.SelectedIndex;
-            if (selectedIndex < 0 || selectedIndex >= currentBorrowings.Count)
-            {
-                borrowingSelectionDetails.Text = "Select an existing borrowing to view its saved GS1 scan details.";
-                return;
-            }
-
-            var borrowing = currentBorrowings[selectedIndex];
-            var pack = borrowing.SerializedPackScan;
-            if (pack is null)
-            {
-                borrowingSelectionDetails.Text =
-                    $"Selected item: {borrowing.MedicineName}. This is a legacy borrowing without a linked GS1 DataMatrix scan.";
-                return;
-            }
-
-            // Do not run the full phrase-replacement translator over a composite
-            // record containing customer/medicine/barcode data during ListBox selection.
-            var raw = (pack.RawGs1String ?? string.Empty)
-                .Replace(Gs1DataMatrixParser.GroupSeparator.ToString(), "<GS>", StringComparison.Ordinal);
-
-            borrowingSelectionDetails.Text =
-                $"SAVED GS1 PACK DETAILS\n" +
-                $"Medicine: {borrowing.MedicineName}\n" +
-                $"GTIN-14: {pack.Gtin14}\n" +
-                $"EOF / NTIN: {pack.EofEan13 ?? "—"}\n" +
-                $"Serial number: {pack.SerialNumber}\n" +
-                $"Expiry: {pack.ExpiryDate:dd/MM/yyyy}\n" +
-                $"Batch / lot: {pack.BatchLot}\n" +
-                $"Pack status: {pack.HmvoStatus}\n" +
-                $"Scanned at: {pack.ScannedAt:dd/MM/yyyy HH:mm:ss}\n" +
-                $"Raw scanner payload: {raw}";
-        }
-        catch (Exception exception)
-        {
-            borrowingSelectionDetails.Text = "Could not display the selected borrowing details.";
-            if (customerStatus is not null)
-            {
-                customerStatus.Foreground = Brushes.OrangeRed;
-                customerStatus.Text = $"Borrowing selection error: {exception.Message}";
-            }
-        }
     }
 
     private Button CreateGs1ParseButton()
