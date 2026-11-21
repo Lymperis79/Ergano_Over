@@ -13,6 +13,7 @@ namespace SPharmacyLog.UI.Views;
 public partial class MainWindow : Window
 {
     private readonly MainWindowViewModel viewModel;
+    private ComboBox languageBox = null!;
     private readonly ContentControl pageHost;
     private readonly TextBlock dailySummary = new();
     private readonly ListBox dayRecords = new();
@@ -22,6 +23,8 @@ public partial class MainWindow : Window
     public MainWindow(PharmacyUser user)
     {
         InitializeComponent();
+        languageBox = this.FindControl<ComboBox>("LanguageBox")
+            ?? throw new InvalidOperationException("LanguageBox was not found in MainWindow.axaml. Check the XAML control name and build action.");
         viewModel = new MainWindowViewModel(user);
         DataContext = viewModel;
         UserLabel.Text = viewModel.UserDisplay;
@@ -54,13 +57,14 @@ public partial class MainWindow : Window
     private void ApplyTranslations()
     {
         Title = Tr.Loc["App.Title"];
-        LanguageBox.SelectedIndex = Tr.Loc.CurrentLanguage == AppLanguage.Greek ? 1 : 0;
+        if (languageBox is not null)
+            languageBox.SelectedIndex = Tr.Loc.CurrentLanguage == AppLanguage.Greek ? 1 : 0;
     }
 
     private void OnLanguageChanged(object? sender, SelectionChangedEventArgs e)
     {
-        if (LanguageBox.SelectedIndex == 1) Tr.Loc.SetLanguage(AppLanguage.Greek);
-        else if (LanguageBox.SelectedIndex == 0) Tr.Loc.SetLanguage(AppLanguage.English);
+        if (languageBox?.SelectedIndex == 1) Tr.Loc.SetLanguage(AppLanguage.Greek);
+        else if (languageBox?.SelectedIndex == 0) Tr.Loc.SetLanguage(AppLanguage.English);
     }
 
     private void ShowExpiryCalendar()
