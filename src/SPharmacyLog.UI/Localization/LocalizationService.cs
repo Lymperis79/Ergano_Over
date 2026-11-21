@@ -181,7 +181,7 @@ public sealed class LocalizationService : ILocalizationService
     {
         if (string.IsNullOrEmpty(text)) return text;
         var english = text;
-        foreach (var pair in UiGreek)
+        foreach (var pair in UiGreek.OrderByDescending(x => x.Value.Length))
             english = english.Replace(pair.Value, pair.Key, StringComparison.Ordinal);
         if (CurrentLanguage == AppLanguage.English) return english;
 
