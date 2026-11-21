@@ -215,7 +215,6 @@ public sealed class LocalizationService : ILocalizationService
         ["Transfer"] = "Μεταφορά",
         ["Admin"] = "Διαχειριστής",
         ["Pharmacist"] = "Φαρμακοποιός",
-        ["Email:"] = "Email:",
         ["Mobile:"] = "Κινητό:",
         ["Address:"] = "Διεύθυνση:",
         ["City:"] = "Πόλη:",
@@ -343,7 +342,7 @@ public sealed class LocalizationService : ILocalizationService
     private static bool IsSafePhrase(string key) =>
         key.Length >= 8 ||
         key.Contains(' ') ||
-        key.EndsWith(':', StringComparison.Ordinal) ||
+        key.EndsWith(":", StringComparison.Ordinal) ||
         key.StartsWith("＋", StringComparison.Ordinal) ||
         key.All(char.IsUpper);
 
