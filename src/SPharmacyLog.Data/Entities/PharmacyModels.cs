@@ -385,3 +385,17 @@ public class LedgerEntry
 
     public string RecordedBy { get; set; } = string.Empty;
 }
+
+/// <summary>
+/// A calendar note belonging to a date. Private notes are visible only to their creator.
+/// </summary>
+public class CalendarNote
+{
+    public int Id { get; set; }
+    public DateTime CalendarDate { get; set; }
+    public string Header { get; set; } = string.Empty;
+    public string Note { get; set; } = string.Empty;
+    public string CreatedBy { get; set; } = string.Empty;
+    public bool IsShared { get; set; }
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+}
