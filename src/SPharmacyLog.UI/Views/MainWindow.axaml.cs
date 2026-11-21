@@ -200,6 +200,7 @@ public partial class MainWindow : Window
             AddNavigationButton("Weather settings", OpenWeatherSettings, "☼");
             AddNavigationButton("Navigation.ApplicationSettings", OpenApplicationSettings, "⚙");
             AddNavigationButton("Database synchronization", OpenCustomerDatabaseSync, "⇄");
+            AddNavigationButton("Medicine catalogue", OpenMedicineCatalogue, "▤");
         }
 
         // Keep the selected item highlighted when the menu is rebuilt (for example,
@@ -1548,7 +1549,7 @@ public partial class MainWindow : Window
             var medicine = match?.Medicine ?? await lookupDb.Medicines.FirstOrDefaultAsync(x =>
                 x.Barcode == parsedPack.Gtin14 ||
                 (!string.IsNullOrWhiteSpace(parsedPack.ResolvedEofBarcode) && x.Barcode == parsedPack.ResolvedEofBarcode));
-            if (medicine is not null && string.IsNullOrWhiteSpace(medicineNameInput.Text)) medicineNameInput.Text = medicine.Name;
+            if (medicine is not null) medicineNameInput.Text = medicine.Name;
             if (string.IsNullOrWhiteSpace(eofInput.Text)) eofInput.Text = parsedPack.ResolvedEofBarcode ?? string.Empty;
             scanStatus.Foreground = Brushes.LightGreen;
             scanStatus.Text = medicine is null
@@ -3569,6 +3570,13 @@ public partial class MainWindow : Window
         };
         AttachDialogLocalization(dialog);
         await dialog.ShowDialog(this);
+    }
+
+    private async void OpenMedicineCatalogue()
+    {
+        if (viewModel.User.Role != PharmacyRole.Admin) return;
+        var window = new MedicineCatalogWindow();
+        await window.ShowDialog(this);
     }
 
     private void ShowPlaceholder(string title)
