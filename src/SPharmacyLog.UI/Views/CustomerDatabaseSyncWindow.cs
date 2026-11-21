@@ -132,33 +132,34 @@ public sealed class CustomerDatabaseSyncWindow : Window
         });
         importButton.Click += async (_, _) => await RunAsync(async settings =>
         {
-            var confirm = await new Window
+            var confirmation = new Window
             {
                 Title = "Confirm customer import",
                 Width = 480,
-                Height = 210,
-                WindowStartupLocation = WindowStartupLocation.CenterOwner,
-                Content = new StackPanel
+                Height = 220,
+                WindowStartupLocation = WindowStartupLocation.CenterOwner
+            };
+            var cancel = new Button { Content = "Cancel", MinWidth = 90 };
+            var confirmImport = new Button { Content = "Import", MinWidth = 90, IsDefault = true };
+            cancel.Click += (_, _) => confirmation.Close(false);
+            confirmImport.Click += (_, _) => confirmation.Close(true);
+            confirmation.Content = new StackPanel
+            {
+                Margin = new Thickness(20),
+                Spacing = 14,
+                Children =
                 {
-                    Margin = new Thickness(20),
-                    Spacing = 14,
-                    Children =
+                    new TextBlock { Text = "Import the selected customers into S Pharmacy Log? Existing active customers will be updated. Existing inactive customers will be left completely unchanged.", TextWrapping = TextWrapping.Wrap },
+                    new StackPanel
                     {
-                        new TextBlock { Text = "Import the selected customers into S Pharmacy Log? Existing active customers will be updated. Existing inactive customers will be left completely unchanged.", TextWrapping = TextWrapping.Wrap },
-                        new StackPanel
-                        {
-                            Orientation = Orientation.Horizontal,
-                            HorizontalAlignment = HorizontalAlignment.Right,
-                            Spacing = 8,
-                            Children =
-                            {
-                                new Button { Content = "Cancel", MinWidth = 90, IsCancel = true },
-                                new Button { Content = "Import", MinWidth = 90, IsDefault = true, Name = "ConfirmImport" }
-                            }
-                        }
+                        Orientation = Orientation.Horizontal,
+                        HorizontalAlignment = HorizontalAlignment.Right,
+                        Spacing = 8,
+                        Children = { cancel, confirmImport }
                     }
                 }
-            }.ShowDialog<bool>(this);
+            };
+            var confirm = await confirmation.ShowDialog<bool>(this);
             if (!confirm) return;
             await using var db = new PharmacyDbContext(PharmacyDb.Options());
             var result = await CustomerDatabaseSyncService.ImportAsync(settings, db);
