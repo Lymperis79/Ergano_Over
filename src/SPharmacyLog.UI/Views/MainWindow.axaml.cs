@@ -2614,16 +2614,34 @@ public partial class MainWindow : Window
         var type = new ComboBox
         {
             MinHeight = 34,
-            ItemsSource = new[] { "Payment", "Adjustment", "Reversal" },
+            ItemsSource = new[] { "Charge", "Payment", "Adjustment", "Reversal" },
             SelectedItem = existing?.Type.ToString() ?? "Payment"
         };
-        var amount = new TextBox { Text = existing?.Amount.ToString("0.00") ?? "", PlaceholderText = "Amount", MinHeight = 34 };
+        var typeDescription = new TextBlock
+        {
+            TextWrapping = TextWrapping.Wrap,
+            Foreground = Brushes.LightGray,
+            FontSize = 12,
+            Margin = new Thickness(2, -2, 2, 4)
+        };
+        string DescribeLedgerType(string? selectedType) => Tr.Loc.TranslateText(selectedType switch
+        {
+            "Charge" => "Charge: Adds an amount the customer owes; increases the balance.",
+            "Payment" => "Payment: Records money received; reduces the balance and appears in Payment History.",
+            "Adjustment" => "Adjustment: Corrects the customer balance, for example a discount or accounting correction.",
+            "Reversal" => "Reversal: Records a cancellation or reversal of a previous transaction.",
+            _ => "Choose what this ledger entry represents."
+        });
+        void UpdateLedgerTypeDescription() => typeDescription.Text = DescribeLedgerType(type.SelectedItem?.ToString());
+        type.SelectionChanged += (_, _) => UpdateLedgerTypeDescription();
+        UpdateLedgerTypeDescription();
+        var amount = new TextBox { Text = existing?.Amount.ToString("0.00", CultureInfo.InvariantCulture) ?? "", PlaceholderText = "Amount", MinHeight = 34 };
         var description = new TextBox { Text = existing?.Description ?? "", PlaceholderText = "Description", MinHeight = 34 };
         var entryDate = new TextBox { Text = (existing?.EntryDate ?? DateTime.Now).ToString("yyyy-MM-dd HH:mm"), PlaceholderText = "Entry date (yyyy-MM-dd HH:mm)", MinHeight = 34 };
         var form = new StackPanel { Spacing = 7, Margin = new Thickness(16), Children =
         {
             new TextBlock { Text = isEdit ? "EDIT LEDGER ENTRY" : "ADD LEDGER ENTRY", FontSize = 19, FontWeight = FontWeight.Bold },
-            new TextBlock { Text = "Entry type" }, type,
+            new TextBlock { Text = "Entry type" }, type, typeDescription,
             new TextBlock { Text = "Amount (positive number)" }, amount,
             new TextBlock { Text = "Description" }, description,
             new TextBlock { Text = "Entry date (yyyy-MM-dd HH:mm)" }, entryDate
@@ -2660,17 +2678,31 @@ public partial class MainWindow : Window
             record.EntryDate = parsedDate;
             if (parsedType == LedgerEntryType.Payment)
             {
-                // Keep the ledger and dedicated payment history in sync.
-                db.Payments.Add(new Payment
+                // Give the payment and ledger row a shared unique reference so
+                // editing it from Payment History updates this exact ledger row.
+                var paymentReference = record.SourceReference;
+                if (string.IsNullOrWhiteSpace(paymentReference))
+                    paymentReference = "LEDGER-" + Guid.NewGuid().ToString("N");
+
+                var linkedPayment = await db.Payments.FirstOrDefaultAsync(x =>
+                    x.CustomerId == selectedCustomerId.Value && x.Reference == paymentReference);
+                if (linkedPayment is null)
                 {
-                    CustomerId = selectedCustomerId.Value,
-                    Amount = parsedAmount,
-                    Method = "Cash",
-                    PaidAt = parsedDate,
-                    Notes = description.Text.Trim(),
-                    RecordedBy = viewModel.User.Username
-                });
-                record.SourceReference = null;
+                    linkedPayment = new Payment
+                    {
+                        CustomerId = selectedCustomerId.Value,
+                        Reference = paymentReference,
+                        RecordedBy = viewModel.User.Username
+                    };
+                    db.Payments.Add(linkedPayment);
+                }
+
+                linkedPayment.Amount = parsedAmount;
+                linkedPayment.Method = "Cash";
+                linkedPayment.PaidAt = parsedDate;
+                linkedPayment.Notes = description.Text.Trim();
+                record.SourceReference = paymentReference;
+                record.Description = $"Payment - Cash: {description.Text.Trim()}";
             }
             await db.SaveChangesAsync();
             dialog.Close();
@@ -2789,23 +2821,32 @@ public partial class MainWindow : Window
     {
         if (!selectedCustomerId.HasValue) { SetActivityStatus("Save or select a customer first."); return; }
         if (!TryParseLocalizedAmount(ActivityValue("LedgerAmount"), out var amount) || amount <= 0 || string.IsNullOrWhiteSpace(ActivityValue("LedgerDescription"))) { SetActivityStatus("Enter a positive amount and description."); return; }
-        if (!Enum.TryParse<LedgerEntryType>(ActivityValue("LedgerType"), true, out var type)) { SetActivityStatus("Choose Payment, Adjustment or Reversal."); return; }
+        if (!Enum.TryParse<LedgerEntryType>(ActivityValue("LedgerType"), true, out var type)) { SetActivityStatus("Choose Charge, Payment, Adjustment or Reversal."); return; }
         await using var db = new PharmacyDbContext(PharmacyDb.Options());
         var description = ActivityValue("LedgerDescription");
         var entryDate = DateTime.Now;
-        db.LedgerEntries.Add(new LedgerEntry { CustomerId = selectedCustomerId.Value, Type = type, Amount = amount, Description = description, EntryDate = entryDate, RecordedBy = viewModel.User.Username });
+        var ledgerEntry = new LedgerEntry
+        {
+            CustomerId = selectedCustomerId.Value, Type = type, Amount = amount,
+            Description = description, EntryDate = entryDate, RecordedBy = viewModel.User.Username
+        };
         if (type == LedgerEntryType.Payment)
         {
+            var paymentReference = "LEDGER-" + Guid.NewGuid().ToString("N");
+            ledgerEntry.SourceReference = paymentReference;
+            ledgerEntry.Description = $"Payment - Cash: {description}";
             db.Payments.Add(new Payment
             {
                 CustomerId = selectedCustomerId.Value,
                 Amount = amount,
                 Method = "Cash",
+                Reference = paymentReference,
                 PaidAt = entryDate,
                 Notes = description,
                 RecordedBy = viewModel.User.Username
             });
         }
+        db.LedgerEntries.Add(ledgerEntry);
         await db.SaveChangesAsync();
         SetActivityStatus(type == LedgerEntryType.Payment ? "Payment recorded and ledger updated." : "Ledger entry added.");
         await RefreshCustomerWorkspaceAsync();
