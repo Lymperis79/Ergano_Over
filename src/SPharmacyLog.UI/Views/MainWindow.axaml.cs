@@ -12,6 +12,7 @@ using System.Globalization;
 using ZXing;
 using ZXing.Datamatrix;
 using Avalonia.VisualTree;
+using Avalonia.Threading;
 using Microsoft.EntityFrameworkCore;
 using SPharmacyLog.Data;
 using SPharmacyLog.Data.Entities;
@@ -1272,12 +1273,19 @@ public partial class MainWindow : Window
         subscriptionsTab.IsVisible = CanAccessMenu(MenuSubscriptions);
         ledgerTab.IsVisible = CanAccessMenu(MenuPayments);
         customerTabs = new TabControl { Items = { overviewTab, details, borrowingTab, historyTab, subscriptionsTab, ledgerTab }, Margin = new Thickness(12) };
-        // Avalonia virtualizes TabControl content: controls in inactive tabs may not
-        // exist in the visual tree yet. Translate each tab when it becomes active.
+        // Avalonia may attach the newly selected TabItem content only after the
+        // SelectionChanged event has completed. Defer translation until the visual
+        // tree has materialized, otherwise the previous tab is translated again and
+        // the newly selected tab can remain in its construction language.
         customerTabs.SelectionChanged += (_, _) =>
         {
-            if (!isApplyingTranslations)
-                ApplyTranslations();
+            if (isApplyingTranslations) return;
+
+            Dispatcher.UIThread.Post(() =>
+            {
+                if (!isApplyingTranslations && customerTabs.IsVisible)
+                    ApplyTranslations();
+            }, DispatcherPriority.Loaded);
         };
         // Use a Grid rather than a StackPanel so the TabControl receives a finite
         // height. Otherwise its tab content (including the Borrowings ScrollViewer)
