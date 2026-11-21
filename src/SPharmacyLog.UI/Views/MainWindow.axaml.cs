@@ -31,6 +31,7 @@ public partial class MainWindow : Window
     private DateTime displayedMonth = new(DateTime.Today.Year, DateTime.Today.Month, 1);
     private TextBlock? calendarMonthTitle;
     private bool showingExpiryCalendar;
+    private bool suppressCustomerSelectionChanged;
     private readonly Dictionary<string, TextBox> customerFields = new();
     private ListBox customerList = null!;
     private TextBox customerSearch = null!;
@@ -235,27 +236,138 @@ public partial class MainWindow : Window
     {
         monthTitle.Text = displayedMonth.ToString("MMMM yyyy");
         await using var db = new PharmacyDbContext(PharmacyDb.Options());
-        var start = displayedMonth; var end = displayedMonth.AddMonths(1);
-        var expiryCounts = await db.Prescriptions.Where(p => p.Status == PrescriptionStatus.Active && p.ExpiryDate >= start && p.ExpiryDate < end)
-            .GroupBy(p => p.ExpiryDate.Date).Select(g => new { Date = g.Key, Count = g.Count() }).ToDictionaryAsync(x => x.Date, x => x.Count);
+        var start = displayedMonth;
+        var end = displayedMonth.AddMonths(1);
+        var expiryCounts = await db.Prescriptions
+            .Where(p => p.Status == PrescriptionStatus.Active && p.ExpiryDate >= start && p.ExpiryDate < end)
+            .GroupBy(p => p.ExpiryDate.Date)
+            .Select(g => new { Date = g.Key, Count = g.Count() })
+            .ToDictionaryAsync(x => x.Date, x => x.Count);
+        var dueSubscriptions = await db.Subscriptions.AsNoTracking()
+            .Include(subscription => subscription.Customer)
+            .Where(subscription => subscription.Status == SubscriptionStatus.Active &&
+                subscription.NextDueDate >= start && subscription.NextDueDate < end)
+            .OrderBy(subscription => subscription.Customer!.Surname)
+            .ThenBy(subscription => subscription.Customer!.FirstName)
+            .ToListAsync();
+        var subscriptionsByDate = dueSubscriptions
+            .GroupBy(subscription => subscription.NextDueDate.Date)
+            .ToDictionary(group => group.Key, group => group.ToList());
+
         calendarPanel.Children.Clear();
-        var grid = new Grid { ColumnDefinitions = CreateColumns(GridLength.Star, GridLength.Star, GridLength.Star, GridLength.Star, GridLength.Star, GridLength.Star, GridLength.Star), RowDefinitions = CreateRows(GridLength.Auto, GridLength.Auto, GridLength.Auto, GridLength.Auto, GridLength.Auto, GridLength.Auto) };
-        var offset = ((int)displayedMonth.DayOfWeek + 6) % 7; var daysInMonth = DateTime.DaysInMonth(displayedMonth.Year, displayedMonth.Month);
+        var grid = new Grid
+        {
+            ColumnDefinitions = CreateColumns(GridLength.Star, GridLength.Star, GridLength.Star, GridLength.Star, GridLength.Star, GridLength.Star, GridLength.Star),
+            RowDefinitions = CreateRows(GridLength.Auto, GridLength.Auto, GridLength.Auto, GridLength.Auto, GridLength.Auto, GridLength.Auto)
+        };
+        var offset = ((int)displayedMonth.DayOfWeek + 6) % 7;
+        var daysInMonth = DateTime.DaysInMonth(displayedMonth.Year, displayedMonth.Month);
         for (var cell = 0; cell < 42; cell++)
         {
             var dayNumber = cell - offset + 1;
-            var button = new Button { MinHeight = 70, Padding = new Thickness(5), HorizontalAlignment = HorizontalAlignment.Stretch, HorizontalContentAlignment = HorizontalAlignment.Center, Margin = new Thickness(3) };
+            Control dayCell;
             if (dayNumber >= 1 && dayNumber <= daysInMonth)
             {
-                var date = new DateTime(displayedMonth.Year, displayedMonth.Month, dayNumber); var count = expiryCounts.GetValueOrDefault(date);
-                button.Content = new StackPanel { Spacing = 1, Children = { new TextBlock { Text = dayNumber.ToString(), HorizontalAlignment = HorizontalAlignment.Center }, new TextBlock { Text = count > 0 ? $"{count} {Tr.Loc["Calendar.Expiring"]}" : Tr.Loc["Calendar.None"], FontSize = 11, Foreground = count > 0 ? Brushes.Orange : Brushes.Gray, HorizontalAlignment = HorizontalAlignment.Center } } };
-                if (date == SelectedCalendarDate) { button.Background = new SolidColorBrush(Color.Parse("#243C52")); button.BorderBrush = new SolidColorBrush(Color.Parse("#21A1D8")); button.BorderThickness = new Thickness(2); }
-                button.Click += async (_, _) => { SelectedCalendarDate = date; await RenderCalendarAsync(monthTitle); await LoadSelectedDayAsync(); };
+                var date = new DateTime(displayedMonth.Year, displayedMonth.Month, dayNumber);
+                var expiryCount = expiryCounts.GetValueOrDefault(date);
+                var dayContent = new StackPanel { Spacing = 3 };
+                var dayHeader = new Button
+                {
+                    Padding = new Thickness(3),
+                    HorizontalAlignment = HorizontalAlignment.Stretch,
+                    HorizontalContentAlignment = HorizontalAlignment.Center,
+                    Content = new StackPanel
+                    {
+                        Spacing = 1,
+                        Children =
+                        {
+                            new TextBlock { Text = dayNumber.ToString(), FontWeight = FontWeight.Bold, HorizontalAlignment = HorizontalAlignment.Center },
+                            new TextBlock
+                            {
+                                Text = expiryCount > 0 ? $"{expiryCount} {Tr.Loc["Calendar.Expiring"]}" : Tr.Loc["Calendar.None"],
+                                FontSize = 10,
+                                Foreground = expiryCount > 0 ? Brushes.Orange : Brushes.Gray,
+                                HorizontalAlignment = HorizontalAlignment.Center
+                            }
+                        }
+                    }
+                };
+                dayHeader.Click += async (_, _) =>
+                {
+                    SelectedCalendarDate = date;
+                    await RenderCalendarAsync(monthTitle);
+                    await LoadSelectedDayAsync();
+                };
+                dayContent.Children.Add(dayHeader);
+
+                if (subscriptionsByDate.TryGetValue(date, out var daySubscriptions))
+                {
+                    foreach (var subscription in daySubscriptions)
+                    {
+                        var customer = subscription.Customer;
+                        var subscriptionNumber = GetSubscriptionNumber(subscription);
+                        var subscriptionBox = new Button
+                        {
+                            MinHeight = 34,
+                            Padding = new Thickness(4, 3),
+                            HorizontalContentAlignment = HorizontalAlignment.Stretch,
+                            HorizontalAlignment = HorizontalAlignment.Stretch,
+                            Background = new SolidColorBrush(Color.Parse("#203D55")),
+                            BorderBrush = new SolidColorBrush(Color.Parse("#397DA5")),
+                            BorderThickness = new Thickness(1),
+                            Content = new StackPanel
+                            {
+                                Spacing = 1,
+                                Children =
+                                {
+                                    new TextBlock
+                                    {
+                                        Text = $"{subscriptionNumber} | {customer?.CustomerNumber}",
+                                        FontSize = 10,
+                                        FontWeight = FontWeight.Bold,
+                                        TextTrimming = TextTrimming.CharacterEllipsis
+                                    },
+                                    new TextBlock
+                                    {
+                                        Text = $"{customer?.FullName} · {subscription.Title}",
+                                        FontSize = 10,
+                                        TextTrimming = TextTrimming.CharacterEllipsis
+                                    }
+                                }
+                            }
+                        };
+                        subscriptionBox.Click += async (_, _) => await OpenSubscriptionDetailsAsync(subscription.Id);
+                        dayContent.Children.Add(subscriptionBox);
+                    }
+                }
+
+                dayCell = new Border
+                {
+                    MinHeight = 86,
+                    Margin = new Thickness(3),
+                    Padding = new Thickness(3),
+                    CornerRadius = new CornerRadius(6),
+                    BorderThickness = date == SelectedCalendarDate ? new Thickness(2) : new Thickness(1),
+                    BorderBrush = date == SelectedCalendarDate
+                        ? new SolidColorBrush(Color.Parse("#21A1D8"))
+                        : new SolidColorBrush(Color.Parse("#34495E")),
+                    Background = date == SelectedCalendarDate
+                        ? new SolidColorBrush(Color.Parse("#243C52"))
+                        : new SolidColorBrush(Color.Parse("#172536")),
+                    Child = dayContent
+                };
             }
-            else button.IsEnabled = false;
-            Grid.SetColumn(button, cell % 7); Grid.SetRow(button, cell / 7); grid.Children.Add(button);
+            else
+            {
+                dayCell = new Border { MinHeight = 86, Margin = new Thickness(3) };
+            }
+
+            Grid.SetColumn(dayCell, cell % 7);
+            Grid.SetRow(dayCell, cell / 7);
+            grid.Children.Add(dayCell);
         }
-        calendarPanel.Children.Add(grid); await LoadSelectedDayAsync();
+        calendarPanel.Children.Add(grid);
+        await LoadSelectedDayAsync();
     }
 
     private DateTime SelectedCalendarDate { get; set; } = DateTime.Today;
@@ -263,10 +375,23 @@ public partial class MainWindow : Window
     private async Task LoadSelectedDayAsync()
     {
         await using var db = new PharmacyDbContext(PharmacyDb.Options());
-        var records = await db.Prescriptions.Include(p => p.Customer).Where(p => p.Status == PrescriptionStatus.Active && p.ExpiryDate >= SelectedCalendarDate.Date && p.ExpiryDate < SelectedCalendarDate.Date.AddDays(1))
+        var dayStart = SelectedCalendarDate.Date;
+        var dayEnd = dayStart.AddDays(1);
+        var records = await db.Prescriptions.Include(p => p.Customer)
+            .Where(p => p.Status == PrescriptionStatus.Active && p.ExpiryDate >= dayStart && p.ExpiryDate < dayEnd)
             .OrderBy(p => p.Customer!.FullName).ToListAsync();
-        dayRecords.ItemsSource = records.Select(p => $"{p.Customer?.CustomerNumber} | {p.Customer?.FullName} | {p.MedicineName} | Rx {p.PrescriptionNumber ?? "—"} | expires {p.ExpiryDate:dd/MM/yyyy}").ToList();
-        dailySummary.Text = string.Format(Tr.Loc["Calendar.DaySummary"], SelectedCalendarDate.ToString("dddd, dd MMM yyyy"), records.Count);
+        var subscriptions = await db.Subscriptions.AsNoTracking().Include(subscription => subscription.Customer)
+            .Where(subscription => subscription.Status == SubscriptionStatus.Active &&
+                subscription.NextDueDate >= dayStart && subscription.NextDueDate < dayEnd)
+            .OrderBy(subscription => subscription.Customer!.FullName).ToListAsync();
+        var dayItems = records.Select(p =>
+                $"{p.Customer?.CustomerNumber} | {p.Customer?.FullName} | {p.MedicineName} | Rx {p.PrescriptionNumber ?? "—"} | expires {p.ExpiryDate:dd/MM/yyyy}")
+            .Concat(subscriptions.Select(subscription =>
+                $"{GetSubscriptionNumber(subscription)} | {subscription.Customer?.CustomerNumber} | {subscription.Customer?.FullName} | {subscription.Title} | due {subscription.NextDueDate:dd/MM/yyyy}"))
+            .ToList();
+        dayRecords.ItemsSource = dayItems;
+        dailySummary.Text = string.Format(Tr.Loc["Calendar.DaySummary"], SelectedCalendarDate.ToString("dddd, dd MMM yyyy"), records.Count)
+            + $" | {subscriptions.Count} {Tr.Loc["Calendar.SubscriptionsDue"]}";
         dailySummary.FontWeight = FontWeight.SemiBold;
         ApplyTranslations();
     }
@@ -303,6 +428,7 @@ public partial class MainWindow : Window
         customerSearch.TextChanged += async (_, _) => await SearchCustomersAsync();
         customerList.SelectionChanged += async (_, _) =>
         {
+            if (suppressCustomerSelectionChanged) return;
             if (customerList.SelectedItem is CustomerListItem item)
             {
                 await LoadCustomerAsync(item.Id);
@@ -1097,7 +1223,7 @@ public partial class MainWindow : Window
         currentSubscriptions = subscriptions;
         currentPayments = payments;
         currentLedgerEntries = ledger;
-        subscriptionList.ItemsSource = subscriptions.Select(x => $"{x.Title} | {x.Status} | Next: {x.NextDueDate:dd/MM/yyyy} | Expires: {x.ExpiryDate:dd/MM/yyyy} | {x.Frequency}").ToList();
+        subscriptionList.ItemsSource = subscriptions.Select(x => $"{GetSubscriptionNumber(x)} | {x.Title} | {x.Status} | Next: {x.NextDueDate:dd/MM/yyyy} | Expires: {x.ExpiryDate?.ToString("dd/MM/yyyy") ?? "—"} | {x.Frequency}").ToList();
         paymentList.ItemsSource = payments.Select(x => $"{x.PaidAt:dd/MM/yyyy HH:mm} | {x.Amount:C} | {x.Method} | {x.Reference}").ToList();
         ledgerList.ItemsSource = ledger.Select(x => $"{x.EntryDate:dd/MM/yyyy HH:mm} | {x.Type} | {x.Amount:C} | {x.Description}").ToList();
         ApplyTranslations();
@@ -1254,6 +1380,139 @@ public partial class MainWindow : Window
         await db.SaveChangesAsync(); SetActivityStatus("Item marked as returned."); await RefreshCustomerWorkspaceAsync();
     }
 
+    private static string GetSubscriptionNumber(Subscription subscription) =>
+        string.IsNullOrWhiteSpace(subscription.Barcode)
+            ? $"SUB-{subscription.Id:D8}"
+            : subscription.Barcode;
+
+    private async Task OpenSubscriptionDetailsAsync(int subscriptionId)
+    {
+        await using var db = new PharmacyDbContext(PharmacyDb.Options());
+        var subscription = await db.Subscriptions.Include(item => item.Customer)
+            .FirstOrDefaultAsync(item => item.Id == subscriptionId);
+        if (subscription is null || subscription.Customer is null) return;
+
+        if (string.IsNullOrWhiteSpace(subscription.Barcode))
+        {
+            subscription.Barcode = GetSubscriptionNumber(subscription);
+            await db.SaveChangesAsync();
+        }
+
+        var customer = subscription.Customer;
+        var barcodeBitmap = CreateSubscriptionBarcodeBitmap(subscription.Barcode);
+        var details = new StackPanel
+        {
+            Spacing = 8,
+            Margin = new Thickness(18),
+            Children =
+            {
+                new TextBlock { Text = subscription.Title, FontSize = 22, FontWeight = FontWeight.Bold, TextWrapping = TextWrapping.Wrap },
+                new TextBlock { Text = $"{Tr.Loc.TranslateText("Subscription number")}: {subscription.Barcode}", FontSize = 15, FontWeight = FontWeight.SemiBold },
+                new Image { Source = barcodeBitmap, Width = 230, Height = 190, Stretch = Stretch.Uniform, HorizontalAlignment = HorizontalAlignment.Center },
+                new TextBlock { Text = $"{Tr.Loc.TranslateText("Customer")}: {customer.CustomerNumber} | {customer.FullName}", TextWrapping = TextWrapping.Wrap },
+                new TextBlock { Text = $"{Tr.Loc.TranslateText("Address")}: {customer.Address}, {customer.City} {customer.Postcode}", TextWrapping = TextWrapping.Wrap },
+                new TextBlock { Text = $"{Tr.Loc.TranslateText("Telephone")}: {customer.Telephone ?? customer.Phone} | {Tr.Loc.TranslateText("Mobile")}: {customer.Mobile}", TextWrapping = TextWrapping.Wrap },
+                new TextBlock { Text = $"{Tr.Loc.TranslateText("Email")}: {customer.Email}", TextWrapping = TextWrapping.Wrap },
+                new TextBlock { Text = $"{Tr.Loc.TranslateText("Start date")}: {subscription.StartDate:dd/MM/yyyy}" },
+                new TextBlock { Text = $"{Tr.Loc.TranslateText("Next due date")}: {subscription.NextDueDate:dd/MM/yyyy}" },
+                new TextBlock { Text = $"{Tr.Loc.TranslateText("Expiry date")}: {subscription.ExpiryDate?.ToString("dd/MM/yyyy") ?? "—"}" },
+                new TextBlock { Text = $"{Tr.Loc.TranslateText("Frequency")}: {subscription.Frequency} | {Tr.Loc.TranslateText("Status")}: {Tr.Loc.TranslateText(subscription.Status.ToString())}" },
+                new TextBlock { Text = $"{Tr.Loc.TranslateText("Notes")}: {subscription.Notes}", TextWrapping = TextWrapping.Wrap }
+            }
+        };
+        var openCustomer = new Button { Content = Tr.Loc.TranslateText("Open customer"), MinWidth = 135 };
+        var editSubscription = new Button { Content = Tr.Loc.TranslateText("Edit subscription"), Classes = { "accent" }, MinWidth = 150 };
+        var close = new Button { Content = Tr.Loc.TranslateText("Close"), MinWidth = 90 };
+        var actions = new StackPanel
+        {
+            Orientation = Orientation.Horizontal,
+            HorizontalAlignment = HorizontalAlignment.Right,
+            Spacing = 8,
+            Children = { openCustomer, editSubscription, close }
+        };
+        var content = new Grid
+        {
+            RowDefinitions = CreateRows(GridLength.Star, GridLength.Auto),
+            Children =
+            {
+                new ScrollViewer { Content = details, VerticalScrollBarVisibility = ScrollBarVisibility.Auto },
+                actions
+            }
+        };
+        Grid.SetRow(actions, 1);
+        var popup = new Window
+        {
+            Title = Tr.Loc.TranslateText("Subscription details"),
+            Width = 560,
+            Height = 690,
+            MinWidth = 480,
+            MinHeight = 520,
+            CanResize = true,
+            Topmost = true,
+            WindowStartupLocation = WindowStartupLocation.CenterOwner,
+            Content = content
+        };
+        AttachDialogLocalization(popup);
+        close.Click += (_, _) => popup.Close();
+        openCustomer.Click += async (_, _) =>
+        {
+            popup.Close();
+            await OpenCustomerFromSubscriptionAsync(customer.Id, null);
+        };
+        editSubscription.Click += async (_, _) =>
+        {
+            popup.Close();
+            await OpenCustomerFromSubscriptionAsync(customer.Id, subscription);
+        };
+        popup.Show(this);
+    }
+
+    private async Task OpenCustomerFromSubscriptionAsync(int customerId, Subscription? editSubscription)
+    {
+        ShowCustomers();
+        await SearchCustomersAsync();
+        var customerItem = customerList.Items.OfType<CustomerListItem>().FirstOrDefault(item => item.Id == customerId);
+        if (customerItem is null) return;
+
+        suppressCustomerSelectionChanged = true;
+        customerList.SelectedItem = customerItem;
+        suppressCustomerSelectionChanged = false;
+        await LoadCustomerAsync(customerId);
+        await RefreshCustomerWorkspaceAsync();
+        customerTabs.SelectedIndex = 4;
+        if (editSubscription is not null)
+            await OpenSubscriptionEditorAsync(editSubscription);
+    }
+
+    private static WriteableBitmap CreateSubscriptionBarcodeBitmap(string barcodeValue)
+    {
+        var hints = new Dictionary<EncodeHintType, object>
+        {
+            [EncodeHintType.MARGIN] = 4
+        };
+        var matrix = new DataMatrixWriter().encode(barcodeValue, BarcodeFormat.DATA_MATRIX, 0, 0, hints);
+        const int scale = 6;
+        var width = matrix.Width * scale;
+        var height = matrix.Height * scale;
+        var bitmap = new WriteableBitmap(new PixelSize(width, height), new Vector(96, 96), PixelFormat.Bgra8888, AlphaFormat.Opaque);
+        using (var framebuffer = bitmap.Lock())
+        {
+            var pixels = new byte[framebuffer.RowBytes * height];
+            for (var y = 0; y < height; y++)
+            for (var x = 0; x < width; x++)
+            {
+                var value = matrix[x / scale, y / scale] ? (byte)0 : (byte)255;
+                var offset = y * framebuffer.RowBytes + x * 4;
+                pixels[offset] = value;
+                pixels[offset + 1] = value;
+                pixels[offset + 2] = value;
+                pixels[offset + 3] = 255;
+            }
+            Marshal.Copy(pixels, 0, framebuffer.Address, pixels.Length);
+        }
+        return bitmap;
+    }
+
     private async Task OpenSubscriptionEditorAsync(Subscription? existing)
     {
         if (!selectedCustomerId.HasValue) { SetActivityStatus("Save or select a customer first."); return; }
@@ -1308,6 +1567,11 @@ public partial class MainWindow : Window
             record.Frequency = string.IsNullOrWhiteSpace(frequency.Text) ? "Monthly" : frequency.Text.Trim();
             record.Notes = notes.Text?.Trim();
             await db.SaveChangesAsync();
+            if (string.IsNullOrWhiteSpace(record.Barcode))
+            {
+                record.Barcode = GetSubscriptionNumber(record);
+                await db.SaveChangesAsync();
+            }
             dialog.Close();
             SetActivityStatus(isEdit ? "Subscription updated." : "Subscription added.");
             await RefreshCustomerWorkspaceAsync();
