@@ -228,6 +228,7 @@ public partial class MainWindow : Window
         {
             Watermark = "Scan GS1 DataMatrix here (scanner suffix: Enter)",
             MinHeight = 38,
+            MinWidth = 420,
             FontSize = 15
         };
         gs1ScanInput.KeyDown += async (_, e) =>
@@ -351,6 +352,9 @@ public partial class MainWindow : Window
         }
 
         currentParsedPack = parsed;
+        gs1EofEan13Input.Text = string.Empty;
+        if (activityFields.TryGetValue("BorrowingName", out var scannedNameBox))
+            scannedNameBox.Text = string.Empty;
         gs1ParsedFields["Gtin14"].Text = parsed.Gtin14;
         gs1ParsedFields["SerialNumber"].Text = parsed.SerialNumber;
         gs1ParsedFields["ExpiryDate"].Text = parsed.ExpiryDate.ToString("dd/MM/yyyy");
@@ -360,6 +364,14 @@ public partial class MainWindow : Window
         gs1ScanStatus.Text = "GS1 scan parsed successfully. Review the extracted details before saving the borrowing.";
 
         await using var db = new PharmacyDbContext(PharmacyDb.Options());
+        var alreadyScanned = await db.SerializedPackScans.AnyAsync(x => x.Gtin14 == parsed.Gtin14 && x.SerialNumber == parsed.SerialNumber);
+        if (alreadyScanned)
+        {
+            gs1ScanStatus.Foreground = Brushes.OrangeRed;
+            gs1ScanStatus.Text = "This GTIN + serial number has already been registered. This physical pack cannot be added again.";
+            return;
+        }
+
         var mappedBarcode = await db.MedicineBarcodes
             .Include(x => x.Medicine)
             .FirstOrDefaultAsync(x => x.BarcodeValue == parsed.Gtin14);
