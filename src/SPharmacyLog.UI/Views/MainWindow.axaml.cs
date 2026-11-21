@@ -145,6 +145,7 @@ public partial class MainWindow : Window
     private List<BorrowingRecord> currentBorrowings = new();
     private TextBlock borrowingSelectionDetails = null!;
     private TextBox gs1ScanInput = null!;
+    private TextBox gs1ScanEcho = null!;
     private TextBox gs1EofEan13Input = null!;
     private TextBlock gs1ScanStatus = null!;
     private readonly Dictionary<string, TextBox> gs1ParsedFields = new();
@@ -239,6 +240,18 @@ public partial class MainWindow : Window
             MinWidth = 420,
             FontSize = 15
         };
+        gs1ScanEcho = new TextBox
+        {
+            IsReadOnly = true,
+            AcceptsReturn = true,
+            TextWrapping = TextWrapping.Wrap,
+            MinHeight = 58,
+            MaxHeight = 100,
+            Watermark = "The scanned barcode text will appear here; <GS> marks the invisible ASCII 29 separator.",
+            FontFamily = new FontFamily("Consolas")
+        };
+        gs1ScanInput.TextChanged += (_, _) => UpdateGs1ScanEcho();
+
         gs1ScanInput.KeyDown += async (_, e) =>
         {
             if (e.Key == Key.Enter)
@@ -273,6 +286,9 @@ public partial class MainWindow : Window
                         CreateGs1ParseButton()
                     }
                 },
+                new TextBlock { Text = "SCANNED BARCODE — VERIFY THE READ", FontWeight = FontWeight.SemiBold },
+                gs1ScanEcho,
+                new TextBlock { Text = "The text is shown exactly as received, with invisible ASCII 29 separators displayed as <GS> so they can be checked visually.", FontSize = 11, TextWrapping = TextWrapping.Wrap },
                 gs1ScanStatus
             }
         };
@@ -328,6 +344,16 @@ public partial class MainWindow : Window
         return new TabItem { Header = "Borrowings", Content = new ScrollViewer { Content = panel } };
     }
 
+    private void UpdateGs1ScanEcho()
+    {
+        if (gs1ScanEcho is null || gs1ScanInput is null) return;
+
+        var raw = gs1ScanInput.Text ?? string.Empty;
+        gs1ScanEcho.Text = string.IsNullOrEmpty(raw)
+            ? string.Empty
+            : raw.Replace(Gs1DataMatrixParser.GroupSeparator.ToString(), "<GS>", StringComparison.Ordinal);
+    }
+
     private void ShowSelectedBorrowingScanDetails()
     {
         if (borrowingList.SelectedIndex < 0 || borrowingList.SelectedIndex >= currentBorrowings.Count)
@@ -372,6 +398,7 @@ public partial class MainWindow : Window
     private async Task PreviewGs1ScanAsync()
     {
         var raw = gs1ScanInput.Text ?? string.Empty;
+        UpdateGs1ScanEcho();
         if (!Gs1DataMatrixParser.TryParse(raw, out var parsed, out var error) || parsed is null)
         {
             currentParsedPack = null;
@@ -636,6 +663,7 @@ public partial class MainWindow : Window
             ? "Borrowing record added."
             : "GS1 pack scan and borrowing saved successfully. The raw payload and all parsed fields are stored.");
         if (gs1ScanInput is not null) gs1ScanInput.Text = string.Empty;
+        UpdateGs1ScanEcho();
         if (gs1EofEan13Input is not null) gs1EofEan13Input.Text = string.Empty;
         currentParsedPack = null;
         ClearGs1ParsedFields();
