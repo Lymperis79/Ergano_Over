@@ -707,21 +707,23 @@ public partial class MainWindow : Window
 
     private void ShowBarcodePopup(string medicineName, WriteableBitmap barcodeBitmap)
     {
-        if (barcodePopupWindow is null)
+        var popup = barcodePopupWindow;
+        if (popup is null)
         {
-            barcodePopupWindow = new BarcodeDisplayWindow(medicineName, barcodeBitmap);
-            barcodePopupWindow.Closed += (_, _) => barcodePopupWindow = null;
-            barcodePopupWindow.Show(this);
+            popup = new BarcodeDisplayWindow(medicineName, barcodeBitmap);
+            barcodePopupWindow = popup;
+            popup.Closed += (_, _) => barcodePopupWindow = null;
+            popup.Show(this);
         }
         else
         {
-            barcodePopupWindow.UpdateBarcode(medicineName, barcodeBitmap);
-            if (!barcodePopupWindow.IsVisible)
-                barcodePopupWindow.Show(this);
-            barcodePopupWindow.Activate();
+            popup.UpdateBarcode(medicineName, barcodeBitmap);
+            if (!popup.IsVisible)
+                popup.Show(this);
+            popup.Activate();
         }
 
-        barcodePopupWindow.Topmost = true;
+        popup.Topmost = true;
     }
 
     private static WriteableBitmap CreateGs1DataMatrixBitmap(string rawPayload)
