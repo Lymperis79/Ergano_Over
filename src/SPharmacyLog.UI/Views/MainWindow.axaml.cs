@@ -38,7 +38,6 @@ public partial class MainWindow : Window
     private const string MenuSubscriptions = "Subscriptions";
     private const string MenuPayments = "Payments";
     private const string MenuReports = "Reports";
-    private const string MenuUsers = "Users";
     private static readonly (string Key, string LabelKey)[] ConfigurableMenus =
     {
         (MenuCalendar, "Navigation.ExpiryCalendar"),
@@ -2292,12 +2291,16 @@ public partial class MainWindow : Window
             MinHeight = 36,
             IsVisible = !isEdit
         };
-        var role = new ComboBox
+        var role = new ComboBox { MinHeight = 36 };
+        foreach (var roleOption in Enum.GetValues<PharmacyRole>())
         {
-            MinHeight = 36,
-            ItemsSource = Enum.GetValues<PharmacyRole>(),
-            SelectedItem = existing?.Role ?? PharmacyRole.Limited
-        };
+            role.Items.Add(new ComboBoxItem
+            {
+                Content = Tr.Loc.TranslateText(roleOption.ToString()),
+                Tag = roleOption
+            });
+        }
+        role.SelectedIndex = Array.IndexOf(Enum.GetValues<PharmacyRole>(), existing?.Role ?? PharmacyRole.Limited);
         var canSaveCredentials = new CheckBox
         {
             Content = Tr.Loc.TranslateText("Allow saving login credentials on this computer"),
@@ -2318,9 +2321,10 @@ public partial class MainWindow : Window
             TextWrapping = TextWrapping.Wrap
         });
         var menuChecks = new List<(string Key, CheckBox Check)>();
-        var existingMenus = string.IsNullOrWhiteSpace(existing?.AllowedMenus)
+        var storedMenus = existing?.AllowedMenus;
+        var existingMenus = string.IsNullOrWhiteSpace(storedMenus)
             ? ConfigurableMenus.Select(item => item.Key).ToHashSet(StringComparer.Ordinal)
-            : existing.AllowedMenus.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            : storedMenus.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
                 .ToHashSet(StringComparer.Ordinal);
         foreach (var menu in ConfigurableMenus)
         {
@@ -2345,8 +2349,8 @@ public partial class MainWindow : Window
             Spacing = 8,
             Children = { selectAll, clearAll }
         });
-        menuPicker.IsVisible = role.SelectedItem is not PharmacyRole.Admin;
-        role.SelectionChanged += (_, _) => menuPicker.IsVisible = role.SelectedItem is not PharmacyRole.Admin;
+        menuPicker.IsVisible = role.SelectedItem is not ComboBoxItem { Tag: PharmacyRole.Admin };
+        role.SelectionChanged += (_, _) => menuPicker.IsVisible = role.SelectedItem is not ComboBoxItem { Tag: PharmacyRole.Admin };
 
         if (existing?.Id == viewModel.User.Id)
             role.IsEnabled = false;
@@ -2403,7 +2407,7 @@ public partial class MainWindow : Window
                 status.Text = Tr.Loc.TranslateText("Username is required.");
                 return;
             }
-            if (role.SelectedItem is not PharmacyRole selectedRole)
+            if (role.SelectedItem is not ComboBoxItem { Tag: PharmacyRole selectedRole })
             {
                 status.Text = Tr.Loc.TranslateText("Select a valid role.");
                 return;
