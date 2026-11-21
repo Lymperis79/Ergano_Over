@@ -264,8 +264,20 @@ public sealed class ReportsWindow : Window
             $"{Tr.Loc.TranslateText("Currently open subscriptions")}: {subscriptions.Count(item => item.Status == SubscriptionStatus.Active)}",
             $"{Tr.Loc.TranslateText("Currently closed / executed subscriptions")}: {subscriptions.Count(item => item.Status == SubscriptionStatus.Executed)}",
             "",
-            Tr.Loc.TranslateText("Opened subscriptions") + ":"
+            Tr.Loc.TranslateText("Current open subscriptions") + ":"
         };
+        lines.AddRange(subscriptions.Where(item => item.Status == SubscriptionStatus.Active)
+            .OrderBy(item => item.NextDueDate)
+            .Select(item => $"  {item.Customer?.CustomerNumber} | {item.Customer?.FullName} | {item.Title} | {Tr.Loc.TranslateText("Next due")}: {item.NextDueDate:dd/MM/yyyy}"));
+        if (!subscriptions.Any(item => item.Status == SubscriptionStatus.Active)) lines.Add("  " + Tr.Loc.TranslateText("None"));
+        lines.Add("");
+        lines.Add(Tr.Loc.TranslateText("Current closed / executed subscriptions") + ":");
+        lines.AddRange(subscriptions.Where(item => item.Status == SubscriptionStatus.Executed)
+            .OrderBy(item => item.Customer?.FullName)
+            .Select(item => $"  {item.Customer?.CustomerNumber} | {item.Customer?.FullName} | {item.Title} | {Tr.Loc.TranslateText("Last changed")}: {item.LastModifiedAt:dd/MM/yyyy}"));
+        if (!subscriptions.Any(item => item.Status == SubscriptionStatus.Executed)) lines.Add("  " + Tr.Loc.TranslateText("None"));
+        lines.Add("");
+        lines.Add(Tr.Loc.TranslateText("Opened subscriptions") + ":");
         lines.AddRange(opened.Select(entry =>
             $"  {DateTime.SpecifyKind(entry.ChangedAt, DateTimeKind.Utc).ToLocalTime():HH:mm} | {entry.Subscription?.Customer?.CustomerNumber} | {entry.Subscription?.Customer?.FullName} | {entry.Subscription?.Title}"));
         if (opened.Count == 0) lines.Add("  " + Tr.Loc.TranslateText("None"));
