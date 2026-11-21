@@ -1094,8 +1094,10 @@ public partial class MainWindow : Window
         subscriptionHistoryList.SelectionChanged += async (_, _) =>
         {
             var index = subscriptionHistoryList.SelectedIndex;
-            if (index >= 0 && index < currentExecutedSubscriptions.Count)
-                await OpenSubscriptionDetailsAsync(currentExecutedSubscriptions[index].Id);
+            if (index < 0 || index >= currentExecutedSubscriptions.Count) return;
+            var subscriptionId = currentExecutedSubscriptions[index].Id;
+            subscriptionHistoryList.SelectedIndex = -1;
+            await OpenSubscriptionDetailsAsync(subscriptionId);
         };
         return new TabItem
         {
@@ -1406,6 +1408,37 @@ public partial class MainWindow : Window
             ? $"SUB-{subscription.Id:D8}"
             : subscription.Barcode;
 
+    private static ComboBox CreateSubscriptionStatusSelector(SubscriptionStatus selectedStatus)
+    {
+        var selector = new ComboBox { MinHeight = 34 };
+        selector.Items.Add(new ComboBoxItem
+        {
+            Content = Tr.Loc.TranslateText(SubscriptionStatus.Active.ToString()),
+            Tag = SubscriptionStatus.Active
+        });
+        selector.Items.Add(new ComboBoxItem
+        {
+            Content = Tr.Loc.TranslateText(SubscriptionStatus.Executed.ToString()),
+            Tag = SubscriptionStatus.Executed
+        });
+        selector.SelectedIndex = selectedStatus == SubscriptionStatus.Executed ? 1 : 0;
+        return selector;
+    }
+
+    private static bool TryReadSubscriptionStatus(ComboBox selector, out SubscriptionStatus status)
+    {
+        if (selector.SelectedItem is ComboBoxItem item &&
+            item.Tag is SubscriptionStatus selected &&
+            selected is SubscriptionStatus.Active or SubscriptionStatus.Executed)
+        {
+            status = selected;
+            return true;
+        }
+
+        status = SubscriptionStatus.Active;
+        return false;
+    }
+
     private async Task OpenSubscriptionDetailsAsync(int subscriptionId)
     {
         await using var db = new PharmacyDbContext(PharmacyDb.Options());
@@ -1422,12 +1455,7 @@ public partial class MainWindow : Window
         var customer = subscription.Customer!;
         var subscriptionNumber = GetSubscriptionNumber(subscription);
         var barcodeBitmap = CreateSubscriptionBarcodeBitmap(subscriptionNumber);
-        var statusSelector = new ComboBox
-        {
-            MinHeight = 34,
-            ItemsSource = new[] { SubscriptionStatus.Active.ToString(), SubscriptionStatus.Executed.ToString() },
-            SelectedItem = subscription.Status == SubscriptionStatus.Executed ? SubscriptionStatus.Executed.ToString() : SubscriptionStatus.Active.ToString()
-        };
+        var statusSelector = CreateSubscriptionStatusSelector(subscription.Status);
         var auditEntries = await db.SubscriptionAuditEntries.AsNoTracking()
             .Where(entry => entry.SubscriptionId == subscription.Id)
             .OrderByDescending(entry => entry.ChangedAt)
@@ -1436,7 +1464,12 @@ public partial class MainWindow : Window
         {
             MinHeight = 110,
             ItemsSource = auditEntries.Select(entry =>
-                $"{entry.ChangedAt.ToLocalTime():dd/MM/yyyy HH:mm:ss} | {entry.Action} | {entry.ChangedBy} | {entry.Details}").ToList()
+            {
+                var change = entry.PreviousStatus.HasValue
+                    ? $"{Tr.Loc.TranslateText(((SubscriptionStatus)entry.PreviousStatus.Value).ToString())} → {Tr.Loc.TranslateText(((SubscriptionStatus)entry.NewStatus).ToString())}"
+                    : Tr.Loc.TranslateText(entry.Details ?? string.Empty);
+                return $"{entry.ChangedAt.ToLocalTime():dd/MM/yyyy HH:mm:ss} | {Tr.Loc.TranslateText(entry.Action)} | {entry.ChangedBy} | {change}";
+            }).ToList()
         };
         var details = new StackPanel
         {
@@ -1501,8 +1534,7 @@ public partial class MainWindow : Window
         close.Click += (_, _) => popup.Close();
         saveStatus.Click += async (_, _) =>
         {
-            if (!Enum.TryParse<SubscriptionStatus>(statusSelector.SelectedItem?.ToString(), out var newStatus) ||
-                newStatus is not (SubscriptionStatus.Active or SubscriptionStatus.Executed))
+            if (!TryReadSubscriptionStatus(statusSelector, out var newStatus))
                 return;
             if (newStatus == subscription.Status) return;
 
@@ -1523,11 +1555,11 @@ public partial class MainWindow : Window
                 NewStatus = (int)newStatus,
                 ChangedBy = actor,
                 ChangedAt = now,
-                Details = $"Status changed from {oldStatus} to {newStatus}."
+                Details = "Subscription status changed."
             });
             await updateDb.SaveChangesAsync();
             popup.Close();
-            if (selectedCustomerId == current.CustomerId)
+            if (!showingExpiryCalendar && selectedCustomerId == current.CustomerId)
                 await RefreshCustomerWorkspaceAsync();
             if (showingExpiryCalendar && calendarMonthTitle is not null)
                 await RenderCalendarAsync(calendarMonthTitle);
@@ -1603,12 +1635,7 @@ public partial class MainWindow : Window
         var expiry = new TextBox { Text = existing?.ExpiryDate?.ToString("yyyy-MM-dd") ?? "", PlaceholderText = "Expiry date (optional)", MinHeight = 34 };
         var frequency = new TextBox { Text = existing?.Frequency ?? "Monthly", PlaceholderText = "Frequency", MinHeight = 34 };
         var notes = new TextBox { Text = existing?.Notes ?? "", PlaceholderText = "Notes", MinHeight = 70, AcceptsReturn = true, TextWrapping = TextWrapping.Wrap };
-        var subscriptionStatus = new ComboBox
-        {
-            MinHeight = 34,
-            ItemsSource = new[] { SubscriptionStatus.Active.ToString(), SubscriptionStatus.Executed.ToString() },
-            SelectedItem = existing?.Status == SubscriptionStatus.Executed ? SubscriptionStatus.Executed.ToString() : SubscriptionStatus.Active.ToString()
-        };
+        var subscriptionStatus = CreateSubscriptionStatusSelector(existing?.Status ?? SubscriptionStatus.Active);
         var form = new StackPanel { Spacing = 7, Margin = new Thickness(16), Children =
         {
             new TextBlock { Text = isEdit ? "EDIT SUBSCRIPTION" : "ADD SUBSCRIPTION", FontSize = 19, FontWeight = FontWeight.Bold },
@@ -1636,10 +1663,10 @@ public partial class MainWindow : Window
                 expiryDate = parsedExpiry.Date;
             }
             await using var db = new PharmacyDbContext(PharmacyDb.Options());
-            if (!Enum.TryParse<SubscriptionStatus>(subscriptionStatus.SelectedItem?.ToString(), out var selectedStatus) ||
-                selectedStatus is not (SubscriptionStatus.Active or SubscriptionStatus.Executed))
+            if (!TryReadSubscriptionStatus(subscriptionStatus, out var selectedStatus))
             { status.Text = "Choose Active or Executed status."; return; }
 
+            await using var transaction = await db.Database.BeginTransactionAsync();
             Subscription? record;
             SubscriptionStatus? previousStatus = null;
             var now = DateTime.UtcNow;
@@ -1688,6 +1715,7 @@ public partial class MainWindow : Window
                     : isEdit ? "Subscription details updated." : "Subscription created."
             });
             await db.SaveChangesAsync();
+            await transaction.CommitAsync();
             dialog.Close();
             SetActivityStatus(isEdit ? "Subscription updated." : "Subscription added.");
             await RefreshCustomerWorkspaceAsync();
