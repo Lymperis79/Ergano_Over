@@ -130,7 +130,7 @@ public sealed partial class Initial : Migration
             migrationBuilder.Sql("""
                 CREATE TABLE Users (
                     Id int NOT NULL AUTO_INCREMENT PRIMARY KEY,
-                    Username varchar(450) NOT NULL,
+                    Username varchar(191) NOT NULL,
                     PasswordHash longtext NOT NULL,
                     Role int NOT NULL,
                     AllowedMenus longtext NULL,
@@ -138,11 +138,11 @@ public sealed partial class Initial : Migration
                     CanSaveCredentials tinyint(1) NOT NULL,
                     CreatedAt datetime(6) NOT NULL,
                     UNIQUE INDEX IX_Users_Username (Username)
-                ) CHARACTER SET=utf8mb4;
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
                 CREATE TABLE Customers (
                     Id int NOT NULL AUTO_INCREMENT PRIMARY KEY,
-                    CustomerNumber varchar(450) NOT NULL,
+                    CustomerNumber varchar(191) NOT NULL,
                     FullName longtext NOT NULL,
                     Phone longtext NOT NULL,
                     Address longtext NULL,
@@ -150,7 +150,7 @@ public sealed partial class Initial : Migration
                     IsActive tinyint(1) NOT NULL,
                     CreatedAt datetime(6) NOT NULL,
                     UNIQUE INDEX IX_Customers_CustomerNumber (CustomerNumber)
-                ) CHARACTER SET=utf8mb4;
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
                 CREATE TABLE Prescriptions (
                     Id int NOT NULL AUTO_INCREMENT PRIMARY KEY,
@@ -165,7 +165,7 @@ public sealed partial class Initial : Migration
                     CreatedAt datetime(6) NOT NULL,
                     INDEX IX_Prescriptions_ExpiryDate (ExpiryDate),
                     CONSTRAINT FK_Prescriptions_Customers_CustomerId FOREIGN KEY (CustomerId) REFERENCES Customers(Id) ON DELETE CASCADE
-                ) CHARACTER SET=utf8mb4;
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
                 CREATE TABLE Medicines (
                     Id int NOT NULL AUTO_INCREMENT PRIMARY KEY,
@@ -173,14 +173,14 @@ public sealed partial class Initial : Migration
                     Barcode longtext NULL,
                     Notes longtext NULL,
                     IsActive tinyint(1) NOT NULL
-                ) CHARACTER SET=utf8mb4;
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
                 CREATE TABLE Borrowings (
                     Id int NOT NULL AUTO_INCREMENT PRIMARY KEY,
                     CustomerId int NOT NULL,
                     MedicineName longtext NOT NULL,
                     OriginalBarcode longtext NULL,
-                    InternalBarcode varchar(450) NOT NULL,
+                    InternalBarcode varchar(191) NOT NULL,
                     Quantity int NOT NULL,
                     BorrowedAt datetime(6) NOT NULL,
                     DueDate datetime(6) NULL,
@@ -190,7 +190,7 @@ public sealed partial class Initial : Migration
                     Notes longtext NULL,
                     UNIQUE INDEX IX_Borrowings_InternalBarcode (InternalBarcode),
                     CONSTRAINT FK_Borrowings_Customers_CustomerId FOREIGN KEY (CustomerId) REFERENCES Customers(Id) ON DELETE CASCADE
-                ) CHARACTER SET=utf8mb4;
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
                 CREATE TABLE Subscriptions (
                     Id int NOT NULL AUTO_INCREMENT PRIMARY KEY,
@@ -204,7 +204,7 @@ public sealed partial class Initial : Migration
                     Status int NOT NULL,
                     Notes longtext NULL,
                     CONSTRAINT FK_Subscriptions_Customers_CustomerId FOREIGN KEY (CustomerId) REFERENCES Customers(Id) ON DELETE CASCADE
-                ) CHARACTER SET=utf8mb4;
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
                 CREATE TABLE Payments (
                     Id int NOT NULL AUTO_INCREMENT PRIMARY KEY,
@@ -216,7 +216,7 @@ public sealed partial class Initial : Migration
                     Notes longtext NULL,
                     RecordedBy longtext NOT NULL,
                     CONSTRAINT FK_Payments_Customers_CustomerId FOREIGN KEY (CustomerId) REFERENCES Customers(Id) ON DELETE CASCADE
-                ) CHARACTER SET=utf8mb4;
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
                 CREATE TABLE LedgerEntries (
                     Id int NOT NULL AUTO_INCREMENT PRIMARY KEY,
@@ -229,7 +229,7 @@ public sealed partial class Initial : Migration
                     RecordedBy longtext NOT NULL,
                     INDEX IX_LedgerEntries_CustomerId_EntryDate (CustomerId, EntryDate),
                     CONSTRAINT FK_LedgerEntries_Customers_CustomerId FOREIGN KEY (CustomerId) REFERENCES Customers(Id) ON DELETE CASCADE
-                ) CHARACTER SET=utf8mb4;
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
                 """);
             return;
         }
