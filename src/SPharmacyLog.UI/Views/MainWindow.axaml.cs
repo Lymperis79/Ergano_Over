@@ -225,7 +225,7 @@ public partial class MainWindow : Window
         string[] weekdays = { "Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun" };
         for (var i = 0; i < weekdays.Length; i++) { var label = new TextBlock { Text = weekdays[i], HorizontalAlignment = HorizontalAlignment.Center }; Grid.SetColumn(label, i); weekdayGrid.Children.Add(label); }
         content.Children.Add(weekdayGrid);
-        content.Children.Add(calendarPanel);
+        content.Children.Add(new ScrollViewer { Content = calendarPanel, MaxHeight = 520, VerticalScrollBarVisibility = ScrollBarVisibility.Auto });
         dayRecords.MaxHeight = 260;
         content.Children.Add(dailySummary); content.Children.Add(dayRecords);
         pageHost.Content = content;
