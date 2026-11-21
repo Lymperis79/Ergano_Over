@@ -86,7 +86,7 @@ public partial class MainWindow : Window
                     button.Content = Tr.Loc.TranslateText(content);
                     break;
                 case TextBox textBox when !string.IsNullOrEmpty(textBox.PlaceholderText):
-                    textBox.Watermark = Tr.Loc.TranslateText(textBox.Watermark);
+                    textBox.PlaceholderText = Tr.Loc.TranslateText(textBox.PlaceholderText);
                     break;
                 case TabItem tab when tab.Header is string header:
                     tab.Header = Tr.Loc.TranslateText(header);
@@ -240,7 +240,7 @@ public partial class MainWindow : Window
     {
         showingExpiryCalendar = false;
         customerFields.Clear(); activityFields.Clear(); gs1ParsedFields.Clear(); selectedCustomerId = null; currentParsedPack = null;
-        customerSearch = new TextBox { Watermark = Tr.Loc["Customers.Search"], Margin = new Thickness(0, 0, 0, 10) };
+        customerSearch = new TextBox { PlaceholderText = Tr.Loc["Customers.Search"], Margin = new Thickness(0, 0, 0, 10) };
         customerList = new ListBox { MinWidth = 300 };
         customerStatus = new TextBlock { Foreground = Brushes.LightGreen, Margin = new Thickness(0, 8, 0, 0) };
         customerSearch.TextChanged += async (_, _) => await SearchCustomersAsync();
@@ -339,7 +339,7 @@ public partial class MainWindow : Window
         // Most scanners send Enter after the DataMatrix payload.
         gs1ScanInput = new TextBox
         {
-            Watermark = "Scan GS1 DataMatrix here (scanner suffix: Enter)",
+            PlaceholderText = "Scan GS1 DataMatrix here (scanner suffix: Enter)",
             MinHeight = 38,
             MinWidth = 420,
             FontSize = 15
@@ -351,7 +351,7 @@ public partial class MainWindow : Window
             TextWrapping = TextWrapping.Wrap,
             MinHeight = 58,
             MaxHeight = 100,
-            Watermark = "The scanned barcode text will appear here; <GS> marks the invisible ASCII 29 separator.",
+            PlaceholderText = "The scanned barcode text will appear here; <GS> marks the invisible ASCII 29 separator.",
             FontFamily = new FontFamily("Consolas")
         };
         gs1ScanInput.TextChanged += (_, _) => UpdateGs1ScanEcho();
@@ -414,7 +414,7 @@ public partial class MainWindow : Window
         gs1ParsedFields["MedicineMatch"].Text = Tr.Loc.TranslateText("Not matched");
         var eofPanel = new StackPanel { Spacing = 3, Margin = new Thickness(5) };
         eofPanel.Children.Add(new TextBlock { Text = "Greek EOF / NTIN barcode (optional mapping)" });
-        gs1EofEan13Input = new TextBox { Watermark = "13-digit 0280... EOF barcode", MaxLength = 13 };
+        gs1EofEan13Input = new TextBox { PlaceholderText = "13-digit 0280... EOF barcode", MaxLength = 13 };
         eofPanel.Children.Add(gs1EofEan13Input);
         Grid.SetRow(eofPanel, 5);
         Grid.SetColumnSpan(eofPanel, 2);
@@ -625,7 +625,7 @@ public partial class MainWindow : Window
 
     private void AddActivityField(StackPanel parent, string label, string key, string? defaultValue = null)
     {
-        var input = new TextBox { Watermark = label, Text = defaultValue ?? string.Empty, MinHeight = 32 };
+        var input = new TextBox { PlaceholderText = label, Text = defaultValue ?? string.Empty, MinHeight = 32 };
         activityFields[key] = input;
         parent.Children.Add(input);
     }
@@ -869,7 +869,7 @@ public partial class MainWindow : Window
     {
         var panel = new StackPanel { Spacing = 4, Margin = new Thickness(5) };
         panel.Children.Add(new TextBlock { Text = label, Foreground = Brushes.LightGray, FontSize = 12 });
-        var box = new TextBox { Watermark = label, MinHeight = multiline ? 75 : 34, AcceptsReturn = multiline, TextWrapping = multiline ? TextWrapping.Wrap : TextWrapping.NoWrap };
+        var box = new TextBox { PlaceholderText = label, MinHeight = multiline ? 75 : 34, AcceptsReturn = multiline, TextWrapping = multiline ? TextWrapping.Wrap : TextWrapping.NoWrap };
         customerFields[key] = box; panel.Children.Add(box); Grid.SetRow(panel, row); Grid.SetColumn(panel, column); Grid.SetColumnSpan(panel, columnSpan); grid.Children.Add(panel);
     }
 
