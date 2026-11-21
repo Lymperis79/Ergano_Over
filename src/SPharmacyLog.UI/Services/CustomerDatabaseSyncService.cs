@@ -187,6 +187,12 @@ public static class CustomerDatabaseSyncService
         var updated = 0;
         var inactiveSkipped = 0;
         var invalidSkipped = 0;
+        // Load destination customers once. This also lets repeated source rows
+        // resolve to the same tracked entity without issuing one query per row.
+        var customerByNumber = (await destination.Customers.ToListAsync(cancellationToken))
+            .GroupBy(customer => customer.CustomerNumber, StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(group => group.Key, group => group.First(), StringComparer.OrdinalIgnoreCase);
+
         await using var transaction = await destination.Database.BeginTransactionAsync(cancellationToken);
         await using var reader = await command.ExecuteReaderAsync(CommandBehavior.SequentialAccess, cancellationToken);
         var ordinalByColumn = selectedColumns.ToDictionary(column => column, reader.GetOrdinal, StringComparer.OrdinalIgnoreCase);
@@ -210,10 +216,7 @@ public static class CustomerDatabaseSyncService
                 continue;
             }
 
-            var existing = destination.Customers.Local
-                .FirstOrDefault(customer => string.Equals(customer.CustomerNumber, customerNumber, StringComparison.OrdinalIgnoreCase));
-            existing ??= await destination.Customers
-                .FirstOrDefaultAsync(customer => customer.CustomerNumber == customerNumber, cancellationToken);
+            customerByNumber.TryGetValue(customerNumber, out var existing);
 
             // Critical safeguard: an inactive customer is an explicit local decision.
             // Do not update, reactivate, or otherwise modify any part of that record.
@@ -235,6 +238,7 @@ public static class CustomerDatabaseSyncService
                 };
                 ApplyMappedValues(existing, values, isNew: true);
                 destination.Customers.Add(existing);
+                customerByNumber[customerNumber] = existing;
                 added++;
             }
             else
