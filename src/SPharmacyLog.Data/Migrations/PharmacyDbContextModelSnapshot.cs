@@ -35,6 +35,15 @@ public sealed class PharmacyDbContextModelSnapshot : ModelSnapshot
             entity.Property(customer => customer.CustomerNumber).IsRequired();
             entity.Property(customer => customer.FullName).IsRequired();
             entity.Property(customer => customer.Phone).IsRequired();
+            entity.Property(customer => customer.FirstName);
+            entity.Property(customer => customer.Surname);
+            entity.Property(customer => customer.Telephone);
+            entity.Property(customer => customer.Mobile);
+            entity.Property(customer => customer.Email);
+            entity.Property(customer => customer.Amka);
+            entity.Property(customer => customer.Insurance);
+            entity.Property(customer => customer.City);
+            entity.Property(customer => customer.Postcode);
             entity.Property(customer => customer.Address);
             entity.Property(customer => customer.Notes);
             entity.Property(customer => customer.IsActive);
