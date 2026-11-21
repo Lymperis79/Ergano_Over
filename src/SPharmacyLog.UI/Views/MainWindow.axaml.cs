@@ -133,20 +133,61 @@ public partial class MainWindow : Window
         dailySummary.FontWeight = FontWeight.SemiBold;
     }
 
+    private TabControl customerTabs = null!;
+    private TextBlock customerOverview = null!;
+    private readonly Dictionary<string, TextBox> activityFields = new();
+    private ListBox borrowingList = null!;
+    private ListBox subscriptionList = null!;
+    private ListBox paymentList = null!;
+    private ListBox ledgerList = null!;
+    private TextBlock activityStatus = null!;
+
     private void ShowCustomers()
     {
-        customerFields.Clear(); selectedCustomerId = null;
+        customerFields.Clear(); activityFields.Clear(); selectedCustomerId = null;
         customerSearch = new TextBox { Watermark = Tr.Loc["Customers.Search"], Margin = new Thickness(0, 0, 0, 10) };
         customerList = new ListBox { MinWidth = 300 };
         customerStatus = new TextBlock { Foreground = Brushes.LightGreen, Margin = new Thickness(0, 8, 0, 0) };
         customerSearch.TextChanged += async (_, _) => await SearchCustomersAsync();
-        customerList.SelectionChanged += async (_, _) => { if (customerList.SelectedItem is CustomerListItem item) await LoadCustomerAsync(item.Id); };
+        customerList.SelectionChanged += async (_, _) =>
+        {
+            if (customerList.SelectedItem is CustomerListItem item)
+            {
+                await LoadCustomerAsync(item.Id);
+                await RefreshCustomerWorkspaceAsync();
+            }
+        };
         var left = new StackPanel { Spacing = 8 };
         left.Children.Add(new TextBlock { Text = Tr.Loc["Navigation.Customers"], FontSize = 18, FontWeight = FontWeight.Bold });
         left.Children.Add(customerSearch); left.Children.Add(customerList);
         var newButton = new Button { Content = Tr.Loc["Customers.New"], Classes = { "accent" }, HorizontalAlignment = HorizontalAlignment.Stretch };
-        newButton.Click += (_, _) => ClearCustomerForm(); left.Children.Add(newButton);
+        newButton.Click += (_, _) => { ClearCustomerForm(); customerTabs.SelectedIndex = 1; };
+        left.Children.Add(newButton);
 
+        var details = BuildCustomerDetailsTab();
+        customerOverview = new TextBlock { Text = "Select a customer to see their account summary.", TextWrapping = TextWrapping.Wrap, Margin = new Thickness(12) };
+        var overviewTab = new TabItem { Header = "Overview", Content = new StackPanel { Spacing = 12, Children = { customerOverview } } };
+        var borrowingTab = BuildBorrowingsTab();
+        var subscriptionsTab = BuildSubscriptionsTab();
+        var paymentsTab = BuildPaymentsTab();
+        var ledgerTab = BuildLedgerTab();
+        customerTabs = new TabControl { Items = { overviewTab, details, borrowingTab, subscriptionsTab, paymentsTab, ledgerTab }, Margin = new Thickness(12) };
+        customerTabs.SelectionChanged += async (_, _) =>
+        {
+            if (selectedCustomerId.HasValue) await RefreshCustomerWorkspaceAsync();
+        };
+        var right = new StackPanel { Margin = new Thickness(12, 0, 12, 0), Spacing = 8 };
+        right.Children.Add(customerTabs);
+        right.Children.Add(customerStatus);
+        var layout = new Grid { ColumnDefinitions = new ColumnDefinitions("290,*"), Margin = new Thickness(18) };
+        layout.Children.Add(left); Grid.SetColumn(right, 1); layout.Children.Add(right);
+        pageHost.Content = layout;
+        _ = SearchCustomersAsync();
+        ClearCustomerForm();
+    }
+
+    private TabItem BuildCustomerDetailsTab()
+    {
         var fieldsGrid = new Grid { ColumnDefinitions = new ColumnDefinitions("*,*"), RowDefinitions = new RowDefinitions("Auto,Auto,Auto,Auto,Auto,Auto,Auto") };
         AddCustomerField(fieldsGrid, "Customer number", "CustomerNumber", 0, 0);
         AddCustomerField(fieldsGrid, "Name", "FirstName", 0, 1);
@@ -162,15 +203,163 @@ public partial class MainWindow : Window
         AddCustomerField(fieldsGrid, "Notes", "Notes", 6, 0, 2, true);
         var save = new Button { Content = Tr.Loc["Customers.Save"], Classes = { "accent" }, MinWidth = 150 };
         save.Click += async (_, _) => await SaveCustomerAsync();
-        var clear = new Button { Content = Tr.Loc["Customers.Clear"], MinWidth = 100 }; clear.Click += (_, _) => ClearCustomerForm();
-        var actions = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 10, Margin = new Thickness(0, 14, 0, 0) };
+        var clear = new Button { Content = Tr.Loc["Customers.Clear"], MinWidth = 100 };
+        clear.Click += (_, _) => ClearCustomerForm();
+        var actions = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 10, Margin = new Thickness(5, 14, 0, 0) };
         actions.Children.Add(save); actions.Children.Add(clear);
-        var right = new StackPanel { Margin = new Thickness(20, 0, 12, 0), Spacing = 10 };
-        right.Children.Add(new TextBlock { Text = Tr.Loc["Customers.Details"], FontSize = 18, FontWeight = FontWeight.Bold });
-        right.Children.Add(fieldsGrid); right.Children.Add(actions); right.Children.Add(customerStatus);
-        var layout = new Grid { ColumnDefinitions = new ColumnDefinitions("320,*"), Margin = new Thickness(22) };
-        layout.Children.Add(left); Grid.SetColumn(right, 1); layout.Children.Add(right);
-        pageHost.Content = layout; _ = SearchCustomersAsync(); ClearCustomerForm();
+        var panel = new StackPanel { Spacing = 8, Children = { new TextBlock { Text = Tr.Loc["Customers.Details"], FontSize = 18, FontWeight = FontWeight.Bold }, fieldsGrid, actions } };
+        return new TabItem { Header = "Details", Content = new ScrollViewer { Content = panel } };
+    }
+
+    private TabItem BuildBorrowingsTab()
+    {
+        borrowingList = new ListBox { MinHeight = 180 };
+        var fields = new StackPanel { Spacing = 6 };
+        AddActivityField(fields, "Borrowing item / medicine", "BorrowingName");
+        AddActivityField(fields, "Quantity", "BorrowingQuantity", "1");
+        AddActivityField(fields, "Internal barcode", "BorrowingBarcode");
+        AddActivityField(fields, "Due date (yyyy-MM-dd)", "BorrowingDueDate");
+        AddActivityField(fields, "Value", "BorrowingValue");
+        AddActivityField(fields, "Notes", "BorrowingNotes");
+        var add = new Button { Content = "＋ Add borrowing", Classes = { "accent" } };
+        add.Click += async (_, _) => await AddBorrowingAsync();
+        var returned = new Button { Content = "Mark selected as returned" };
+        returned.Click += async (_, _) => await ReturnSelectedBorrowingAsync();
+        return new TabItem { Header = "Borrowings", Content = new StackPanel { Spacing = 10, Children = { borrowingList, fields, new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, Children = { add, returned } } } } };
+    }
+
+    private TabItem BuildSubscriptionsTab()
+    {
+        subscriptionList = new ListBox { MinHeight = 180 };
+        var fields = new StackPanel { Spacing = 6 };
+        AddActivityField(fields, "Subscription title", "SubscriptionTitle");
+        AddActivityField(fields, "Start date (yyyy-MM-dd)", "SubscriptionStart", DateTime.Today.ToString("yyyy-MM-dd"));
+        AddActivityField(fields, "Next due date (yyyy-MM-dd)", "SubscriptionDue");
+        AddActivityField(fields, "Expiry date (yyyy-MM-dd, optional)", "SubscriptionExpiry");
+        AddActivityField(fields, "Frequency", "SubscriptionFrequency", "Monthly");
+        AddActivityField(fields, "Notes", "SubscriptionNotes");
+        var add = new Button { Content = "＋ Add subscription", Classes = { "accent" } };
+        add.Click += async (_, _) => await AddSubscriptionAsync();
+        return new TabItem { Header = "Subscriptions", Content = new StackPanel { Spacing = 10, Children = { subscriptionList, fields, add } } };
+    }
+
+    private TabItem BuildPaymentsTab()
+    {
+        paymentList = new ListBox { MinHeight = 180 };
+        var fields = new StackPanel { Spacing = 6 };
+        AddActivityField(fields, "Payment amount", "PaymentAmount");
+        AddActivityField(fields, "Method (Cash / Card / Transfer)", "PaymentMethod", "Cash");
+        AddActivityField(fields, "Reference", "PaymentReference");
+        AddActivityField(fields, "Notes", "PaymentNotes");
+        var add = new Button { Content = "＋ Record payment", Classes = { "accent" } };
+        add.Click += async (_, _) => await AddPaymentAsync();
+        return new TabItem { Header = "Payments", Content = new StackPanel { Spacing = 10, Children = { paymentList, fields, add } } };
+    }
+
+    private TabItem BuildLedgerTab()
+    {
+        ledgerList = new ListBox { MinHeight = 180 };
+        var fields = new StackPanel { Spacing = 6 };
+        AddActivityField(fields, "Entry type (Charge / Adjustment / Reversal)", "LedgerType", "Charge");
+        AddActivityField(fields, "Amount (positive number)", "LedgerAmount");
+        AddActivityField(fields, "Description", "LedgerDescription");
+        var add = new Button { Content = "＋ Add ledger entry", Classes = { "accent" } };
+        add.Click += async (_, _) => await AddLedgerEntryAsync();
+        return new TabItem { Header = "Ledger", Content = new StackPanel { Spacing = 10, Children = { ledgerList, fields, add } } };
+    }
+
+    private void AddActivityField(StackPanel parent, string label, string key, string? defaultValue = null)
+    {
+        var input = new TextBox { Watermark = label, Text = defaultValue ?? string.Empty, MinHeight = 32 };
+        activityFields[key] = input;
+        parent.Children.Add(input);
+    }
+
+    private string ActivityValue(string key) => activityFields.TryGetValue(key, out var box) ? box.Text?.Trim() ?? string.Empty : string.Empty;
+
+    private async Task RefreshCustomerWorkspaceAsync()
+    {
+        if (!selectedCustomerId.HasValue) return;
+        var id = selectedCustomerId.Value;
+        await using var db = new PharmacyDbContext(PharmacyDb.Options());
+        var customer = await db.Customers.AsNoTracking().FirstOrDefaultAsync(c => c.Id == id);
+        if (customer is null) return;
+        var borrowings = await db.Borrowings.AsNoTracking().Where(x => x.CustomerId == id).OrderByDescending(x => x.BorrowedAt).ToListAsync();
+        var subscriptions = await db.Subscriptions.AsNoTracking().Where(x => x.CustomerId == id).OrderByDescending(x => x.StartDate).ToListAsync();
+        var payments = await db.Payments.AsNoTracking().Where(x => x.CustomerId == id).OrderByDescending(x => x.PaidAt).ToListAsync();
+        var ledger = await db.LedgerEntries.AsNoTracking().Where(x => x.CustomerId == id).OrderByDescending(x => x.EntryDate).ToListAsync();
+        var charges = ledger.Where(x => x.Type == LedgerEntryType.Charge || x.Type == LedgerEntryType.Adjustment).Sum(x => x.Amount);
+        var credits = ledger.Where(x => x.Type == LedgerEntryType.Payment || x.Type == LedgerEntryType.Reversal).Sum(x => x.Amount);
+        var balance = charges - credits;
+        customerOverview.Text = $"{customer.CustomerNumber}  |  {customer.FullName}\n{customer.Address}, {customer.City} {customer.Postcode}\nTelephone: {customer.Telephone ?? customer.Phone}  |  Mobile: {customer.Mobile}\nEmail: {customer.Email}\n\nBORROWINGS: {borrowings.Count} total, {borrowings.Count(x => x.Status == BorrowingStatus.Borrowed)} currently borrowed\nSUBSCRIPTIONS: {subscriptions.Count(x => x.Status == SubscriptionStatus.Active)} active of {subscriptions.Count}\nPAYMENTS: {payments.Count} recorded  |  Total paid: {payments.Sum(x => x.Amount):C}\nACCOUNT BALANCE: {balance:C}\n\nRecent activity:\n{string.Join("\n", ledger.Take(5).Select(x => $"{x.EntryDate:dd/MM/yyyy}  {x.Type}  {x.Amount:C}  {x.Description}"))}";
+        borrowingList.ItemsSource = borrowings.Select(x => $"{x.BorrowedAt:dd/MM/yyyy} | {x.MedicineName} | Qty {x.Quantity} | {x.Status} | Due {x.DueDate:dd/MM/yyyy} | {x.InternalBarcode}").ToList();
+        subscriptionList.ItemsSource = subscriptions.Select(x => $"{x.Title} | {x.Status} | Next: {x.NextDueDate:dd/MM/yyyy} | Expires: {x.ExpiryDate:dd/MM/yyyy} | {x.Frequency}").ToList();
+        paymentList.ItemsSource = payments.Select(x => $"{x.PaidAt:dd/MM/yyyy} | {x.Amount:C} | {x.Method} | {x.Reference}").ToList();
+        ledgerList.ItemsSource = ledger.Select(x => $"{x.EntryDate:dd/MM/yyyy} | {x.Type} | {x.Amount:C} | {x.Description}").ToList();
+    }
+
+    private async Task AddBorrowingAsync()
+    {
+        if (!selectedCustomerId.HasValue) { SetActivityStatus("Save or select a customer first."); return; }
+        if (string.IsNullOrWhiteSpace(ActivityValue("BorrowingName")) || string.IsNullOrWhiteSpace(ActivityValue("BorrowingBarcode"))) { SetActivityStatus("Item name and internal barcode are required."); return; }
+        if (!int.TryParse(ActivityValue("BorrowingQuantity"), out var quantity) || quantity < 1) { SetActivityStatus("Enter a valid quantity."); return; }
+        DateTime? due = DateTime.TryParse(ActivityValue("BorrowingDueDate"), out var dueDate) ? dueDate : null;
+        decimal? value = decimal.TryParse(ActivityValue("BorrowingValue"), out var amount) ? amount : null;
+        await using var db = new PharmacyDbContext(PharmacyDb.Options());
+        if (await db.Borrowings.AnyAsync(x => x.InternalBarcode == ActivityValue("BorrowingBarcode"))) { SetActivityStatus("This internal barcode is already in use."); return; }
+        db.Borrowings.Add(new BorrowingRecord { CustomerId = selectedCustomerId.Value, MedicineName = ActivityValue("BorrowingName"), Quantity = quantity, InternalBarcode = ActivityValue("BorrowingBarcode"), DueDate = due, Value = value, Notes = ActivityValue("BorrowingNotes") });
+        await db.SaveChangesAsync(); SetActivityStatus("Borrowing record added."); await RefreshCustomerWorkspaceAsync();
+    }
+
+    private async Task ReturnSelectedBorrowingAsync()
+    {
+        if (borrowingList.SelectedIndex < 0 || !selectedCustomerId.HasValue) { SetActivityStatus("Select a borrowing record first."); return; }
+        var barcode = ActivityValue("BorrowingBarcode");
+        if (string.IsNullOrWhiteSpace(barcode)) { SetActivityStatus("Enter the internal barcode of the item to return."); return; }
+        await using var db = new PharmacyDbContext(PharmacyDb.Options());
+        var record = await db.Borrowings.FirstOrDefaultAsync(x => x.CustomerId == selectedCustomerId.Value && x.InternalBarcode == barcode && x.Status == BorrowingStatus.Borrowed);
+        if (record is null) { SetActivityStatus("No active borrowing matches the entered barcode."); return; }
+        record.Status = BorrowingStatus.Returned; record.ReturnedAt = DateTime.Now;
+        await db.SaveChangesAsync(); SetActivityStatus("Item marked as returned."); await RefreshCustomerWorkspaceAsync();
+    }
+
+    private async Task AddSubscriptionAsync()
+    {
+        if (!selectedCustomerId.HasValue) { SetActivityStatus("Save or select a customer first."); return; }
+        if (string.IsNullOrWhiteSpace(ActivityValue("SubscriptionTitle")) || !DateTime.TryParse(ActivityValue("SubscriptionDue"), out var due)) { SetActivityStatus("Enter a title and valid next due date."); return; }
+        DateTime.TryParse(ActivityValue("SubscriptionStart"), out var start);
+        DateTime? expiry = DateTime.TryParse(ActivityValue("SubscriptionExpiry"), out var exp) ? exp : null;
+        await using var db = new PharmacyDbContext(PharmacyDb.Options());
+        db.Subscriptions.Add(new Subscription { CustomerId = selectedCustomerId.Value, Title = ActivityValue("SubscriptionTitle"), StartDate = start == default ? DateTime.Today : start, NextDueDate = due, ExpiryDate = expiry, Frequency = string.IsNullOrWhiteSpace(ActivityValue("SubscriptionFrequency")) ? "Monthly" : ActivityValue("SubscriptionFrequency"), Notes = ActivityValue("SubscriptionNotes") });
+        await db.SaveChangesAsync(); SetActivityStatus("Subscription added."); await RefreshCustomerWorkspaceAsync();
+    }
+
+    private async Task AddPaymentAsync()
+    {
+        if (!selectedCustomerId.HasValue) { SetActivityStatus("Save or select a customer first."); return; }
+        if (!decimal.TryParse(ActivityValue("PaymentAmount"), out var amount) || amount <= 0) { SetActivityStatus("Enter a payment amount greater than zero."); return; }
+        await using var db = new PharmacyDbContext(PharmacyDb.Options());
+        var method = string.IsNullOrWhiteSpace(ActivityValue("PaymentMethod")) ? "Cash" : ActivityValue("PaymentMethod");
+        var reference = ActivityValue("PaymentReference");
+        db.Payments.Add(new Payment { CustomerId = selectedCustomerId.Value, Amount = amount, Method = method, Reference = reference, Notes = ActivityValue("PaymentNotes"), RecordedBy = viewModel.User.Username });
+        db.LedgerEntries.Add(new LedgerEntry { CustomerId = selectedCustomerId.Value, Type = LedgerEntryType.Payment, Amount = amount, Description = $"Payment - {method}", SourceReference = reference, RecordedBy = viewModel.User.Username });
+        await db.SaveChangesAsync(); SetActivityStatus("Payment recorded and ledger updated."); await RefreshCustomerWorkspaceAsync();
+    }
+
+    private async Task AddLedgerEntryAsync()
+    {
+        if (!selectedCustomerId.HasValue) { SetActivityStatus("Save or select a customer first."); return; }
+        if (!decimal.TryParse(ActivityValue("LedgerAmount"), out var amount) || amount <= 0 || string.IsNullOrWhiteSpace(ActivityValue("LedgerDescription"))) { SetActivityStatus("Enter a positive amount and description."); return; }
+        if (!Enum.TryParse<LedgerEntryType>(ActivityValue("LedgerType"), true, out var type) || type == LedgerEntryType.Payment) { SetActivityStatus("Choose Charge, Adjustment or Reversal. Payments should be recorded in the Payments tab."); return; }
+        await using var db = new PharmacyDbContext(PharmacyDb.Options());
+        db.LedgerEntries.Add(new LedgerEntry { CustomerId = selectedCustomerId.Value, Type = type, Amount = amount, Description = ActivityValue("LedgerDescription"), RecordedBy = viewModel.User.Username });
+        await db.SaveChangesAsync(); SetActivityStatus("Ledger entry added."); await RefreshCustomerWorkspaceAsync();
+    }
+
+    private void SetActivityStatus(string message)
+    {
+        customerStatus.Text = message;
+        customerStatus.Foreground = Brushes.LightGreen;
     }
 
     private void AddCustomerField(Grid grid, string label, string key, int row, int column, int columnSpan = 1, bool multiline = false)
