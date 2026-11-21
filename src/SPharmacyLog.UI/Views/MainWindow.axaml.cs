@@ -247,6 +247,7 @@ public partial class MainWindow : Window
     {
         if (viewModel.User.Role != PharmacyRole.Admin) return;
         var dialog = new WeatherSettingsWindow();
+        AttachDialogLocalization(dialog);
         var saved = await dialog.ShowDialog<bool>(this);
         if (saved)
             ShowDashboard();
