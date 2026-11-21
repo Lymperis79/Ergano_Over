@@ -262,7 +262,7 @@ public partial class MainWindow : Window
             Children =
             {
                 new TextBlock { Text = "PHARMACEUTICAL PACK SCAN", FontSize = 16, FontWeight = FontWeight.Bold },
-                new TextBlock { Text = "Scan the 2D DataMatrix. The original scanner text is retained exactly; the fields below are extracted from GS1 Application Identifiers.", TextWrapping = TextWrapping.Wrap },
+                new TextBlock { Text = "Scan the 2D DataMatrix. Configure the scanner to transmit ASCII 29 (GS) between variable-length fields and send Enter after the scan. The original scanner text is retained exactly; the fields below are extracted from GS1 Application Identifiers.", TextWrapping = TextWrapping.Wrap },
                 new StackPanel
                 {
                     Orientation = Orientation.Horizontal,
