@@ -140,7 +140,7 @@ public partial class MainWindow : Window
     private ListBox subscriptionList = null!;
     private ListBox paymentList = null!;
     private ListBox ledgerList = null!;
-    private TextBlock activityStatus = null!;
+    private List<BorrowingRecord> currentBorrowings = new();
 
     private void ShowCustomers()
     {
@@ -292,6 +292,7 @@ public partial class MainWindow : Window
         var credits = ledger.Where(x => x.Type == LedgerEntryType.Payment || x.Type == LedgerEntryType.Reversal).Sum(x => x.Amount);
         var balance = charges - credits;
         customerOverview.Text = $"{customer.CustomerNumber}  |  {customer.FullName}\n{customer.Address}, {customer.City} {customer.Postcode}\nTelephone: {customer.Telephone ?? customer.Phone}  |  Mobile: {customer.Mobile}\nEmail: {customer.Email}\n\nBORROWINGS: {borrowings.Count} total, {borrowings.Count(x => x.Status == BorrowingStatus.Borrowed)} currently borrowed\nSUBSCRIPTIONS: {subscriptions.Count(x => x.Status == SubscriptionStatus.Active)} active of {subscriptions.Count}\nPAYMENTS: {payments.Count} recorded  |  Total paid: {payments.Sum(x => x.Amount):C}\nACCOUNT BALANCE: {balance:C}\n\nRecent activity:\n{string.Join("\n", ledger.Take(5).Select(x => $"{x.EntryDate:dd/MM/yyyy}  {x.Type}  {x.Amount:C}  {x.Description}"))}";
+        currentBorrowings = borrowings;
         borrowingList.ItemsSource = borrowings.Select(x => $"{x.BorrowedAt:dd/MM/yyyy} | {x.MedicineName} | Qty {x.Quantity} | {x.Status} | Due {x.DueDate:dd/MM/yyyy} | {x.InternalBarcode}").ToList();
         subscriptionList.ItemsSource = subscriptions.Select(x => $"{x.Title} | {x.Status} | Next: {x.NextDueDate:dd/MM/yyyy} | Expires: {x.ExpiryDate:dd/MM/yyyy} | {x.Frequency}").ToList();
         paymentList.ItemsSource = payments.Select(x => $"{x.PaidAt:dd/MM/yyyy} | {x.Amount:C} | {x.Method} | {x.Reference}").ToList();
@@ -313,11 +314,10 @@ public partial class MainWindow : Window
 
     private async Task ReturnSelectedBorrowingAsync()
     {
-        if (borrowingList.SelectedIndex < 0 || !selectedCustomerId.HasValue) { SetActivityStatus("Select a borrowing record first."); return; }
-        var barcode = ActivityValue("BorrowingBarcode");
-        if (string.IsNullOrWhiteSpace(barcode)) { SetActivityStatus("Enter the internal barcode of the item to return."); return; }
+        if (borrowingList.SelectedIndex < 0 || borrowingList.SelectedIndex >= currentBorrowings.Count || !selectedCustomerId.HasValue) { SetActivityStatus("Select a borrowing record first."); return; }
+        var selectedId = currentBorrowings[borrowingList.SelectedIndex].Id;
         await using var db = new PharmacyDbContext(PharmacyDb.Options());
-        var record = await db.Borrowings.FirstOrDefaultAsync(x => x.CustomerId == selectedCustomerId.Value && x.InternalBarcode == barcode && x.Status == BorrowingStatus.Borrowed);
+        var record = await db.Borrowings.FirstOrDefaultAsync(x => x.Id == selectedId && x.CustomerId == selectedCustomerId.Value && x.Status == BorrowingStatus.Borrowed);
         if (record is null) { SetActivityStatus("No active borrowing matches the entered barcode."); return; }
         record.Status = BorrowingStatus.Returned; record.ReturnedAt = DateTime.Now;
         await db.SaveChangesAsync(); SetActivityStatus("Item marked as returned."); await RefreshCustomerWorkspaceAsync();
@@ -424,6 +424,7 @@ public partial class MainWindow : Window
         await db.SaveChangesAsync(); selectedCustomerId = customer.Id;
         customerStatus.Foreground = Brushes.LightGreen; customerStatus.Text = string.Format(Tr.Loc["Customers.Saved"], customer.CustomerNumber);
         await SearchCustomersAsync();
+        await RefreshCustomerWorkspaceAsync();
     }
 
     private static (string First, string Last) SplitLegacyName(Customer c)
