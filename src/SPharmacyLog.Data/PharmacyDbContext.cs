@@ -14,6 +14,8 @@ public sealed class PharmacyDbContext : DbContext
     public DbSet<Customer> Customers => Set<Customer>();
     public DbSet<Prescription> Prescriptions => Set<Prescription>();
     public DbSet<MedicineCatalogItem> Medicines => Set<MedicineCatalogItem>();
+    public DbSet<MedicineBarcode> MedicineBarcodes => Set<MedicineBarcode>();
+    public DbSet<SerializedPackScan> SerializedPackScans => Set<SerializedPackScan>();
     public DbSet<BorrowingRecord> Borrowings => Set<BorrowingRecord>();
     public DbSet<Subscription> Subscriptions => Set<Subscription>();
     public DbSet<Payment> Payments => Set<Payment>();
@@ -37,6 +39,26 @@ public sealed class PharmacyDbContext : DbContext
         modelBuilder.Entity<BorrowingRecord>()
             .HasIndex(borrowing => borrowing.InternalBarcode)
             .IsUnique();
+
+        modelBuilder.Entity<MedicineBarcode>()
+            .HasIndex(barcode => barcode.BarcodeValue)
+            .IsUnique();
+
+        modelBuilder.Entity<MedicineBarcode>()
+            .HasIndex(barcode => barcode.MedicineId);
+
+        modelBuilder.Entity<SerializedPackScan>()
+            .HasIndex(pack => new { pack.Gtin14, pack.SerialNumber })
+            .IsUnique();
+
+        modelBuilder.Entity<SerializedPackScan>()
+            .HasIndex(pack => pack.EofEan13);
+
+        modelBuilder.Entity<SerializedPackScan>()
+            .HasIndex(pack => pack.MedicineId);
+
+        modelBuilder.Entity<BorrowingRecord>()
+            .HasIndex(borrowing => borrowing.SerializedPackScanId);
 
         // Keep this index in sync with PharmacyDbContextModelSnapshot and Initial migration.
         modelBuilder.Entity<LedgerEntry>()
@@ -63,6 +85,24 @@ public sealed class PharmacyDbContext : DbContext
             .HasOne(borrowing => borrowing.Customer)
             .WithMany(customer => customer.Borrowings)
             .HasForeignKey(borrowing => borrowing.CustomerId);
+
+        modelBuilder.Entity<MedicineBarcode>()
+            .HasOne(barcode => barcode.Medicine)
+            .WithMany(medicine => medicine.Barcodes)
+            .HasForeignKey(barcode => barcode.MedicineId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<SerializedPackScan>()
+            .HasOne(pack => pack.Medicine)
+            .WithMany(medicine => medicine.SerializedPacks)
+            .HasForeignKey(pack => pack.MedicineId)
+            .OnDelete(DeleteBehavior.SetNull);
+
+        modelBuilder.Entity<BorrowingRecord>()
+            .HasOne(borrowing => borrowing.SerializedPackScan)
+            .WithMany(pack => pack.Borrowings)
+            .HasForeignKey(borrowing => borrowing.SerializedPackScanId)
+            .OnDelete(DeleteBehavior.Restrict);
 
         modelBuilder.Entity<Subscription>()
             .HasOne(subscription => subscription.Customer)
