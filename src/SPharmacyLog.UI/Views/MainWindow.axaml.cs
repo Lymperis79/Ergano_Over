@@ -140,6 +140,47 @@ public partial class MainWindow : Window
     }
 
 
+
+    private static void AttachDialogLocalization(Window dialog)
+    {
+        void TranslateDialog()
+        {
+            foreach (var control in dialog.GetVisualDescendants().OfType<Control>())
+            {
+                switch (control)
+                {
+                    case TextBlock textBlock when !string.IsNullOrEmpty(textBlock.Text):
+                        textBlock.Text = Tr.Loc.TranslateText(textBlock.Text);
+                        break;
+                    case Button button when button.Content is string content:
+                        button.Content = Tr.Loc.TranslateText(content);
+                        break;
+                    case TextBox textBox when !string.IsNullOrEmpty(textBox.PlaceholderText):
+                        textBox.PlaceholderText = Tr.Loc.TranslateText(textBox.PlaceholderText);
+                        break;
+                    case ComboBox comboBox:
+                        if (comboBox.ItemsSource is IEnumerable<string> options)
+                        {
+                            var selected = comboBox.SelectedItem?.ToString();
+                            var translated = options.Select(Tr.Loc.TranslateText).ToArray();
+                            comboBox.ItemsSource = translated;
+                            if (selected is not null)
+                                comboBox.SelectedItem = Tr.Loc.TranslateText(selected);
+                        }
+                        break;
+                    case ComboBoxItem item when item.Content is string itemText:
+                        item.Content = Tr.Loc.TranslateText(itemText);
+                        break;
+                }
+            }
+        }
+
+        EventHandler languageChanged = (_, _) => TranslateDialog();
+        Tr.Loc.LanguageChanged += languageChanged;
+        dialog.Opened += (_, _) => TranslateDialog();
+        dialog.Closed += (_, _) => Tr.Loc.LanguageChanged -= languageChanged;
+    }
+
     private static ColumnDefinitions CreateColumns(params GridLength[] widths)
     {
         var definitions = new ColumnDefinitions();
@@ -711,6 +752,7 @@ public partial class MainWindow : Window
             SetActivityStatus(isEdit ? "Borrowing updated." : "Medicine borrowing added.");
             await RefreshCustomerWorkspaceAsync();
         };
+        AttachDialogLocalization(dialog);
         await dialog.ShowDialog(this);
     }
 
@@ -1428,11 +1470,13 @@ public partial class MainWindow : Window
             }
         };
         Grid.SetRow(content.Children[1], 1);
-        return new Window
+        var dialog = new Window
         {
             Title = title, Width = width, Height = height, MinWidth = 480, MinHeight = 420,
             WindowStartupLocation = WindowStartupLocation.CenterOwner, CanResize = true, Content = content
         };
+        AttachDialogLocalization(dialog);
+        return dialog;
     }
 
     private async Task AddSubscriptionAsync()
