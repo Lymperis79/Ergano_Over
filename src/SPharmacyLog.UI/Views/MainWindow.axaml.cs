@@ -32,6 +32,7 @@ public partial class MainWindow : Window
     private DateTime displayedMonth = new(DateTime.Today.Year, DateTime.Today.Month, 1);
     private TextBlock? calendarMonthTitle;
     private StackPanel calendarNotesPanel = new();
+    private readonly Dictionary<DateTime, Border> calendarDateCells = new();
     private bool showingExpiryCalendar;
     private bool suppressCustomerSelectionChanged;
     private const string MenuDashboard = "Dashboard";
@@ -538,6 +539,7 @@ public partial class MainWindow : Window
             ColumnDefinitions = CreateColumns(GridLength.Star, GridLength.Star, GridLength.Star, GridLength.Star, GridLength.Star, GridLength.Star, GridLength.Star),
             RowDefinitions = CreateRows(GridLength.Auto, GridLength.Auto, GridLength.Auto, GridLength.Auto, GridLength.Auto, GridLength.Auto)
         };
+        calendarDateCells.Clear();
         var offset = ((int)displayedMonth.DayOfWeek + 6) % 7;
         var daysInMonth = DateTime.DaysInMonth(displayedMonth.Year, displayedMonth.Month);
         for (var cell = 0; cell < 42; cell++)
@@ -573,7 +575,16 @@ public partial class MainWindow : Window
                 dayHeader.Click += async (_, _) =>
                 {
                     SelectedCalendarDate = date;
-                    await RenderCalendarAsync(monthTitle);
+                    foreach (var pair in calendarDateCells)
+                    {
+                        pair.Value.BorderThickness = pair.Key == date ? new Thickness(2) : new Thickness(1);
+                        pair.Value.BorderBrush = pair.Key == date
+                            ? new SolidColorBrush(Color.Parse("#21A1D8"))
+                            : new SolidColorBrush(Color.Parse("#34495E"));
+                        pair.Value.Background = pair.Key == date
+                            ? new SolidColorBrush(Color.Parse("#243C52"))
+                            : new SolidColorBrush(Color.Parse("#172536"));
+                    }
                     await LoadSelectedDayAsync();
                 };
                 dayContent.Children.Add(dayHeader);
@@ -661,6 +672,7 @@ public partial class MainWindow : Window
                     }
                 }, RoutingStrategies.Bubble);
                 dayCell = dateCellBorder;
+                calendarDateCells[date] = dateCellBorder;
             }
             else
             {
@@ -777,7 +789,7 @@ public partial class MainWindow : Window
         var shared = new CheckBox
         {
             Content = Tr.Loc.TranslateText("Visible to all users"),
-            IsChecked = existing?.IsShared ?? true
+            IsChecked = existing?.IsShared ?? false
         };
         var createdInfo = new TextBlock
         {
