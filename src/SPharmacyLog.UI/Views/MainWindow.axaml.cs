@@ -2128,6 +2128,473 @@ public partial class MainWindow : Window
     private string GetField(string key) => customerFields.TryGetValue(key, out var field) ? field.Text?.Trim() ?? "" : "";
     private sealed record CustomerListItem(int Id, string Display) { public override string ToString() => Display; }
 
+    private async Task ShowUsersAsync()
+    {
+        if (viewModel.User.Role != PharmacyRole.Admin)
+        {
+            ShowNoMenuAccess();
+            return;
+        }
+
+        showingExpiryCalendar = false;
+        var root = new StackPanel { Margin = new Thickness(22), Spacing = 12 };
+        var header = new Grid { ColumnDefinitions = CreateColumns(GridLength.Star, GridLength.Auto) };
+        header.Children.Add(new TextBlock
+        {
+            Text = Tr.Loc["Navigation.Users"],
+            FontSize = 24,
+            FontWeight = FontWeight.Bold,
+            VerticalAlignment = VerticalAlignment.Center
+        });
+        var add = new Button
+        {
+            Content = Tr.Loc.TranslateText("＋ New user"),
+            Classes = { "accent" },
+            MinWidth = 130,
+            MinHeight = 38
+        };
+        add.Click += async (_, _) => await OpenUserEditorAsync(null);
+        Grid.SetColumn(add, 1);
+        header.Children.Add(add);
+        root.Children.Add(header);
+        root.Children.Add(new TextBlock
+        {
+            Text = Tr.Loc.TranslateText("Create accounts, assign roles, choose visible workspace menus and manage access."),
+            Foreground = Brushes.LightGray,
+            TextWrapping = TextWrapping.Wrap
+        });
+
+        var listHost = new StackPanel { Spacing = 8 };
+        root.Children.Add(new ScrollViewer
+        {
+            Content = listHost,
+            VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
+            MaxHeight = 650
+        });
+        pageHost.Content = root;
+
+        await using var db = new PharmacyDbContext(PharmacyDb.Options());
+        var users = await db.Users.AsNoTracking().OrderBy(user => user.Username).ToListAsync();
+        if (users.Count == 0)
+        {
+            listHost.Children.Add(new TextBlock { Text = Tr.Loc.TranslateText("No users found.") });
+            return;
+        }
+
+        foreach (var user in users)
+        {
+            var card = new Border
+            {
+                Background = new SolidColorBrush(Color.Parse("#1D2B3B")),
+                BorderBrush = new SolidColorBrush(Color.Parse("#34495E")),
+                BorderThickness = new Thickness(1),
+                CornerRadius = new CornerRadius(8),
+                Padding = new Thickness(12)
+            };
+            var row = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8 };
+            var info = new StackPanel { Spacing = 3, Width = 250, VerticalAlignment = VerticalAlignment.Center };
+            info.Children.Add(new TextBlock { Text = user.Username, FontWeight = FontWeight.SemiBold, FontSize = 14 });
+            info.Children.Add(new TextBlock
+            {
+                Text = $"{user.Role} · {(user.IsActive ? Tr.Loc.TranslateText("Active") : Tr.Loc.TranslateText("Inactive"))}",
+                Foreground = user.IsActive ? Brushes.LightGreen : Brushes.Orange,
+                FontSize = 12
+            });
+            info.Children.Add(new TextBlock
+            {
+                Text = string.Format(Tr.Loc.TranslateText("Created {0}"), DateTime.SpecifyKind(user.CreatedAt, DateTimeKind.Utc).ToLocalTime().ToString("dd/MM/yyyy HH:mm")),
+                Foreground = Brushes.Gray,
+                FontSize = 11
+            });
+            row.Children.Add(info);
+
+            var edit = new Button { Content = Tr.Loc.TranslateText("Edit user"), MinWidth = 85 };
+            edit.Click += async (_, _) => await OpenUserEditorAsync(user);
+            row.Children.Add(edit);
+
+            var reset = new Button { Content = Tr.Loc.TranslateText("Reset password"), MinWidth = 105 };
+            reset.Click += async (_, _) => await OpenUserPasswordResetAsync(user);
+            row.Children.Add(reset);
+
+            var toggle = new Button
+            {
+                Content = Tr.Loc.TranslateText(user.IsActive ? "Deactivate" : "Activate"),
+                MinWidth = 85,
+                IsEnabled = user.Id != viewModel.User.Id
+            };
+            toggle.Click += async (_, _) => await ToggleUserActiveAsync(user);
+            row.Children.Add(toggle);
+
+            var delete = new Button
+            {
+                Content = Tr.Loc.TranslateText("Delete"),
+                MinWidth = 70,
+                IsEnabled = user.Id != viewModel.User.Id
+            };
+            delete.Click += async (_, _) => await DeleteUserAsync(user);
+            row.Children.Add(delete);
+
+            card.Child = row;
+            listHost.Children.Add(card);
+        }
+    }
+
+    private async Task OpenUserEditorAsync(PharmacyUser? existing)
+    {
+        if (viewModel.User.Role != PharmacyRole.Admin) return;
+        var isEdit = existing is not null;
+        var username = new TextBox
+        {
+            Text = existing?.Username ?? string.Empty,
+            PlaceholderText = Tr.Loc.TranslateText("Username"),
+            MinHeight = 36
+        };
+        var password = new TextBox
+        {
+            PasswordChar = '•',
+            PlaceholderText = Tr.Loc.TranslateText("Password (minimum 8 characters)"),
+            MinHeight = 36
+        };
+        var role = new ComboBox
+        {
+            MinHeight = 36,
+            ItemsSource = Enum.GetNames<PharmacyRole>(),
+            SelectedItem = existing?.Role.ToString() ?? PharmacyRole.Limited.ToString()
+        };
+        var canSaveCredentials = new CheckBox
+        {
+            Content = Tr.Loc.TranslateText("Allow saving login credentials on this computer"),
+            IsChecked = existing?.CanSaveCredentials ?? false
+        };
+
+        var menuPicker = new StackPanel { Spacing = 6 };
+        menuPicker.Children.Add(new TextBlock
+        {
+            Text = Tr.Loc.TranslateText("Menus this user can see"),
+            FontWeight = FontWeight.SemiBold
+        });
+        menuPicker.Children.Add(new TextBlock
+        {
+            Text = Tr.Loc.TranslateText("Select at least one menu. Users and Administrative are reserved for administrators."),
+            Foreground = Brushes.LightGray,
+            FontSize = 12,
+            TextWrapping = TextWrapping.Wrap
+        });
+        var menuChecks = new List<(string Key, CheckBox Check)>();
+        var existingMenus = string.IsNullOrWhiteSpace(existing?.AllowedMenus)
+            ? ConfigurableMenus.Select(item => item.Key).ToHashSet(StringComparer.Ordinal)
+            : existing.AllowedMenus.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                .ToHashSet(StringComparer.Ordinal);
+        foreach (var menu in ConfigurableMenus)
+        {
+            var check = new CheckBox
+            {
+                Content = Tr.Loc[menu.LabelKey],
+                IsChecked = isEdit ? (existing?.Role == PharmacyRole.Admin || existingMenus.Contains(menu.Key)) : false,
+                MinWidth = 180,
+                Margin = new Thickness(0, 2)
+            };
+            menuChecks.Add((menu.Key, check));
+            menuPicker.Children.Add(check);
+        }
+
+        var selectAll = new Button { Content = Tr.Loc.TranslateText("Select all"), MinWidth = 100 };
+        selectAll.Click += (_, _) => { foreach (var item in menuChecks) item.Check.IsChecked = true; };
+        var clearAll = new Button { Content = Tr.Loc.TranslateText("Clear all"), MinWidth = 100 };
+        clearAll.Click += (_, _) => { foreach (var item in menuChecks) item.Check.IsChecked = false; };
+        menuPicker.Children.Insert(2, new StackPanel
+        {
+            Orientation = Orientation.Horizontal,
+            Spacing = 8,
+            Children = { selectAll, clearAll }
+        });
+        menuPicker.IsVisible = role.SelectedItem?.ToString() != PharmacyRole.Admin.ToString();
+        role.SelectionChanged += (_, _) => menuPicker.IsVisible = role.SelectedItem?.ToString() != PharmacyRole.Admin.ToString();
+
+        if (existing?.Id == viewModel.User.Id)
+            role.IsEnabled = false;
+
+        var form = new StackPanel
+        {
+            Margin = new Thickness(18),
+            Spacing = 8,
+            Children =
+            {
+                new TextBlock { Text = isEdit ? Tr.Loc.TranslateText("Edit user") : Tr.Loc.TranslateText("New user"), FontSize = 20, FontWeight = FontWeight.Bold },
+                new TextBlock { Text = Tr.Loc.TranslateText("Username") }, username,
+                new TextBlock { Text = Tr.Loc.TranslateText("Password (minimum 8 characters)"), IsVisible = !isEdit }, password,
+                new TextBlock { Text = Tr.Loc.TranslateText("Role") }, role,
+                canSaveCredentials,
+                menuPicker
+            }
+        };
+        var status = new TextBlock { Foreground = Brushes.Orange, TextWrapping = TextWrapping.Wrap };
+        var save = new Button { Content = Tr.Loc.TranslateText("Save"), Classes = { "accent" }, MinWidth = 110 };
+        var cancel = new Button { Content = Tr.Loc.TranslateText("Cancel"), MinWidth = 100 };
+        var actions = new StackPanel
+        {
+            Orientation = Orientation.Horizontal,
+            HorizontalAlignment = HorizontalAlignment.Right,
+            Spacing = 8,
+            Children = { status, cancel, save }
+        };
+        var dialog = new Window
+        {
+            Title = isEdit ? Tr.Loc.TranslateText("Edit user") : Tr.Loc.TranslateText("New user"),
+            Width = 600,
+            Height = 690,
+            MinWidth = 520,
+            MinHeight = 520,
+            CanResize = true,
+            WindowStartupLocation = WindowStartupLocation.CenterOwner,
+            Content = new StackPanel
+            {
+                Spacing = 10,
+                Children =
+                {
+                    new ScrollViewer { Content = form, VerticalScrollBarVisibility = ScrollBarVisibility.Auto },
+                    new Border { Padding = new Thickness(12), Child = actions }
+                }
+            }
+        };
+        cancel.Click += (_, _) => dialog.Close();
+        save.Click += async (_, _) =>
+        {
+            var name = username.Text?.Trim() ?? string.Empty;
+            if (string.IsNullOrWhiteSpace(name))
+            {
+                status.Text = Tr.Loc.TranslateText("Username is required.");
+                return;
+            }
+            if (!Enum.TryParse<PharmacyRole>(role.SelectedItem?.ToString(), out var selectedRole))
+            {
+                status.Text = Tr.Loc.TranslateText("Select a valid role.");
+                return;
+            }
+            var selectedMenus = menuChecks.Where(item => item.Check.IsChecked == true).Select(item => item.Key).ToList();
+            if (selectedRole != PharmacyRole.Admin && selectedMenus.Count == 0)
+            {
+                status.Text = Tr.Loc.TranslateText("Select at least one menu.");
+                return;
+            }
+            var newPassword = password.Text ?? string.Empty;
+            if (!isEdit && newPassword.Length < 8)
+            {
+                status.Text = Tr.Loc.TranslateText("Password must contain at least 8 characters.");
+                return;
+            }
+
+            await using var db = new PharmacyDbContext(PharmacyDb.Options());
+            if (await db.Users.AnyAsync(item => item.Username == name && item.Id != (existing?.Id ?? 0)))
+            {
+                status.Text = Tr.Loc.TranslateText("This username is already in use.");
+                return;
+            }
+
+            PharmacyUser record;
+            if (isEdit)
+            {
+                record = await db.Users.FirstOrDefaultAsync(item => item.Id == existing!.Id) ?? null!;
+                if (record is null)
+                {
+                    status.Text = Tr.Loc.TranslateText("The user could not be found.");
+                    return;
+                }
+                if (record.Role == PharmacyRole.Admin && selectedRole != PharmacyRole.Admin && record.IsActive &&
+                    await db.Users.CountAsync(item => item.Role == PharmacyRole.Admin && item.IsActive) <= 1)
+                {
+                    status.Text = Tr.Loc.TranslateText("At least one active administrator must remain.");
+                    return;
+                }
+            }
+            else
+            {
+                record = new PharmacyUser();
+                db.Users.Add(record);
+                record.PasswordHash = BCrypt.Net.BCrypt.HashPassword(newPassword);
+            }
+
+            record.Username = name;
+            record.Role = selectedRole;
+            record.AllowedMenus = selectedRole == PharmacyRole.Admin
+                ? null
+                : string.Join(",", ConfigurableMenus.Where(item => selectedMenus.Contains(item.Key)).Select(item => item.Key));
+            record.CanSaveCredentials = canSaveCredentials.IsChecked == true;
+            await db.SaveChangesAsync();
+
+            if (record.Id == viewModel.User.Id)
+            {
+                viewModel.User.Username = record.Username;
+                viewModel.User.CanSaveCredentials = record.CanSaveCredentials;
+                UserLabel.Text = viewModel.UserDisplay;
+            }
+            dialog.Close();
+            await ShowUsersAsync();
+        };
+        AttachDialogLocalization(dialog);
+        await dialog.ShowDialog(this);
+    }
+
+    private async Task OpenUserPasswordResetAsync(PharmacyUser user)
+    {
+        if (viewModel.User.Role != PharmacyRole.Admin) return;
+        var password = new TextBox
+        {
+            PasswordChar = '•',
+            PlaceholderText = Tr.Loc.TranslateText("New password (minimum 8 characters)"),
+            MinHeight = 36
+        };
+        var confirm = new TextBox
+        {
+            PasswordChar = '•',
+            PlaceholderText = Tr.Loc.TranslateText("Confirm new password"),
+            MinHeight = 36
+        };
+        var form = new StackPanel
+        {
+            Margin = new Thickness(18),
+            Spacing = 8,
+            Children =
+            {
+                new TextBlock { Text = string.Format(Tr.Loc.TranslateText("Reset password for {0}"), user.Username), FontSize = 18, FontWeight = FontWeight.Bold },
+                password,
+                confirm
+            }
+        };
+        var status = new TextBlock { Foreground = Brushes.Orange, TextWrapping = TextWrapping.Wrap };
+        var save = new Button { Content = Tr.Loc.TranslateText("Save"), Classes = { "accent" }, MinWidth = 100 };
+        var cancel = new Button { Content = Tr.Loc.TranslateText("Cancel"), MinWidth = 100 };
+        var dialog = new Window
+        {
+            Title = Tr.Loc.TranslateText("Reset password"),
+            Width = 440,
+            Height = 260,
+            WindowStartupLocation = WindowStartupLocation.CenterOwner,
+            CanResize = false,
+            Content = new StackPanel
+            {
+                Spacing = 8,
+                Children =
+                {
+                    form,
+                    status,
+                    new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right, Spacing = 8, Children = { cancel, save } }
+                }
+            }
+        };
+        cancel.Click += (_, _) => dialog.Close();
+        save.Click += async (_, _) =>
+        {
+            var value = password.Text ?? string.Empty;
+            if (value.Length < 8)
+            {
+                status.Text = Tr.Loc.TranslateText("Password must contain at least 8 characters.");
+                return;
+            }
+            if (value != (confirm.Text ?? string.Empty))
+            {
+                status.Text = Tr.Loc.TranslateText("Passwords do not match.");
+                return;
+            }
+            await using var db = new PharmacyDbContext(PharmacyDb.Options());
+            var record = await db.Users.FirstOrDefaultAsync(item => item.Id == user.Id);
+            if (record is null) { status.Text = Tr.Loc.TranslateText("The user could not be found."); return; }
+            record.PasswordHash = BCrypt.Net.BCrypt.HashPassword(value);
+            await db.SaveChangesAsync();
+            dialog.Close();
+            await ShowUsersAsync();
+        };
+        AttachDialogLocalization(dialog);
+        await dialog.ShowDialog(this);
+    }
+
+    private async Task ToggleUserActiveAsync(PharmacyUser user)
+    {
+        if (viewModel.User.Role != PharmacyRole.Admin || user.Id == viewModel.User.Id) return;
+        await using var db = new PharmacyDbContext(PharmacyDb.Options());
+        var record = await db.Users.FirstOrDefaultAsync(item => item.Id == user.Id);
+        if (record is null) return;
+        if (record.IsActive && record.Role == PharmacyRole.Admin &&
+            await db.Users.CountAsync(item => item.Role == PharmacyRole.Admin && item.IsActive) <= 1)
+        {
+            await ShowUserMessageAsync(Tr.Loc.TranslateText("At least one active administrator must remain."));
+            return;
+        }
+        record.IsActive = !record.IsActive;
+        await db.SaveChangesAsync();
+        await ShowUsersAsync();
+    }
+
+    private async Task DeleteUserAsync(PharmacyUser user)
+    {
+        if (viewModel.User.Role != PharmacyRole.Admin || user.Id == viewModel.User.Id) return;
+        if (!await ConfirmUserDeleteAsync(user.Username)) return;
+        await using var db = new PharmacyDbContext(PharmacyDb.Options());
+        var record = await db.Users.FirstOrDefaultAsync(item => item.Id == user.Id);
+        if (record is null) return;
+        if (record.Role == PharmacyRole.Admin && record.IsActive &&
+            await db.Users.CountAsync(item => item.Role == PharmacyRole.Admin && item.IsActive) <= 1)
+        {
+            await ShowUserMessageAsync(Tr.Loc.TranslateText("At least one active administrator must remain."));
+            return;
+        }
+        db.Users.Remove(record);
+        await db.SaveChangesAsync();
+        await ShowUsersAsync();
+    }
+
+    private async Task<bool> ConfirmUserDeleteAsync(string username)
+    {
+        var confirmed = false;
+        var dialog = new Window
+        {
+            Title = Tr.Loc.TranslateText("Confirm deletion"),
+            Width = 420,
+            Height = 180,
+            CanResize = false,
+            WindowStartupLocation = WindowStartupLocation.CenterOwner
+        };
+        var yes = new Button { Content = Tr.Loc.TranslateText("Delete"), Classes = { "accent" }, MinWidth = 90 };
+        var no = new Button { Content = Tr.Loc.TranslateText("Cancel"), MinWidth = 90 };
+        yes.Click += (_, _) => { confirmed = true; dialog.Close(); };
+        no.Click += (_, _) => dialog.Close();
+        dialog.Content = new StackPanel
+        {
+            Margin = new Thickness(18),
+            Spacing = 12,
+            Children =
+            {
+                new TextBlock { Text = string.Format(Tr.Loc.TranslateText("Delete user {0}?"), username), TextWrapping = TextWrapping.Wrap },
+                new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right, Spacing = 8, Children = { no, yes } }
+            }
+        };
+        AttachDialogLocalization(dialog);
+        await dialog.ShowDialog(this);
+        return confirmed;
+    }
+
+    private async Task ShowUserMessageAsync(string message)
+    {
+        var dialog = new Window
+        {
+            Title = Tr.Loc.TranslateText("Users"),
+            Width = 420,
+            Height = 170,
+            CanResize = false,
+            WindowStartupLocation = WindowStartupLocation.CenterOwner
+        };
+        var close = new Button { Content = Tr.Loc.TranslateText("Close"), MinWidth = 90 };
+        close.Click += (_, _) => dialog.Close();
+        dialog.Content = new StackPanel
+        {
+            Margin = new Thickness(18),
+            Spacing = 12,
+            Children = { new TextBlock { Text = message, TextWrapping = TextWrapping.Wrap }, close }
+        };
+        AttachDialogLocalization(dialog);
+        await dialog.ShowDialog(this);
+    }
+
     private void ShowPlaceholder(string title)
     {
         if ((title == Tr.Loc["Navigation.Borrowing"] && !CanAccessMenu(MenuBorrowing)) ||
