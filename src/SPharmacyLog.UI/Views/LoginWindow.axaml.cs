@@ -18,7 +18,7 @@ public partial class LoginWindow : Window
         InitializeComponent();
         languageBox = this.FindControl<ComboBox>("LanguageBox")!;
         UsernameBox.KeyDown += (_, e) => { if (e.Key == Key.Enter) { e.Handled = true; PasswordBox.Focus(); } };
-        PasswordBox.KeyDown += async (_, e) => { if (e.Key == Key.Enter) { e.Handled = true; OnSubmitClick(this, new RoutedEventArgs()); } };
+        PasswordBox.KeyDown += (_, e) => { if (e.Key == Key.Enter) { e.Handled = true; OnSubmitClick(this, new RoutedEventArgs()); } };
 
         DataContext = viewModel;
         Opened += async (_, _) => await InitializeLoginAsync();
