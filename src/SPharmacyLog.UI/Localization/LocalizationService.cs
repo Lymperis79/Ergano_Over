@@ -191,7 +191,17 @@ public sealed class LocalizationService : ILocalizationService
         ["BORROWINGS:"] = "ΔΑΝΕΙΣΜΟΙ:", ["SUBSCRIPTIONS:"] = "ΣΥΝΔΡΟΜΕΣ:", ["PAYMENTS:"] = "ΠΛΗΡΩΜΕΣ:",
         ["ACCOUNT BALANCE:"] = "ΥΠΟΛΟΙΠΟ ΛΟΓΑΡΙΑΣΜΟΥ:", ["Recent activity:"] = "Πρόσφατη δραστηριότητα:",
         ["Telephone:"] = "Τηλέφωνο:", ["Email:"] = "Email:", ["Total paid:"] = "Σύνολο πληρωμών:",
-        ["currently borrowed"] = "σε δανεισμό", ["active of"] = "ενεργές από", ["recorded"] = "καταχωρίστηκαν"
+        ["currently borrowed"] = "σε δανεισμό", ["active of"] = "ενεργές από", ["recorded"] = "καταχωρίστηκαν",
+        ["Incomplete GS1 Application Identifier at the end of the scan."] = "Ελλιπές GS1 Application Identifier στο τέλος της σάρωσης.",
+        ["AI (01) must contain exactly 14 numeric GTIN digits."] = "Το AI (01) πρέπει να περιέχει ακριβώς 14 αριθμητικά ψηφία GTIN.",
+        ["AI (17) must contain a valid YYMMDD expiry date."] = "Το AI (17) πρέπει να περιέχει έγκυρη ημερομηνία λήξης YYMMDD.",
+        ["AI ({ai}) is present but its value is empty."] = "Το AI ({ai}) υπάρχει αλλά η τιμή του είναι κενή.",
+        ["AI ({ai}) exceeds the GS1 maximum of 20 characters."] = "Το AI ({ai}) υπερβαίνει το μέγιστο όριο των 20 χαρακτήρων GS1.",
+        ["Unsupported GS1 Application Identifier ({ai}). This screen currently expects AIs 01, 10, 17 and 21."] = "Μη υποστηριζόμενο GS1 Application Identifier ({ai}). Αυτή η οθόνη αναμένει τα AI 01, 10, 17 και 21.",
+        ["The scan must contain all four fields: GTIN (01), serial (21), expiry (17) and batch/lot (10)."] = "Η σάρωση πρέπει να περιέχει και τα τέσσερα πεδία: GTIN (01), σειριακό αριθμό (21), λήξη (17) και παρτίδα (10).",
+        ["Medicine matched:"] = "Αντιστοιχισμένο φάρμακο:",
+        ["ACTIVE"] = "ΕΝΕΡΓΗ",
+        ["RETURNED"] = "ΕΠΙΣΤΡΑΦΗΚΕ"
     };
 
     public string TranslateText(string text)
