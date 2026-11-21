@@ -17,6 +17,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="ZXing.Net" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\SPharmacyLog.Core\SPharmacyLog.Core.csproj" />
     <ProjectReference Include="..\SPharmacyLog.Data\SPharmacyLog.Data.csproj" />
     <ProjectReference Include="..\ErganiManager.Licensing\ErganiManager.Licensing.csproj" />
