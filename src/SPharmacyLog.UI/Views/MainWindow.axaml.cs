@@ -670,7 +670,7 @@ public partial class MainWindow : Window
                         SelectedCalendarDate = date;
                         await OpenCalendarNoteEditorAsync(date);
                     }
-                }, RoutingStrategies.Bubble);
+                }, RoutingStrategies.Bubble, handledEventsToo: true);
                 dayCell = dateCellBorder;
                 calendarDateCells[date] = dateCellBorder;
             }
