@@ -380,19 +380,10 @@ public partial class MainWindow : Window
 
         var selectedBorrowingLayout = new Grid
         {
-            ColumnDefinitions = CreateColumns(GridLength.Star, new GridLength(240)),
+            ColumnDefinitions = CreateColumns(new GridLength(240), GridLength.Star),
             RowDefinitions = CreateRows(GridLength.Auto),
             ColumnSpacing = 16,
             Margin = new Thickness(4, 8, 4, 4)
-        };
-        var detailsPanel = new StackPanel
-        {
-            Spacing = 6,
-            Children =
-            {
-                new TextBlock { Text = "SELECTED BORROWING DETAILS", FontWeight = FontWeight.SemiBold },
-                borrowingSelectionDetails
-            }
         };
         var barcodePanel = new StackPanel
         {
@@ -409,9 +400,18 @@ public partial class MainWindow : Window
                 borrowingBarcodeImage
             }
         };
-        Grid.SetColumn(barcodePanel, 1);
-        selectedBorrowingLayout.Children.Add(detailsPanel);
+        var detailsPanel = new StackPanel
+        {
+            Spacing = 6,
+            Children =
+            {
+                new TextBlock { Text = "SELECTED BORROWING DETAILS", FontWeight = FontWeight.SemiBold },
+                borrowingSelectionDetails
+            }
+        };
+        Grid.SetColumn(detailsPanel, 1);
         selectedBorrowingLayout.Children.Add(barcodePanel);
+        selectedBorrowingLayout.Children.Add(detailsPanel);
 
         var panel = new StackPanel
         {
