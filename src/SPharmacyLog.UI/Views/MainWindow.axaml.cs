@@ -1272,6 +1272,13 @@ public partial class MainWindow : Window
         subscriptionsTab.IsVisible = CanAccessMenu(MenuSubscriptions);
         ledgerTab.IsVisible = CanAccessMenu(MenuPayments);
         customerTabs = new TabControl { Items = { overviewTab, details, borrowingTab, historyTab, subscriptionsTab, ledgerTab }, Margin = new Thickness(12) };
+        // Avalonia virtualizes TabControl content: controls in inactive tabs may not
+        // exist in the visual tree yet. Translate each tab when it becomes active.
+        customerTabs.SelectionChanged += (_, _) =>
+        {
+            if (!isApplyingTranslations)
+                ApplyTranslations();
+        };
         // Use a Grid rather than a StackPanel so the TabControl receives a finite
         // height. Otherwise its tab content (including the Borrowings ScrollViewer)
         // is measured with infinite height and cannot scroll vertically.
