@@ -10,20 +10,16 @@ namespace SPharmacyLog.UI.Views;
 public partial class LoginWindow : Window
 {
     private readonly LoginViewModel viewModel = new();
-    private ComboBox languageBox = null!;
-    private bool isApplyingTranslations;
 
     public LoginWindow()
     {
         InitializeComponent();
-        languageBox = this.FindControl<ComboBox>("LanguageBox")!;
         UsernameBox.KeyDown += (_, e) => { if (e.Key == Key.Enter) { e.Handled = true; PasswordBox.Focus(); } };
         PasswordBox.KeyDown += (_, e) => { if (e.Key == Key.Enter) { e.Handled = true; OnSubmitClick(this, new RoutedEventArgs()); } };
 
         DataContext = viewModel;
         Opened += async (_, _) => await InitializeLoginAsync();
 
-        Tr.Loc.LanguageChanged += (_, _) => ApplyTranslations();
         ApplyTranslations();
     }
 
@@ -36,9 +32,7 @@ public partial class LoginWindow : Window
 
     private void ApplyTranslations()
     {
-        isApplyingTranslations = true;
         Title = Tr.Loc["App.Title"];
-        if (languageBox is not null) languageBox.SelectedIndex = Tr.Loc.CurrentLanguage == AppLanguage.Greek ? 1 : 0;
         UsernameBox.PlaceholderText = Tr.Loc["Login.Username"];
         PasswordBox.PlaceholderText = Tr.Loc["Login.Password"];
         SubmitButton.Content = viewModel.SubmitText;
@@ -56,19 +50,8 @@ public partial class LoginWindow : Window
                 case TextBox textBox when !string.IsNullOrEmpty(textBox.PlaceholderText):
                     textBox.PlaceholderText = Tr.Loc.TranslateText(textBox.PlaceholderText);
                     break;
-                case ComboBoxItem comboItem when comboItem.Content is string itemText:
-                    comboItem.Content = Tr.Loc.TranslateText(itemText);
-                    break;
             }
         }
-        isApplyingTranslations = false;
-    }
-
-    private void OnLanguageChanged(object? sender, SelectionChangedEventArgs e)
-    {
-        if (isApplyingTranslations) return;
-        if (languageBox?.SelectedIndex == 1) Tr.Loc.SetLanguage(AppLanguage.Greek);
-        else if (languageBox?.SelectedIndex == 0) Tr.Loc.SetLanguage(AppLanguage.English);
     }
 
     private async void OnSubmitClick(object? sender, RoutedEventArgs e)
