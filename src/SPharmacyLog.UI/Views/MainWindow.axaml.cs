@@ -8,6 +8,7 @@ using Avalonia.Media;
 using Avalonia.Media.Imaging;
 using Avalonia.Platform;
 using System.Runtime.InteropServices;
+using System.Globalization;
 using ZXing;
 using ZXing.Datamatrix;
 using Avalonia.VisualTree;
@@ -2013,7 +2014,7 @@ public partial class MainWindow : Window
         }
 
         DateTime? due = DateTime.TryParse(ActivityValue("BorrowingDueDate"), out var dueDate) ? dueDate : null;
-        decimal? value = decimal.TryParse(ActivityValue("BorrowingValue"), out var amount) ? amount : null;
+        decimal? value = TryParseLocalizedAmount(ActivityValue("BorrowingValue"), out var amount) ? amount : null;
         await using var db = new PharmacyDbContext(PharmacyDb.Options());
         if (await db.Borrowings.AnyAsync(x => x.InternalBarcode == ActivityValue("BorrowingBarcode")))
         {
@@ -2509,7 +2510,7 @@ public partial class MainWindow : Window
         cancel.Click += (_, _) => dialog.Close();
         save.Click += async (_, _) =>
         {
-            if (!decimal.TryParse(amount.Text, out var parsedAmount) || parsedAmount <= 0 || !DateTime.TryParse(paidAt.Text, out var parsedPaidAt))
+            if (!TryParseLocalizedAmount(amount.Text, out var parsedAmount) || parsedAmount <= 0 || !TryParseUserDate(paidAt.Text, out var parsedPaidAt))
             { status.Text = "Enter a positive amount and valid payment date."; return; }
             await using var db = new PharmacyDbContext(PharmacyDb.Options());
             Payment? record;
@@ -2593,9 +2594,9 @@ public partial class MainWindow : Window
         {
             if (!Enum.TryParse<LedgerEntryType>(type.SelectedItem?.ToString(), true, out var parsedType) ||
                 parsedType == LedgerEntryType.Payment ||
-                !decimal.TryParse(amount.Text, out var parsedAmount) || parsedAmount <= 0 ||
+                !TryParseLocalizedAmount(amount.Text, out var parsedAmount) || parsedAmount <= 0 ||
                 string.IsNullOrWhiteSpace(description.Text) ||
-                !DateTime.TryParse(entryDate.Text, out var parsedDate))
+                !TryParseUserDate(entryDate.Text, out var parsedDate))
             { status.Text = "Choose a valid entry type, positive amount, description and date."; return; }
             await using var db = new PharmacyDbContext(PharmacyDb.Options());
             LedgerEntry? record;
@@ -2621,6 +2622,57 @@ public partial class MainWindow : Window
             await RefreshCustomerWorkspaceAsync();
         };
         await dialog.ShowDialog(this);
+    }
+
+
+    private static bool TryParseLocalizedAmount(string? input, out decimal amount)
+    {
+        amount = 0m;
+        if (string.IsNullOrWhiteSpace(input)) return false;
+
+        var value = input.Trim()
+            .Replace("€", string.Empty, StringComparison.Ordinal)
+            .Replace(" ", string.Empty, StringComparison.Ordinal)
+            .Replace("\u00A0", string.Empty, StringComparison.Ordinal);
+
+        // Accept both Greek (1.234,56) and English (1,234.56) number formats.
+        var comma = value.LastIndexOf(',');
+        var dot = value.LastIndexOf('.');
+        if (comma >= 0 && dot >= 0)
+        {
+            var decimalSeparator = comma > dot ? ',' : '.';
+            var groupSeparator = decimalSeparator == ',' ? '.' : ',';
+            value = value.Replace(groupSeparator.ToString(), string.Empty, StringComparison.Ordinal);
+            value = value.Replace(decimalSeparator, '.');
+        }
+        else if (comma >= 0)
+        {
+            value = value.Replace(',', '.');
+        }
+
+        return decimal.TryParse(value, NumberStyles.AllowLeadingSign | NumberStyles.AllowDecimalPoint,
+            CultureInfo.InvariantCulture, out amount);
+    }
+
+    private static bool TryParseUserDate(string? input, out DateTime date)
+    {
+        date = default;
+        if (string.IsNullOrWhiteSpace(input)) return false;
+
+        var value = input.Trim();
+        var formats = new[]
+        {
+            "yyyy-MM-dd HH:mm", "yyyy-MM-dd H:mm", "yyyy-MM-dd",
+            "dd/MM/yyyy HH:mm", "d/M/yyyy H:mm", "dd/MM/yyyy",
+            "dd-MM-yyyy HH:mm", "d-M-yyyy H:mm", "dd-MM-yyyy"
+        };
+
+        return DateTime.TryParseExact(value, formats, CultureInfo.InvariantCulture,
+                   DateTimeStyles.AllowWhiteSpaces, out date)
+               || DateTime.TryParse(value, CultureInfo.GetCultureInfo("el-GR"),
+                   DateTimeStyles.AllowWhiteSpaces, out date)
+               || DateTime.TryParse(value, CultureInfo.GetCultureInfo("en-US"),
+                   DateTimeStyles.AllowWhiteSpaces, out date);
     }
 
     private static Window CreateActivityEditorWindow(string title, Control form, TextBlock status, Button save, Button cancel, double width, double height)
@@ -2666,7 +2718,7 @@ public partial class MainWindow : Window
     private async Task AddPaymentAsync()
     {
         if (!selectedCustomerId.HasValue) { SetActivityStatus("Save or select a customer first."); return; }
-        if (!decimal.TryParse(ActivityValue("PaymentAmount"), out var amount) || amount <= 0) { SetActivityStatus("Enter a payment amount greater than zero."); return; }
+        if (!TryParseLocalizedAmount(ActivityValue("PaymentAmount"), out var amount) || amount <= 0) { SetActivityStatus("Enter a payment amount greater than zero."); return; }
         await using var db = new PharmacyDbContext(PharmacyDb.Options());
         var method = string.IsNullOrWhiteSpace(ActivityValue("PaymentMethod")) ? "Cash" : ActivityValue("PaymentMethod");
         var reference = ActivityValue("PaymentReference");
@@ -2678,7 +2730,7 @@ public partial class MainWindow : Window
     private async Task AddLedgerEntryAsync()
     {
         if (!selectedCustomerId.HasValue) { SetActivityStatus("Save or select a customer first."); return; }
-        if (!decimal.TryParse(ActivityValue("LedgerAmount"), out var amount) || amount <= 0 || string.IsNullOrWhiteSpace(ActivityValue("LedgerDescription"))) { SetActivityStatus("Enter a positive amount and description."); return; }
+        if (!TryParseLocalizedAmount(ActivityValue("LedgerAmount"), out var amount) || amount <= 0 || string.IsNullOrWhiteSpace(ActivityValue("LedgerDescription"))) { SetActivityStatus("Enter a positive amount and description."); return; }
         if (!Enum.TryParse<LedgerEntryType>(ActivityValue("LedgerType"), true, out var type) || type == LedgerEntryType.Payment) { SetActivityStatus("Choose Charge, Adjustment or Reversal. Payments should be recorded in the Payments tab."); return; }
         await using var db = new PharmacyDbContext(PharmacyDb.Options());
         db.LedgerEntries.Add(new LedgerEntry { CustomerId = selectedCustomerId.Value, Type = type, Amount = amount, Description = ActivityValue("LedgerDescription"), RecordedBy = viewModel.User.Username });
