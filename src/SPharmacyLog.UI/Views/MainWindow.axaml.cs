@@ -1646,7 +1646,7 @@ public partial class MainWindow : Window
             Content = Tr.Loc.TranslateText("Edit subscription"),
             Classes = { "accent" },
             MinWidth = 150,
-            IsVisible = CanAccessMenu(MenuSubscriptions)
+            IsVisible = CanAccessMenu(MenuSubscriptions) && CanAccessMenu(MenuCustomers)
         };
         var saveStatus = new Button { Content = Tr.Loc.TranslateText("Save status"), Classes = { "accent" }, MinWidth = 110 };
         var close = new Button { Content = Tr.Loc.TranslateText("Close"), MinWidth = 90 };
@@ -1744,9 +1744,19 @@ public partial class MainWindow : Window
         suppressCustomerSelectionChanged = false;
         await LoadCustomerAsync(customerId);
         await RefreshCustomerWorkspaceAsync();
-        customerTabs.SelectedIndex = 4;
-        if (editSubscription is not null)
+        if (editSubscription is not null && CanAccessMenu(MenuSubscriptions))
+        {
+            var subscriptionTabIndex = customerTabs.Items.OfType<TabItem>()
+                .Select((tab, index) => new { tab, index })
+                .FirstOrDefault(item => item.tab.Header?.ToString() == "Subscriptions")?.index ?? -1;
+            if (subscriptionTabIndex >= 0)
+                customerTabs.SelectedIndex = subscriptionTabIndex;
             await OpenSubscriptionEditorAsync(editSubscription);
+        }
+        else
+        {
+            customerTabs.SelectedIndex = 0;
+        }
     }
 
     private static WriteableBitmap CreateSubscriptionBarcodeBitmap(string barcodeValue)
