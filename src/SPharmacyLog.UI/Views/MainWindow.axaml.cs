@@ -524,7 +524,7 @@ public partial class MainWindow : Window
             [EncodeHintType.GS1_FORMAT] = true,
             [EncodeHintType.MARGIN] = 4
         };
-        var matrix = new DataMatrixWriter().Encode(rawPayload, BarcodeFormat.DATA_MATRIX, 0, 0, hints);
+        var matrix = new DataMatrixWriter().encode(rawPayload, BarcodeFormat.DATA_MATRIX, 0, 0, hints);
         const int scale = 5;
         var width = matrix.Width * scale;
         var height = matrix.Height * scale;
