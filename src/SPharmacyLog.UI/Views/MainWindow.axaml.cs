@@ -334,145 +334,267 @@ public partial class MainWindow : Window
 
     private TabItem BuildBorrowingsTab()
     {
-        borrowingList = new ListBox { MinHeight = 180 };
+        borrowingList = new ListBox { MinHeight = 220 };
         borrowingSelectionDetails = new TextBlock
         {
-            Text = "Select an existing borrowing to view its saved GS1 scan details.",
+            Text = "Select a borrowing to view its details.",
             TextWrapping = TextWrapping.Wrap,
-            Margin = new Thickness(4, 0, 4, 8)
+            Margin = new Thickness(4, 8, 4, 8)
         };
         borrowingBarcodeImage = new Image
         {
-            Width = 220, Height = 220, Stretch = Stretch.Uniform, IsVisible = false,
-            HorizontalAlignment = HorizontalAlignment.Left, Margin = new Thickness(4, 0, 4, 8)
+            Width = 200, Height = 200, Stretch = Stretch.Uniform, IsVisible = false,
+            HorizontalAlignment = HorizontalAlignment.Left, Margin = new Thickness(4)
         };
         borrowingList.SelectionChanged += (_, _) => ShowSelectedBorrowingScanDetails();
 
-        // A scanner configured as USB keyboard/HID writes directly into this field.
-        // Most scanners send Enter after the DataMatrix payload.
-        gs1ScanInput = new TextBox
+        var add = new Button { Content = "＋ Add medicine", Classes = { "accent" }, MinWidth = 145, MinHeight = 38 };
+        add.Click += async (_, _) => await OpenBorrowingEditorAsync(null);
+        var edit = new Button { Content = "Edit selected", MinWidth = 125, MinHeight = 38 };
+        edit.Click += async (_, _) =>
         {
-            PlaceholderText = "Scan GS1 DataMatrix here (scanner suffix: Enter)",
-            MinHeight = 38,
-            MinWidth = 420,
-            FontSize = 15
-        };
-        gs1ScanEcho = new TextBox
-        {
-            IsReadOnly = true,
-            AcceptsReturn = true,
-            TextWrapping = TextWrapping.Wrap,
-            MinHeight = 58,
-            MaxHeight = 100,
-            PlaceholderText = "The scanned barcode text will appear here; <GS> marks the invisible ASCII 29 separator.",
-            FontFamily = new FontFamily("Consolas")
-        };
-        gs1ScanInput.TextChanged += (_, _) => UpdateGs1ScanEcho();
-
-        gs1ScanInput.KeyDown += async (_, e) =>
-        {
-            if (e.Key == Key.Enter)
+            if (borrowingList.SelectedIndex < 0 || borrowingList.SelectedIndex >= currentBorrowings.Count)
             {
-                e.Handled = true;
-                await PreviewGs1ScanAsync();
+                SetActivityStatus("Select a borrowing to edit.");
+                return;
             }
+            await OpenBorrowingEditorAsync(currentBorrowings[borrowingList.SelectedIndex]);
         };
-
-        gs1ScanStatus = new TextBlock
-        {
-            Text = "Ready for a GS1 DataMatrix scan.",
-            Foreground = Brushes.Gray,
-            TextWrapping = TextWrapping.Wrap
-        };
-
-        var scanPanel = new StackPanel
-        {
-            Spacing = 8,
-            Margin = new Thickness(0, 0, 0, 8),
-            Children =
-            {
-                new TextBlock { Text = "PHARMACEUTICAL PACK SCAN", FontSize = 16, FontWeight = FontWeight.Bold },
-                new TextBlock { Text = "Scan the 2D DataMatrix. Configure the scanner to transmit ASCII 29 (GS) between variable-length fields and send Enter after the scan. The original scanner text is retained exactly; the fields below are extracted from GS1 Application Identifiers.", TextWrapping = TextWrapping.Wrap },
-                new StackPanel
-                {
-                    Orientation = Orientation.Horizontal,
-                    Spacing = 8,
-                    Children =
-                    {
-                        gs1ScanInput,
-                        CreateGs1ParseButton()
-                    }
-                },
-                new TextBlock { Text = "SCANNED BARCODE — VERIFY THE READ", FontWeight = FontWeight.SemiBold },
-                gs1ScanEcho,
-                new TextBlock { Text = "The text is shown exactly as received, with invisible ASCII 29 separators displayed as <GS> so they can be checked visually.", FontSize = 11, TextWrapping = TextWrapping.Wrap },
-                gs1ScanStatus
-            }
-        };
-
-        var detailsGrid = new Grid
-        {
-            ColumnDefinitions = CreateColumns(GridLength.Star, GridLength.Star),
-            RowDefinitions = CreateRows(GridLength.Auto, GridLength.Auto, GridLength.Auto, GridLength.Auto, GridLength.Auto, GridLength.Auto)
-        };
-        AddGs1Detail(detailsGrid, "GTIN-14 (AI 01)", "Gtin14", 0, 0);
-        AddGs1Detail(detailsGrid, "Serial number (AI 21)", "SerialNumber", 0, 1);
-        AddGs1Detail(detailsGrid, "Expiry date (AI 17)", "ExpiryDate", 1, 0);
-        AddGs1Detail(detailsGrid, "Batch / lot (AI 10)", "BatchLot", 1, 1);
-        AddGs1Detail(detailsGrid, "Raw scanner payload", "RawPayload", 2, 0, 2);
-        AddGs1Detail(detailsGrid, "Pack status", "HmvoStatus", 3, 0);
-        AddGs1Detail(detailsGrid, "Medicine catalogue match", "MedicineMatch", 3, 1);
-        AddGs1Detail(detailsGrid, "NHRN (AI 715 — US FDA, optional)", "Nhrn715", 4, 0, 2);
-        gs1ParsedFields["HmvoStatus"].Text = Tr.Loc.TranslateText(SerializedPackStatuses.Active);
-        gs1ParsedFields["MedicineMatch"].Text = Tr.Loc.TranslateText("Not matched");
-        var eofPanel = new StackPanel { Spacing = 3, Margin = new Thickness(5) };
-        eofPanel.Children.Add(new TextBlock { Text = "Greek EOF / NTIN barcode (optional mapping)" });
-        gs1EofEan13Input = new TextBox { PlaceholderText = "13-digit 0280... EOF barcode", MaxLength = 13 };
-        eofPanel.Children.Add(gs1EofEan13Input);
-        Grid.SetRow(eofPanel, 5);
-        Grid.SetColumnSpan(eofPanel, 2);
-        detailsGrid.Children.Add(eofPanel);
-
-        var fields = new StackPanel { Spacing = 6 };
-        AddActivityField(fields, "Medicine name (auto-filled when barcode is mapped)", "BorrowingName");
-        AddActivityField(fields, "Quantity (one serialized pack per record)", "BorrowingQuantity", "1");
-        AddActivityField(fields, "Internal barcode / borrowing reference", "BorrowingBarcode");
-        AddActivityField(fields, "Due date (yyyy-MM-dd)", "BorrowingDueDate");
-        AddActivityField(fields, "Value", "BorrowingValue");
-        AddActivityField(fields, "Notes", "BorrowingNotes");
-
-        var add = new Button { Content = "＋ Add borrowing", Classes = { "accent" } };
-        add.Click += async (_, _) => await AddBorrowingAsync();
-        var returned = new Button { Content = "Mark selected as returned" };
+        var returned = new Button { Content = "Mark selected as returned", MinHeight = 38 };
         returned.Click += async (_, _) => await ReturnSelectedBorrowingAsync();
+        var actions = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, Children = { add, edit, returned } };
 
         var panel = new StackPanel
         {
-            // Keep a useful minimum content width so narrow workspaces can scroll
-            // horizontally instead of compressing the scan and data-entry controls.
-            MinWidth = 760,
             Spacing = 10,
+            Margin = new Thickness(8),
             Children =
             {
+                new TextBlock { Text = "CUSTOMER MEDICINE BORROWINGS", FontSize = 18, FontWeight = FontWeight.Bold },
+                new TextBlock { Text = "Add a medicine or edit an existing borrowing. Scan a GS1 DataMatrix inside the editor when registering a serialized pack.", TextWrapping = TextWrapping.Wrap, Foreground = Brushes.LightGray },
+                actions,
                 borrowingList,
+                new TextBlock { Text = "SELECTED BORROWING DETAILS", FontWeight = FontWeight.SemiBold, Margin = new Thickness(4, 8, 4, 0) },
                 borrowingSelectionDetails,
-                new TextBlock { Text = "GS1 DataMatrix barcode", FontWeight = FontWeight.SemiBold, Margin = new Thickness(4, 0, 4, 0) },
-                borrowingBarcodeImage,
-                scanPanel,
-                detailsGrid,
-                fields,
-                new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, Children = { add, returned } }
+                new TextBlock { Text = "GS1 DataMatrix barcode", FontWeight = FontWeight.SemiBold },
+                borrowingBarcodeImage
             }
         };
-        var borrowingScrollViewer = new ScrollViewer
+        return new TabItem
         {
-            Content = panel,
-            HorizontalScrollBarVisibility = ScrollBarVisibility.Auto,
-            VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
-            HorizontalAlignment = HorizontalAlignment.Stretch,
-            VerticalAlignment = VerticalAlignment.Stretch
+            Header = "Borrowings",
+            Content = new ScrollViewer
+            {
+                Content = panel,
+                HorizontalScrollBarVisibility = ScrollBarVisibility.Auto,
+                VerticalScrollBarVisibility = ScrollBarVisibility.Auto
+            }
         };
-        return new TabItem { Header = "Borrowings", Content = borrowingScrollViewer };
+    }
+
+    private async Task OpenBorrowingEditorAsync(BorrowingRecord? existing)
+    {
+        if (!selectedCustomerId.HasValue)
+        {
+            SetActivityStatus("Save or select a customer first.");
+            return;
+        }
+
+        var isEdit = existing is not null;
+        var fields = new Dictionary<string, TextBox>();
+        TextBox AddField(StackPanel host, string label, string key, string? value = null, string? placeholder = null)
+        {
+            var group = new StackPanel { Spacing = 4, Margin = new Thickness(0, 3) };
+            group.Children.Add(new TextBlock { Text = label, Foreground = Brushes.LightGray, FontSize = 12 });
+            var box = new TextBox { Text = value ?? string.Empty, PlaceholderText = placeholder ?? label, MinHeight = 34 };
+            fields[key] = box;
+            group.Children.Add(box);
+            host.Children.Add(group);
+            return box;
+        }
+
+        var scanInput = new TextBox
+        {
+            MinHeight = 38, FontSize = 15,
+            PlaceholderText = "Scan GS1 DataMatrix here (scanner suffix: Enter)",
+            IsEnabled = !isEdit
+        };
+        var scanEcho = new TextBox
+        {
+            IsReadOnly = true, AcceptsReturn = true, TextWrapping = TextWrapping.Wrap,
+            MinHeight = 48, MaxHeight = 75, FontFamily = new FontFamily("Consolas")
+        };
+        var scanStatus = new TextBlock { Text = isEdit ? "The original serialized pack scan is retained unchanged." : "Ready for a GS1 DataMatrix scan.", TextWrapping = TextWrapping.Wrap, Foreground = Brushes.Gray };
+        var parsed = new Dictionary<string, TextBlock>();
+        Gs1DataMatrixParser.ParsedPack? parsedPack = null;
+        var eofInput = new TextBox { MaxLength = 13, PlaceholderText = "Optional 13-digit Greek EOF / NTIN barcode", IsEnabled = !isEdit };
+        var scanPanel = new StackPanel { Spacing = 7 };
+        scanPanel.Children.Add(new TextBlock { Text = "GS1 DATAMATRIX SCAN", FontWeight = FontWeight.SemiBold });
+        scanPanel.Children.Add(scanInput);
+        scanPanel.Children.Add(scanEcho);
+        scanPanel.Children.Add(eofInput);
+        scanPanel.Children.Add(scanStatus);
+        scanInput.TextChanged += (_, _) => scanEcho.Text = (scanInput.Text ?? string.Empty)
+            .Replace(Gs1DataMatrixParser.GroupSeparator.ToString(), "<GS>", StringComparison.Ordinal);
+        scanInput.KeyDown += async (_, e) =>
+        {
+            if (e.Key != Key.Enter) return;
+            e.Handled = true;
+            var raw = scanInput.Text ?? string.Empty;
+            if (!Gs1DataMatrixParser.TryParse(raw, out parsedPack, out var error) || parsedPack is null)
+            {
+                scanStatus.Foreground = Brushes.OrangeRed;
+                scanStatus.Text = Tr.Loc.TranslateText(error);
+                return;
+            }
+            await using var lookupDb = new PharmacyDbContext(PharmacyDb.Options());
+            var match = await lookupDb.MedicineBarcodes.Include(x => x.Medicine)
+                .FirstOrDefaultAsync(x => x.BarcodeValue == parsedPack.Gtin14 ||
+                    (!string.IsNullOrWhiteSpace(parsedPack.ResolvedEofBarcode) && x.BarcodeValue == parsedPack.ResolvedEofBarcode));
+            var medicine = match?.Medicine ?? await lookupDb.Medicines.FirstOrDefaultAsync(x =>
+                x.Barcode == parsedPack.Gtin14 ||
+                (!string.IsNullOrWhiteSpace(parsedPack.ResolvedEofBarcode) && x.Barcode == parsedPack.ResolvedEofBarcode));
+            if (medicine is not null) fields["MedicineName"].Text = medicine.Name;
+            if (string.IsNullOrWhiteSpace(eofInput.Text)) eofInput.Text = parsedPack.ResolvedEofBarcode ?? string.Empty;
+            scanStatus.Foreground = Brushes.LightGreen;
+            scanStatus.Text = medicine is null
+                ? "GS1 scan parsed. No catalogue match was found; enter the medicine name."
+                : $"GS1 scan parsed. Medicine matched: {medicine.Name}.";
+        };
+
+        var form = new StackPanel { Spacing = 7, Margin = new Thickness(16) };
+        form.Children.Add(new TextBlock
+        {
+            Text = isEdit ? "EDIT BORROWING" : "ADD MEDICINE / BORROWING",
+            FontSize = 19, FontWeight = FontWeight.Bold
+        });
+        form.Children.Add(scanPanel);
+        AddField(form, "Medicine name", "MedicineName", existing?.MedicineName);
+        AddField(form, "Quantity", "Quantity", (existing?.Quantity ?? 1).ToString());
+        AddField(form, "Internal barcode / borrowing reference", "InternalBarcode", existing?.InternalBarcode);
+        AddField(form, "Due date (yyyy-MM-dd)", "DueDate", existing?.DueDate?.ToString("yyyy-MM-dd"));
+        AddField(form, "Value", "Value", existing?.Value?.ToString(System.Globalization.CultureInfo.InvariantCulture));
+        AddField(form, "Notes", "Notes", existing?.Notes);
+        if (isEdit)
+        {
+            scanPanel.IsVisible = false;
+            form.Children.Insert(1, new TextBlock
+            {
+                Text = existing!.SerializedPackScan is null
+                    ? "This is a legacy borrowing. Its original barcode information is preserved."
+                    : $"GS1 pack: GTIN {existing.SerializedPackScan.Gtin14} | Serial {existing.SerializedPackScan.SerialNumber}. The original scan is read-only.",
+                TextWrapping = TextWrapping.Wrap, Foreground = Brushes.LightGray
+            });
+        }
+
+        var status = new TextBlock { TextWrapping = TextWrapping.Wrap, Foreground = Brushes.Orange };
+        var save = new Button { Content = "Save", Classes = { "accent" }, MinWidth = 110 };
+        var cancel = new Button { Content = "Cancel", MinWidth = 100 };
+        var dialog = new Window
+        {
+            Title = isEdit ? "Edit borrowing" : "Add medicine",
+            Width = 620, Height = 780, MinWidth = 520, MinHeight = 560,
+            WindowStartupLocation = WindowStartupLocation.CenterOwner,
+            CanResize = true,
+            Content = new Grid
+            {
+                RowDefinitions = CreateRows(GridLength.Star, GridLength.Auto),
+                Children =
+                {
+                    new ScrollViewer { Content = form, VerticalScrollBarVisibility = ScrollBarVisibility.Auto },
+                    new StackPanel { Orientation = Orientation.Vertical, Spacing = 8, Margin = new Thickness(16), Children = { status, new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right, Spacing = 8, Children = { save, cancel } } } }
+                }
+            }
+        };
+        Grid.SetRow(((Grid)dialog.Content).Children[1], 1);
+        cancel.Click += (_, _) => dialog.Close();
+        save.Click += async (_, _) =>
+        {
+            var name = fields["MedicineName"].Text?.Trim() ?? string.Empty;
+            var internalBarcode = fields["InternalBarcode"].Text?.Trim() ?? string.Empty;
+            if (string.IsNullOrWhiteSpace(name) || string.IsNullOrWhiteSpace(internalBarcode))
+            {
+                status.Text = "Medicine name and internal borrowing reference are required.";
+                return;
+            }
+            if (!int.TryParse(fields["Quantity"].Text, out var quantity) || quantity < 1)
+            {
+                status.Text = "Enter a valid quantity.";
+                return;
+            }
+            if (parsedPack is not null && quantity != 1)
+            {
+                status.Text = "A serialized DataMatrix identifies one physical pack. Quantity must be 1.";
+                return;
+            }
+            DateTime? due = DateTime.TryParse(fields["DueDate"].Text, out var dueDate) ? dueDate : null;
+            decimal? value = decimal.TryParse(fields["Value"].Text, System.Globalization.NumberStyles.Number, System.Globalization.CultureInfo.InvariantCulture, out var amount) ? amount : null;
+            await using var db = new PharmacyDbContext(PharmacyDb.Options());
+            var duplicate = await db.Borrowings.AnyAsync(x => x.InternalBarcode == internalBarcode && x.Id != (existing?.Id ?? 0));
+            if (duplicate) { status.Text = "This internal barcode is already in use."; return; }
+
+            if (isEdit)
+            {
+                var record = await db.Borrowings.FirstOrDefaultAsync(x => x.Id == existing!.Id && x.CustomerId == selectedCustomerId.Value);
+                if (record is null) { status.Text = "The borrowing record could not be found."; return; }
+                record.MedicineName = name;
+                record.Quantity = quantity;
+                record.InternalBarcode = internalBarcode;
+                record.DueDate = due;
+                record.Value = value;
+                record.Notes = fields["Notes"].Text?.Trim();
+            }
+            else
+            {
+                SerializedPackScan? serializedPack = null;
+                if (parsedPack is not null)
+                {
+                    if (await db.SerializedPackScans.AnyAsync(x => x.Gtin14 == parsedPack.Gtin14 && x.SerialNumber == parsedPack.SerialNumber))
+                    { status.Text = "This physical pack (GTIN + serial number) has already been scanned."; return; }
+                    var eof = string.IsNullOrWhiteSpace(eofInput.Text) ? parsedPack.ResolvedEofBarcode : eofInput.Text.Trim();
+                    if (!string.IsNullOrWhiteSpace(eof) && (eof.Length != 13 || eof.Any(ch => !char.IsDigit(ch))))
+                    { status.Text = "The EOF / NTIN barcode must contain exactly 13 digits."; return; }
+                    var matched = await db.MedicineBarcodes.Include(x => x.Medicine)
+                        .Where(x => x.BarcodeValue == parsedPack.Gtin14 || (!string.IsNullOrWhiteSpace(eof) && x.BarcodeValue == eof))
+                        .Select(x => x.Medicine).FirstOrDefaultAsync()
+                        ?? await db.Medicines.FirstOrDefaultAsync(x => x.Barcode == parsedPack.Gtin14 || (!string.IsNullOrWhiteSpace(eof) && x.Barcode == eof));
+                    if (matched is null)
+                    {
+                        matched = new MedicineCatalogItem { Name = name, Barcode = parsedPack.Gtin14, IsActive = true };
+                        db.Medicines.Add(matched);
+                        await db.SaveChangesAsync();
+                    }
+                    foreach (var mapping in new[] { (Value: parsedPack.Gtin14, Type: "GTIN14"), (Value: eof, Type: "EOF_EAN13") })
+                    {
+                        if (string.IsNullOrWhiteSpace(mapping.Value)) continue;
+                        var current = await db.MedicineBarcodes.FirstOrDefaultAsync(x => x.BarcodeValue == mapping.Value);
+                        if (current is not null && current.MedicineId != matched.Id)
+                        { status.Text = "This barcode is already assigned to another medicine."; return; }
+                        if (current is null)
+                            db.MedicineBarcodes.Add(new MedicineBarcode { MedicineId = matched.Id, BarcodeValue = mapping.Value, BarcodeType = mapping.Type });
+                    }
+                    serializedPack = new SerializedPackScan
+                    {
+                        RawGs1String = scanInput.Text ?? string.Empty, Gtin14 = parsedPack.Gtin14,
+                        EofEan13 = string.IsNullOrWhiteSpace(eof) ? null : eof,
+                        SerialNumber = parsedPack.SerialNumber, ExpiryDate = parsedPack.ExpiryDate,
+                        BatchLot = parsedPack.BatchLot, HmvoStatus = SerializedPackStatuses.Active,
+                        ScannedAt = DateTime.UtcNow, MedicineId = matched.Id
+                    };
+                }
+                db.Borrowings.Add(new BorrowingRecord
+                {
+                    CustomerId = selectedCustomerId.Value, MedicineName = name, OriginalBarcode = parsedPack?.Gtin14,
+                    SerializedPackScan = serializedPack, Quantity = quantity, InternalBarcode = internalBarcode,
+                    DueDate = due, Value = value, Notes = fields["Notes"].Text?.Trim()
+                });
+            }
+            await db.SaveChangesAsync();
+            dialog.Close();
+            SetActivityStatus(isEdit ? "Borrowing updated." : "Medicine borrowing added.");
+            await RefreshCustomerWorkspaceAsync();
+        };
+        await dialog.ShowDialog(this);
     }
 
     private void ShowSelectedBorrowingScanDetails()
