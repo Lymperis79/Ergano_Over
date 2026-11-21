@@ -17,6 +17,7 @@ public partial class MainWindow : Window
 {
     private readonly MainWindowViewModel viewModel;
     private ComboBox languageBox = null!;
+    private bool isApplyingTranslations;
     private readonly ContentControl pageHost;
     private TextBlock dailySummary = new();
     private ListBox dayRecords = new();
@@ -60,6 +61,7 @@ public partial class MainWindow : Window
 
     private void ApplyTranslations()
     {
+        isApplyingTranslations = true;
         Title = Tr.Loc["App.Title"];
         if (languageBox is not null) languageBox.SelectedIndex = Tr.Loc.CurrentLanguage == AppLanguage.Greek ? 1 : 0;
 
@@ -93,6 +95,7 @@ public partial class MainWindow : Window
         TranslateListItems(subscriptionList);
         TranslateListItems(paymentList);
         TranslateListItems(ledgerList);
+        isApplyingTranslations = false;
     }
 
     private static void TranslateListItems(ListBox? list)
@@ -103,6 +106,7 @@ public partial class MainWindow : Window
 
     private void OnLanguageChanged(object? sender, SelectionChangedEventArgs e)
     {
+        if (isApplyingTranslations) return;
         if (languageBox?.SelectedIndex == 1) Tr.Loc.SetLanguage(AppLanguage.Greek);
         else if (languageBox?.SelectedIndex == 0) Tr.Loc.SetLanguage(AppLanguage.English);
     }
@@ -131,6 +135,7 @@ public partial class MainWindow : Window
         dayRecords.MaxHeight = 260;
         content.Children.Add(dailySummary); content.Children.Add(dayRecords);
         pageHost.Content = content;
+        ApplyTranslations();
         _ = RenderCalendarAsync(monthTitle);
     }
 
@@ -171,6 +176,7 @@ public partial class MainWindow : Window
         dayRecords.ItemsSource = records.Select(p => $"{p.Customer?.CustomerNumber} | {p.Customer?.FullName} | {p.MedicineName} | Rx {p.PrescriptionNumber ?? "—"} | expires {p.ExpiryDate:dd/MM/yyyy}").ToList();
         dailySummary.Text = string.Format(Tr.Loc["Calendar.DaySummary"], SelectedCalendarDate.ToString("dddd, dd MMM yyyy"), records.Count);
         dailySummary.FontWeight = FontWeight.SemiBold;
+        ApplyTranslations();
     }
 
     private TabControl customerTabs = null!;
@@ -601,6 +607,7 @@ public partial class MainWindow : Window
         subscriptionList.ItemsSource = subscriptions.Select(x => $"{x.Title} | {x.Status} | Next: {x.NextDueDate:dd/MM/yyyy} | Expires: {x.ExpiryDate:dd/MM/yyyy} | {x.Frequency}").ToList();
         paymentList.ItemsSource = payments.Select(x => $"{x.PaidAt:dd/MM/yyyy} | {x.Amount:C} | {x.Method} | {x.Reference}").ToList();
         ledgerList.ItemsSource = ledger.Select(x => $"{x.EntryDate:dd/MM/yyyy} | {x.Type} | {x.Amount:C} | {x.Description}").ToList();
+        ApplyTranslations();
     }
 
     private async Task AddBorrowingAsync()
@@ -787,7 +794,7 @@ public partial class MainWindow : Window
 
     private void SetActivityStatus(string message)
     {
-        customerStatus.Text = message;
+        customerStatus.Text = Tr.Loc.TranslateText(message);
         customerStatus.Foreground = Brushes.LightGreen;
     }
 
