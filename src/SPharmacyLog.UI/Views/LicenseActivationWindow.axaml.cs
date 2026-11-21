@@ -29,6 +29,7 @@ public partial class LicenseActivationWindow : Window
         InitializeComponent();
         languageBox = this.FindControl<ComboBox>("LanguageBox")!;
         Tr.Loc.LanguageChanged += (_, _) => ApplyTranslations();
+        Opened += (_, _) => ApplyTranslations();
 
         PcCodeBox.Text = PharmacyLicenseManager.PcCode;
         ExitButton.Content = startup ? "Exit" : "Close";
