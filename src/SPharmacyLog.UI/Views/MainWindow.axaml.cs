@@ -391,7 +391,7 @@ public partial class MainWindow : Window
         AddGs1Detail(detailsGrid, "Raw scanner payload", "RawPayload", 2, 0, 2);
         AddGs1Detail(detailsGrid, "Pack status", "HmvoStatus", 3, 0);
         AddGs1Detail(detailsGrid, "Medicine catalogue match", "MedicineMatch", 3, 1);
-        AddGs1Detail(detailsGrid, "NHRN (AI 715 — US NDC, optional)", "Nhrn715", 4, 0, 2);
+        AddGs1Detail(detailsGrid, "NHRN (AI 715 — US FDA, optional)", "Nhrn715", 4, 0, 2);
         gs1ParsedFields["HmvoStatus"].Text = Tr.Loc.TranslateText(SerializedPackStatuses.Active);
         gs1ParsedFields["MedicineMatch"].Text = Tr.Loc.TranslateText("Not matched");
         var eofPanel = new StackPanel { Spacing = 3, Margin = new Thickness(5) };
