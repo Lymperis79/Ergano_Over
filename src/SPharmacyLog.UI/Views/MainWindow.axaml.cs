@@ -37,6 +37,7 @@ public partial class MainWindow : Window
         DataContext = viewModel;
         UserLabel.Text = viewModel.UserDisplay;
         Tr.Loc.LanguageChanged += (_, _) => ApplyTranslations();
+        Opened += (_, _) => ApplyTranslations();
         ApplyTranslations();
         pageHost = PageHost;
 
