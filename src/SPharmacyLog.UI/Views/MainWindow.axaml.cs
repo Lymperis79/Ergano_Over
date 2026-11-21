@@ -102,6 +102,11 @@ public partial class MainWindow : Window
         TranslateListItems(subscriptionList);
         TranslateListItems(paymentList);
         TranslateListItems(ledgerList);
+        foreach (var key in new[] { "SubscriptionFrequency", "PaymentMethod", "LedgerType" })
+        {
+            if (activityFields.TryGetValue(key, out var activityField) && !string.IsNullOrWhiteSpace(activityField.Text))
+                activityField.Text = Tr.Loc.TranslateText(activityField.Text);
+        }
         if (gs1ParsedFields.TryGetValue("HmvoStatus", out var statusField))
             statusField.Text = Tr.Loc.TranslateText(SerializedPackStatuses.Active);
         if (gs1ParsedFields.TryGetValue("MedicineMatch", out var matchField) &&
@@ -601,7 +606,23 @@ public partial class MainWindow : Window
         parent.Children.Add(input);
     }
 
-    private string ActivityValue(string key) => activityFields.TryGetValue(key, out var box) ? box.Text?.Trim() ?? string.Empty : string.Empty;
+    private string ActivityValue(string key)
+    {
+        var value = activityFields.TryGetValue(key, out var box) ? box.Text?.Trim() ?? string.Empty : string.Empty;
+        if (Tr.Loc.CurrentLanguage != AppLanguage.Greek) return value;
+
+        return key switch
+        {
+            "SubscriptionFrequency" when value == "Μηνιαία" => "Monthly",
+            "PaymentMethod" when value == "Μετρητά" => "Cash",
+            "PaymentMethod" when value == "Κάρτα" => "Card",
+            "PaymentMethod" when value == "Μεταφορά" => "Transfer",
+            "LedgerType" when value == "Χρέωση" => "Charge",
+            "LedgerType" when value == "Προσαρμογή" => "Adjustment",
+            "LedgerType" when value == "Αντιστροφή" => "Reversal",
+            _ => value
+        };
+    }
 
     private async Task RefreshCustomerWorkspaceAsync()
     {
