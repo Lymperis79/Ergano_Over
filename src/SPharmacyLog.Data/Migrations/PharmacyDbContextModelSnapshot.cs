@@ -56,6 +56,7 @@ public sealed class PharmacyDbContextModelSnapshot : ModelSnapshot
             entity.Property(prescription => prescription.Notes);
             entity.Property(prescription => prescription.CreatedAt);
             entity.HasIndex(prescription => prescription.ExpiryDate);
+            entity.HasIndex(prescription => prescription.CustomerId);
             entity.HasOne(prescription => prescription.Customer)
                 .WithMany(customer => customer.Prescriptions)
                 .HasForeignKey(prescription => prescription.CustomerId)
@@ -89,6 +90,7 @@ public sealed class PharmacyDbContextModelSnapshot : ModelSnapshot
             entity.Property(borrowing => borrowing.Value);
             entity.Property(borrowing => borrowing.Notes);
             entity.HasIndex(borrowing => borrowing.InternalBarcode).IsUnique();
+            entity.HasIndex(borrowing => borrowing.CustomerId);
             entity.HasOne(borrowing => borrowing.Customer)
                 .WithMany(customer => customer.Borrowings)
                 .HasForeignKey(borrowing => borrowing.CustomerId)
@@ -108,6 +110,7 @@ public sealed class PharmacyDbContextModelSnapshot : ModelSnapshot
             entity.Property(subscription => subscription.Frequency).IsRequired();
             entity.Property(subscription => subscription.Status).HasConversion<int>();
             entity.Property(subscription => subscription.Notes);
+            entity.HasIndex(subscription => subscription.CustomerId);
             entity.HasOne(subscription => subscription.Customer)
                 .WithMany(customer => customer.Subscriptions)
                 .HasForeignKey(subscription => subscription.CustomerId)
@@ -125,6 +128,7 @@ public sealed class PharmacyDbContextModelSnapshot : ModelSnapshot
             entity.Property(payment => payment.Reference);
             entity.Property(payment => payment.Notes);
             entity.Property(payment => payment.RecordedBy).IsRequired();
+            entity.HasIndex(payment => payment.CustomerId);
             entity.HasOne(payment => payment.Customer)
                 .WithMany(customer => customer.Payments)
                 .HasForeignKey(payment => payment.CustomerId)
