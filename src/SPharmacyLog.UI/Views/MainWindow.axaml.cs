@@ -44,7 +44,7 @@ public partial class MainWindow : Window
 
         foreach (var item in navigation)
         {
-            var button = new Button { Content = item.Label };
+            var button = new Button { Content = item.Label, Classes = { "nav" }, MinWidth = 190 };
             button.Click += (_, _) => item.Action();
             if (item.Label == Tr.Loc["Navigation.Users"] && user.Role != PharmacyRole.Admin)
                 button.IsVisible = false;
@@ -69,8 +69,8 @@ public partial class MainWindow : Window
 
     private void ShowExpiryCalendar()
     {
-        var content = new StackPanel { Margin = new Thickness(16), Spacing = 10 };
-        content.Children.Add(new TextBlock { Text = Tr.Loc["Calendar.Title"], FontSize = 24, FontWeight = FontWeight.Bold });
+        var content = new StackPanel { Margin = new Thickness(22), Spacing = 12 };
+        content.Children.Add(new TextBlock { Text = Tr.Loc["Calendar.Title"], FontSize = 24, FontWeight = FontWeight.Bold, Margin = new Thickness(0, 0, 0, 4) });
         content.Children.Add(new TextBlock { Text = Tr.Loc["Calendar.Description"] });
 
         var monthBar = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Center, Spacing = 10 };
@@ -131,7 +131,7 @@ public partial class MainWindow : Window
         for (var cell = 0; cell < 42; cell++)
         {
             var dayNumber = cell - offset + 1;
-            var button = new Button { MinHeight = 60, Padding = new Thickness(3), HorizontalAlignment = HorizontalAlignment.Stretch, HorizontalContentAlignment = HorizontalAlignment.Center };
+            var button = new Button { MinHeight = 70, Padding = new Thickness(5), HorizontalAlignment = HorizontalAlignment.Stretch, HorizontalContentAlignment = HorizontalAlignment.Center, Margin = new Thickness(3) };
             if (dayNumber is >= 1 && dayNumber <= daysInMonth)
             {
                 var date = new DateTime(displayedMonth.Year, displayedMonth.Month, dayNumber);
@@ -145,7 +145,7 @@ public partial class MainWindow : Window
                         new TextBlock { Text = count > 0 ? $"{count} {Tr.Loc["Calendar.Expiring"]}" : Tr.Loc["Calendar.None"], FontSize = 11, Foreground = count > 0 ? Brushes.Orange : Brushes.Gray, HorizontalAlignment = HorizontalAlignment.Center }
                     }
                 };
-                if (date == SelectedCalendarDate) button.Background = Brushes.SteelBlue;
+                if (date == SelectedCalendarDate) { button.Background = new SolidColorBrush(Color.Parse("#243C52")); button.BorderBrush = new SolidColorBrush(Color.Parse("#21A1D8")); button.BorderThickness = new Thickness(2); }
                 button.Click += async (_, _) => { SelectedCalendarDate = date; await RenderCalendarAsync(monthTitle); await LoadSelectedDayAsync(); };
             }
             else button.IsEnabled = false;
