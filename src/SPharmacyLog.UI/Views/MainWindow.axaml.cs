@@ -517,9 +517,41 @@ public partial class MainWindow : Window
             Text = isEdit ? "EDIT BORROWING" : "ADD MEDICINE / BORROWING",
             FontSize = 19, FontWeight = FontWeight.Bold
         });
-        form.Children.Add(scanPanel);
-        if (isEdit)
+        if (!isEdit)
         {
+            form.Children.Add(scanPanel);
+        }
+        else
+        {
+            var scanInfo = new TextBlock
+            {
+                Text = existing!.SerializedPackScan is null
+                    ? "This is a legacy borrowing. Its original barcode information is preserved."
+                    : $"GS1 pack: GTIN {existing.SerializedPackScan.Gtin14} | Serial {existing.SerializedPackScan.SerialNumber}. The original scan is read-only.",
+                TextWrapping = TextWrapping.Wrap, Foreground = Brushes.LightGray
+            };
+            form.Children.Add(scanInfo);
+
+            var rawBarcodeGroup = new StackPanel { Spacing = 4, Margin = new Thickness(0, 3) };
+            rawBarcodeGroup.Children.Add(new TextBlock
+            {
+                Text = "Raw barcode",
+                Foreground = Brushes.LightGray,
+                FontSize = 12
+            });
+            rawBarcodeGroup.Children.Add(new TextBox
+            {
+                Text = (existing.SerializedPackScan?.RawGs1String ?? string.Empty)
+                    .Replace(Gs1DataMatrixParser.GroupSeparator.ToString(), "<GS>", StringComparison.Ordinal),
+                IsReadOnly = true,
+                AcceptsReturn = true,
+                TextWrapping = TextWrapping.Wrap,
+                MinHeight = 48,
+                MaxHeight = 75,
+                FontFamily = new FontFamily("Consolas")
+            });
+            form.Children.Add(rawBarcodeGroup);
+
             var medicineNameGroup = new StackPanel { Spacing = 4, Margin = new Thickness(0, 3) };
             medicineNameGroup.Children.Add(new TextBlock { Text = "Medicine name", Foreground = Brushes.LightGray, FontSize = 12 });
             medicineNameGroup.Children.Add(medicineNameInput);
@@ -532,17 +564,6 @@ public partial class MainWindow : Window
         scanDateGroup.Children.Add(scanDateText);
         form.Children.Add(scanDateGroup);
         AddField(form, "Notes", "Notes", existing?.Notes);
-        if (isEdit)
-        {
-            scanPanel.IsVisible = false;
-            form.Children.Insert(1, new TextBlock
-            {
-                Text = existing!.SerializedPackScan is null
-                    ? "This is a legacy borrowing. Its original barcode information is preserved."
-                    : $"GS1 pack: GTIN {existing.SerializedPackScan.Gtin14} | Serial {existing.SerializedPackScan.SerialNumber}. The original scan is read-only.",
-                TextWrapping = TextWrapping.Wrap, Foreground = Brushes.LightGray
-            });
-        }
 
         var status = new TextBlock { TextWrapping = TextWrapping.Wrap, Foreground = Brushes.Orange };
         var save = new Button { Content = "Save", Classes = { "accent" }, MinWidth = 110 };
