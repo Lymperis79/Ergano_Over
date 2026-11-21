@@ -739,8 +739,11 @@ public partial class MainWindow : Window
 
         holidays[orthodoxEaster.AddDays(-48)] = "Clean Monday";
         holidays[orthodoxEaster.AddDays(-2)] = "Good Friday";
+        holidays[orthodoxEaster.AddDays(-1)] = "Holy Saturday";
         holidays[orthodoxEaster] = "Orthodox Easter Sunday";
         holidays[orthodoxEaster.AddDays(1)] = "Easter Monday";
+        holidays[orthodoxEaster.AddDays(49)] = "Pentecost Sunday";
+        holidays[orthodoxEaster.AddDays(50)] = "Holy Spirit Monday";
         return holidays;
     }
 
