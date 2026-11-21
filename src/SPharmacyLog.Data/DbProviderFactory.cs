@@ -1,5 +1,6 @@
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 using MySqlConnector;
 using System.Text.RegularExpressions;
 
@@ -9,6 +10,14 @@ public static class DbProviderFactory
 {
     public static void Configure(DbContextOptionsBuilder builder, DbConfig config)
     {
+        // This application deliberately shares one provider-neutral migration history
+        // across SQLite, SQL Server and MariaDB. Provider-specific relational annotations
+        // (for example identifier limits/type mappings) can otherwise make EF Core 10
+        // report PendingModelChangesWarning even when the migration set is intentional.
+        // Schema changes must still be introduced as reviewed migrations.
+        builder.ConfigureWarnings(warnings =>
+            warnings.Ignore(RelationalEventId.PendingModelChangesWarning));
+
         switch (config.DatabaseProvider)
         {
             case DatabaseProvider.Sqlite:
