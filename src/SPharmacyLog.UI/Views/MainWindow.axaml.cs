@@ -1035,12 +1035,6 @@ public partial class MainWindow : Window
             CanResize = true,
             WindowStartupLocation = WindowStartupLocation.CenterOwner
         };
-        dialog.Opened += (_, _) =>
-        {
-            if (!isEdit)
-                scanInput.Focus();
-        };
-        dialog.Closed += (_, _) => RestoreBarcodeKeyboard();
         cancel.Click += (_, _) => dialog.Close();
         save.Click += async (_, _) =>
         {
@@ -1539,6 +1533,14 @@ public partial class MainWindow : Window
             }
         };
         Grid.SetRow(((Grid)dialog.Content).Children[1], 1);
+        scanInput.GotFocus += (_, _) => ActivateEnglishBarcodeKeyboard();
+        scanInput.LostFocus += (_, _) => RestoreBarcodeKeyboard();
+        dialog.Opened += (_, _) =>
+        {
+            if (!isEdit)
+                scanInput.Focus();
+        };
+        dialog.Closed += (_, _) => RestoreBarcodeKeyboard();
         cancel.Click += (_, _) => dialog.Close();
         save.Click += async (_, _) =>
         {
