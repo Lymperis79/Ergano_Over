@@ -329,9 +329,8 @@ public partial class MainWindow : Window
             TextWrapping = TextWrapping.Wrap,
             Margin = new Thickness(4, 0, 4, 8)
         };
-        // Selection handling is intentionally disabled while isolating the UI freeze.
-        // The list remains usable for selecting a row, but selection does not trigger
-        // detail rendering or any additional UI/database work.
+        borrowingList.SelectionChanged += (_, _) => ShowSelectedBorrowingScanDetails();
+
         // A scanner configured as USB keyboard/HID writes directly into this field.
         // Most scanners send Enter after the DataMatrix payload.
         gs1ScanInput = new TextBox
@@ -455,6 +454,41 @@ public partial class MainWindow : Window
             VerticalAlignment = VerticalAlignment.Stretch
         };
         return new TabItem { Header = "Borrowings", Content = borrowingScrollViewer };
+    }
+
+    private void ShowSelectedBorrowingScanDetails()
+    {
+        // Selection details are rendered from the records already loaded by
+        // RefreshCustomerWorkspaceAsync. This handler must remain synchronous
+        // and must never open a DbContext or refresh the customer workspace.
+        var index = borrowingList.SelectedIndex;
+        if (index < 0 || index >= currentBorrowings.Count)
+        {
+            borrowingSelectionDetails.Text = "Select an existing borrowing to view its saved GS1 scan details.";
+            return;
+        }
+
+        var borrowing = currentBorrowings[index];
+        var scan = borrowing.SerializedPackScan;
+        if (scan is null)
+        {
+            borrowingSelectionDetails.Text =
+                $"Selected borrowing: {borrowing.MedicineName}\n" +
+                "This is a legacy borrowing record and has no saved GS1 DataMatrix scan.";
+            return;
+        }
+
+        borrowingSelectionDetails.Text =
+            $"GS1 PACK DETAILS\n" +
+            $"Medicine: {borrowing.MedicineName}\n" +
+            $"GTIN-14: {scan.Gtin14}\n" +
+            $"Serial number: {scan.SerialNumber}\n" +
+            $"Expiry date: {scan.ExpiryDate:dd/MM/yyyy}\n" +
+            $"Batch / lot: {scan.BatchLot}\n" +
+            $"EOF / NTIN barcode: {scan.EofEan13 ?? "—"}\n" +
+            $"Pack status: {scan.HmvoStatus}\n" +
+            $"Scanned at: {scan.ScannedAt:dd/MM/yyyy HH:mm:ss} UTC\n" +
+            $"Original scanner payload: {scan.RawGs1String}";
     }
 
     private void UpdateGs1ScanEcho()
