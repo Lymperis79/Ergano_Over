@@ -243,7 +243,6 @@ public sealed class LocalizationService : ILocalizationService
         ["Editing customer "] = "Επεξεργασία πελάτη ",
         ["Username"] = "Όνομα χρήστη",
         ["Password"] = "Κωδικός πρόσβασης",
-        ["WORKSPACE"] = "ΧΩΡΟΣ ΕΡΓΑΣΙΑΣ",
         ["REPORTS"] = "ΑΝΑΦΟΡΕΣ",
         ["ADMINISTRATIVE"] = "ΔΙΑΧΕΙΡΙΣΗ",
         ["No menu access"] = "Δεν υπάρχει πρόσβαση σε μενού",
@@ -275,9 +274,8 @@ public sealed class LocalizationService : ILocalizationService
         ["Passwords do not match."] = "Οι κωδικοί δεν ταιριάζουν.",
         ["Confirm deletion"] = "Επιβεβαίωση διαγραφής",
         ["Delete user {0}?"] = "Να διαγραφεί ο χρήστης {0}?",
-        ["Admin"] = "Διαχειριστής",
         ["Operator"] = "Χειριστής",
-        ["Limited"] = "Περιορισμένος";
+        ["Limited"] = "Περιορισμένος",
         ["S Pharmacy Log — Database setup"] = "S Pharmacy Log — Ρύθμιση βάσης δεδομένων",
         ["Database setup"] = "Ρύθμιση βάσης δεδομένων",
         ["Choose where S Pharmacy Log stores its data. You can use a local SQLite file or a shared SQL Server / MariaDB database."] = "Επιλέξτε πού θα αποθηκεύει τα δεδομένα το S Pharmacy Log. Μπορείτε να χρησιμοποιήσετε τοπικό αρχείο SQLite ή κοινόχρηστη βάση SQL Server / MariaDB.",
