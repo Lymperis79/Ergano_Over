@@ -1254,7 +1254,7 @@ public partial class MainWindow : Window
         currentPayments = payments;
         currentLedgerEntries = ledger;
         subscriptionList.ItemsSource = subscriptions.Select(x => $"{GetSubscriptionNumber(x)} | {x.Title} | {Tr.Loc.TranslateText(x.Status.ToString())} | Next: {x.NextDueDate:dd/MM/yyyy} | Expires: {x.ExpiryDate?.ToString("dd/MM/yyyy") ?? "—"} | {x.Frequency}").ToList();
-        subscriptionHistoryList.ItemsSource = executedSubscriptions.Select(x => $"{GetSubscriptionNumber(x)} | {x.Title} | Executed on {x.LastModifiedAt.ToLocalTime():dd/MM/yyyy HH:mm}").ToList();
+        subscriptionHistoryList.ItemsSource = executedSubscriptions.Select(x => $"{GetSubscriptionNumber(x)} | {x.Title} | Executed on {ToLocalSubscriptionTime(x.LastModifiedAt):dd/MM/yyyy HH:mm}").ToList();
         paymentList.ItemsSource = payments.Select(x => $"{x.PaidAt:dd/MM/yyyy HH:mm} | {x.Amount:C} | {x.Method} | {x.Reference}").ToList();
         ledgerList.ItemsSource = ledger.Select(x => $"{x.EntryDate:dd/MM/yyyy HH:mm} | {x.Type} | {x.Amount:C} | {x.Description}").ToList();
         ApplyTranslations();
@@ -1416,6 +1416,9 @@ public partial class MainWindow : Window
             ? $"SUB-{subscription.Id:D8}"
             : subscription.Barcode;
 
+    private static DateTime ToLocalSubscriptionTime(DateTime utcTime) =>
+        DateTime.SpecifyKind(utcTime, DateTimeKind.Utc).ToLocalTime();
+
     private static ComboBox CreateSubscriptionStatusSelector(SubscriptionStatus selectedStatus)
     {
         var selector = new ComboBox { MinHeight = 34 };
@@ -1478,7 +1481,7 @@ public partial class MainWindow : Window
                 var change = entry.PreviousStatus.HasValue
                     ? $"{Tr.Loc.TranslateText(((SubscriptionStatus)entry.PreviousStatus.Value).ToString())} → {Tr.Loc.TranslateText(((SubscriptionStatus)entry.NewStatus).ToString())}"
                     : Tr.Loc.TranslateText(entry.Details ?? string.Empty);
-                return $"{entry.ChangedAt.ToLocalTime():dd/MM/yyyy HH:mm:ss} | {Tr.Loc.TranslateText(entry.Action)} | {entry.ChangedBy} | {change}";
+                return $"{ToLocalSubscriptionTime(entry.ChangedAt):dd/MM/yyyy HH:mm:ss} | {Tr.Loc.TranslateText(entry.Action)} | {entry.ChangedBy} | {change}";
             }).ToList();
         }
         RefreshAuditList();
@@ -1501,8 +1504,8 @@ public partial class MainWindow : Window
                 new TextBlock { Text = $"{Tr.Loc.TranslateText("Frequency")}: {subscription.Frequency}" },
                 new TextBlock { Text = $"{Tr.Loc.TranslateText("Status")}" },
                 statusSelector,
-                new TextBlock { Text = $"{Tr.Loc.TranslateText("Created by")}: {subscription.CreatedBy} | {subscription.CreatedAt.ToLocalTime():dd/MM/yyyy HH:mm:ss}", TextWrapping = TextWrapping.Wrap },
-                new TextBlock { Text = $"{Tr.Loc.TranslateText("Last changed by")}: {subscription.LastModifiedBy} | {subscription.LastModifiedAt.ToLocalTime():dd/MM/yyyy HH:mm:ss}", TextWrapping = TextWrapping.Wrap },
+                new TextBlock { Text = $"{Tr.Loc.TranslateText("Created by")}: {subscription.CreatedBy} | {ToLocalSubscriptionTime(subscription.CreatedAt):dd/MM/yyyy HH:mm:ss}", TextWrapping = TextWrapping.Wrap },
+                new TextBlock { Text = $"{Tr.Loc.TranslateText("Last changed by")}: {subscription.LastModifiedBy} | {ToLocalSubscriptionTime(subscription.LastModifiedAt):dd/MM/yyyy HH:mm:ss}", TextWrapping = TextWrapping.Wrap },
                 new TextBlock { Text = $"{Tr.Loc.TranslateText("Notes")}: {subscription.Notes}", TextWrapping = TextWrapping.Wrap },
                 new TextBlock { Text = Tr.Loc.TranslateText("Audit history"), FontSize = 16, FontWeight = FontWeight.Bold },
                 auditList
