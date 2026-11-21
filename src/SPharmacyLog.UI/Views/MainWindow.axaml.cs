@@ -431,11 +431,18 @@ public partial class MainWindow : Window
         var expiryInput = new TextBox { PlaceholderText = "Expiry date (yyyy-MM-dd)", IsEnabled = !isEdit };
         var lotInput = new TextBox { PlaceholderText = "Batch / Lot (AI 10)", IsEnabled = !isEdit };
         var eofInput = new TextBox { MaxLength = 13, PlaceholderText = "Optional 13-digit Greek EOF / NTIN barcode", IsEnabled = !isEdit };
+        var medicineNameInput = new TextBox { Text = existing?.MedicineName ?? string.Empty, MinHeight = 36, FontSize = 15, PlaceholderText = "Type or confirm the medicine name" };
+        fields["MedicineName"] = medicineNameInput;
         var scanPanel = new StackPanel { Spacing = 7 };
         scanPanel.Children.Add(new TextBlock { Text = "GS1 DATAMATRIX SCAN", FontWeight = FontWeight.SemiBold });
         scanPanel.Children.Add(scanInput);
         scanPanel.Children.Add(new TextBlock { Text = "Raw barcode (GS separator shown as <GS>):", FontSize = 12, Foreground = Brushes.LightGray });
         scanPanel.Children.Add(scanEcho);
+        if (!isEdit)
+        {
+            scanPanel.Children.Add(new TextBlock { Text = "Medicine name", FontSize = 12, Foreground = Brushes.LightGray });
+            scanPanel.Children.Add(medicineNameInput);
+        }
         scanPanel.Children.Add(new TextBlock { Text = "Parsed fields — verify or correct before saving:", FontWeight = FontWeight.SemiBold, Margin = new Thickness(0, 5, 0, 0) });
         void AddScanField(string label, TextBox box)
         {
@@ -472,7 +479,7 @@ public partial class MainWindow : Window
             var medicine = match?.Medicine ?? await lookupDb.Medicines.FirstOrDefaultAsync(x =>
                 x.Barcode == parsedPack.Gtin14 ||
                 (!string.IsNullOrWhiteSpace(parsedPack.ResolvedEofBarcode) && x.Barcode == parsedPack.ResolvedEofBarcode));
-            if (medicine is not null) fields["MedicineName"].Text = medicine.Name;
+            if (medicine is not null && string.IsNullOrWhiteSpace(medicineNameInput.Text)) medicineNameInput.Text = medicine.Name;
             if (string.IsNullOrWhiteSpace(eofInput.Text)) eofInput.Text = parsedPack.ResolvedEofBarcode ?? string.Empty;
             scanStatus.Foreground = Brushes.LightGreen;
             scanStatus.Text = medicine is null
@@ -487,10 +494,14 @@ public partial class MainWindow : Window
             FontSize = 19, FontWeight = FontWeight.Bold
         });
         form.Children.Add(scanPanel);
-        AddField(form, "Medicine name", "MedicineName", existing?.MedicineName);
-        AddField(form, "Medicine barcode / EAN (optional)", "MedicineBarcode", existing?.OriginalBarcode);
+        if (isEdit)
+        {
+            var medicineNameGroup = new StackPanel { Spacing = 4, Margin = new Thickness(0, 3) };
+            medicineNameGroup.Children.Add(new TextBlock { Text = "Medicine name", Foreground = Brushes.LightGray, FontSize = 12 });
+            medicineNameGroup.Children.Add(medicineNameInput);
+            form.Children.Add(medicineNameGroup);
+        }
         AddField(form, "Quantity", "Quantity", (existing?.Quantity ?? 1).ToString());
-        AddField(form, "Internal barcode / borrowing reference", "InternalBarcode", existing?.InternalBarcode);
         AddField(form, "Due date (yyyy-MM-dd)", "DueDate", existing?.DueDate?.ToString("yyyy-MM-dd"));
         AddField(form, "Value", "Value", existing?.Value?.ToString(System.Globalization.CultureInfo.InvariantCulture));
         AddField(form, "Notes", "Notes", existing?.Notes);
@@ -529,11 +540,10 @@ public partial class MainWindow : Window
         cancel.Click += (_, _) => dialog.Close();
         save.Click += async (_, _) =>
         {
-            var name = fields["MedicineName"].Text?.Trim() ?? string.Empty;
-            var internalBarcode = fields["InternalBarcode"].Text?.Trim() ?? string.Empty;
-            if (string.IsNullOrWhiteSpace(name) || string.IsNullOrWhiteSpace(internalBarcode))
+            var name = medicineNameInput.Text?.Trim() ?? string.Empty;
+            if (string.IsNullOrWhiteSpace(name))
             {
-                status.Text = "Medicine name and internal borrowing reference are required.";
+                status.Text = "Medicine name is required.";
                 return;
             }
             if (!int.TryParse(fields["Quantity"].Text, out var quantity) || quantity < 1)
@@ -562,43 +572,19 @@ public partial class MainWindow : Window
             DateTime? due = DateTime.TryParse(fields["DueDate"].Text, out var dueDate) ? dueDate : null;
             decimal? value = decimal.TryParse(fields["Value"].Text, System.Globalization.NumberStyles.Number, System.Globalization.CultureInfo.InvariantCulture, out var amount) ? amount : null;
             await using var db = new PharmacyDbContext(PharmacyDb.Options());
-            var existingBorrowingId = existing is null ? 0 : existing.Id;
-            var duplicate = await db.Borrowings.AnyAsync(x => x.InternalBarcode == internalBarcode && x.Id != existingBorrowingId);
-            if (duplicate) { status.Text = "This internal barcode is already in use."; return; }
-
             if (isEdit)
             {
                 var record = await db.Borrowings.FirstOrDefaultAsync(x => x.Id == existing!.Id && x.CustomerId == selectedCustomerId.Value);
                 if (record is null) { status.Text = "The borrowing record could not be found."; return; }
                 record.MedicineName = name;
                 record.Quantity = quantity;
-                record.InternalBarcode = internalBarcode;
-                record.DueDate = due;
+                                record.DueDate = due;
                 record.Value = value;
                 record.Notes = fields["Notes"].Text?.Trim();
             }
             else
             {
                 SerializedPackScan? serializedPack = null;
-                var enteredMedicineBarcode = fields["MedicineBarcode"].Text?.Trim() ?? string.Empty;
-                if (parsedPack is null && !string.IsNullOrWhiteSpace(enteredMedicineBarcode))
-                {
-                    var catalogueMatch = await db.MedicineBarcodes.Include(x => x.Medicine)
-                        .Where(x => x.BarcodeValue == enteredMedicineBarcode)
-                        .Select(x => x.Medicine).FirstOrDefaultAsync()
-                        ?? await db.Medicines.FirstOrDefaultAsync(x => x.Barcode == enteredMedicineBarcode);
-                    if (catalogueMatch is null)
-                    {
-                        catalogueMatch = new MedicineCatalogItem { Name = name, Barcode = enteredMedicineBarcode, IsActive = true };
-                        db.Medicines.Add(catalogueMatch);
-                        await db.SaveChangesAsync();
-                    }
-                    var barcodeMapping = await db.MedicineBarcodes.FirstOrDefaultAsync(x => x.BarcodeValue == enteredMedicineBarcode);
-                    if (barcodeMapping is null)
-                        db.MedicineBarcodes.Add(new MedicineBarcode { MedicineId = catalogueMatch.Id, BarcodeValue = enteredMedicineBarcode, BarcodeType = "OTHER" });
-                    else if (barcodeMapping.MedicineId != catalogueMatch.Id)
-                    { status.Text = "This medicine barcode is already assigned to another catalogue item."; return; }
-                }
                 if (parsedPack is not null)
                 {
                     if (await db.SerializedPackScans.AnyAsync(x => x.Gtin14 == correctedGtin && x.SerialNumber == correctedSerial))
@@ -636,8 +622,8 @@ public partial class MainWindow : Window
                 }
                 db.Borrowings.Add(new BorrowingRecord
                 {
-                    CustomerId = selectedCustomerId.Value, MedicineName = name, OriginalBarcode = parsedPack is null ? (fields["MedicineBarcode"].Text?.Trim()) : correctedGtin,
-                    SerializedPackScan = serializedPack, Quantity = quantity, InternalBarcode = internalBarcode,
+                    CustomerId = selectedCustomerId.Value, MedicineName = name, OriginalBarcode = parsedPack is null ? null : correctedGtin,
+                    SerializedPackScan = serializedPack, Quantity = quantity, InternalBarcode = "BOR-" + Guid.NewGuid().ToString("N"),
                     DueDate = due, Value = value, Notes = fields["Notes"].Text?.Trim()
                 });
             }
