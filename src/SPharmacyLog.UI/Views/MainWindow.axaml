@@ -4,14 +4,16 @@
       <StackPanel Margin="18,20" Spacing="16">
         <StackPanel Orientation="Horizontal" Spacing="10">
           <Border Width="42" Height="42" CornerRadius="12" Background="{DynamicResource AccentSoftBrush}">
-            <TextBlock Text="✚" FontSize="25" Foreground="{DynamicResource AccentLightBrush}" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+            <Grid>
+              <TextBlock x:Name="CompanyDefaultIcon" Text="✚" FontSize="25" Foreground="{DynamicResource AccentLightBrush}" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+              <Image x:Name="CompanyLogo" Width="38" Height="38" Stretch="Uniform" IsVisible="False"/>
+            </Grid>
           </Border>
           <StackPanel VerticalAlignment="Center" Spacing="1">
-            <TextBlock Text="S Pharmacy Log" FontWeight="Bold" FontSize="17"/>
+            <TextBlock x:Name="CompanyNameLabel" Text="S Pharmacy Log" FontWeight="Bold" FontSize="17"/>
             <TextBlock Text="PHARMACY MANAGEMENT" FontSize="9" Foreground="#8293A8"/>
           </StackPanel>
         </StackPanel>
-        <TextBlock Text="WORKSPACE" FontSize="10" FontWeight="Bold" Foreground="#8293A8" Margin="4,12,0,0"/>
         <StackPanel x:Name="NavigationPanel" Spacing="5"/>
       </StackPanel>
     </Border>
