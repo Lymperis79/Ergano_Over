@@ -10,7 +10,7 @@ public enum LicenseCheck
     /// <summary>No license has been entered yet.</summary>
     Missing,
     InvalidFormat,
-    BadSignature,
+    BadSignature,\n    ModuleNotLicensed,
     WrongMachine,
     Expired,
     /// <summary>The system date was set back to stretch an expiring license.</summary>
