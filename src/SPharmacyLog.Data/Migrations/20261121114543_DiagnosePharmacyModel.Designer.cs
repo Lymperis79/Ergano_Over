@@ -5,8 +5,6 @@ using SPharmacyLog.Data.Entities;
 
 namespace SPharmacyLog.Data.Migrations;
 
-[DbContext(typeof(PharmacyDbContext))]
-[Migration("20261121114543_DiagnosePharmacyModel")]
 public partial class DiagnosePharmacyModel : Migration
 {
     protected override void BuildTargetModel(ModelBuilder modelBuilder)
