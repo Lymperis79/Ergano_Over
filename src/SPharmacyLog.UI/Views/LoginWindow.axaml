@@ -2,7 +2,6 @@
   <Grid Margin="28">
     <Border Classes="card" VerticalAlignment="Center" Padding="30">
       <StackPanel Spacing="15">
-        <ComboBox x:Name="LanguageBox" Width="130" HorizontalAlignment="Right" SelectionChanged="OnLanguageChanged"><ComboBoxItem Content="English"/><ComboBoxItem Content="Ελληνικά"/></ComboBox>
         <Border Width="74" Height="74" CornerRadius="18" Background="{DynamicResource AccentSoftBrush}" HorizontalAlignment="Center">
           <TextBlock Text="✚" FontSize="38" Foreground="{DynamicResource AccentLightBrush}" VerticalAlignment="Center" HorizontalAlignment="Center"/>
         </Border>
