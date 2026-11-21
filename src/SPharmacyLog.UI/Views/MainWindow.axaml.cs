@@ -32,6 +32,22 @@ public partial class MainWindow : Window
     private TextBlock? calendarMonthTitle;
     private bool showingExpiryCalendar;
     private bool suppressCustomerSelectionChanged;
+    private const string MenuCalendar = "ExpiryCalendar";
+    private const string MenuCustomers = "Customers";
+    private const string MenuBorrowing = "Borrowing";
+    private const string MenuSubscriptions = "Subscriptions";
+    private const string MenuPayments = "Payments";
+    private const string MenuReports = "Reports";
+    private const string MenuUsers = "Users";
+    private static readonly (string Key, string LabelKey)[] ConfigurableMenus =
+    {
+        (MenuCalendar, "Navigation.ExpiryCalendar"),
+        (MenuCustomers, "Navigation.Customers"),
+        (MenuBorrowing, "Navigation.Borrowing"),
+        (MenuSubscriptions, "Navigation.Subscriptions"),
+        (MenuPayments, "Navigation.Payments"),
+        (MenuReports, "Navigation.Reports")
+    };
     private bool skipNextCustomerSearch;
     private readonly Dictionary<string, TextBox> customerFields = new();
     private ListBox customerList = null!;
@@ -55,23 +71,104 @@ public partial class MainWindow : Window
         ApplyTranslations();
         pageHost = PageHost;
 
-        var navigation = new (string Label, Action Action)[]
+        BuildNavigation();
+        if (CanAccessMenu(MenuCalendar)) ShowExpiryCalendar();
+        else if (CanAccessMenu(MenuCustomers)) ShowCustomers();
+        else if (CanAccessMenu(MenuBorrowing)) ShowPlaceholder(Tr.Loc["Navigation.Borrowing"]);
+        else if (CanAccessMenu(MenuSubscriptions)) ShowPlaceholder(Tr.Loc["Navigation.Subscriptions"]);
+        else if (CanAccessMenu(MenuPayments)) ShowPlaceholder(Tr.Loc["Navigation.Payments"]);
+        else if (CanAccessMenu(MenuReports)) ShowReports();
+        else ShowNoMenuAccess();
+    }
+
+    private bool CanAccessMenu(string key)
+    {
+        if (viewModel.User.Role == PharmacyRole.Admin) return true;
+        if (string.IsNullOrWhiteSpace(viewModel.User.AllowedMenus)) return true;
+        return viewModel.User.AllowedMenus.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Contains(key, StringComparer.Ordinal);
+    }
+
+    private void BuildNavigation()
+    {
+        NavigationPanel.Children.Clear();
+        NavigationPanel.Children.Add(new TextBlock
         {
-            (Tr.Loc["Navigation.ExpiryCalendar"], ShowExpiryCalendar),
-            (Tr.Loc["Navigation.Customers"], ShowCustomers),
-            (Tr.Loc["Navigation.Borrowing"], () => ShowPlaceholder(Tr.Loc["Navigation.Borrowing"])),
-            (Tr.Loc["Navigation.Subscriptions"], () => ShowPlaceholder(Tr.Loc["Navigation.Subscriptions"])),
-            (Tr.Loc["Navigation.Payments"], () => ShowPlaceholder(Tr.Loc["Navigation.Payments"])),
-            (Tr.Loc["Navigation.Users"], () => ShowPlaceholder(Tr.Loc["Navigation.Users"]))
-        };
-        foreach (var item in navigation)
+            Text = Tr.Loc.TranslateText("WORKSPACE"),
+            FontSize = 10,
+            FontWeight = FontWeight.Bold,
+            Foreground = new SolidColorBrush(Color.Parse("#8293A8")),
+            Margin = new Thickness(4, 12, 0, 0)
+        });
+
+        foreach (var item in ConfigurableMenus.Where(item => item.Key != MenuReports))
         {
-            var button = new Button { Content = item.Label, Classes = { "nav" }, MinWidth = 190 };
-            button.Click += (_, _) => item.Action();
-            if (item.Label == Tr.Loc["Navigation.Users"] && user.Role != PharmacyRole.Admin) button.IsVisible = false;
-            NavigationPanel.Children.Add(button);
+            if (!CanAccessMenu(item.Key)) continue;
+            Action action = item.Key switch
+            {
+                MenuCalendar => ShowExpiryCalendar,
+                MenuCustomers => ShowCustomers,
+                MenuBorrowing => () => ShowPlaceholder(Tr.Loc[item.LabelKey]),
+                MenuSubscriptions => () => ShowPlaceholder(Tr.Loc[item.LabelKey]),
+                MenuPayments => () => ShowPlaceholder(Tr.Loc[item.LabelKey]),
+                _ => () => ShowPlaceholder(Tr.Loc[item.LabelKey])
+            };
+            AddNavigationButton(item.LabelKey, action);
         }
-        ShowExpiryCalendar();
+
+        if (CanAccessMenu(MenuReports))
+        {
+            NavigationPanel.Children.Add(new TextBlock
+            {
+                Text = Tr.Loc.TranslateText("REPORTS"),
+                FontSize = 10,
+                FontWeight = FontWeight.Bold,
+                Foreground = new SolidColorBrush(Color.Parse("#8293A8")),
+                Margin = new Thickness(4, 12, 0, 0)
+            });
+            AddNavigationButton("Navigation.Reports", ShowReports);
+        }
+
+        if (viewModel.User.Role == PharmacyRole.Admin)
+        {
+            NavigationPanel.Children.Add(new TextBlock
+            {
+                Text = Tr.Loc.TranslateText("ADMINISTRATIVE"),
+                FontSize = 10,
+                FontWeight = FontWeight.Bold,
+                Foreground = new SolidColorBrush(Color.Parse("#8293A8")),
+                Margin = new Thickness(4, 12, 0, 0)
+            });
+            AddNavigationButton("Navigation.Users", () => _ = ShowUsersAsync());
+        }
+    }
+
+    private void AddNavigationButton(string labelKey, Action action)
+    {
+        var button = new Button { Content = Tr.Loc[labelKey], Classes = { "nav" }, MinWidth = 190 };
+        button.Click += (_, _) => action();
+        NavigationPanel.Children.Add(button);
+    }
+
+    private void ShowReports()
+    {
+        if (!CanAccessMenu(MenuReports)) { ShowNoMenuAccess(); return; }
+        ShowPlaceholder(Tr.Loc["Navigation.Reports"]);
+    }
+
+    private void ShowNoMenuAccess()
+    {
+        showingExpiryCalendar = false;
+        pageHost.Content = new StackPanel
+        {
+            Margin = new Thickness(22),
+            Spacing = 8,
+            Children =
+            {
+                new TextBlock { Text = Tr.Loc.TranslateText("No menu access"), FontSize = 22, FontWeight = FontWeight.Bold },
+                new TextBlock { Text = Tr.Loc.TranslateText("Your account has no assigned workspace menus. Contact an administrator.") }
+            }
+        };
     }
 
     private void ApplyTranslations()
@@ -206,6 +303,7 @@ public partial class MainWindow : Window
 
     private void ShowExpiryCalendar()
     {
+        if (!CanAccessMenu(MenuCalendar)) { ShowNoMenuAccess(); return; }
         showingExpiryCalendar = true;
         calendarPanel = new StackPanel();
         dailySummary = new TextBlock();
@@ -424,6 +522,7 @@ public partial class MainWindow : Window
 
     private void ShowCustomers()
     {
+        if (!CanAccessMenu(MenuCustomers)) { ShowNoMenuAccess(); return; }
         showingExpiryCalendar = false;
         customerFields.Clear(); activityFields.Clear(); gs1ParsedFields.Clear(); selectedCustomerId = null; currentParsedPack = null;
         customerSearch = new TextBox { PlaceholderText = Tr.Loc["Customers.Search"], Margin = new Thickness(0, 0, 0, 10) };
@@ -2031,6 +2130,10 @@ public partial class MainWindow : Window
 
     private void ShowPlaceholder(string title)
     {
+        if ((title == Tr.Loc["Navigation.Borrowing"] && !CanAccessMenu(MenuBorrowing)) ||
+            (title == Tr.Loc["Navigation.Subscriptions"] && !CanAccessMenu(MenuSubscriptions)) ||
+            (title == Tr.Loc["Navigation.Payments"] && !CanAccessMenu(MenuPayments)))
+        { ShowNoMenuAccess(); return; }
         showingExpiryCalendar = false;
         pageHost.Content = new StackPanel { Margin = new Thickness(20), Children = { new TextBlock { Text = title, FontSize = 24, FontWeight = FontWeight.Bold }, new TextBlock { Text = Tr.Loc["Common.Queued"] } } };
     }
