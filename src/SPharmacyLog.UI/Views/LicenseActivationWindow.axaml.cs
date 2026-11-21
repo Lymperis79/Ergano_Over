@@ -3,7 +3,6 @@ using System.IO;
 using System.Linq;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
-using Avalonia.Markup.Xaml;
 using Avalonia.Platform.Storage;
 using ErganiManager.Licensing;
 using SPharmacyLog.UI.Services;
@@ -59,10 +58,6 @@ public partial class LicenseActivationWindow : Window
         }
     }
 
-    private void InitializeComponent()
-    {
-        AvaloniaXamlLoader.Load(this);
-    }
 
     private void OnCopyClick(object? sender, RoutedEventArgs e)
     {
