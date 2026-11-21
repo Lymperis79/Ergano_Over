@@ -411,6 +411,7 @@ public sealed class LocalizationService : ILocalizationService
         ["EXECUTED SUBSCRIPTIONS HISTORY"] = "ΙΣΤΟΡΙΚΟ ΕΚΤΕΛΕΣΜΕΝΩΝ ΣΥΝΔΡΟΜΩΝ",
         ["Executed subscriptions are kept here and can be opened to review their audit history."] = "Οι εκτελεσμένες συνδρομές διατηρούνται εδώ και μπορείτε να τις ανοίξετε για να δείτε το ιστορικό ενεργειών τους.",
         ["Executed on"] = "Εκτελέστηκε στις",
+        ["Last changed"] = "Τελευταία αλλαγή",
         ["Save status"] = "Αποθήκευση κατάστασης",
         ["Status changed"] = "Αλλαγή κατάστασης",
         ["Updated"] = "Ενημερώθηκε",
