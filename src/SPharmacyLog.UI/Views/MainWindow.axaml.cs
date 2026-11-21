@@ -54,6 +54,8 @@ public partial class MainWindow : Window
     private ListBox customerList = null!;
     private TextBox customerSearch = null!;
     private TextBlock customerStatus = null!;
+    private CheckBox customerActiveCheckBox = null!;
+    private CheckBox showInactiveCustomersCheckBox = null!;
     private int? selectedCustomerId;
 
     public MainWindow(PharmacyUser user)
@@ -662,7 +664,13 @@ public partial class MainWindow : Window
         if (!CanAccessMenu(MenuCustomers)) { ShowNoMenuAccess(); return; }
         showingExpiryCalendar = false;
         customerFields.Clear(); activityFields.Clear(); gs1ParsedFields.Clear(); selectedCustomerId = null; currentParsedPack = null;
-        customerSearch = new TextBox { PlaceholderText = Tr.Loc["Customers.Search"], Margin = new Thickness(0, 0, 0, 10) };
+        customerSearch = new TextBox { PlaceholderText = Tr.Loc["Customers.Search"], Margin = new Thickness(0, 0, 0, 4) };
+        showInactiveCustomersCheckBox = new CheckBox
+        {
+            Content = Tr.Loc.TranslateText("Show inactive customers"),
+            Margin = new Thickness(0, 0, 0, 8)
+        };
+        showInactiveCustomersCheckBox.IsCheckedChanged += async (_, _) => await SearchCustomersAsync();
         customerList = new ListBox { MinWidth = 300 };
         customerStatus = new TextBlock { Foreground = Brushes.LightGreen, Margin = new Thickness(0, 8, 0, 0) };
         customerSearch.TextChanged += async (_, _) => await SearchCustomersAsync();
@@ -686,6 +694,7 @@ public partial class MainWindow : Window
         };
         left.Children.Add(newButton);
         left.Children.Add(customerSearch);
+        left.Children.Add(showInactiveCustomersCheckBox);
         left.Children.Add(customerList);
 
         var details = BuildCustomerDetailsTab();
@@ -746,13 +755,19 @@ public partial class MainWindow : Window
         AddCustomerField(fieldsGrid, "AMKA", "Amka", 4, 1);
         AddCustomerField(fieldsGrid, "Insurance", "Insurance", 5, 0);
         AddCustomerField(fieldsGrid, "Notes", "Notes", 6, 0, 2, true);
+        customerActiveCheckBox = new CheckBox
+        {
+            Content = Tr.Loc.TranslateText("Customer is active"),
+            IsChecked = true,
+            Margin = new Thickness(5, 8, 0, 0)
+        };
         var save = new Button { Content = Tr.Loc["Customers.Save"], Classes = { "accent" }, MinWidth = 150 };
         save.Click += async (_, _) => await SaveCustomerAsync();
         var clear = new Button { Content = Tr.Loc["Customers.Clear"], MinWidth = 100 };
         clear.Click += (_, _) => ClearCustomerForm();
         var actions = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 10, Margin = new Thickness(5, 14, 0, 0) };
         actions.Children.Add(save); actions.Children.Add(clear);
-        var panel = new StackPanel { Spacing = 8, Children = { new TextBlock { Text = Tr.Loc["Customers.Details"], FontSize = 18, FontWeight = FontWeight.Bold }, fieldsGrid, actions } };
+        var panel = new StackPanel { Spacing = 8, Children = { new TextBlock { Text = Tr.Loc["Customers.Details"], FontSize = 18, FontWeight = FontWeight.Bold }, fieldsGrid, customerActiveCheckBox, actions } };
         return new TabItem { Header = "Details", Content = new ScrollViewer { Content = panel } };
     }
 
@@ -2243,7 +2258,9 @@ public partial class MainWindow : Window
         if (customerList is null) return;
         var term = customerSearch.Text?.Trim() ?? "";
         await using var db = new PharmacyDbContext(PharmacyDb.Options());
-        var query = db.Customers.AsNoTracking().Where(c => c.IsActive);
+        var query = db.Customers.AsNoTracking();
+        if (showInactiveCustomersCheckBox?.IsChecked != true)
+            query = query.Where(c => c.IsActive);
         if (!string.IsNullOrWhiteSpace(term))
             query = query.Where(c => c.CustomerNumber.Contains(term) || c.FullName.Contains(term)
                 || (c.FirstName != null && c.FirstName.Contains(term)) || (c.Surname != null && c.Surname.Contains(term))
@@ -2262,12 +2279,14 @@ public partial class MainWindow : Window
         SetField("Address", c.Address); SetField("City", c.City); SetField("Postcode", c.Postcode);
         SetField("Telephone", c.Telephone ?? c.Phone); SetField("Mobile", c.Mobile); SetField("Email", c.Email);
         SetField("Amka", c.Amka); SetField("Insurance", c.Insurance); SetField("Notes", c.Notes);
+        customerActiveCheckBox.IsChecked = c.IsActive;
         customerStatus.Text = string.Format(Tr.Loc["Customers.Editing"], c.CustomerNumber);
     }
 
     private void ClearCustomerForm()
     {
         selectedCustomerId = null; foreach (var field in customerFields.Values) field.Text = "";
+        if (customerActiveCheckBox is not null) customerActiveCheckBox.IsChecked = true;
         customerStatus.Text = Tr.Loc["Customers.NewStatus"]; customerStatus.Foreground = Brushes.LightGreen;
         if (customerList is not null) customerList.SelectedItem = null;
     }
@@ -2288,7 +2307,8 @@ public partial class MainWindow : Window
         customer.Address = GetField("Address"); customer.City = GetField("City"); customer.Postcode = GetField("Postcode");
         customer.Telephone = GetField("Telephone"); customer.Phone = customer.Telephone ?? ""; customer.Mobile = GetField("Mobile");
         customer.Email = GetField("Email"); customer.Amka = GetField("Amka"); customer.Insurance = GetField("Insurance"); customer.Notes = GetField("Notes");
-        customer.IsActive = true; if (!selectedCustomerId.HasValue) db.Customers.Add(customer);
+        customer.IsActive = customerActiveCheckBox?.IsChecked == true;
+        if (!selectedCustomerId.HasValue) db.Customers.Add(customer);
         await db.SaveChangesAsync();
         selectedCustomerId = customer.Id;
         customerStatus.Foreground = Brushes.LightGreen;
