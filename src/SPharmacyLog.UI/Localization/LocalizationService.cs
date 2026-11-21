@@ -318,25 +318,25 @@ public sealed class LocalizationService : ILocalizationService
         // Customer activity modal editors (borrowings, subscriptions, payments and ledger).
         ["ADD SUBSCRIPTION"] = "ΠΡΟΣΘΗΚΗ ΣΥΝΔΡΟΜΗΣ",
         ["EDIT SUBSCRIPTION"] = "ΕΠΕΞΕΡΓΑΣΙΑ ΣΥΝΔΡΟΜΗΣ",
-        ["Subscription title"] = "Τίτλος συνδρομής",
-        ["Start date (yyyy-MM-dd)"] = "Ημερομηνία έναρξης (yyyy-MM-dd)",
-        ["Next due date (yyyy-MM-dd)"] = "Επόμενη ημερομηνία πληρωμής (yyyy-MM-dd)",
+
+
+
         ["Expiry date (optional)"] = "Ημερομηνία λήξης (προαιρετικά)",
-        ["Expiry date (yyyy-MM-dd, optional)"] = "Ημερομηνία λήξης (yyyy-MM-dd, προαιρετικά)",
-        ["Frequency"] = "Συχνότητα",
-        ["Monthly"] = "Μηνιαία",
-        ["Notes"] = "Σημειώσεις",
+
+
+
+
         ["ADD PAYMENT"] = "ΚΑΤΑΧΩΡΙΣΗ ΠΛΗΡΩΜΗΣ",
         ["EDIT PAYMENT"] = "ΕΠΕΞΕΡΓΑΣΙΑ ΠΛΗΡΩΜΗΣ",
         ["RECORD PAYMENT"] = "ΚΑΤΑΧΩΡΙΣΗ ΠΛΗΡΩΜΗΣ",
         ["Amount"] = "Ποσό",
-        ["Method (Cash / Card / Transfer)"] = "Μέθοδος (Μετρητά / Κάρτα / Μεταφορά)",
+
         ["Payment date (yyyy-MM-dd HH:mm)"] = "Ημερομηνία πληρωμής (yyyy-MM-dd HH:mm)",
         ["ADD LEDGER ENTRY"] = "ΠΡΟΣΘΗΚΗ ΕΓΓΡΑΦΗΣ ΚΑΡΤΕΛΑΣ",
         ["EDIT LEDGER ENTRY"] = "ΕΠΕΞΕΡΓΑΣΙΑ ΕΓΓΡΑΦΗΣ ΚΑΡΤΕΛΑΣ",
         ["Entry type"] = "Τύπος εγγραφής",
-        ["Amount (positive number)"] = "Ποσό (θετικός αριθμός)",
-        ["Description"] = "Περιγραφή",
+
+
         ["Entry date (yyyy-MM-dd HH:mm)"] = "Ημερομηνία εγγραφής (yyyy-MM-dd HH:mm)",
         ["Save"] = "Αποθήκευση",
         ["Cancel"] = "Ακύρωση",
