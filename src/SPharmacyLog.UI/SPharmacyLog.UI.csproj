@@ -1,1 +1,32 @@
-<Project Sdk="Microsoft.NET.Sdk"><PropertyGroup><TargetFramework>net10.0</TargetFramework><OutputType>WinExe</OutputType><Nullable>enable</Nullable><ImplicitUsings>enable</ImplicitUsings><RootNamespace>SPharmacyLog.UI</RootNamespace></PropertyGroup><ItemGroup><PackageReference Include="Avalonia"/><PackageReference Include="Avalonia.Desktop"/><PackageReference Include="Avalonia.Themes.Fluent"/><PackageReference Include="Avalonia.Fonts.Inter"/><ProjectReference Include="..\SPharmacyLog.Core\SPharmacyLog.Core.csproj"/><ProjectReference Include="..\SPharmacyLog.Data\SPharmacyLog.Data.csproj"/><ProjectReference Include="..\ErganiManager.Licensing\ErganiManager.Licensing.csproj"/></ItemGroup></Project>
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <OutputType>WinExe</OutputType>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
+    <RootNamespace>SPharmacyLog.UI</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Avalonia" />
+    <PackageReference Include="Avalonia.Desktop" />
+    <PackageReference Include="Avalonia.Themes.Fluent" />
+    <PackageReference Include="Avalonia.Fonts.Inter" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\SPharmacyLog.Core\SPharmacyLog.Core.csproj" />
+    <ProjectReference Include="..\SPharmacyLog.Data\SPharmacyLog.Data.csproj" />
+    <ProjectReference Include="..\ErganiManager.Licensing\ErganiManager.Licensing.csproj" />
+  </ItemGroup>
+
+  <!-- Keep each Avalonia XAML code-behind file nested under its matching .axaml view in Visual Studio. -->
+  <ItemGroup>
+    <Compile Update="Views\**\*.axaml.cs">
+      <DependentUpon>%(Filename)</DependentUpon>
+    </Compile>
+  </ItemGroup>
+
+</Project>
