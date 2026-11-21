@@ -147,20 +147,20 @@ public static class Gs1DataMatrixParser
         expiry = default;
         if (value.Length != 6 || value.Any(ch => !char.IsDigit(ch))) return false;
 
-        if (!DateTime.TryParseExact(value, "yyMMdd", CultureInfo.InvariantCulture,
-                DateTimeStyles.None, out var parsed))
-            return false;
+        var shortYear = int.Parse(value[..2], CultureInfo.InvariantCulture);
+        var month = int.Parse(value.Substring(2, 2), CultureInfo.InvariantCulture);
+        var day = int.Parse(value.Substring(4, 2), CultureInfo.InvariantCulture);
+
+        // GS1 uses 00-49 => 2000-2049 and 50-99 => 1950-1999.
+        var year = shortYear <= 49 ? 2000 + shortYear : 1900 + shortYear;
+        if (month < 1 || month > 12) return false;
 
         // GS1 AI (17) permits DD=00 to mean the final day of that month.
-        if (value.EndsWith("00", StringComparison.Ordinal))
-        {
-            var year = parsed.Year;
-            var month = parsed.Month;
-            expiry = new DateTime(year, month, DateTime.DaysInMonth(year, month));
-            return true;
-        }
+        var finalDay = DateTime.DaysInMonth(year, month);
+        if (day == 0) day = finalDay;
+        if (day < 1 || day > finalDay) return false;
 
-        expiry = parsed.Date;
+        expiry = new DateTime(year, month, day);
         return true;
     }
 }
