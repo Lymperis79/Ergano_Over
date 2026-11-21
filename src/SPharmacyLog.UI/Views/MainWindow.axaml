@@ -27,7 +27,6 @@
             <ComboBoxItem Content="English"/>
             <ComboBoxItem Content="Ελληνικά"/>
           </ComboBox>
-        </Grid>
           <Button Grid.Column="3" Content="🎨" ToolTip.Tip="Appearance and accent colors" Margin="10,0,0,0" Click="OnAppearanceClick"/>
         </Grid>
       </Border>
