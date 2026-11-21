@@ -445,7 +445,7 @@ public partial class MainWindow : Window
 
         var raw = pack.RawGs1String.Replace(Gs1DataMatrixParser.GroupSeparator.ToString(), "<GS>", StringComparison.Ordinal);
         borrowingSelectionDetails.Text = Tr.Loc.TranslateText(
-            $"SAVED GS1 PACK DETAILS\nMedicine: {borrowing.MedicineName}\nGTIN-14: {pack.Gtin14}\nEOF / NTIN: {pack.EofEan13 ?? "—"}\nSerial number: {pack.SerialNumber}\nExpiry: {pack.ExpiryDate:dd/MM/yyyy}\nBatch / lot: {pack.BatchLot}\nPack status: {pack.HmvoStatus}\nScanned at: {pack.ScannedAt:dd/MM/yyyy HH:mm:ss}\nRaw scanner payload: {raw}";
+            $"SAVED GS1 PACK DETAILS\nMedicine: {borrowing.MedicineName}\nGTIN-14: {pack.Gtin14}\nEOF / NTIN: {pack.EofEan13 ?? "—"}\nSerial number: {pack.SerialNumber}\nExpiry: {pack.ExpiryDate:dd/MM/yyyy}\nBatch / lot: {pack.BatchLot}\nPack status: {pack.HmvoStatus}\nScanned at: {pack.ScannedAt:dd/MM/yyyy HH:mm:ss}\nRaw scanner payload: {raw}");
     }
 
     private Button CreateGs1ParseButton()
