@@ -470,6 +470,7 @@ public partial class MainWindow : Window
         });
         form.Children.Add(scanPanel);
         AddField(form, "Medicine name", "MedicineName", existing?.MedicineName);
+        AddField(form, "Medicine barcode / EAN (optional)", "MedicineBarcode", existing?.OriginalBarcode);
         AddField(form, "Quantity", "Quantity", (existing?.Quantity ?? 1).ToString());
         AddField(form, "Internal barcode / borrowing reference", "InternalBarcode", existing?.InternalBarcode);
         AddField(form, "Due date (yyyy-MM-dd)", "DueDate", existing?.DueDate?.ToString("yyyy-MM-dd"));
@@ -547,6 +548,25 @@ public partial class MainWindow : Window
             else
             {
                 SerializedPackScan? serializedPack = null;
+                var enteredMedicineBarcode = fields["MedicineBarcode"].Text?.Trim() ?? string.Empty;
+                if (parsedPack is null && !string.IsNullOrWhiteSpace(enteredMedicineBarcode))
+                {
+                    var catalogueMatch = await db.MedicineBarcodes.Include(x => x.Medicine)
+                        .Where(x => x.BarcodeValue == enteredMedicineBarcode)
+                        .Select(x => x.Medicine).FirstOrDefaultAsync()
+                        ?? await db.Medicines.FirstOrDefaultAsync(x => x.Barcode == enteredMedicineBarcode);
+                    if (catalogueMatch is null)
+                    {
+                        catalogueMatch = new MedicineCatalogItem { Name = name, Barcode = enteredMedicineBarcode, IsActive = true };
+                        db.Medicines.Add(catalogueMatch);
+                        await db.SaveChangesAsync();
+                    }
+                    var barcodeMapping = await db.MedicineBarcodes.FirstOrDefaultAsync(x => x.BarcodeValue == enteredMedicineBarcode);
+                    if (barcodeMapping is null)
+                        db.MedicineBarcodes.Add(new MedicineBarcode { MedicineId = catalogueMatch.Id, BarcodeValue = enteredMedicineBarcode, BarcodeType = "OTHER" });
+                    else if (barcodeMapping.MedicineId != catalogueMatch.Id)
+                    { status.Text = "This medicine barcode is already assigned to another catalogue item."; return; }
+                }
                 if (parsedPack is not null)
                 {
                     if (await db.SerializedPackScans.AnyAsync(x => x.Gtin14 == parsedPack.Gtin14 && x.SerialNumber == parsedPack.SerialNumber))
