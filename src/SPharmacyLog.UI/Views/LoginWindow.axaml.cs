@@ -27,6 +27,15 @@ public partial class LoginWindow : Window
     private async Task InitializeLoginAsync()
     {
         await viewModel.InitializeAsync();
+        var remembered = SPharmacyLog.UI.Services.RememberedLoginService.Load();
+        if (remembered is not null)
+        {
+            UsernameBox.Text = remembered.Value.Username;
+            PasswordBox.Text = remembered.Value.Password;
+            RememberCredentialsBox.IsChecked = true;
+            PasswordBox.Focus();
+        }
+        else UsernameBox.Focus();
         ApplyTranslations();
     }
 
@@ -71,7 +80,15 @@ public partial class LoginWindow : Window
 
             if (user is not null)
             {
-                new MainWindow(user).Show();
+                if (RememberCredentialsBox.IsChecked == true)
+                    SPharmacyLog.UI.Services.RememberedLoginService.Save(viewModel.Username.Trim(), viewModel.Password);
+                else
+                    SPharmacyLog.UI.Services.RememberedLoginService.Delete();
+
+                var main = new MainWindow(user);
+                if (Application.Current?.ApplicationLifetime is Avalonia.Controls.ApplicationLifetimes.IClassicDesktopStyleApplicationLifetime desktop)
+                    desktop.MainWindow = main;
+                main.Show();
                 Close();
             }
         }
