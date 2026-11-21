@@ -79,7 +79,7 @@ public sealed class ReportsWindow : Window
                 results
             }
         };
-        Content = new ScrollViewer { Content = content, VerticalScrollBarVisibility = ScrollBarVisibility.Auto };
+        Content = new ScrollViewer { Content = content };
         Opened += async (_, _) =>
         {
             await LoadCustomersAsync();
