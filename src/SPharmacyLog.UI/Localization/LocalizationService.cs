@@ -109,6 +109,7 @@ public sealed class LocalizationService : ILocalizationService
 
     private static readonly IReadOnlyDictionary<string, string> UiGreek = new Dictionary<string, string>
     {
+        ["The Excel file could not be saved."] = "Δεν ήταν δυνατή η αποθήκευση του αρχείου Excel.",
         ["Export to Excel"] = "Εξαγωγή σε Excel",
         ["Export report to Excel"] = "Εξαγωγή αναφοράς σε Excel",
         ["Dashboard"] = "Πίνακας ελέγχου",
