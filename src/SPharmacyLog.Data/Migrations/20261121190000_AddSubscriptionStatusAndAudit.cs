@@ -38,7 +38,7 @@ public sealed class AddSubscriptionStatusAndAudit : Migration
                     ChangedAt TEXT NOT NULL,
                     Details TEXT NULL,
                     CONSTRAINT FK_SubscriptionAuditEntries_Subscriptions_SubscriptionId
-                        FOREIGN KEY (SubscriptionId) REFERENCES Subscriptions(Id) ON DELETE CASCADE
+                        FOREIGN KEY (SubscriptionId) REFERENCES Subscriptions(Id) ON DELETE RESTRICT
                 );
                 CREATE INDEX IX_SubscriptionAuditEntries_SubscriptionId_ChangedAt
                     ON SubscriptionAuditEntries(SubscriptionId, ChangedAt);
@@ -73,7 +73,7 @@ public sealed class AddSubscriptionStatusAndAudit : Migration
                     [ChangedAt] datetime2 NOT NULL,
                     [Details] nvarchar(max) NULL,
                     CONSTRAINT [FK_SubscriptionAuditEntries_Subscriptions_SubscriptionId]
-                        FOREIGN KEY ([SubscriptionId]) REFERENCES [Subscriptions]([Id]) ON DELETE CASCADE
+                        FOREIGN KEY ([SubscriptionId]) REFERENCES [Subscriptions]([Id]) ON DELETE NO ACTION
                 );
                 CREATE INDEX [IX_SubscriptionAuditEntries_SubscriptionId_ChangedAt]
                     ON [SubscriptionAuditEntries]([SubscriptionId], [ChangedAt]);
