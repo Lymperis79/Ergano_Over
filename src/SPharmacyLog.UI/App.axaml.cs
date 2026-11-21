@@ -68,7 +68,19 @@ public partial class App : Application
 
                 // Apply pending schema changes on every start. EF only applies migrations
                 // that are not already recorded; it never drops or recreates existing data.
-                await PharmacyDb.ApplyMigrationsAsync(config);
+                try
+                {
+                    await PharmacyDb.ApplyMigrationsAsync(config);
+                }
+                catch
+                {
+                    // Re-open the setup screen with the saved settings so the user can
+                    // correct a connection or retry an interrupted schema upgrade.
+                    await ShowDatabaseSetupAsync(startupWindow);
+                    config = PharmacyDb.LoadConfig();
+                    if (config is null) throw;
+                    await PharmacyDb.ApplyMigrationsAsync(config);
+                }
 
                 if (!await PharmacyDb.HasUsersAsync(config))
                 {
