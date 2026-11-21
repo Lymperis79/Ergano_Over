@@ -664,6 +664,18 @@ public sealed class LocalizationService : ILocalizationService
         ["Borrowing"] = "Δανεισμός",
         ["Expired"] = "Έληξε",
         ["total, "] = "συνολικά, ",
+        [" No medicine catalogue match yet; you can enter the medicine name and EOF barcode manually."] = " Δεν υπάρχει ακόμη αντιστοίχιση στον κατάλογο φαρμάκων. Μπορείτε να εισαγάγετε χειροκίνητα το όνομα και το barcode EOF.",
+        [" Medicine matched: "] = " Αντιστοιχίστηκε φάρμακο: ",
+        ["GS1 PACK DETAILS\n"] = "ΣΤΟΙΧΕΙΑ ΣΥΣΚΕΥΑΣΙΑΣ GS1\n",
+        ["Original scanner payload: "] = "Αρχικά δεδομένα σαρωτή: ",
+        ["Pack status: "] = "Κατάσταση συσκευασίας: ",
+        ["GTIN-14: "] = "GTIN-14: ",
+        ["Serial number: "] = "Σειριακός αριθμός: ",
+        ["Expiry date: "] = "Ημερομηνία λήξης: ",
+        ["Batch / lot: "] = "Παρτίδα / lot: ",
+        ["Scanned at: "] = "Ημερομηνία σάρωσης: ",
+        ["Medicine: "] = "Φάρμακο: ",
+        ["Selected borrowing: "] = "Επιλεγμένος δανεισμός: ",
     };
 
     public string TranslateText(string text)
