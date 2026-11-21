@@ -140,7 +140,9 @@ public static class CustomerDatabaseSyncService
     public static async Task<int> PreviewCountAsync(CustomerDatabaseSyncSettings settings, CancellationToken cancellationToken = default)
     {
         var (schema, table) = ParseTable(settings.Table);
-        var filterColumn = ResolveColumn(settings.FilterColumn, await GetColumnsAsync(settings, settings.Table, cancellationToken));
+        var filterColumn = string.IsNullOrWhiteSpace(settings.FilterValue)
+            ? string.Empty
+            : ResolveColumn(settings.FilterColumn, await GetColumnsAsync(settings, settings.Table, cancellationToken));
         var sql = $"SELECT COUNT_BIG(1) FROM {Quote(schema)}.{Quote(table)}" +
                   (string.IsNullOrWhiteSpace(settings.FilterValue) || string.IsNullOrWhiteSpace(filterColumn)
                       ? ";" : $" WHERE {Quote(filterColumn)} = @filter;");
@@ -168,7 +170,9 @@ public static class CustomerDatabaseSyncService
 
         var selectedColumns = mappings.Values.Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
         var (schema, table) = ParseTable(settings.Table);
-        var filterColumn = ResolveColumn(settings.FilterColumn, columns);
+        var filterColumn = string.IsNullOrWhiteSpace(settings.FilterValue)
+            ? string.Empty
+            : ResolveColumn(settings.FilterColumn, columns);
         var sql = $"SELECT {string.Join(", ", selectedColumns.Select(Quote))} FROM {Quote(schema)}.{Quote(table)}";
         if (!string.IsNullOrWhiteSpace(settings.FilterValue) && !string.IsNullOrWhiteSpace(filterColumn))
             sql += $" WHERE {Quote(filterColumn)} = @filter";
@@ -206,7 +210,9 @@ public static class CustomerDatabaseSyncService
                 continue;
             }
 
-            var existing = await destination.Customers
+            var existing = destination.Customers.Local
+                .FirstOrDefault(customer => string.Equals(customer.CustomerNumber, customerNumber, StringComparison.OrdinalIgnoreCase));
+            existing ??= await destination.Customers
                 .FirstOrDefaultAsync(customer => customer.CustomerNumber == customerNumber, cancellationToken);
 
             // Critical safeguard: an inactive customer is an explicit local decision.
