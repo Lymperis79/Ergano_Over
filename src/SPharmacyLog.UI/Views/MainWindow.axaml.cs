@@ -102,6 +102,13 @@ public partial class MainWindow : Window
         TranslateListItems(subscriptionList);
         TranslateListItems(paymentList);
         TranslateListItems(ledgerList);
+        if (gs1ParsedFields.TryGetValue("HmvoStatus", out var statusField))
+            statusField.Text = Tr.Loc.TranslateText(SerializedPackStatuses.Active);
+        if (gs1ParsedFields.TryGetValue("MedicineMatch", out var matchField) &&
+            (matchField.Text == "Not matched" || matchField.Text == "Δεν υπάρχει αντιστοίχιση" ||
+             matchField.Text == "Not matched — enter medicine manually" ||
+             matchField.Text == "Χωρίς αντιστοίχιση — εισαγάγετε χειροκίνητα το φάρμακο"))
+            matchField.Text = Tr.Loc.TranslateText(matchField.Text);
         if (calendarMonthTitle is not null)
             calendarMonthTitle.Text = displayedMonth.ToString("MMMM yyyy");
         isApplyingTranslations = false;
