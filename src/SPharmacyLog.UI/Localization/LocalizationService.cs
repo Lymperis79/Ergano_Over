@@ -98,8 +98,9 @@ public sealed class LocalizationService : ILocalizationService
         ["Wind"] = "Άνεμος",
         ["Save"] = "Αποθήκευση",
         ["Cancel"] = "Ακύρωση",
-        ["Close"] = "Κλείσιμο"
-
+        ["Close"] = "Κλείσιμο",
+        ["Company settings"] = "Στοιχεία εταιρείας"
+    };
 
     private static readonly IReadOnlyDictionary<string, string> UiGreek = new Dictionary<string, string>
     {
@@ -128,6 +129,16 @@ public sealed class LocalizationService : ILocalizationService
         ["Save"] = "Αποθήκευση",
         ["Cancel"] = "Ακύρωση",
         ["Close"] = "Κλείσιμο",
+        ["Company settings"] = "Στοιχεία εταιρείας",
+        ["Company identity"] = "Ταυτότητα εταιρείας",
+        ["Company name"] = "Επωνυμία εταιρείας",
+        ["Enter company name"] = "Εισαγάγετε την επωνυμία της εταιρείας",
+        ["Company logo (optional)"] = "Λογότυπο εταιρείας (προαιρετικό)",
+        ["Choose logo…"] = "Επιλογή λογότυπου…",
+        ["Remove logo"] = "Αφαίρεση λογότυπου",
+        ["Image files"] = "Αρχεία εικόνας",
+        ["Choose company logo"] = "Επιλέξτε λογότυπο εταιρείας",
+        ["PNG, JPG or BMP image"] = "Εικόνα PNG, JPG ή BMP",
         ["Clear sky"] = "Αίθριος καιρός",
         ["Overcast"] = "Συννεφιά",
         ["Fog"] = "Ομίχλη",
