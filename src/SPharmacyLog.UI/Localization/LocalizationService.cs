@@ -655,7 +655,7 @@ public sealed class LocalizationService : ILocalizationService
         ["Current open subscriptions"] = "Τρέχουσες ανοιχτές συνδρομές",
         ["Current closed / executed subscriptions"] = "Τρέχουσες κλειστές / εκτελεσμένες συνδρομές",
         ["Next due"] = "Επόμενη προθεσμία",
-        ["Last changed"] = "Τελευταία αλλαγή"
+        ["Last changed"] = "Τελευταία αλλαγή",
 
         ["History"] = "Ιστορικό",
         ["Select a payment to edit."] = "Επιλέξτε μια πληρωμή για επεξεργασία.",
