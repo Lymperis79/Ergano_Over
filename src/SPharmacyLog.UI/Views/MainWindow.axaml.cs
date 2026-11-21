@@ -2448,12 +2448,13 @@ public partial class MainWindow : Window
             PharmacyUser record;
             if (isEdit)
             {
-                record = await db.Users.FirstOrDefaultAsync(item => item.Id == existing!.Id) ?? null!;
-                if (record is null)
+                var existingRecord = await db.Users.FirstOrDefaultAsync(item => item.Id == existing!.Id);
+                if (existingRecord is null)
                 {
                     status.Text = Tr.Loc.TranslateText("The user could not be found.");
                     return;
                 }
+                record = existingRecord;
                 if (record.Role == PharmacyRole.Admin && selectedRole != PharmacyRole.Admin && record.IsActive &&
                     await db.Users.CountAsync(item => item.Role == PharmacyRole.Admin && item.IsActive) <= 1)
                 {
