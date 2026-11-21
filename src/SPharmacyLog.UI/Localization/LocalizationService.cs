@@ -403,7 +403,7 @@ public sealed class LocalizationService : ILocalizationService
         ["Expiry date"] = "Ημερομηνία λήξης",
         ["Status"] = "Κατάσταση",
         ["Open customer"] = "Άνοιγμα πελάτη",
-        ["Subscription details"] = "Στοιχεία συνδρομής"
+        ["Subscription details"] = "Στοιχεία συνδρομής",
         ["Scan this barcode with your scanner"] = "Σαρώστε αυτό το barcode με τον σαρωτή σας"
 
     };
