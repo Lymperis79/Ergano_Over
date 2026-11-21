@@ -69,6 +69,13 @@ public partial class MainWindow : Window
 
     private void ShowExpiryCalendar()
     {
+        // Recreate these controls whenever the calendar page is opened. Avalonia
+        // controls can only have one visual parent, and the previous page content
+        // may still own the controls from the last calendar instance.
+        calendarPanel = new StackPanel();
+        dailySummary = new TextBlock();
+        dayRecords = new ListBox();
+
         var content = new StackPanel { Margin = new Thickness(22), Spacing = 12 };
         content.Children.Add(new TextBlock { Text = Tr.Loc["Calendar.Title"], FontSize = 24, FontWeight = FontWeight.Bold, Margin = new Thickness(0, 0, 0, 4) });
         content.Children.Add(new TextBlock { Text = Tr.Loc["Calendar.Description"] });
