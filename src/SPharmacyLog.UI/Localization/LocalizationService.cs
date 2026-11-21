@@ -109,6 +109,21 @@ public sealed class LocalizationService : ILocalizationService
 
     private static readonly IReadOnlyDictionary<string, string> UiGreek = new Dictionary<string, string>
     {
+        ["Medicine catalogue"] = "Κατάλογος φαρμάκων",
+        ["Source: drugbase-gr, compiled from EOF and EMA public filings. Licence: CC BY 4.0."] = "Πηγή: drugbase-gr, συγκεντρωμένα δημόσια στοιχεία ΕΟΦ και EMA. Άδεια: CC BY 4.0.",
+        ["Search by medicine name or barcode"] = "Αναζήτηση με όνομα φαρμάκου ή barcode",
+        ["Search"] = "Αναζήτηση",
+        ["Update catalogue from drugbase-gr"] = "Ενημέρωση καταλόγου από drugbase-gr",
+        ["Refresh"] = "Ανανέωση",
+        ["Medicine"] = "Φάρμακο",
+        ["Barcode(s)"] = "Barcode",
+        ["Loading catalogue…"] = "Φόρτωση καταλόγου…",
+        ["Total medicines"] = "Σύνολο φαρμάκων",
+        ["matching medicines"] = "φάρμακα που ταιριάζουν",
+        ["Could not load the medicine catalogue"] = "Δεν ήταν δυνατή η φόρτωση του καταλόγου φαρμάκων",
+        ["Downloading and importing the public medicine registry…"] = "Λήψη και εισαγωγή του δημόσιου μητρώου φαρμάκων…",
+        ["Catalogue update completed"] = "Η ενημέρωση του καταλόγου ολοκληρώθηκε",
+        ["Catalogue update failed"] = "Η ενημέρωση του καταλόγου απέτυχε",
         ["The Excel file could not be saved."] = "Δεν ήταν δυνατή η αποθήκευση του αρχείου Excel.",
         ["Export to Excel"] = "Εξαγωγή σε Excel",
         ["Export report to Excel"] = "Εξαγωγή αναφοράς σε Excel",
