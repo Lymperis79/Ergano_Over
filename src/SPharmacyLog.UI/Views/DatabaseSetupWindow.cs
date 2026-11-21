@@ -36,7 +36,6 @@ public sealed class DatabaseSetupWindow : Window
     private readonly Button testButton = new() { Content = "Test connection" };
     private readonly Button continueButton = new() { Content = "Create / connect and continue" };
     private readonly Button createAdminButton = new() { Content = "Create administrator" };
-    private bool adminStep;
 
     public DatabaseSetupWindow(bool resumeAtAdmin = false)
     {
@@ -144,18 +143,16 @@ public sealed class DatabaseSetupWindow : Window
     {
         var selected = provider.SelectedItem is DatabaseProvider value ? value : DatabaseProvider.Sqlite;
         sqlitePath.IsVisible = selected == DatabaseProvider.Sqlite;
-        SetLabelVisibility(databaseFields, selected);
-        windowsAuth.IsVisible = selected == DatabaseProvider.SqlServer;
-        sqlUsername.IsVisible = selected == DatabaseProvider.SqlServer && windowsAuth.IsChecked != true;
-        sqlPassword.IsVisible = selected == DatabaseProvider.SqlServer && windowsAuth.IsChecked != true;
         sqlHost.IsVisible = sqlDatabase.IsVisible = selected == DatabaseProvider.SqlServer;
-        mariaHost.IsVisible = mariaDatabase.IsVisible = mariaUsername.IsVisible = mariaPassword.IsVisible =
-            selected == DatabaseProvider.MariaDb;
+        windowsAuth.IsVisible = selected == DatabaseProvider.SqlServer;
+        sqlUsername.IsVisible = sqlPassword.IsVisible = selected == DatabaseProvider.SqlServer && windowsAuth.IsChecked != true;
+        mariaHost.IsVisible = mariaDatabase.IsVisible = mariaUsername.IsVisible = mariaPassword.IsVisible = selected == DatabaseProvider.MariaDb;
+        databaseFields.Children[2].IsVisible = databaseFields.Children[3].IsVisible = selected == DatabaseProvider.Sqlite;
+        for (var i = 4; i <= 12; i++) databaseFields.Children[i].IsVisible = selected == DatabaseProvider.SqlServer;
+        databaseFields.Children[9].IsVisible = databaseFields.Children[10].IsVisible = selected == DatabaseProvider.SqlServer && windowsAuth.IsChecked != true;
+        databaseFields.Children[11].IsVisible = databaseFields.Children[12].IsVisible = selected == DatabaseProvider.SqlServer && windowsAuth.IsChecked != true;
+        for (var i = 13; i <= 20; i++) databaseFields.Children[i].IsVisible = selected == DatabaseProvider.MariaDb;
     }
-
-    // Labels and inputs are paired in this panel; visibility is set on controls below.
-    private static void SetLabelVisibility(StackPanel _, DatabaseProvider __) { }
-
     private DbConfig BuildConfig()
     {
         var selected = provider.SelectedItem is DatabaseProvider value ? value : DatabaseProvider.Sqlite;
@@ -258,7 +255,6 @@ public sealed class DatabaseSetupWindow : Window
 
     private void ShowAdminStep()
     {
-        adminStep = true;
         databaseFields.IsVisible = false;
         testButton.IsVisible = false;
         continueButton.IsVisible = false;
