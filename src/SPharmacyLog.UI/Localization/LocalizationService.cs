@@ -72,6 +72,125 @@ public sealed class LocalizationService : ILocalizationService
         ["Language.Greek"] = "Ελληνικά"
     };
 
+
+    private static readonly IReadOnlyDictionary<string, string> UiGreek = new Dictionary<string, string>
+    {
+        ["Prescription, customer and medicine tracking"] = "Διαχείριση συνταγών, πελατών και φαρμάκων",
+        ["Secure pharmacy management"] = "Ασφαλής διαχείριση φαρμακείου",
+        ["WORKSPACE"] = "ΧΩΡΟΣ ΕΡΓΑΣΙΑΣ",
+        ["PHARMACY MANAGEMENT"] = "ΔΙΑΧΕΙΡΙΣΗ ΦΑΡΜΑΚΕΙΟΥ",
+        ["Pharmacy workspace"] = "Χώρος εργασίας φαρμακείου",
+        ["Manage prescriptions, customers and services"] = "Διαχείριση συνταγών, πελατών και υπηρεσιών",
+        ["S Pharmacy Log  •  Local pharmacy operations"] = "S Pharmacy Log  •  Τοπική λειτουργία φαρμακείου",
+        ["Prescription expiry calendar"] = "Ημερολόγιο λήξης συνταγών",
+        ["Each day shows active prescriptions expiring. Select a date for the list."] = "Κάθε ημέρα εμφανίζει τις ενεργές συνταγές που λήγουν. Επιλέξτε ημερομηνία για τη λίστα.",
+        ["expiring"] = "λήγουν",
+        ["active prescription(s) expiring"] = "ενεργές συνταγές λήγουν",
+        ["Search by customer no, name, surname, AMKA, phone or email…"] = "Αναζήτηση με αριθμό, όνομα, επώνυμο, ΑΜΚΑ, τηλέφωνο ή email…",
+        ["＋ New customer"] = "＋ Νέος πελάτης",
+        ["CUSTOMER DETAILS"] = "ΣΤΟΙΧΕΙΑ ΠΕΛΑΤΗ",
+        ["Save customer"] = "Αποθήκευση πελάτη",
+        ["Clear"] = "Καθαρισμός",
+        ["Customer number"] = "Αριθμός πελάτη",
+        ["Name"] = "Όνομα",
+        ["Surname"] = "Επώνυμο",
+        ["Address"] = "Διεύθυνση",
+        ["City"] = "Πόλη",
+        ["Postcode"] = "Ταχυδρομικός κώδικας",
+        ["Telephone"] = "Τηλέφωνο",
+        ["Mobile"] = "Κινητό",
+        ["Email"] = "Email",
+        ["Insurance"] = "Ασφάλιση",
+        ["Notes"] = "Σημειώσεις",
+        ["Overview"] = "Επισκόπηση",
+        ["Details"] = "Στοιχεία",
+        ["Borrowings"] = "Δανεισμοί",
+        ["Subscriptions"] = "Συνδρομές",
+        ["Payments"] = "Πληρωμές",
+        ["Ledger"] = "Καρτέλα",
+        ["Select a customer to see their account summary."] = "Επιλέξτε πελάτη για να δείτε τη σύνοψη του λογαριασμού του.",
+        ["Select an existing borrowing to view its saved GS1 scan details."] = "Επιλέξτε έναν υπάρχοντα δανεισμό για να δείτε τα αποθηκευμένα στοιχεία σάρωσης GS1.",
+        ["Scan GS1 DataMatrix here (scanner suffix: Enter)"] = "Σαρώστε εδώ το GS1 DataMatrix (τερματισμός σαρωτή: Enter)",
+        ["The scanned barcode text will appear here; <GS> marks the invisible ASCII 29 separator."] = "Το κείμενο του barcode θα εμφανιστεί εδώ· το <GS> δηλώνει τον μη ορατό διαχωριστή ASCII 29.",
+        ["Ready for a GS1 DataMatrix scan."] = "Έτοιμο για σάρωση GS1 DataMatrix.",
+        ["PHARMACEUTICAL PACK SCAN"] = "ΣΑΡΩΣΗ ΣΥΣΚΕΥΑΣΙΑΣ ΦΑΡΜΑΚΟΥ",
+        ["Scan the 2D DataMatrix. Configure the scanner to transmit ASCII 29 (GS) between variable-length fields and send Enter after the scan. The original scanner text is retained exactly; the fields below are extracted from GS1 Application Identifiers."] = "Σαρώστε το 2D DataMatrix. Ρυθμίστε τον σαρωτή να μεταδίδει ASCII 29 (GS) μεταξύ πεδίων μεταβλητού μήκους και να στέλνει Enter μετά τη σάρωση. Το αρχικό κείμενο διατηρείται ακριβώς· τα παρακάτω πεδία εξάγονται από τα GS1 Application Identifiers.",
+        ["SCANNED BARCODE — VERIFY THE READ"] = "ΣΑΡΩΜΕΝΟ BARCODE — ΕΛΕΓΞΤΕ ΤΗΝ ΑΝΑΓΝΩΣΗ",
+        ["The text is shown exactly as received, with invisible ASCII 29 separators displayed as <GS> so they can be checked visually."] = "Το κείμενο εμφανίζεται όπως παραλήφθηκε. Οι μη ορατοί διαχωριστές ASCII 29 εμφανίζονται ως <GS> για οπτικό έλεγχο.",
+        ["GTIN-14 (AI 01)"] = "GTIN-14 (AI 01)",
+        ["Serial number (AI 21)"] = "Σειριακός αριθμός (AI 21)",
+        ["Expiry date (AI 17)"] = "Ημερομηνία λήξης (AI 17)",
+        ["Batch / lot (AI 10)"] = "Παρτίδα / lot (AI 10)",
+        ["Raw scanner payload"] = "Αρχικά δεδομένα σαρωτή",
+        ["Pack status"] = "Κατάσταση συσκευασίας",
+        ["Medicine catalogue match"] = "Αντιστοίχιση φαρμάκου",
+        ["Not matched"] = "Δεν υπάρχει αντιστοίχιση",
+        ["Greek EOF / NTIN barcode (optional mapping)"] = "Barcode EOF / NTIN (προαιρετική αντιστοίχιση)",
+        ["13-digit 0280... EOF barcode"] = "13 ψηφία — barcode EOF 0280...",
+        ["Medicine name (auto-filled when barcode is mapped)"] = "Όνομα φαρμάκου (συμπληρώνεται αυτόματα όταν υπάρχει αντιστοίχιση)",
+        ["Quantity (one serialized pack per record)"] = "Ποσότητα (μία σειριοποιημένη συσκευασία ανά εγγραφή)",
+        ["Internal barcode / borrowing reference"] = "Εσωτερικό barcode / αναφορά δανεισμού",
+        ["Due date (yyyy-MM-dd)"] = "Ημερομηνία επιστροφής (yyyy-MM-dd)",
+        ["Value"] = "Αξία",
+        ["＋ Add borrowing"] = "＋ Προσθήκη δανεισμού",
+        ["Mark selected as returned"] = "Σήμανση επιλεγμένου ως επιστραφέντος",
+        ["Parse scan"] = "Ανάλυση σάρωσης",
+        ["＋ Add subscription"] = "＋ Προσθήκη συνδρομής",
+        ["Subscription title"] = "Τίτλος συνδρομής",
+        ["Start date (yyyy-MM-dd)"] = "Ημερομηνία έναρξης (yyyy-MM-dd)",
+        ["Next due date (yyyy-MM-dd)"] = "Επόμενη ημερομηνία πληρωμής (yyyy-MM-dd)",
+        ["Expiry date (yyyy-MM-dd, optional)"] = "Ημερομηνία λήξης (yyyy-MM-dd, προαιρετικό)",
+        ["Frequency"] = "Συχνότητα",
+        ["Monthly"] = "Μηνιαία",
+        ["＋ Record payment"] = "＋ Καταχώριση πληρωμής",
+        ["Payment amount"] = "Ποσό πληρωμής",
+        ["Method (Cash / Card / Transfer)"] = "Μέθοδος (Μετρητά / Κάρτα / Μεταφορά)",
+        ["Cash"] = "Μετρητά",
+        ["Reference"] = "Αναφορά",
+        ["Entry type (Charge / Adjustment / Reversal)"] = "Τύπος εγγραφής (Χρέωση / Προσαρμογή / Αντιστροφή)",
+        ["Amount (positive number)"] = "Ποσό (θετικός αριθμός)",
+        ["Description"] = "Περιγραφή",
+        ["＋ Add ledger entry"] = "＋ Προσθήκη εγγραφής καρτέλας",
+        ["Save or select a customer first."] = "Αποθηκεύστε ή επιλέξτε πρώτα έναν πελάτη.",
+        ["Medicine name and internal borrowing reference are required."] = "Το όνομα φαρμάκου και η εσωτερική αναφορά δανεισμού είναι υποχρεωτικά.",
+        ["Enter a valid quantity."] = "Εισαγάγετε έγκυρη ποσότητα.",
+        ["A serialized DataMatrix identifies one physical pack. Create one borrowing record per scanned pack (quantity 1)."] = "Ένα σειριοποιημένο DataMatrix αντιστοιχεί σε μία φυσική συσκευασία. Δημιουργήστε μία εγγραφή δανεισμού ανά σάρωση (ποσότητα 1).",
+        ["This internal barcode is already in use."] = "Αυτό το εσωτερικό barcode χρησιμοποιείται ήδη.",
+        ["The EOF / NTIN barcode must contain exactly 13 digits."] = "Το barcode EOF / NTIN πρέπει να περιέχει ακριβώς 13 ψηφία.",
+        ["Borrowing record added."] = "Ο δανεισμός προστέθηκε.",
+        ["GS1 pack scan and borrowing saved successfully. The raw payload and all parsed fields are stored."] = "Η σάρωση GS1 και ο δανεισμός αποθηκεύτηκαν επιτυχώς. Τα αρχικά δεδομένα και όλα τα πεδία αποθηκεύτηκαν.",
+        ["Ready for the next GS1 DataMatrix scan."] = "Έτοιμο για την επόμενη σάρωση GS1 DataMatrix.",
+        ["Select a borrowing record first."] = "Επιλέξτε πρώτα μια εγγραφή δανεισμού.",
+        ["No active borrowing matches the entered barcode."] = "Δεν υπάρχει ενεργός δανεισμός που να αντιστοιχεί στο barcode.",
+        ["Item marked as returned."] = "Το αντικείμενο σημειώθηκε ως επιστραφέν.",
+        ["Enter a title and valid next due date."] = "Εισαγάγετε τίτλο και έγκυρη επόμενη ημερομηνία πληρωμής.",
+        ["Subscription added."] = "Η συνδρομή προστέθηκε.",
+        ["Enter a payment amount greater than zero."] = "Εισαγάγετε ποσό πληρωμής μεγαλύτερο από μηδέν.",
+        ["Payment recorded and ledger updated."] = "Η πληρωμή καταχωρίστηκε και η καρτέλα ενημερώθηκε.",
+        ["Enter a positive amount and description."] = "Εισαγάγετε θετικό ποσό και περιγραφή.",
+        ["Choose Charge, Adjustment or Reversal. Payments should be recorded in the Payments tab."] = "Επιλέξτε Χρέωση, Προσαρμογή ή Αντιστροφή. Οι πληρωμές πρέπει να καταχωρίζονται στην καρτέλα Πληρωμές.",
+        ["Ledger entry added."] = "Η εγγραφή καρτέλας προστέθηκε.",
+        ["This GTIN + serial number has already been registered. This physical pack cannot be added again."] = "Αυτός ο συνδυασμός GTIN + σειριακού αριθμού έχει ήδη καταχωριστεί. Η ίδια φυσική συσκευασία δεν μπορεί να προστεθεί ξανά.",
+        ["GS1 scan is incomplete or invalid: "] = "Η σάρωση GS1 είναι ελλιπής ή μη έγκυρη: ",
+        ["No medicine catalogue match yet; you can enter the medicine name and EOF barcode manually."] = "Δεν βρέθηκε αντιστοίχιση φαρμάκου. Μπορείτε να εισαγάγετε χειροκίνητα το όνομα και το barcode EOF.",
+        ["Not matched — enter medicine manually"] = "Χωρίς αντιστοίχιση — εισαγάγετε χειροκίνητα το φάρμακο",
+        ["＋ New customer"] = "＋ Νέος πελάτης"
+    };
+
+    public string TranslateText(string text)
+    {
+        if (string.IsNullOrEmpty(text)) return text;
+        var english = text;
+        foreach (var pair in UiGreek)
+            english = english.Replace(pair.Value, pair.Key, StringComparison.Ordinal);
+        if (CurrentLanguage == AppLanguage.English) return english;
+
+        if (UiGreek.TryGetValue(english, out var exact)) return exact;
+        foreach (var pair in UiGreek.OrderByDescending(x => x.Key.Length))
+            english = english.Replace(pair.Key, pair.Value, StringComparison.Ordinal);
+        return english;
+    }
+
     private IReadOnlyDictionary<string, string> current = English;
     public AppLanguage CurrentLanguage { get; private set; } = AppLanguage.English;
     public event PropertyChangedEventHandler? PropertyChanged;
