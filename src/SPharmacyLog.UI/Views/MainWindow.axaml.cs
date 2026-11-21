@@ -3009,6 +3009,8 @@ public partial class MainWindow : Window
         if (customerTabs is null) return;
         var hasCustomer = selectedCustomerId.HasValue;
         customerTabs.IsVisible = hasCustomer || isCreatingNewCustomer;
+        if (customerDetailsTab is not null)
+            customerDetailsTab.Header = hasCustomer ? Tr.Loc.TranslateText("Details") : string.Empty;
         foreach (var tab in customerTabs.Items.OfType<TabItem>())
         {
             if (!hasCustomer)
