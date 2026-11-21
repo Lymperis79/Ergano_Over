@@ -28,6 +28,10 @@ public sealed class PharmacyDbContext : DbContext
         base.OnModelCreating(modelBuilder);
 
         modelBuilder.Entity<CalendarNote>()
+            .Property(note => note.CalendarDate)
+            .HasColumnType("date");
+
+        modelBuilder.Entity<CalendarNote>()
             .Property(note => note.Header)
             .HasMaxLength(200);
 
