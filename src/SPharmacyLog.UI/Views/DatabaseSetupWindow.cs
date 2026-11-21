@@ -1,6 +1,7 @@
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Layout;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Data.SqlClient;
 using MySqlConnector;
 using SPharmacyLog.Core;
@@ -18,7 +19,7 @@ public sealed class DatabaseSetupWindow : Window
 {
     private readonly ComboBox provider = new() { ItemsSource = Enum.GetValues<DatabaseProvider>(), SelectedIndex = 0 };
     private readonly TextBox sqlitePath = new() { Text = PharmacyDb.DefaultSqlitePath };
-    private readonly TextBox sqlHost = new() { Text = @"localhost\\SQLEXPRESS" };
+    private readonly TextBox sqlHost = new() { Text = @"localhost\SQLEXPRESS" };
     private readonly TextBox sqlDatabase = new() { Text = "SPharmacyLog" };
     private readonly CheckBox windowsAuth = new() { Content = "Use Windows authentication", IsChecked = true };
     private readonly TextBox sqlUsername = new();
@@ -103,7 +104,7 @@ public sealed class DatabaseSetupWindow : Window
         provider.SelectionChanged += (_, _) => RefreshProviderFields();
         windowsAuth.PropertyChanged += (_, args) =>
         {
-            if (args.Property.Name == nameof(CheckBox.IsChecked)) RefreshProviderFields();
+            if (args.Property?.Name == nameof(CheckBox.IsChecked)) RefreshProviderFields();
         };
         testButton.Click += async (_, _) => await TestConnectionAsync();
         continueButton.Click += async (_, _) => await SaveAndContinueAsync();
