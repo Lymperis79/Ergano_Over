@@ -114,6 +114,7 @@ public sealed class PharmacyDbContextModelSnapshot : ModelSnapshot
             entity.HasIndex(pack => new { pack.Gtin14, pack.SerialNumber }).IsUnique();
             entity.HasIndex(pack => pack.EofEan13);
             entity.HasIndex(pack => pack.MedicineId);
+            entity.HasIndex(pack => new { pack.HmvoStatus, pack.ExpiryDate });
             entity.HasOne(pack => pack.Medicine)
                 .WithMany(medicine => medicine.SerializedPacks)
                 .HasForeignKey(pack => pack.MedicineId)
