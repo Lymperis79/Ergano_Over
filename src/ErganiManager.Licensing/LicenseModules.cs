@@ -12,7 +12,7 @@ public static class LicenseModules
     public const string Overtime  = "Overtime";    // overtime page
     public const string Reports   = "Reports";     // reports and the Excel export
     public const string Logs      = "Logs";        // API log and email log
-    public const string Terminal  = "Terminal";\n    public const string SPharmacyLog = "SPharmacyLog";    // the clock-in terminal (scan window)
+    public const string Terminal  = "Terminal";    // the clock-in terminal (scan window)\n    public const string SPharmacyLog = "SPharmacyLog"; // S Pharmacy Log standalone app
 
     public const string All = "*";
 
