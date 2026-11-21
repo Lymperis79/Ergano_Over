@@ -2253,13 +2253,14 @@ public partial class MainWindow : Window
         {
             PasswordChar = '•',
             PlaceholderText = Tr.Loc.TranslateText("Password (minimum 8 characters)"),
-            MinHeight = 36
+            MinHeight = 36,
+            IsVisible = !isEdit
         };
         var role = new ComboBox
         {
             MinHeight = 36,
-            ItemsSource = Enum.GetNames<PharmacyRole>(),
-            SelectedItem = existing?.Role.ToString() ?? PharmacyRole.Limited.ToString()
+            ItemsSource = Enum.GetValues<PharmacyRole>(),
+            SelectedItem = existing?.Role ?? PharmacyRole.Limited
         };
         var canSaveCredentials = new CheckBox
         {
@@ -2308,8 +2309,8 @@ public partial class MainWindow : Window
             Spacing = 8,
             Children = { selectAll, clearAll }
         });
-        menuPicker.IsVisible = role.SelectedItem?.ToString() != PharmacyRole.Admin.ToString();
-        role.SelectionChanged += (_, _) => menuPicker.IsVisible = role.SelectedItem?.ToString() != PharmacyRole.Admin.ToString();
+        menuPicker.IsVisible = role.SelectedItem is not PharmacyRole.Admin;
+        role.SelectionChanged += (_, _) => menuPicker.IsVisible = role.SelectedItem is not PharmacyRole.Admin;
 
         if (existing?.Id == viewModel.User.Id)
             role.IsEnabled = false;
@@ -2366,7 +2367,7 @@ public partial class MainWindow : Window
                 status.Text = Tr.Loc.TranslateText("Username is required.");
                 return;
             }
-            if (!Enum.TryParse<PharmacyRole>(role.SelectedItem?.ToString(), out var selectedRole))
+            if (role.SelectedItem is not PharmacyRole selectedRole)
             {
                 status.Text = Tr.Loc.TranslateText("Select a valid role.");
                 return;
