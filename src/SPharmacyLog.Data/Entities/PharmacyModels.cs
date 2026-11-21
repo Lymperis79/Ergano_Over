@@ -27,10 +27,10 @@ public enum BorrowingStatus
 
 public enum SubscriptionStatus
 {
-    Active,
-    Paused,
-    Completed,
-    Cancelled
+    Active = 0,
+    Paused = 1, // Retained for compatibility with existing records.
+    Executed = 2,
+    Cancelled = 3 // Retained for compatibility with existing records.
 }
 
 public enum LedgerEntryType
@@ -304,6 +304,40 @@ public class Subscription
     public SubscriptionStatus Status { get; set; } = SubscriptionStatus.Active;
 
     public string? Notes { get; set; }
+
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
+    public string CreatedBy { get; set; } = "system";
+
+    public DateTime LastModifiedAt { get; set; } = DateTime.UtcNow;
+
+    public string LastModifiedBy { get; set; } = "system";
+
+    public ICollection<SubscriptionAuditEntry> AuditEntries { get; set; } = new List<SubscriptionAuditEntry>();
+}
+
+/// <summary>
+/// Immutable audit event for a subscription creation, edit or status transition.
+/// </summary>
+public class SubscriptionAuditEntry
+{
+    public int Id { get; set; }
+
+    public int SubscriptionId { get; set; }
+
+    public Subscription? Subscription { get; set; }
+
+    public string Action { get; set; } = string.Empty;
+
+    public int? PreviousStatus { get; set; }
+
+    public int NewStatus { get; set; }
+
+    public string ChangedBy { get; set; } = string.Empty;
+
+    public DateTime ChangedAt { get; set; } = DateTime.UtcNow;
+
+    public string? Details { get; set; }
 }
 
 /// <summary>
