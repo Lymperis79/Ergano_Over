@@ -202,6 +202,19 @@ public sealed class LocalizationService : ILocalizationService
         ["Medicine matched:"] = "Αντιστοιχισμένο φάρμακο:",
         ["ACTIVE"] = "ΕΝΕΡΓΗ",
         ["RETURNED"] = "ΕΠΙΣΤΡΑΦΗΚΕ",
+        [" total,"] = " συνολικά,",
+        ["Borrowed"] = "Δανεισμένο",
+        ["Returned"] = "Επιστραφέν",
+        ["Active"] = "Ενεργή",
+        ["Inactive"] = "Ανενεργή",
+        ["Charge"] = "Χρέωση",
+        ["Adjustment"] = "Προσαρμογή",
+        ["Reversal"] = "Αντιστροφή",
+        ["Payment"] = "Πληρωμή",
+        ["Card"] = "Κάρτα",
+        ["Transfer"] = "Μεταφορά",
+        ["Admin"] = "Διαχειριστής",
+        ["Pharmacist"] = "Φαρμακοποιός",
         ["Username"] = "Όνομα χρήστη",
         ["Password"] = "Κωδικός πρόσβασης",
         ["S Pharmacy Log — Database setup"] = "S Pharmacy Log — Ρύθμιση βάσης δεδομένων",
@@ -334,6 +347,8 @@ public sealed class LocalizationService : ILocalizationService
             var culture = new CultureInfo(language == AppLanguage.Greek ? "el-GR" : "en-GB");
             CultureInfo.DefaultThreadCurrentCulture = culture;
             CultureInfo.DefaultThreadCurrentUICulture = culture;
+            CultureInfo.CurrentCulture = culture;
+            CultureInfo.CurrentUICulture = culture;
         }
         catch { }
     }
