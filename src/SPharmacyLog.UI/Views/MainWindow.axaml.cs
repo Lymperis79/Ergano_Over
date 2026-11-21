@@ -105,6 +105,7 @@ public partial class MainWindow : Window
         TranslateListItems(dayRecords);
         TranslateListItems(customerList);
         TranslateListItems(borrowingList);
+        TranslateListItems(customerHistoryList);
         TranslateListItems(subscriptionList);
         TranslateListItems(paymentList);
         TranslateListItems(ledgerList);
@@ -233,6 +234,7 @@ public partial class MainWindow : Window
     private ListBox paymentList = null!;
     private ListBox ledgerList = null!;
     private List<BorrowingRecord> currentBorrowings = new();
+    private ListBox customerHistoryList = null!;
     private TextBlock borrowingSelectionDetails = null!;
     private Image borrowingBarcodeImage = null!;
     private TextBox gs1ScanInput = null!;
@@ -275,10 +277,11 @@ public partial class MainWindow : Window
         customerOverview = new TextBlock { Text = "Select a customer to see their account summary.", TextWrapping = TextWrapping.Wrap, Margin = new Thickness(12) };
         var overviewTab = new TabItem { Header = "Overview", Content = new StackPanel { Spacing = 12, Children = { customerOverview } } };
         var borrowingTab = BuildBorrowingsTab();
+        var historyTab = BuildCustomerHistoryTab();
         var subscriptionsTab = BuildSubscriptionsTab();
         var paymentsTab = BuildPaymentsTab();
         var ledgerTab = BuildLedgerTab();
-        customerTabs = new TabControl { Items = { overviewTab, details, borrowingTab, subscriptionsTab, paymentsTab, ledgerTab }, Margin = new Thickness(12) };
+        customerTabs = new TabControl { Items = { overviewTab, details, borrowingTab, historyTab, subscriptionsTab, paymentsTab, ledgerTab }, Margin = new Thickness(12) };
         // Use a Grid rather than a StackPanel so the TabControl receives a finite
         // height. Otherwise its tab content (including the Borrowings ScrollViewer)
         // is measured with infinite height and cannot scroll vertically.
@@ -502,8 +505,17 @@ public partial class MainWindow : Window
             form.Children.Add(medicineNameGroup);
         }
         AddField(form, "Quantity", "Quantity", (existing?.Quantity ?? 1).ToString());
-        AddField(form, "Due date (yyyy-MM-dd)", "DueDate", existing?.DueDate?.ToString("yyyy-MM-dd"));
-        AddField(form, "Value", "Value", existing?.Value?.ToString(System.Globalization.CultureInfo.InvariantCulture));
+        var scanDateText = new TextBox
+        {
+            Text = existing is null ? "Will be recorded when the borrowing is saved." :
+                (existing.SerializedPackScan?.ScannedAt ?? existing.BorrowedAt).ToLocalTime().ToString("dd/MM/yyyy HH:mm:ss"),
+            IsReadOnly = true,
+            MinHeight = 34
+        };
+        var scanDateGroup = new StackPanel { Spacing = 4, Margin = new Thickness(0, 3) };
+        scanDateGroup.Children.Add(new TextBlock { Text = "Scan / borrowing date", Foreground = Brushes.LightGray, FontSize = 12 });
+        scanDateGroup.Children.Add(scanDateText);
+        form.Children.Add(scanDateGroup);
         AddField(form, "Notes", "Notes", existing?.Notes);
         if (isEdit)
         {
@@ -569,8 +581,6 @@ public partial class MainWindow : Window
                 if (quantity != 1)
                 { status.Text = "A serialized DataMatrix identifies one physical pack. Quantity must be 1."; return; }
             }
-            DateTime? due = DateTime.TryParse(fields["DueDate"].Text, out var dueDate) ? dueDate : null;
-            decimal? value = decimal.TryParse(fields["Value"].Text, System.Globalization.NumberStyles.Number, System.Globalization.CultureInfo.InvariantCulture, out var amount) ? amount : null;
             await using var db = new PharmacyDbContext(PharmacyDb.Options());
             if (isEdit)
             {
@@ -578,9 +588,7 @@ public partial class MainWindow : Window
                 if (record is null) { status.Text = "The borrowing record could not be found."; return; }
                 record.MedicineName = name;
                 record.Quantity = quantity;
-                                record.DueDate = due;
-                record.Value = value;
-                record.Notes = fields["Notes"].Text?.Trim();
+                                                record.Notes = fields["Notes"].Text?.Trim();
             }
             else
             {
@@ -624,7 +632,7 @@ public partial class MainWindow : Window
                 {
                     CustomerId = selectedCustomerId.Value, MedicineName = name, OriginalBarcode = parsedPack is null ? null : correctedGtin,
                     SerializedPackScan = serializedPack, Quantity = quantity, InternalBarcode = "BOR-" + Guid.NewGuid().ToString("N"),
-                    DueDate = due, Value = value, Notes = fields["Notes"].Text?.Trim()
+                    BorrowedAt = DateTime.Now, Notes = fields["Notes"].Text?.Trim()
                 });
             }
             await db.SaveChangesAsync();
@@ -811,6 +819,26 @@ public partial class MainWindow : Window
         if (gs1ParsedFields.TryGetValue("MedicineMatch", out var match)) match.Text = Tr.Loc.TranslateText("Not matched");
     }
 
+    private TabItem BuildCustomerHistoryTab()
+    {
+        customerHistoryList = new ListBox { MinHeight = 240 };
+        return new TabItem
+        {
+            Header = "History",
+            Content = new StackPanel
+            {
+                Spacing = 10,
+                Margin = new Thickness(8),
+                Children =
+                {
+                    new TextBlock { Text = "CUSTOMER MEDICINE & PRESCRIPTION HISTORY", FontSize = 18, FontWeight = FontWeight.Bold },
+                    new TextBlock { Text = "All borrowing records (including returned items) and prescriptions, ordered by date.", TextWrapping = TextWrapping.Wrap, Foreground = Brushes.LightGray },
+                    customerHistoryList
+                }
+            }
+        };
+    }
+
     private TabItem BuildSubscriptionsTab()
     {
         subscriptionList = new ListBox { MinHeight = 180 };
@@ -883,20 +911,31 @@ public partial class MainWindow : Window
         await using var db = new PharmacyDbContext(PharmacyDb.Options());
         var customer = await db.Customers.AsNoTracking().FirstOrDefaultAsync(c => c.Id == id);
         if (customer is null) return;
-        var borrowings = await db.Borrowings.AsNoTracking().Include(x => x.SerializedPackScan).Where(x => x.CustomerId == id).OrderByDescending(x => x.BorrowedAt).ToListAsync();
+        var allBorrowings = await db.Borrowings.AsNoTracking().Include(x => x.SerializedPackScan).Where(x => x.CustomerId == id).OrderByDescending(x => x.BorrowedAt).ToListAsync();
+        var borrowings = allBorrowings.Where(x => x.Status == BorrowingStatus.Borrowed).ToList();
+        var prescriptions = await db.Prescriptions.AsNoTracking().Where(x => x.CustomerId == id).OrderByDescending(x => x.CreatedAt).ToListAsync();
         var subscriptions = await db.Subscriptions.AsNoTracking().Where(x => x.CustomerId == id).OrderByDescending(x => x.StartDate).ToListAsync();
         var payments = await db.Payments.AsNoTracking().Where(x => x.CustomerId == id).OrderByDescending(x => x.PaidAt).ToListAsync();
         var ledger = await db.LedgerEntries.AsNoTracking().Where(x => x.CustomerId == id).OrderByDescending(x => x.EntryDate).ToListAsync();
         var charges = ledger.Where(x => x.Type == LedgerEntryType.Charge || x.Type == LedgerEntryType.Adjustment).Sum(x => x.Amount);
         var credits = ledger.Where(x => x.Type == LedgerEntryType.Payment || x.Type == LedgerEntryType.Reversal).Sum(x => x.Amount);
         var balance = charges - credits;
-        customerOverview.Text = $"{customer.CustomerNumber}  |  {customer.FullName}\n{customer.Address}, {customer.City} {customer.Postcode}\nTelephone: {customer.Telephone ?? customer.Phone}  |  Mobile: {customer.Mobile}\nEmail: {customer.Email}\n\nBORROWINGS: {borrowings.Count} total, {borrowings.Count(x => x.Status == BorrowingStatus.Borrowed)} currently borrowed\nSUBSCRIPTIONS: {subscriptions.Count(x => x.Status == SubscriptionStatus.Active)} active of {subscriptions.Count}\nPAYMENTS: {payments.Count} recorded  |  Total paid: {payments.Sum(x => x.Amount):C}\nACCOUNT BALANCE: {balance:C}\n\nRecent activity:\n{string.Join("\n", ledger.Take(5).Select(x => $"{x.EntryDate:dd/MM/yyyy}  {x.Type}  {x.Amount:C}  {x.Description}"))}";
+        customerOverview.Text = $"{customer.CustomerNumber}  |  {customer.FullName}\n{customer.Address}, {customer.City} {customer.Postcode}\nTelephone: {customer.Telephone ?? customer.Phone}  |  Mobile: {customer.Mobile}\nEmail: {customer.Email}\n\nBORROWINGS: {allBorrowings.Count} total, {borrowings.Count} currently borrowed\nSUBSCRIPTIONS: {subscriptions.Count(x => x.Status == SubscriptionStatus.Active)} active of {subscriptions.Count}\nPAYMENTS: {payments.Count} recorded  |  Total paid: {payments.Sum(x => x.Amount):C}\nACCOUNT BALANCE: {balance:C}\n\nRecent activity:\n{string.Join("\n", ledger.Take(5).Select(x => $"{x.EntryDate:dd/MM/yyyy}  {x.Type}  {x.Amount:C}  {x.Description}"))}";
         currentBorrowings = borrowings;
         borrowingList.ItemsSource = borrowings.Select(x =>
             x.SerializedPackScan is null
-                ? $"{x.BorrowedAt:dd/MM/yyyy} | {x.MedicineName} | Qty {x.Quantity} | {x.Status} | Due {x.DueDate:dd/MM/yyyy} | {x.InternalBarcode}"
-                : $"{x.BorrowedAt:dd/MM/yyyy} | {x.MedicineName} | SN {x.SerializedPackScan.SerialNumber} | GTIN {x.SerializedPackScan.Gtin14} | Exp {x.SerializedPackScan.ExpiryDate:dd/MM/yyyy} | Lot {x.SerializedPackScan.BatchLot} | {x.Status}")
+                ? $"{x.BorrowedAt:dd/MM/yyyy HH:mm} | {x.MedicineName} | Qty {x.Quantity}"
+                : $"{x.SerializedPackScan.ScannedAt:dd/MM/yyyy HH:mm} | {x.MedicineName} | SN {x.SerializedPackScan.SerialNumber} | GTIN {x.SerializedPackScan.Gtin14} | Exp {x.SerializedPackScan.ExpiryDate:dd/MM/yyyy} | Lot {x.SerializedPackScan.BatchLot}")
             .ToList();
+        customerHistoryList.ItemsSource = allBorrowings.Select(x => new
+            {
+                Date = x.SerializedPackScan?.ScannedAt ?? x.BorrowedAt,
+                Text = $"{x.SerializedPackScan?.ScannedAt ?? x.BorrowedAt:dd/MM/yyyy HH:mm} | BORROWING | {x.MedicineName} | Qty {x.Quantity} | {x.Status}"
+            }).Concat(prescriptions.Select(x => new
+            {
+                Date = x.CreatedAt,
+                Text = $"{x.CreatedAt:dd/MM/yyyy HH:mm} | PRESCRIPTION | {x.MedicineName} | No. {x.PrescriptionNumber ?? "-"} | {x.Status} | Valid until {x.ExpiryDate:dd/MM/yyyy}"
+            })).OrderByDescending(x => x.Date).Select(x => x.Text).ToList();
         subscriptionList.ItemsSource = subscriptions.Select(x => $"{x.Title} | {x.Status} | Next: {x.NextDueDate:dd/MM/yyyy} | Expires: {x.ExpiryDate:dd/MM/yyyy} | {x.Frequency}").ToList();
         paymentList.ItemsSource = payments.Select(x => $"{x.PaidAt:dd/MM/yyyy} | {x.Amount:C} | {x.Method} | {x.Reference}").ToList();
         ledgerList.ItemsSource = ledger.Select(x => $"{x.EntryDate:dd/MM/yyyy} | {x.Type} | {x.Amount:C} | {x.Description}").ToList();
