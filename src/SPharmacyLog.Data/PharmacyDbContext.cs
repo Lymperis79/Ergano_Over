@@ -43,6 +43,18 @@ public sealed class PharmacyDbContext : DbContext
             .HasIndex(entry => new { entry.CustomerId, entry.EntryDate });
 
         modelBuilder.Entity<Prescription>()
+            .HasIndex(prescription => prescription.CustomerId);
+
+        modelBuilder.Entity<BorrowingRecord>()
+            .HasIndex(borrowing => borrowing.CustomerId);
+
+        modelBuilder.Entity<Subscription>()
+            .HasIndex(subscription => subscription.CustomerId);
+
+        modelBuilder.Entity<Payment>()
+            .HasIndex(payment => payment.CustomerId);
+
+        modelBuilder.Entity<Prescription>()
             .HasOne(prescription => prescription.Customer)
             .WithMany(customer => customer.Prescriptions)
             .HasForeignKey(prescription => prescription.CustomerId);
