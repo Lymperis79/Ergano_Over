@@ -563,7 +563,7 @@ public partial class MainWindow : Window
         var paymentsTab = BuildPaymentsTab();
         var ledgerTab = BuildLedgerTab();
         borrowingTab.IsVisible = CanAccessMenu(MenuBorrowing);
-        historyTab.IsVisible = CanAccessMenu(MenuBorrowing) || CanAccessMenu(MenuSubscriptions);
+        historyTab.IsVisible = CanAccessMenu(MenuBorrowing);
         subscriptionsTab.IsVisible = CanAccessMenu(MenuSubscriptions);
         paymentsTab.IsVisible = CanAccessMenu(MenuPayments);
         ledgerTab.IsVisible = CanAccessMenu(MenuPayments);
