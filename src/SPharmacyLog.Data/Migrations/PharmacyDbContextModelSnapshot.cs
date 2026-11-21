@@ -198,7 +198,7 @@ public sealed class PharmacyDbContextModelSnapshot : ModelSnapshot
             entity.ToTable("CalendarNotes");
             entity.HasKey(note => note.Id);
             entity.Property(note => note.Id).ValueGeneratedOnAdd();
-            entity.Property(note => note.CalendarDate);
+            entity.Property(note => note.CalendarDate).HasColumnType("date");
             entity.Property(note => note.Header).IsRequired().HasMaxLength(200);
             entity.Property(note => note.Note).IsRequired();
             entity.Property(note => note.CreatedBy).IsRequired().HasMaxLength(255);
