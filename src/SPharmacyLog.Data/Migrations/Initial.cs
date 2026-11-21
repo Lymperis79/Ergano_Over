@@ -16,7 +16,7 @@ public sealed partial class Initial : Migration
             return;
         }
 
-        if (ActiveProvider.Contains("SqlServer", StringComparison.OrdinalIgnoreCase))
+        if ((ActiveProvider ?? string.Empty).Contains("SqlServer", StringComparison.OrdinalIgnoreCase))
         {
             migrationBuilder.Sql("""
                 CREATE TABLE [Users] (
@@ -125,7 +125,7 @@ public sealed partial class Initial : Migration
             return;
         }
 
-        if (ActiveProvider.Contains("MySql", StringComparison.OrdinalIgnoreCase))
+        if ((ActiveProvider ?? string.Empty).Contains("MySql", StringComparison.OrdinalIgnoreCase))
         {
             migrationBuilder.Sql("""
                 CREATE TABLE Users (
@@ -347,7 +347,7 @@ public sealed partial class Initial : Migration
 
     protected override void Down(MigrationBuilder migrationBuilder)
     {
-        if (ActiveProvider.Contains("SqlServer", StringComparison.OrdinalIgnoreCase))
+        if ((ActiveProvider ?? string.Empty).Contains("SqlServer", StringComparison.OrdinalIgnoreCase))
         {
             migrationBuilder.Sql("""
                 DROP TABLE [LedgerEntries];
