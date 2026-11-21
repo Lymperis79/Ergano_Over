@@ -146,7 +146,7 @@ public sealed class LocalizationService : ILocalizationService
         ["Note"] = "Σημείωση",
         ["Both the header and note are required."] = "Ο τίτλος και το κείμενο της σημείωσης είναι υποχρεωτικά.",
         ["This note can no longer be edited by this user."] = "Αυτή η σημείωση δεν μπορεί πλέον να τροποποιηθεί από αυτόν τον χρήστη.",
-        ["Only the creator can edit this note."] = "Μόνο ο δημιουργός μπορεί να επεξεργαστεί αυτή τη σημείωση.";
+        ["Only the creator can edit this note."] = "Μόνο ο δημιουργός μπορεί να επεξεργαστεί αυτή τη σημείωση.",
         ["Show inactive customers"] = "Εμφάνιση ανενεργών πελατών",
         ["Customer is active"] = "Ο πελάτης είναι ενεργός",
         ["Company identity"] = "Ταυτότητα εταιρείας",
