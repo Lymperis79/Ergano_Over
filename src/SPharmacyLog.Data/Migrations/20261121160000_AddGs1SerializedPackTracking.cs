@@ -30,6 +30,17 @@ public sealed class AddGs1SerializedPackTracking : Migration
                 );
                 CREATE UNIQUE INDEX IX_MedicineBarcodes_BarcodeValue ON MedicineBarcodes(BarcodeValue);
                 CREATE INDEX IX_MedicineBarcodes_MedicineId ON MedicineBarcodes(MedicineId);
+                INSERT INTO MedicineBarcodes (MedicineId, BarcodeValue, BarcodeType)
+                SELECT MIN(Id), Barcode, 'LEGACY'
+                FROM Medicines
+                WHERE Barcode IS NOT NULL AND TRIM(Barcode) <> ''
+                GROUP BY Barcode
+                HAVING COUNT(*) = 1;
+
+                INSERT INTO MedicineBarcodes (MedicineId, BarcodeValue, BarcodeType)
+                SELECT MIN(Id), Barcode, 'LEGACY' FROM Medicines
+                WHERE Barcode IS NOT NULL AND TRIM(Barcode) <> ''
+                GROUP BY Barcode HAVING COUNT(*) = 1;
 
                 CREATE TABLE SerializedPackScans (
                     Id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
@@ -72,6 +83,10 @@ public sealed class AddGs1SerializedPackTracking : Migration
                 );
                 CREATE UNIQUE INDEX [IX_MedicineBarcodes_BarcodeValue] ON [MedicineBarcodes]([BarcodeValue]);
                 CREATE INDEX [IX_MedicineBarcodes_MedicineId] ON [MedicineBarcodes]([MedicineId]);
+                INSERT INTO [MedicineBarcodes] ([MedicineId], [BarcodeValue], [BarcodeType])
+                SELECT MIN([Id]), [Barcode], 'LEGACY' FROM [Medicines]
+                WHERE [Barcode] IS NOT NULL AND LTRIM(RTRIM([Barcode])) <> ''
+                GROUP BY [Barcode] HAVING COUNT(*) = 1;
 
                 CREATE TABLE [SerializedPackScans] (
                     [Id] int IDENTITY(1,1) NOT NULL CONSTRAINT [PK_SerializedPackScans] PRIMARY KEY,
