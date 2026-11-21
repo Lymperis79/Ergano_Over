@@ -531,7 +531,8 @@ public partial class MainWindow : Window
             DateTime? due = DateTime.TryParse(fields["DueDate"].Text, out var dueDate) ? dueDate : null;
             decimal? value = decimal.TryParse(fields["Value"].Text, System.Globalization.NumberStyles.Number, System.Globalization.CultureInfo.InvariantCulture, out var amount) ? amount : null;
             await using var db = new PharmacyDbContext(PharmacyDb.Options());
-            var duplicate = await db.Borrowings.AnyAsync(x => x.InternalBarcode == internalBarcode && x.Id != (existing?.Id ?? 0));
+            var existingBorrowingId = existing is null ? 0 : existing.Id;
+            var duplicate = await db.Borrowings.AnyAsync(x => x.InternalBarcode == internalBarcode && x.Id != existingBorrowingId);
             if (duplicate) { status.Text = "This internal barcode is already in use."; return; }
 
             if (isEdit)
