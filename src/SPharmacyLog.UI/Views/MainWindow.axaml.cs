@@ -367,7 +367,7 @@ public partial class MainWindow : Window
         AddGs1Detail(detailsGrid, "Raw scanner payload", "RawPayload", 2, 0, 2);
         AddGs1Detail(detailsGrid, "Pack status", "HmvoStatus", 3, 0);
         AddGs1Detail(detailsGrid, "Medicine catalogue match", "MedicineMatch", 3, 1);
-        gs1ParsedFields["HmvoStatus"].Text = SerializedPackStatuses.Active;
+        gs1ParsedFields["HmvoStatus"].Text = Tr.Loc.TranslateText(SerializedPackStatuses.Active);
         gs1ParsedFields["MedicineMatch"].Text = Tr.Loc.TranslateText("Not matched");
         var eofPanel = new StackPanel { Spacing = 3, Margin = new Thickness(5) };
         eofPanel.Children.Add(new TextBlock { Text = "Greek EOF / NTIN barcode (optional mapping)" });
@@ -531,7 +531,7 @@ public partial class MainWindow : Window
     private void ClearGs1ParsedFields()
     {
         foreach (var field in gs1ParsedFields.Values) field.Text = string.Empty;
-        if (gs1ParsedFields.TryGetValue("HmvoStatus", out var status)) status.Text = SerializedPackStatuses.Active;
+        if (gs1ParsedFields.TryGetValue("HmvoStatus", out var status)) status.Text = Tr.Loc.TranslateText(SerializedPackStatuses.Active);
         if (gs1ParsedFields.TryGetValue("MedicineMatch", out var match)) match.Text = Tr.Loc.TranslateText("Not matched");
     }
 
@@ -741,7 +741,7 @@ public partial class MainWindow : Window
         if (gs1EofEan13Input is not null) gs1EofEan13Input.Text = string.Empty;
         currentParsedPack = null;
         ClearGs1ParsedFields();
-        gs1ScanStatus.Text = "Ready for the next GS1 DataMatrix scan.";
+        gs1ScanStatus.Text = Tr.Loc.TranslateText("Ready for the next GS1 DataMatrix scan.");
         gs1ScanStatus.Foreground = Brushes.Gray;
         await RefreshCustomerWorkspaceAsync();
     }
