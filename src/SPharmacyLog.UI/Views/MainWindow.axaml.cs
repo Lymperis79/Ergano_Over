@@ -547,6 +547,32 @@ public partial class MainWindow : Window
                 ?? await db.Medicines.FirstOrDefaultAsync(x => x.Barcode == parsedPack.Gtin14 ||
                     (!string.IsNullOrWhiteSpace(eofEan13) && x.Barcode == eofEan13));
 
+            if (matchedMedicine is not null)
+            {
+                // Persist both identifiers against the same medicine so future
+                // scans of either the manufacturer GTIN or Greek EOF barcode resolve.
+                var gtinMapping = await db.MedicineBarcodes.FirstOrDefaultAsync(x => x.BarcodeValue == parsedPack.Gtin14);
+                if (gtinMapping is not null && gtinMapping.MedicineId != matchedMedicine.Id)
+                {
+                    SetActivityStatus("The scanned GTIN is already mapped to a different medicine. Resolve the catalogue barcode conflict first.");
+                    return;
+                }
+                if (gtinMapping is null)
+                    db.MedicineBarcodes.Add(new MedicineBarcode { MedicineId = matchedMedicine.Id, BarcodeValue = parsedPack.Gtin14, BarcodeType = "GTIN14" });
+
+                if (!string.IsNullOrWhiteSpace(eofEan13))
+                {
+                    var eofMapping = await db.MedicineBarcodes.FirstOrDefaultAsync(x => x.BarcodeValue == eofEan13);
+                    if (eofMapping is not null && eofMapping.MedicineId != matchedMedicine.Id)
+                    {
+                        SetActivityStatus("The EOF / NTIN barcode is already mapped to a different medicine. Resolve the catalogue barcode conflict first.");
+                        return;
+                    }
+                    if (eofMapping is null)
+                        db.MedicineBarcodes.Add(new MedicineBarcode { MedicineId = matchedMedicine.Id, BarcodeValue = eofEan13, BarcodeType = "EOF_EAN13" });
+                }
+            }
+
             serializedPack = new SerializedPackScan
             {
                 RawGs1String = rawGs1,
