@@ -16,7 +16,7 @@ public sealed class CustomerDatabaseSyncWindow : Window
     private readonly TextBox username = new() { PlaceholderText = "SQL username" };
     private readonly TextBox password = new() { PlaceholderText = "SQL password", PasswordChar = '●' };
     private readonly ComboBox table = new() { MinWidth = 300 };
-    private readonly ComboBox filterColumn = new() { MinWidth = 190 };
+    private readonly ComboBox filterColumn = new() { MinWidth = 190, PlaceholderText = "Optional filter column" };
     private readonly TextBox filterValue = new() { Text = "ΠΕΛ", Width = 150 };
     private readonly TextBlock status = new() { TextWrapping = TextWrapping.Wrap };
     private readonly StackPanel mappingsPanel = new() { Spacing = 7 };
@@ -245,8 +245,14 @@ public sealed class CustomerDatabaseSyncWindow : Window
         filterColumn.ItemsSource = availableColumns;
         if (availableColumns.Contains("KPP_KATHGOR", StringComparer.OrdinalIgnoreCase))
             filterColumn.SelectedItem = availableColumns.First(c => c.Equals("KPP_KATHGOR", StringComparison.OrdinalIgnoreCase));
-        else if (availableColumns.Count > 0 && filterColumn.SelectedItem is null)
-            filterColumn.SelectedIndex = 0;
+        else if (string.IsNullOrWhiteSpace(savedFilterColumn) ||
+                 !availableColumns.Contains(savedFilterColumn, StringComparer.OrdinalIgnoreCase))
+        {
+            filterColumn.SelectedIndex = -1;
+            // Never silently apply the ILIDA category value to an unrelated column.
+            if (string.Equals(filterValue.Text, "ΠΕΛ", StringComparison.Ordinal))
+                filterValue.Text = string.Empty;
+        }
     }
 
     private async Task LoadColumnsAsync(string selectedTable)
