@@ -155,8 +155,8 @@ public sealed class DatabaseSetupWindow : Window
                 case CheckBox checkBox when checkBox.Content is string checkText:
                     checkBox.Content = Tr.Loc.TranslateText(checkText);
                     break;
-                case TextBox textBox when !string.IsNullOrEmpty(textBox.Watermark):
-                    textBox.Watermark = Tr.Loc.TranslateText(textBox.Watermark);
+                case TextBox textBox when !string.IsNullOrEmpty(textBox.PlaceholderText):
+                    textBox.PlaceholderText = Tr.Loc.TranslateText(textBox.PlaceholderText);
                     break;
             }
         }
