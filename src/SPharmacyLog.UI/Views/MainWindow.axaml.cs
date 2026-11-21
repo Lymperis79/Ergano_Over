@@ -788,12 +788,16 @@ public partial class MainWindow : Window
         }
         dayRecords.ItemsSource = dayItems;
 
-        var username = viewModel.User.Username;
-        var notes = await db.CalendarNotes.AsNoTracking()
-            .Where(note => note.CalendarDate >= dayStart && note.CalendarDate < dayEnd &&
-                (note.IsShared || note.CreatedBy == username))
+        var username = viewModel.User.Username?.Trim() ?? string.Empty;
+        // Load notes for the selected day first, then apply ownership filtering in memory.
+        // This avoids provider-specific case-sensitivity differences in username comparisons.
+        var notesForDay = await db.CalendarNotes.AsNoTracking()
+            .Where(note => note.CalendarDate >= dayStart && note.CalendarDate < dayEnd)
             .OrderBy(note => note.CreatedAt)
             .ToListAsync();
+        var notes = notesForDay
+            .Where(note => note.IsShared || string.Equals(note.CreatedBy?.Trim(), username, StringComparison.OrdinalIgnoreCase))
+            .ToList();
         calendarNotesPanel.Children.Clear();
         if (notes.Count > 0)
         {
@@ -805,7 +809,7 @@ public partial class MainWindow : Window
             });
             foreach (var note in notes)
             {
-                var isOwner = string.Equals(note.CreatedBy, viewModel.User.Username, StringComparison.Ordinal);
+                var isOwner = string.Equals(note.CreatedBy?.Trim(), viewModel.User.Username?.Trim(), StringComparison.OrdinalIgnoreCase);
                 var details = new StackPanel
                 {
                     Spacing = 3,
@@ -887,7 +891,7 @@ public partial class MainWindow : Window
                         {
                             await using var deleteDb = new PharmacyDbContext(PharmacyDb.Options());
                             var current = await deleteDb.CalendarNotes.FirstOrDefaultAsync(item => item.Id == note.Id);
-                            if (current is not null && current.CreatedBy == viewModel.User.Username)
+                            if (current is not null && string.Equals(current.CreatedBy?.Trim(), viewModel.User.Username?.Trim(), StringComparison.OrdinalIgnoreCase))
                             {
                                 deleteDb.CalendarNotes.Remove(current);
                                 await deleteDb.SaveChangesAsync();
@@ -917,7 +921,7 @@ public partial class MainWindow : Window
     private async Task OpenCalendarNoteEditorAsync(DateTime calendarDate, CalendarNote? existing = null)
     {
         if (!showingExpiryCalendar) return;
-        if (existing is not null && existing.CreatedBy != viewModel.User.Username)
+        if (existing is not null && !string.Equals(existing.CreatedBy?.Trim(), viewModel.User.Username?.Trim(), StringComparison.OrdinalIgnoreCase))
             return;
 
         var header = new TextBox
@@ -993,7 +997,7 @@ public partial class MainWindow : Window
             else
             {
                 record = await db.CalendarNotes.FirstOrDefaultAsync(note => note.Id == existing.Id);
-                if (record is null || record.CreatedBy != viewModel.User.Username)
+                if (record is null || !string.Equals(record.CreatedBy?.Trim(), viewModel.User.Username?.Trim(), StringComparison.OrdinalIgnoreCase))
                 {
                     status.Text = Tr.Loc.TranslateText("This note can no longer be edited by this user.");
                     return;
