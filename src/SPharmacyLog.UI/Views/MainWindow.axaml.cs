@@ -64,6 +64,7 @@ public partial class MainWindow : Window
         UserLabel.Text = viewModel.UserDisplay;
         Tr.Loc.LanguageChanged += (_, _) =>
         {
+            BuildNavigation();
             ApplyTranslations();
             if (showingExpiryCalendar) _ = LoadSelectedDayAsync();
         };
@@ -1610,8 +1611,19 @@ public partial class MainWindow : Window
                 auditList
             }
         };
-        var openCustomer = new Button { Content = Tr.Loc.TranslateText("Open customer"), MinWidth = 135 };
-        var editSubscription = new Button { Content = Tr.Loc.TranslateText("Edit subscription"), Classes = { "accent" }, MinWidth = 150 };
+        var openCustomer = new Button
+        {
+            Content = Tr.Loc.TranslateText("Open customer"),
+            MinWidth = 135,
+            IsVisible = CanAccessMenu(MenuCustomers)
+        };
+        var editSubscription = new Button
+        {
+            Content = Tr.Loc.TranslateText("Edit subscription"),
+            Classes = { "accent" },
+            MinWidth = 150,
+            IsVisible = CanAccessMenu(MenuSubscriptions)
+        };
         var saveStatus = new Button { Content = Tr.Loc.TranslateText("Save status"), Classes = { "accent" }, MinWidth = 110 };
         var close = new Button { Content = Tr.Loc.TranslateText("Close"), MinWidth = 90 };
         var actions = new StackPanel
@@ -2196,7 +2208,7 @@ public partial class MainWindow : Window
             info.Children.Add(new TextBlock { Text = user.Username, FontWeight = FontWeight.SemiBold, FontSize = 14 });
             info.Children.Add(new TextBlock
             {
-                Text = $"{user.Role} · {(user.IsActive ? Tr.Loc.TranslateText("Active") : Tr.Loc.TranslateText("Inactive"))}",
+                Text = $"{Tr.Loc.TranslateText(user.Role.ToString())} · {(user.IsActive ? Tr.Loc.TranslateText("Active") : Tr.Loc.TranslateText("Inactive"))}",
                 Foreground = user.IsActive ? Brushes.LightGreen : Brushes.Orange,
                 FontSize = 12
             });
