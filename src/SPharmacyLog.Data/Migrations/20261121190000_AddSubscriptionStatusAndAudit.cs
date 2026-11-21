@@ -25,6 +25,8 @@ public sealed class AddSubscriptionStatusAndAudit : Migration
                 ALTER TABLE Subscriptions ADD COLUMN LastModifiedBy TEXT NOT NULL DEFAULT 'system';
                 UPDATE Subscriptions SET CreatedAt = CURRENT_TIMESTAMP, LastModifiedAt = CURRENT_TIMESTAMP;
 
+                UPDATE Subscriptions SET Status = CASE WHEN Status = 0 THEN 0 ELSE 1 END;
+                UPDATE Subscriptions SET Status = CASE WHEN Status = 0 THEN 0 ELSE 1 END;
                 CREATE INDEX IX_Subscriptions_Status ON Subscriptions(Status);
 
                 CREATE TABLE SubscriptionAuditEntries (
@@ -41,6 +43,11 @@ public sealed class AddSubscriptionStatusAndAudit : Migration
                 );
                 CREATE INDEX IX_SubscriptionAuditEntries_SubscriptionId_ChangedAt
                     ON SubscriptionAuditEntries(SubscriptionId, ChangedAt);
+                INSERT INTO SubscriptionAuditEntries
+                    (SubscriptionId, Action, PreviousStatus, NewStatus, ChangedBy, ChangedAt, Details)
+                SELECT Id, 'Imported existing record', NULL, Status, CreatedBy, CreatedAt,
+                    'Original creator unavailable; audit metadata initialized during migration.'
+                FROM Subscriptions;
                 """);
             return;
         }
@@ -54,6 +61,7 @@ public sealed class AddSubscriptionStatusAndAudit : Migration
                     [LastModifiedAt] datetime2 NOT NULL CONSTRAINT [DF_Subscriptions_LastModifiedAt] DEFAULT (SYSUTCDATETIME()),
                     [LastModifiedBy] nvarchar(max) NOT NULL CONSTRAINT [DF_Subscriptions_LastModifiedBy] DEFAULT (N'system');
 
+                UPDATE [Subscriptions] SET [Status] = CASE WHEN [Status] = 0 THEN 0 ELSE 1 END;
                 CREATE INDEX [IX_Subscriptions_Status] ON [Subscriptions]([Status]);
 
                 CREATE TABLE [SubscriptionAuditEntries] (
@@ -70,6 +78,11 @@ public sealed class AddSubscriptionStatusAndAudit : Migration
                 );
                 CREATE INDEX [IX_SubscriptionAuditEntries_SubscriptionId_ChangedAt]
                     ON [SubscriptionAuditEntries]([SubscriptionId], [ChangedAt]);
+                INSERT INTO [SubscriptionAuditEntries]
+                    ([SubscriptionId], [Action], [PreviousStatus], [NewStatus], [ChangedBy], [ChangedAt], [Details])
+                SELECT [Id], N'Imported existing record', NULL, [Status], [CreatedBy], [CreatedAt],
+                    N'Original creator unavailable; audit metadata initialized during migration.'
+                FROM [Subscriptions];
                 """);
             return;
         }
@@ -98,6 +111,11 @@ public sealed class AddSubscriptionStatusAndAudit : Migration
                     CONSTRAINT FK_SubscriptionAuditEntries_Subscriptions_SubscriptionId
                         FOREIGN KEY (SubscriptionId) REFERENCES Subscriptions(Id) ON DELETE CASCADE
                 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+                INSERT INTO SubscriptionAuditEntries
+                    (SubscriptionId, Action, PreviousStatus, NewStatus, ChangedBy, ChangedAt, Details)
+                SELECT Id, 'Imported existing record', NULL, Status, CreatedBy, CreatedAt,
+                    'Original creator unavailable; audit metadata initialized during migration.'
+                FROM Subscriptions;
                 """);
             return;
         }
