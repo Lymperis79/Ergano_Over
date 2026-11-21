@@ -157,7 +157,17 @@ public partial class MainWindow : Window
                 MenuPayments => () => ShowPlaceholder(Tr.Loc[item.LabelKey]),
                 _ => () => ShowPlaceholder(Tr.Loc[item.LabelKey])
             };
-            AddNavigationButton(item.LabelKey, action);
+            var icon = item.Key switch
+            {
+                MenuDashboard => "⌂",
+                MenuCalendar => "▦",
+                MenuCustomers => "♙",
+                MenuBorrowing => "▣",
+                MenuSubscriptions => "◷",
+                MenuPayments => "€",
+                _ => "•"
+            };
+            AddNavigationButton(item.LabelKey, action, icon);
         }
 
         if (CanAccessMenu(MenuReports))
@@ -170,7 +180,7 @@ public partial class MainWindow : Window
                 Foreground = new SolidColorBrush(Color.Parse("#8293A8")),
                 Margin = new Thickness(4, 12, 0, 0)
             });
-            AddNavigationButton("Navigation.Reports", ShowReports);
+            AddNavigationButton("Navigation.Reports", ShowReports, "▤");
         }
 
         if (viewModel.User.Role == PharmacyRole.Admin)
@@ -183,15 +193,15 @@ public partial class MainWindow : Window
                 Foreground = new SolidColorBrush(Color.Parse("#8293A8")),
                 Margin = new Thickness(4, 12, 0, 0)
             });
-            AddNavigationButton("Navigation.Users", () => _ = ShowUsersAsync());
-            AddNavigationButton("Company settings", OpenCompanySettings);
-            AddNavigationButton("Weather settings", OpenWeatherSettings);
-            AddNavigationButton("Navigation.ApplicationSettings", OpenApplicationSettings);
-            AddNavigationButton("Database synchronization", OpenCustomerDatabaseSync);
+            AddNavigationButton("Navigation.Users", () => _ = ShowUsersAsync(), "♟");
+            AddNavigationButton("Company settings", OpenCompanySettings, "▣");
+            AddNavigationButton("Weather settings", OpenWeatherSettings, "☼");
+            AddNavigationButton("Navigation.ApplicationSettings", OpenApplicationSettings, "⚙");
+            AddNavigationButton("Database synchronization", OpenCustomerDatabaseSync, "⇄");
         }
     }
 
-    private void AddNavigationButton(string labelKey, Action action)
+    private void AddNavigationButton(string labelKey, Action action, string iconGlyph)
     {
         // Some sidebar labels are literal UI phrases stored in UiGreek rather
         // than resource keys. Resolve normal resource keys first, then translate
@@ -200,7 +210,36 @@ public partial class MainWindow : Window
         if (label == $"[{labelKey}]")
             label = Tr.Loc.TranslateText(labelKey);
 
-        var button = new Button { Content = label, Classes = { "nav" }, MinWidth = 190 };
+        var icon = new TextBlock
+        {
+            Text = iconGlyph,
+            Width = 25,
+            FontSize = 17,
+            FontWeight = FontWeight.SemiBold,
+            Foreground = new SolidColorBrush(Color.Parse("#91A9C4")),
+            VerticalAlignment = VerticalAlignment.Center,
+            TextAlignment = TextAlignment.Center
+        };
+        var caption = new TextBlock
+        {
+            Text = label,
+            VerticalAlignment = VerticalAlignment.Center,
+            TextWrapping = TextWrapping.Wrap
+        };
+        var content = new StackPanel
+        {
+            Orientation = Orientation.Horizontal,
+            Spacing = 10,
+            VerticalAlignment = VerticalAlignment.Center,
+            Children = { icon, caption }
+        };
+        var button = new Button
+        {
+            Content = content,
+            Classes = { "nav" },
+            MinWidth = 190,
+            HorizontalContentAlignment = HorizontalAlignment.Left
+        };
         button.Click += (_, _) => action();
         NavigationPanel.Children.Add(button);
     }
