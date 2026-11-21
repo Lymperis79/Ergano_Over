@@ -256,6 +256,9 @@ public partial class MainWindow : Window
                     case Button button when button.Content is string content:
                         button.Content = Tr.Loc.TranslateText(content);
                         break;
+                    case CheckBox checkBox when checkBox.Content is string checkText:
+                        checkBox.Content = Tr.Loc.TranslateText(checkText);
+                        break;
                     case TextBox textBox:
                         if (!string.IsNullOrEmpty(textBox.PlaceholderText))
                             textBox.PlaceholderText = Tr.Loc.TranslateText(textBox.PlaceholderText);
