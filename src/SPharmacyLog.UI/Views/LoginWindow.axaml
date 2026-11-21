@@ -11,6 +11,7 @@
         <TextBox x:Name="UsernameBox" PlaceholderText="Enter your username"/>
         <TextBlock Text="Password" FontWeight="SemiBold"/>
         <TextBox x:Name="PasswordBox" PlaceholderText="Enter your password" PasswordChar="•"/>
+        <CheckBox x:Name="RememberCredentialsBox" Content="Remember username and password on this PC" IsChecked="False"/>
         <TextBlock x:Name="MessageText" TextWrapping="Wrap" Foreground="#F0A65A"/>
         <Button x:Name="SubmitButton" Content="Sign in" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Classes="accent" MinHeight="44" Click="OnSubmitClick"/>
         <TextBlock x:Name="FooterText" Text="Secure pharmacy management" FontSize="12" Foreground="#738397" HorizontalAlignment="Center" Margin="0,6,0,0"/>
