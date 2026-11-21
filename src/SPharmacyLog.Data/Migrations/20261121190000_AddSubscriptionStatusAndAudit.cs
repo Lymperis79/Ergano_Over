@@ -26,7 +26,6 @@ public sealed class AddSubscriptionStatusAndAudit : Migration
                 UPDATE Subscriptions SET CreatedAt = CURRENT_TIMESTAMP, LastModifiedAt = CURRENT_TIMESTAMP;
 
                 UPDATE Subscriptions SET Status = CASE WHEN Status = 0 THEN 0 ELSE 1 END;
-                UPDATE Subscriptions SET Status = CASE WHEN Status = 0 THEN 0 ELSE 1 END;
                 CREATE INDEX IX_Subscriptions_Status ON Subscriptions(Status);
 
                 CREATE TABLE SubscriptionAuditEntries (
@@ -96,6 +95,7 @@ public sealed class AddSubscriptionStatusAndAudit : Migration
                     ADD COLUMN LastModifiedAt datetime(6) NOT NULL DEFAULT '1970-01-01 00:00:00.000000',
                     ADD COLUMN LastModifiedBy varchar(255) NOT NULL DEFAULT 'system';
                 UPDATE Subscriptions SET CreatedAt = UTC_TIMESTAMP(6), LastModifiedAt = UTC_TIMESTAMP(6);
+                UPDATE Subscriptions SET Status = CASE WHEN Status = 0 THEN 0 ELSE 1 END;
                 CREATE INDEX IX_Subscriptions_Status ON Subscriptions(Status);
 
                 CREATE TABLE SubscriptionAuditEntries (
