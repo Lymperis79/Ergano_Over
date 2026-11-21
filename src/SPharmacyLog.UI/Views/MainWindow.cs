@@ -1,1 +1,165 @@
-using Avalonia;using Avalonia.Controls;using Avalonia.Layout;using Avalonia.Media;using Microsoft.EntityFrameworkCore;using SPharmacyLog.Data;using SPharmacyLog.Data.Entities;namespace SPharmacyLog.UI.Views;public sealed class MainWindow:Window{readonly PharmacyUser current;readonly ContentControl page=new();readonly TextBlock dailySummary=new();readonly ListBox dayRecords=new();readonly StackPanel cal=new();DateTime month=new(DateTime.Today.Year,DateTime.Today.Month,1),selected=DateTime.Today;public MainWindow(PharmacyUser u){current=u;Title="S Pharmacy Log - "+u.Username;Width=1120;Height=760;MinWidth=900;MinHeight=600;WindowStartupLocation=WindowStartupLocation.CenterScreen;var head=new StackPanel{Orientation=Orientation.Horizontal,Margin=new Thickness(12),Spacing=12,Children={new TextBlock{Text="S Pharmacy Log",FontSize=24,FontWeight=FontWeight.Bold},new TextBlock{Text=$"{u.Username} ({u.Role})",VerticalAlignment=VerticalAlignment.Center,Foreground=Brushes.Gray}}};var nav=new StackPanel{Orientation=Orientation.Horizontal,Spacing=6};(string Name,Action Click)[] actions={("Expiry calendar",Calendar),("Customers",()=>Placeholder("Customers")),("Borrowing",()=>Placeholder("Borrowing")),("Subscriptions",()=>Placeholder("Subscriptions")),("Payments & ledger",()=>Placeholder("Payments & ledger")),("Users",()=>Placeholder("Users"))};foreach(var a in actions){var b=new Button{Content=a.Name};b.Click+=(_,_)=>a.Click();if(a.Name=="Users"&&u.Role!=PharmacyRole.Admin)b.IsVisible=false;nav.Children.Add(b);}var dock=new DockPanel();DockPanel.SetDock(head,Dock.Top);dock.Children.Add(head);DockPanel.SetDock(nav,Dock.Top);dock.Children.Add(nav);dock.Children.Add(page);Content=dock;Calendar();}void Calendar(){var p=new StackPanel{Margin=new Thickness(16),Spacing=10};p.Children.Add(new TextBlock{Text="Prescription expiry calendar",FontSize=24,FontWeight=FontWeight.Bold});p.Children.Add(new TextBlock{Text="Each day shows active prescriptions expiring. Select a date for the list."});var monthbar=new StackPanel{Orientation=Orientation.Horizontal,HorizontalAlignment=HorizontalAlignment.Center,Spacing=10};var prev=new Button{Content="‹"};var title=new TextBlock{FontSize=18,MinWidth=160,VerticalAlignment=VerticalAlignment.Center,TextAlignment=TextAlignment.Center};var next=new Button{Content="›"};prev.Click+=async(_,_)=>{month=month.AddMonths(-1);await Render(title);};next.Click+=async(_,_)=>{month=month.AddMonths(1);await Render(title);};monthbar.Children.Add(prev);monthbar.Children.Add(title);monthbar.Children.Add(next);p.Children.Add(monthbar);var week=new Grid{ColumnDefinitions=new ColumnDefinitions("*,*,*,*,*,*,*")};string[] weekday={"Mon","Tue","Wed","Thu","Fri","Sat","Sun"};for(int i=0;i<7;i++){var t=new TextBlock{Text=weekday[i],HorizontalAlignment=HorizontalAlignment.Center};Grid.SetColumn(t,i);week.Children.Add(t);}p.Children.Add(week);cal.Children.Clear();p.Children.Add(cal);p.Children.Add(dailySummary);dayRecords.MaxHeight=260;p.Children.Add(dayRecords);page.Content=p;_ =Render(title);}async Task Render(TextBlock title){title.Text=month.ToString("MMMM yyyy");await using var db=new PharmacyDbContext(PharmacyDb.Options());var counts=await db.Prescriptions.Where(x=>x.Status==PrescriptionStatus.Active&&x.ExpiryDate>=month&&x.ExpiryDate<month.AddMonths(1)).GroupBy(x=>x.ExpiryDate.Date).Select(g=>new{D=g.Key,N=g.Count()}).ToDictionaryAsync(x=>x.D,x=>x.N);cal.Children.Clear();var grid=new Grid{ColumnDefinitions=new ColumnDefinitions("*,*,*,*,*,*,*"),RowDefinitions=new RowDefinitions("Auto,Auto,Auto,Auto,Auto,Auto")};int offset=((int)month.DayOfWeek+6)%7,number=DateTime.DaysInMonth(month.Year,month.Month);for(int cell=0;cell<42;cell++){int d=cell-offset+1;var b=new Button{MinHeight=60,Padding=new Thickness(3),HorizontalAlignment=HorizontalAlignment.Stretch,HorizontalContentAlignment=HorizontalAlignment.Center};if(d>=1&&d<=number){var date=new DateTime(month.Year,month.Month,d);int count=counts.GetValueOrDefault(date);b.Content=new StackPanel{Spacing=1,Children={new TextBlock{Text=d.ToString(),HorizontalAlignment=HorizontalAlignment.Center,FontWeight=date==selected?FontWeight.Bold:FontWeight.Normal},new TextBlock{Text=count>0?$"{count} expiring":"—",FontSize=11,Foreground=count>0?Brushes.Orange:Brushes.Gray,HorizontalAlignment=HorizontalAlignment.Center}}};b.Background=date==selected?Brushes.SteelBlue:null;b.Click+=async(_,_)=>{selected=date;await Render(title);await LoadDay();};}else b.IsEnabled=false;Grid.SetColumn(b,cell%7);Grid.SetRow(b,cell/7);grid.Children.Add(b);}cal.Children.Add(grid);await LoadDay();}async Task LoadDay(){await using var db=new PharmacyDbContext(PharmacyDb.Options());var records=await db.Prescriptions.Include(x=>x.Customer).Where(x=>x.Status==PrescriptionStatus.Active&&x.ExpiryDate>=selected.Date&&x.ExpiryDate<selected.Date.AddDays(1)).OrderBy(x=>x.Customer!.FullName).ToListAsync();dayRecords.ItemsSource=records.Select(x=>$"{x.Customer?.CustomerNumber} | {x.Customer?.FullName} | {x.MedicineName} | Rx {x.PrescriptionNumber??"—"} | expires {x.ExpiryDate:dd/MM/yyyy}").ToList();dailySummary.Text=$"{selected:dddd, dd MMM yyyy} — {records.Count} active prescription(s) expiring";dailySummary.FontWeight=FontWeight.SemiBold;}void Placeholder(string title)=>page.Content=new StackPanel{Margin=new Thickness(20),Children={new TextBlock{Text=title,FontSize=24,FontWeight=FontWeight.Bold},new TextBlock{Text="Module is queued for implementation."}};}
+using Avalonia;
+using Avalonia.Controls;
+using Avalonia.Layout;
+using Avalonia.Media;
+using Avalonia.Markup.Xaml;
+using Microsoft.EntityFrameworkCore;
+using SPharmacyLog.Data;
+using SPharmacyLog.Data.Entities;
+
+namespace SPharmacyLog.UI.Views;
+
+public partial class MainWindow : Window
+{
+    private readonly DateTime selectedDate = DateTime.Today;
+    private readonly ContentControl pageHost;
+    private readonly TextBlock dailySummary = new();
+    private readonly ListBox dayRecords = new();
+    private readonly StackPanel calendarPanel = new();
+    private DateTime displayedMonth = new(DateTime.Today.Year, DateTime.Today.Month, 1);
+
+    public MainWindow(PharmacyUser user)
+    {
+        InitializeComponent();
+        UserLabel.Text = $"{user.Username} ({user.Role})";
+        pageHost = PageHost;
+
+        var navigation = new (string Label, Action Action)[]
+        {
+            ("Expiry calendar", ShowExpiryCalendar),
+            ("Customers", () => ShowPlaceholder("Customers")),
+            ("Borrowing", () => ShowPlaceholder("Borrowing")),
+            ("Subscriptions", () => ShowPlaceholder("Subscriptions")),
+            ("Payments & ledger", () => ShowPlaceholder("Payments & ledger")),
+            ("Users", () => ShowPlaceholder("Users"))
+        };
+
+        foreach (var item in navigation)
+        {
+            var button = new Button { Content = item.Label };
+            button.Click += (_, _) => item.Action();
+            if (item.Label == "Users" && user.Role != PharmacyRole.Admin)
+                button.IsVisible = false;
+            NavigationPanel.Children.Add(button);
+        }
+
+        ShowExpiryCalendar();
+    }
+
+    private void ShowExpiryCalendar()
+    {
+        var content = new StackPanel { Margin = new Thickness(16), Spacing = 10 };
+        content.Children.Add(new TextBlock { Text = "Prescription expiry calendar", FontSize = 24, FontWeight = FontWeight.Bold });
+        content.Children.Add(new TextBlock { Text = "Each day shows active prescriptions expiring. Select a date for the list." });
+
+        var monthBar = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Center, Spacing = 10 };
+        var previous = new Button { Content = "‹" };
+        var monthTitle = new TextBlock { FontSize = 18, MinWidth = 160, VerticalAlignment = VerticalAlignment.Center, TextAlignment = TextAlignment.Center };
+        var next = new Button { Content = "›" };
+
+        previous.Click += async (_, _) => { displayedMonth = displayedMonth.AddMonths(-1); await RenderCalendarAsync(monthTitle); };
+        next.Click += async (_, _) => { displayedMonth = displayedMonth.AddMonths(1); await RenderCalendarAsync(monthTitle); };
+
+        monthBar.Children.Add(previous);
+        monthBar.Children.Add(monthTitle);
+        monthBar.Children.Add(next);
+        content.Children.Add(monthBar);
+
+        var weekdayGrid = new Grid { ColumnDefinitions = new ColumnDefinitions("*,*,*,*,*,*,*") };
+        string[] weekdays = { "Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun" };
+        for (var i = 0; i < weekdays.Length; i++)
+        {
+            var label = new TextBlock { Text = weekdays[i], HorizontalAlignment = HorizontalAlignment.Center };
+            Grid.SetColumn(label, i);
+            weekdayGrid.Children.Add(label);
+        }
+        content.Children.Add(weekdayGrid);
+
+        calendarPanel.Children.Clear();
+        content.Children.Add(calendarPanel);
+        dayRecords.MaxHeight = 260;
+        content.Children.Add(dailySummary);
+        content.Children.Add(dayRecords);
+        pageHost.Content = content;
+        _ = RenderCalendarAsync(monthTitle);
+    }
+
+    private async Task RenderCalendarAsync(TextBlock monthTitle)
+    {
+        monthTitle.Text = displayedMonth.ToString("MMMM yyyy");
+        await using var db = new PharmacyDbContext(PharmacyDb.Options());
+        var start = displayedMonth;
+        var end = displayedMonth.AddMonths(1);
+
+        var expiryCounts = await db.Prescriptions
+            .Where(p => p.Status == PrescriptionStatus.Active && p.ExpiryDate >= start && p.ExpiryDate < end)
+            .GroupBy(p => p.ExpiryDate.Date)
+            .Select(g => new { Date = g.Key, Count = g.Count() })
+            .ToDictionaryAsync(x => x.Date, x => x.Count);
+
+        calendarPanel.Children.Clear();
+        var grid = new Grid
+        {
+            ColumnDefinitions = new ColumnDefinitions("*,*,*,*,*,*,*"),
+            RowDefinitions = new RowDefinitions("Auto,Auto,Auto,Auto,Auto,Auto")
+        };
+
+        var offset = ((int)displayedMonth.DayOfWeek + 6) % 7;
+        var daysInMonth = DateTime.DaysInMonth(displayedMonth.Year, displayedMonth.Month);
+
+        for (var cell = 0; cell < 42; cell++)
+        {
+            var dayNumber = cell - offset + 1;
+            var button = new Button { MinHeight = 60, Padding = new Thickness(3), HorizontalAlignment = HorizontalAlignment.Stretch, HorizontalContentAlignment = HorizontalAlignment.Center };
+            if (dayNumber is >= 1 && dayNumber <= daysInMonth)
+            {
+                var date = new DateTime(displayedMonth.Year, displayedMonth.Month, dayNumber);
+                var count = expiryCounts.GetValueOrDefault(date);
+                button.Content = new StackPanel
+                {
+                    Spacing = 1,
+                    Children =
+                    {
+                        new TextBlock { Text = dayNumber.ToString(), HorizontalAlignment = HorizontalAlignment.Center, FontWeight = date == SelectedCalendarDate ? FontWeight.Bold : FontWeight.Normal },
+                        new TextBlock { Text = count > 0 ? $"{count} expiring" : "—", FontSize = 11, Foreground = count > 0 ? Brushes.Orange : Brushes.Gray, HorizontalAlignment = HorizontalAlignment.Center }
+                    }
+                };
+                if (date == SelectedCalendarDate) button.Background = Brushes.SteelBlue;
+                button.Click += async (_, _) => { SelectedCalendarDate = date; await RenderCalendarAsync(monthTitle); await LoadSelectedDayAsync(); };
+            }
+            else button.IsEnabled = false;
+            Grid.SetColumn(button, cell % 7);
+            Grid.SetRow(button, cell / 7);
+            grid.Children.Add(button);
+        }
+
+        calendarPanel.Children.Add(grid);
+        await LoadSelectedDayAsync();
+    }
+
+    private DateTime SelectedCalendarDate { get; set; } = DateTime.Today;
+
+    private async Task LoadSelectedDayAsync()
+    {
+        await using var db = new PharmacyDbContext(PharmacyDb.Options());
+        var records = await db.Prescriptions.Include(p => p.Customer)
+            .Where(p => p.Status == PrescriptionStatus.Active && p.ExpiryDate >= SelectedCalendarDate.Date && p.ExpiryDate < SelectedCalendarDate.Date.AddDays(1))
+            .OrderBy(p => p.Customer!.FullName).ToListAsync();
+
+        dayRecords.ItemsSource = records.Select(p =>
+            $"{p.Customer?.CustomerNumber} | {p.Customer?.FullName} | {p.MedicineName} | Rx {p.PrescriptionNumber ?? "—"} | expires {p.ExpiryDate:dd/MM/yyyy}").ToList();
+        dailySummary.Text = $"{SelectedCalendarDate:dddd, dd MMM yyyy} — {records.Count} active prescription(s) expiring";
+        dailySummary.FontWeight = FontWeight.SemiBold;
+    }
+
+    private void ShowPlaceholder(string title)
+    {
+        pageHost.Content = new StackPanel
+        {
+            Margin = new Thickness(20),
+            Children = { new TextBlock { Text = title, FontSize = 24, FontWeight = FontWeight.Bold }, new TextBlock { Text = "Module is queued for implementation." } }
+        };
+    }
+
+    private void InitializeComponent() => AvaloniaXamlLoader.Load(this);
+}
