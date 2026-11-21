@@ -313,7 +313,7 @@ public sealed class LocalizationService : ILocalizationService
         ["Setup could not be completed:"] = "Δεν ήταν δυνατή η ολοκλήρωση της ρύθμισης:",
         [" is present but its value is empty."] = " υπάρχει αλλά η τιμή του είναι κενή.",
         [" exceeds the GS1 maximum of 20 characters."] = " υπερβαίνει το μέγιστο όριο των 20 χαρακτήρων GS1.",
-        ["). This screen currently expects AIs 01, 10, 17 and 21."] = "). Αυτή η οθόνη αναμένει τα AI 01, 10, 17 και 21."
+        ["). This screen currently expects AIs 01, 10, 17 and 21."] = "). Αυτή η οθόνη αναμένει τα AI 01, 10, 17 και 21.",
 
         // Customer activity modal editors (borrowings, subscriptions, payments and ledger).
         ["ADD SUBSCRIPTION"] = "ΠΡΟΣΘΗΚΗ ΣΥΝΔΡΟΜΗΣ",
@@ -387,6 +387,13 @@ public sealed class LocalizationService : ILocalizationService
         ["This barcode is already assigned to another medicine."] = "Αυτό το barcode έχει ήδη αντιστοιχιστεί σε άλλο φάρμακο.",
         ["GS1 scan parsed. No catalogue match was found; enter the medicine name."] = "Η σάρωση GS1 αναλύθηκε. Δεν βρέθηκε αντιστοίχιση στον κατάλογο· εισαγάγετε το όνομα του φαρμάκου.",
         ["Medicine barcode"] = "Barcode φαρμάκου",
+        ["GS1 pack:"] = "Συσκευασία GS1:",
+        ["Serial "] = "Σειριακός αριθμός ",
+        ["The original scan is read-only."] = "Η αρχική σάρωση είναι μόνο για ανάγνωση.",
+        ["GS1 scan parsed."] = "Η σάρωση GS1 αναλύθηκε.",
+        ["Medicine borrowing added."] = "Ο δανεισμός φαρμάκου προστέθηκε.",
+        ["Borrowing updated."] = "Ο δανεισμός ενημερώθηκε.",
+        ["Medicine name is required."] = "Το όνομα του φαρμάκου είναι υποχρεωτικό."
         ["Scan this barcode with your scanner"] = "Σαρώστε αυτό το barcode με τον σαρωτή σας"
 
     };
