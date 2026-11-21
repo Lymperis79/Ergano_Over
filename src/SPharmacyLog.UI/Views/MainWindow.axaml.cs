@@ -237,6 +237,7 @@ public partial class MainWindow : Window
     private ListBox customerHistoryList = null!;
     private TextBlock borrowingSelectionDetails = null!;
     private Image borrowingBarcodeImage = null!;
+    private BarcodeDisplayWindow? barcodePopupWindow;
     private TextBox gs1ScanInput = null!;
     private TextBox gs1ScanEcho = null!;
     private TextBox gs1EofEan13Input = null!;
@@ -350,6 +351,16 @@ public partial class MainWindow : Window
             HorizontalAlignment = HorizontalAlignment.Left, Margin = new Thickness(4)
         };
         borrowingList.SelectionChanged += (_, _) => ShowSelectedBorrowingScanDetails();
+        borrowingBarcodeImage.PointerPressed += (_, e) =>
+        {
+            if (borrowingBarcodeImage.Source is not WriteableBitmap barcodeBitmap ||
+                borrowingList.SelectedIndex < 0 ||
+                borrowingList.SelectedIndex >= currentBorrowings.Count)
+                return;
+
+            e.Handled = true;
+            ShowBarcodePopup(currentBorrowings[borrowingList.SelectedIndex].MedicineName, barcodeBitmap);
+        };
 
         var add = new Button { Content = "＋ Add medicine", Classes = { "accent" }, MinWidth = 145, MinHeight = 38 };
         add.Click += async (_, _) => await OpenBorrowingEditorAsync(null);
@@ -692,6 +703,25 @@ public partial class MainWindow : Window
             borrowingBarcodeImage.IsVisible = false;
             borrowingSelectionDetails.Text += $"\n\nBarcode preview could not be generated: {ex.Message}";
         }
+    }
+
+    private void ShowBarcodePopup(string medicineName, WriteableBitmap barcodeBitmap)
+    {
+        if (barcodePopupWindow is null)
+        {
+            barcodePopupWindow = new BarcodeDisplayWindow(medicineName, barcodeBitmap);
+            barcodePopupWindow.Closed += (_, _) => barcodePopupWindow = null;
+            barcodePopupWindow.Show(this);
+        }
+        else
+        {
+            barcodePopupWindow.UpdateBarcode(medicineName, barcodeBitmap);
+            if (!barcodePopupWindow.IsVisible)
+                barcodePopupWindow.Show(this);
+            barcodePopupWindow.Activate();
+        }
+
+        barcodePopupWindow.Topmost = true;
     }
 
     private static WriteableBitmap CreateGs1DataMatrixBitmap(string rawPayload)
