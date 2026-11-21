@@ -23,7 +23,7 @@
             <TextBlock Text="Manage prescriptions, customers and services" FontSize="12" Foreground="#93A2B6"/>
           </StackPanel>
           <TextBlock x:Name="UserLabel" Grid.Column="1" VerticalAlignment="Center" Foreground="#C8D4E2" Margin="0,0,18,0"/>
-          <ComboBox x:Name="LanguageBox" Grid.Column="2" Width="130" SelectedIndex="0" SelectionChanged="OnLanguageChanged">
+          <ComboBox x:Name="LanguageBox" Grid.Column="2" Width="130" SelectionChanged="OnLanguageChanged">
             <ComboBoxItem Content="English"/>
             <ComboBoxItem Content="Ελληνικά"/>
           </ComboBox>
