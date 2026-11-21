@@ -23,6 +23,38 @@ namespace SPharmacyLog.UI.Views;
 
 public partial class MainWindow : Window
 {
+    private const uint KlfActivate = 0x00000001;
+    private static IntPtr? previousBarcodeKeyboardLayout;
+
+    [DllImport("user32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+    private static extern IntPtr LoadKeyboardLayout(string pwszKLID, uint flags);
+
+    [DllImport("user32.dll")]
+    private static extern IntPtr GetKeyboardLayout(uint idThread);
+
+    [DllImport("user32.dll")]
+    private static extern IntPtr ActivateKeyboardLayout(IntPtr hkl, uint flags);
+
+    private static void ActivateEnglishBarcodeKeyboard()
+    {
+        if (!OperatingSystem.IsWindows()) return;
+
+        // Preserve the layout that was active before the first barcode focus.
+        previousBarcodeKeyboardLayout ??= GetKeyboardLayout(0);
+        var englishLayout = LoadKeyboardLayout("00000409", KlfActivate);
+        if (englishLayout != IntPtr.Zero)
+            ActivateKeyboardLayout(englishLayout, 0);
+    }
+
+    private static void RestoreBarcodeKeyboard()
+    {
+        if (!OperatingSystem.IsWindows() || previousBarcodeKeyboardLayout is not IntPtr previous)
+            return;
+
+        ActivateKeyboardLayout(previous, 0);
+        previousBarcodeKeyboardLayout = null;
+    }
+
     private readonly MainWindowViewModel viewModel;
     private ComboBox languageBox = null!;
     private bool isApplyingTranslations;
@@ -1003,6 +1035,12 @@ public partial class MainWindow : Window
             CanResize = true,
             WindowStartupLocation = WindowStartupLocation.CenterOwner
         };
+        dialog.Opened += (_, _) =>
+        {
+            if (!isEdit)
+                scanInput.Focus();
+        };
+        dialog.Closed += (_, _) => RestoreBarcodeKeyboard();
         cancel.Click += (_, _) => dialog.Close();
         save.Click += async (_, _) =>
         {
@@ -1391,6 +1429,8 @@ public partial class MainWindow : Window
         AddScanField("Batch / Lot (AI 10)", lotInput);
         AddScanField("EOF / EAN-13", eofInput);
         scanPanel.Children.Add(scanStatus);
+        scanInput.GotFocus += (_, _) => ActivateEnglishBarcodeKeyboard();
+        scanInput.LostFocus += (_, _) => RestoreBarcodeKeyboard();
         scanInput.TextChanged += (_, _) => scanEcho.Text = (scanInput.Text ?? string.Empty)
             .Replace(Gs1DataMatrixParser.GroupSeparator.ToString(), "<GS>", StringComparison.Ordinal);
         scanInput.KeyDown += async (_, e) =>
