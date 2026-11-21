@@ -50,8 +50,8 @@ public sealed class DatabaseSetupWindow : Window
         var existing = PharmacyDb.LoadConfig();
         if (existing is not null) Populate(existing);
 
-        var root = new StackPanel { Margin = new Thickness(28), Spacing = 14 };
-        root.Children.Add(new TextBlock { Text = "Database setup", FontSize = 24, FontWeight = Avalonia.Media.FontWeight.Bold });
+        var root = new StackPanel { Margin = new Thickness(24), Spacing = 16 };
+        root.Children.Add(new TextBlock { Text = "Database setup", FontSize = 26, FontWeight = Avalonia.Media.FontWeight.Bold, Foreground = new Avalonia.Media.SolidColorBrush(Avalonia.Media.Color.Parse("#73D0FA")) });
         root.Children.Add(new TextBlock
         {
             Text = "Choose where S Pharmacy Log stores its data. You can use a local SQLite file or a shared SQL Server / MariaDB database.",
@@ -79,7 +79,7 @@ public sealed class DatabaseSetupWindow : Window
         databaseFields.Children.Add(mariaUsername);
         databaseFields.Children.Add(Label("MariaDB password"));
         databaseFields.Children.Add(mariaPassword);
-        root.Children.Add(databaseFields);
+        root.Children.Add(new Border { Background = new Avalonia.Media.SolidColorBrush(Avalonia.Media.Color.Parse("#202733")), BorderBrush = new Avalonia.Media.SolidColorBrush(Avalonia.Media.Color.Parse("#354152")), BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(12), Padding = new Thickness(18), Child = databaseFields });
 
         adminFields.Children.Add(new TextBlock { Text = "Create the first administrator", FontSize = 20, FontWeight = Avalonia.Media.FontWeight.Bold });
         adminFields.Children.Add(new TextBlock { Text = "The administrator account is created once, after the database schema is ready." });
@@ -90,12 +90,12 @@ public sealed class DatabaseSetupWindow : Window
         adminFields.Children.Add(Label("Confirm password"));
         adminFields.Children.Add(adminConfirm);
         adminFields.IsVisible = false;
-        root.Children.Add(adminFields);
+        root.Children.Add(new Border { Background = new Avalonia.Media.SolidColorBrush(Avalonia.Media.Color.Parse("#202733")), BorderBrush = new Avalonia.Media.SolidColorBrush(Avalonia.Media.Color.Parse("#354152")), BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(12), Padding = new Thickness(18), Child = adminFields });
 
-        root.Children.Add(status);
+        status.Foreground = new Avalonia.Media.SolidColorBrush(Avalonia.Media.Color.Parse("#F0A65A"));\n        root.Children.Add(status);
         var actions = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right, Spacing = 10 };
         actions.Children.Add(testButton);
-        actions.Children.Add(continueButton);
+        continueButton.Classes.Add("accent");\n        actions.Children.Add(continueButton);
         root.Children.Add(actions);
         root.Children.Add(createAdminButton);
         createAdminButton.IsVisible = false;
