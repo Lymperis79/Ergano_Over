@@ -229,7 +229,10 @@ public sealed class LocalizationService : ILocalizationService
         [" | Payment |"] = " | Πληρωμή |",
         [" | Card |"] = " | Κάρτα |",
         [" | Cash |"] = " | Μετρητά |",
-        [" | Monthly"] = " | Μηνιαία"
+        [" | Monthly"] = " | Μηνιαία",
+        ["Ο πελάτης "] = "Customer ",
+        [" αποθηκεύτηκε επιτυχώς."] = " saved successfully.",
+        ["Επεξεργασία πελάτη "] = "Editing customer "
         ["Username"] = "Όνομα χρήστη",
         ["Password"] = "Κωδικός πρόσβασης",
         ["S Pharmacy Log — Database setup"] = "S Pharmacy Log — Ρύθμιση βάσης δεδομένων",
