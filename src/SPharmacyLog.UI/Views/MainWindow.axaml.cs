@@ -260,10 +260,16 @@ public partial class MainWindow : Window
         };
         var left = new StackPanel { Spacing = 8 };
         left.Children.Add(new TextBlock { Text = Tr.Loc["Navigation.Customers"], FontSize = 18, FontWeight = FontWeight.Bold });
-        left.Children.Add(customerSearch); left.Children.Add(customerList);
-        var newButton = new Button { Content = Tr.Loc["Customers.New"], Classes = { "accent" }, HorizontalAlignment = HorizontalAlignment.Stretch };
-        newButton.Click += (_, _) => { ClearCustomerForm(); customerTabs.SelectedIndex = 1; };
+        var newButton = new Button { Content = Tr.Loc["Customers.New"], Classes = { "accent" }, HorizontalAlignment = HorizontalAlignment.Stretch, MinHeight = 40 };
+        newButton.Click += (_, _) =>
+        {
+            ClearCustomerForm();
+            customerTabs.SelectedIndex = 1;
+            customerFields["CustomerNumber"].Focus();
+        };
         left.Children.Add(newButton);
+        left.Children.Add(customerSearch);
+        left.Children.Add(customerList);
 
         var details = BuildCustomerDetailsTab();
         customerOverview = new TextBlock { Text = "Select a customer to see their account summary.", TextWrapping = TextWrapping.Wrap, Margin = new Thickness(12) };
@@ -986,9 +992,14 @@ public partial class MainWindow : Window
         customer.Telephone = GetField("Telephone"); customer.Phone = customer.Telephone ?? ""; customer.Mobile = GetField("Mobile");
         customer.Email = GetField("Email"); customer.Amka = GetField("Amka"); customer.Insurance = GetField("Insurance"); customer.Notes = GetField("Notes");
         customer.IsActive = true; if (!selectedCustomerId.HasValue) db.Customers.Add(customer);
-        await db.SaveChangesAsync(); selectedCustomerId = customer.Id;
-        customerStatus.Foreground = Brushes.LightGreen; customerStatus.Text = string.Format(Tr.Loc["Customers.Saved"], customer.CustomerNumber);
+        await db.SaveChangesAsync();
+        selectedCustomerId = customer.Id;
+        customerStatus.Foreground = Brushes.LightGreen;
+        customerStatus.Text = string.Format(Tr.Loc["Customers.Saved"], customer.CustomerNumber);
         await SearchCustomersAsync();
+        var savedItem = customerList.Items.OfType<CustomerListItem>().FirstOrDefault(item => item.Id == customer.Id);
+        if (savedItem is not null)
+            customerList.SelectedItem = savedItem;
         await RefreshCustomerWorkspaceAsync();
     }
 
