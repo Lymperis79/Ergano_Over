@@ -1468,17 +1468,18 @@ public partial class MainWindow : Window
             .Where(entry => entry.SubscriptionId == subscription.Id)
             .OrderByDescending(entry => entry.ChangedAt)
             .ToListAsync();
-        var auditList = new ListBox
+        var auditList = new ListBox { MinHeight = 110 };
+        void RefreshAuditList()
         {
-            MinHeight = 110,
-            ItemsSource = auditEntries.Select(entry =>
+            auditList.ItemsSource = auditEntries.Select(entry =>
             {
                 var change = entry.PreviousStatus.HasValue
                     ? $"{Tr.Loc.TranslateText(((SubscriptionStatus)entry.PreviousStatus.Value).ToString())} → {Tr.Loc.TranslateText(((SubscriptionStatus)entry.NewStatus).ToString())}"
                     : Tr.Loc.TranslateText(entry.Details ?? string.Empty);
                 return $"{entry.ChangedAt.ToLocalTime():dd/MM/yyyy HH:mm:ss} | {Tr.Loc.TranslateText(entry.Action)} | {entry.ChangedBy} | {change}";
-            }).ToList()
-        };
+            }).ToList();
+        }
+        RefreshAuditList();
         var details = new StackPanel
         {
             Spacing = 8,
@@ -1539,6 +1540,9 @@ public partial class MainWindow : Window
             Content = content
         };
         AttachDialogLocalization(popup);
+        EventHandler auditLanguageChanged = (_, _) => RefreshAuditList();
+        Tr.Loc.LanguageChanged += auditLanguageChanged;
+        popup.Closed += (_, _) => Tr.Loc.LanguageChanged -= auditLanguageChanged;
         close.Click += (_, _) => popup.Close();
         saveStatus.Click += async (_, _) =>
         {
