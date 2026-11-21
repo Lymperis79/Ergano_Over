@@ -6,7 +6,7 @@ namespace SPharmacyLog.Data.Migrations;
 
 [DbContext(typeof(PharmacyDbContext))]
 [Migration("202611210001_Initial")]
-public sealed class Initial : Migration
+public sealed partial class Initial : Migration
 {
     protected override void Up(MigrationBuilder migrationBuilder)
     {
