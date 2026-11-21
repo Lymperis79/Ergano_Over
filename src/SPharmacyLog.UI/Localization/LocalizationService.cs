@@ -657,6 +657,13 @@ public sealed class LocalizationService : ILocalizationService
         ["Next due"] = "Επόμενη προθεσμία",
         ["Last changed"] = "Τελευταία αλλαγή"
 
+        ["History"] = "Ιστορικό",
+        ["Select a payment to edit."] = "Επιλέξτε μια πληρωμή για επεξεργασία.",
+        ["Save borrowing"] = "Αποθήκευση δανεισμού",
+        ["Save subscription"] = "Αποθήκευση συνδρομής",
+        ["Borrowing"] = "Δανεισμός",
+        ["Expired"] = "Έληξε",
+        ["total, "] = "συνολικά, ",
     };
 
     public string TranslateText(string text)
