@@ -1953,6 +1953,7 @@ public partial class MainWindow : Window
             "PaymentMethod" when value == "Μετρητά" => "Cash",
             "PaymentMethod" when value == "Κάρτα" => "Card",
             "PaymentMethod" when value == "Μεταφορά" => "Transfer",
+            "LedgerType" when value == "Πληρωμή" => "Payment",
             "LedgerType" when value == "Χρέωση" => "Charge",
             "LedgerType" when value == "Προσαρμογή" => "Adjustment",
             "LedgerType" when value == "Αντιστροφή" => "Reversal",
@@ -2613,8 +2614,8 @@ public partial class MainWindow : Window
         var type = new ComboBox
         {
             MinHeight = 34,
-            ItemsSource = new[] { "Charge", "Adjustment", "Reversal" },
-            SelectedItem = existing?.Type.ToString() ?? "Charge"
+            ItemsSource = new[] { "Payment", "Adjustment", "Reversal" },
+            SelectedItem = existing?.Type.ToString() ?? "Payment"
         };
         var amount = new TextBox { Text = existing?.Amount.ToString("0.00") ?? "", PlaceholderText = "Amount", MinHeight = 34 };
         var description = new TextBox { Text = existing?.Description ?? "", PlaceholderText = "Description", MinHeight = 34 };
@@ -2635,7 +2636,6 @@ public partial class MainWindow : Window
         save.Click += async (_, _) =>
         {
             if (!Enum.TryParse<LedgerEntryType>(type.SelectedItem?.ToString(), true, out var parsedType) ||
-                parsedType == LedgerEntryType.Payment ||
                 !TryParseLocalizedAmount(amount.Text, out var parsedAmount) || parsedAmount <= 0 ||
                 string.IsNullOrWhiteSpace(description.Text) ||
                 !TryParseUserDate(entryDate.Text, out var parsedDate))
@@ -2658,9 +2658,25 @@ public partial class MainWindow : Window
             record.Amount = parsedAmount;
             record.Description = description.Text.Trim();
             record.EntryDate = parsedDate;
+            if (parsedType == LedgerEntryType.Payment)
+            {
+                // Keep the ledger and dedicated payment history in sync.
+                db.Payments.Add(new Payment
+                {
+                    CustomerId = selectedCustomerId.Value,
+                    Amount = parsedAmount,
+                    Method = "Cash",
+                    PaidAt = parsedDate,
+                    Notes = description.Text.Trim(),
+                    RecordedBy = viewModel.User.Username
+                });
+                record.SourceReference = null;
+            }
             await db.SaveChangesAsync();
             dialog.Close();
-            SetActivityStatus(isEdit ? "Ledger entry updated." : "Ledger entry added.");
+            SetActivityStatus(isEdit ? "Ledger entry updated." : parsedType == LedgerEntryType.Payment
+                ? "Payment recorded and ledger updated."
+                : "Ledger entry added.");
             await RefreshCustomerWorkspaceAsync();
         };
         await dialog.ShowDialog(this);
@@ -2773,10 +2789,26 @@ public partial class MainWindow : Window
     {
         if (!selectedCustomerId.HasValue) { SetActivityStatus("Save or select a customer first."); return; }
         if (!TryParseLocalizedAmount(ActivityValue("LedgerAmount"), out var amount) || amount <= 0 || string.IsNullOrWhiteSpace(ActivityValue("LedgerDescription"))) { SetActivityStatus("Enter a positive amount and description."); return; }
-        if (!Enum.TryParse<LedgerEntryType>(ActivityValue("LedgerType"), true, out var type) || type == LedgerEntryType.Payment) { SetActivityStatus("Choose Charge, Adjustment or Reversal. Payments should be recorded in the Payments tab."); return; }
+        if (!Enum.TryParse<LedgerEntryType>(ActivityValue("LedgerType"), true, out var type)) { SetActivityStatus("Choose Payment, Adjustment or Reversal."); return; }
         await using var db = new PharmacyDbContext(PharmacyDb.Options());
-        db.LedgerEntries.Add(new LedgerEntry { CustomerId = selectedCustomerId.Value, Type = type, Amount = amount, Description = ActivityValue("LedgerDescription"), RecordedBy = viewModel.User.Username });
-        await db.SaveChangesAsync(); SetActivityStatus("Ledger entry added."); await RefreshCustomerWorkspaceAsync();
+        var description = ActivityValue("LedgerDescription");
+        var entryDate = DateTime.Now;
+        db.LedgerEntries.Add(new LedgerEntry { CustomerId = selectedCustomerId.Value, Type = type, Amount = amount, Description = description, EntryDate = entryDate, RecordedBy = viewModel.User.Username });
+        if (type == LedgerEntryType.Payment)
+        {
+            db.Payments.Add(new Payment
+            {
+                CustomerId = selectedCustomerId.Value,
+                Amount = amount,
+                Method = "Cash",
+                PaidAt = entryDate,
+                Notes = description,
+                RecordedBy = viewModel.User.Username
+            });
+        }
+        await db.SaveChangesAsync();
+        SetActivityStatus(type == LedgerEntryType.Payment ? "Payment recorded and ledger updated." : "Ledger entry added.");
+        await RefreshCustomerWorkspaceAsync();
     }
 
     private void SetActivityStatus(string message)
