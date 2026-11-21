@@ -11,7 +11,7 @@ public static class Gs1DataMatrixParser
 {
     public const char GroupSeparator = '\u001d';
 
-    public sealed record ParsedPack(
+    public sealed record class ParsedPack(
         string Gtin14,
         string SerialNumber,
         DateTime ExpiryDate,
