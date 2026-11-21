@@ -3,6 +3,7 @@ using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Layout;
 using Avalonia.Input;
+using Avalonia.Interactivity;
 using Avalonia.Media;
 using Avalonia.Media.Imaging;
 using Avalonia.Platform;
@@ -30,6 +31,7 @@ public partial class MainWindow : Window
     private StackPanel calendarPanel = new();
     private DateTime displayedMonth = new(DateTime.Today.Year, DateTime.Today.Month, 1);
     private TextBlock? calendarMonthTitle;
+    private StackPanel calendarNotesPanel = new();
     private bool showingExpiryCalendar;
     private bool suppressCustomerSelectionChanged;
     private const string MenuDashboard = "Dashboard";
@@ -481,7 +483,18 @@ public partial class MainWindow : Window
         content.Children.Add(weekdayGrid);
         content.Children.Add(new ScrollViewer { Content = calendarPanel, MaxHeight = 520, VerticalScrollBarVisibility = ScrollBarVisibility.Auto });
         dayRecords.MaxHeight = 260;
-        content.Children.Add(dailySummary); content.Children.Add(dayRecords);
+        content.Children.Add(dailySummary);
+        var addCalendarNoteButton = new Button
+        {
+            Content = Tr.Loc.TranslateText("Add note to selected date"),
+            HorizontalAlignment = HorizontalAlignment.Left,
+            MinWidth = 190
+        };
+        addCalendarNoteButton.Click += async (_, _) => await OpenCalendarNoteEditorAsync(SelectedCalendarDate);
+        content.Children.Add(addCalendarNoteButton);
+        calendarNotesPanel = new StackPanel { Spacing = 6 };
+        content.Children.Add(calendarNotesPanel);
+        content.Children.Add(dayRecords);
         pageHost.Content = content;
         ApplyTranslations();
         _ = RenderCalendarAsync(monthTitle);
@@ -507,6 +520,16 @@ public partial class MainWindow : Window
             .ToListAsync();
         var subscriptionsByDate = dueSubscriptions
             .GroupBy(subscription => subscription.NextDueDate.Date)
+            .ToDictionary(group => group.Key, group => group.ToList());
+        var currentUsername = viewModel.User.Username;
+        var visibleNotes = await db.CalendarNotes.AsNoTracking()
+            .Where(note => note.CalendarDate >= start && note.CalendarDate < end &&
+                (note.IsShared || note.CreatedBy == currentUsername))
+            .OrderBy(note => note.CalendarDate)
+            .ThenBy(note => note.CreatedAt)
+            .ToListAsync();
+        var notesByDate = visibleNotes
+            .GroupBy(note => note.CalendarDate.Date)
             .ToDictionary(group => group.Key, group => group.ToList());
 
         calendarPanel.Children.Clear();
@@ -555,6 +578,22 @@ public partial class MainWindow : Window
                 };
                 dayContent.Children.Add(dayHeader);
 
+                if (notesByDate.TryGetValue(date, out var dayNotes))
+                {
+                    foreach (var note in dayNotes.Take(2))
+                    {
+                        dayContent.Children.Add(new TextBlock
+                        {
+                            Text = "📝 " + note.Header,
+                            FontSize = 10,
+                            Foreground = note.IsShared ? Brushes.LightGreen : Brushes.LightSkyBlue,
+                            TextTrimming = TextTrimming.CharacterEllipsis
+                        });
+                    }
+                    if (dayNotes.Count > 2)
+                        dayContent.Children.Add(new TextBlock { Text = $"+{dayNotes.Count - 2} notes", FontSize = 9, Foreground = Brushes.Gray });
+                }
+
                 if (subscriptionsByDate.TryGetValue(date, out var daySubscriptions))
                 {
                     foreach (var subscription in daySubscriptions)
@@ -596,7 +635,7 @@ public partial class MainWindow : Window
                     }
                 }
 
-                dayCell = new Border
+                var dateCellBorder = new Border
                 {
                     MinHeight = 86,
                     Margin = new Thickness(3),
@@ -611,6 +650,17 @@ public partial class MainWindow : Window
                         : new SolidColorBrush(Color.Parse("#172536")),
                     Child = dayContent
                 };
+                dateCellBorder.AddHandler(InputElement.PointerPressedEvent, async (_, e) =>
+                {
+                    var pointer = e.GetCurrentPoint(dateCellBorder);
+                    if (pointer.Properties.IsRightButtonPressed || e.ClickCount >= 2)
+                    {
+                        e.Handled = true;
+                        SelectedCalendarDate = date;
+                        await OpenCalendarNoteEditorAsync(date);
+                    }
+                }, RoutingStrategies.Bubble);
+                dayCell = dateCellBorder;
             }
             else
             {
@@ -645,10 +695,193 @@ public partial class MainWindow : Window
                 $"{GetSubscriptionNumber(subscription)} | {subscription.Customer?.CustomerNumber} | {subscription.Customer?.FullName} | {subscription.Title} | due {subscription.NextDueDate:dd/MM/yyyy}"))
             .ToList();
         dayRecords.ItemsSource = dayItems;
+
+        var username = viewModel.User.Username;
+        var notes = await db.CalendarNotes.AsNoTracking()
+            .Where(note => note.CalendarDate >= dayStart && note.CalendarDate < dayEnd &&
+                (note.IsShared || note.CreatedBy == username))
+            .OrderBy(note => note.CreatedAt)
+            .ToListAsync();
+        calendarNotesPanel.Children.Clear();
+        if (notes.Count > 0)
+        {
+            calendarNotesPanel.Children.Add(new TextBlock
+            {
+                Text = Tr.Loc.TranslateText("Calendar notes"),
+                FontWeight = FontWeight.SemiBold,
+                FontSize = 15
+            });
+            foreach (var note in notes)
+            {
+                var noteButton = new Button
+                {
+                    HorizontalAlignment = HorizontalAlignment.Stretch,
+                    HorizontalContentAlignment = HorizontalAlignment.Stretch,
+                    Padding = new Thickness(10),
+                    Background = new SolidColorBrush(Color.Parse("#202F40")),
+                    BorderBrush = new SolidColorBrush(Color.Parse("#3A536B")),
+                    BorderThickness = new Thickness(1),
+                    Content = new StackPanel
+                    {
+                        Spacing = 3,
+                        Children =
+                        {
+                            new TextBlock { Text = note.Header, FontWeight = FontWeight.Bold },
+                            new TextBlock { Text = note.Note, TextWrapping = TextWrapping.Wrap },
+                            new TextBlock
+                            {
+                                Text = $"{(note.IsShared ? Tr.Loc.TranslateText("Visible to everyone") : Tr.Loc.TranslateText("Private note"))} · {note.CreatedBy} · {DateTime.SpecifyKind(note.CreatedAt, DateTimeKind.Utc).ToLocalTime():dd/MM/yyyy HH:mm}",
+                                FontSize = 10,
+                                Foreground = Brushes.LightGray
+                            }
+                        }
+                    }
+                };
+                noteButton.Click += async (_, _) =>
+                {
+                    if (note.CreatedBy == viewModel.User.Username)
+                        await OpenCalendarNoteEditorAsync(SelectedCalendarDate, note);
+                    else
+                        await ShowUserMessageAsync(Tr.Loc.TranslateText("Only the creator can edit this note."));
+                };
+                calendarNotesPanel.Children.Add(noteButton);
+            }
+        }
         dailySummary.Text = string.Format(Tr.Loc["Calendar.DaySummary"], SelectedCalendarDate.ToString("dddd, dd MMM yyyy"), records.Count)
             + $" | {subscriptions.Count} {Tr.Loc["Calendar.SubscriptionsDue"]}";
         dailySummary.FontWeight = FontWeight.SemiBold;
         ApplyTranslations();
+    }
+
+    private async Task OpenCalendarNoteEditorAsync(DateTime calendarDate, CalendarNote? existing = null)
+    {
+        if (!showingExpiryCalendar) return;
+        if (existing is not null && existing.CreatedBy != viewModel.User.Username)
+            return;
+
+        var header = new TextBox
+        {
+            Text = existing?.Header ?? string.Empty,
+            PlaceholderText = Tr.Loc.TranslateText("Note header"),
+            MinHeight = 36
+        };
+        var body = new TextBox
+        {
+            Text = existing?.Note ?? string.Empty,
+            PlaceholderText = Tr.Loc.TranslateText("Write your note here"),
+            AcceptsReturn = true,
+            TextWrapping = TextWrapping.Wrap,
+            MinHeight = 150,
+            VerticalContentAlignment = VerticalAlignment.Top
+        };
+        var shared = new CheckBox
+        {
+            Content = Tr.Loc.TranslateText("Visible to all users"),
+            IsChecked = existing?.IsShared ?? true
+        };
+        var createdInfo = new TextBlock
+        {
+            Text = existing is null
+                ? $"{Tr.Loc.TranslateText("Date")}: {calendarDate:dd/MM/yyyy} · {Tr.Loc.TranslateText("Created by")}: {viewModel.User.Username}"
+                : $"{Tr.Loc.TranslateText("Created by")}: {existing.CreatedBy} · {DateTime.SpecifyKind(existing.CreatedAt, DateTimeKind.Utc).ToLocalTime():dd/MM/yyyy HH:mm}",
+            Foreground = Brushes.LightGray,
+            FontSize = 11
+        };
+        var status = new TextBlock { Foreground = Brushes.Orange, TextWrapping = TextWrapping.Wrap };
+        var save = new Button { Content = Tr.Loc.TranslateText("Save"), Classes = { "accent" }, MinWidth = 100 };
+        var cancel = new Button { Content = Tr.Loc.TranslateText("Cancel"), MinWidth = 100 };
+        var delete = new Button
+        {
+            Content = Tr.Loc.TranslateText("Delete"),
+            MinWidth = 90,
+            IsVisible = existing is not null
+        };
+        var dialog = new Window
+        {
+            Title = existing is null ? Tr.Loc.TranslateText("Add calendar note") : Tr.Loc.TranslateText("Edit calendar note"),
+            Width = 560,
+            Height = 500,
+            MinWidth = 460,
+            MinHeight = 400,
+            CanResize = true,
+            WindowStartupLocation = WindowStartupLocation.CenterOwner
+        };
+        cancel.Click += (_, _) => dialog.Close();
+        save.Click += async (_, _) =>
+        {
+            var title = header.Text?.Trim() ?? string.Empty;
+            var text = body.Text?.Trim() ?? string.Empty;
+            if (string.IsNullOrWhiteSpace(title) || string.IsNullOrWhiteSpace(text))
+            {
+                status.Text = Tr.Loc.TranslateText("Both the header and note are required.");
+                return;
+            }
+
+            await using var db = new PharmacyDbContext(PharmacyDb.Options());
+            CalendarNote record;
+            if (existing is null)
+            {
+                record = new CalendarNote
+                {
+                    CalendarDate = calendarDate.Date,
+                    CreatedBy = viewModel.User.Username,
+                    CreatedAt = DateTime.UtcNow
+                };
+                db.CalendarNotes.Add(record);
+            }
+            else
+            {
+                record = await db.CalendarNotes.FirstOrDefaultAsync(note => note.Id == existing.Id);
+                if (record is null || record.CreatedBy != viewModel.User.Username)
+                {
+                    status.Text = Tr.Loc.TranslateText("This note can no longer be edited by this user.");
+                    return;
+                }
+            }
+            record.Header = title;
+            record.Note = text;
+            record.IsShared = shared.IsChecked == true;
+            await db.SaveChangesAsync();
+            dialog.Close();
+            if (calendarMonthTitle is not null)
+                await RenderCalendarAsync(calendarMonthTitle);
+        };
+        delete.Click += async (_, _) =>
+        {
+            if (existing is null) return;
+            await using var db = new PharmacyDbContext(PharmacyDb.Options());
+            var record = await db.CalendarNotes.FirstOrDefaultAsync(note => note.Id == existing.Id);
+            if (record is null || record.CreatedBy != viewModel.User.Username) return;
+            db.CalendarNotes.Remove(record);
+            await db.SaveChangesAsync();
+            dialog.Close();
+            if (calendarMonthTitle is not null)
+                await RenderCalendarAsync(calendarMonthTitle);
+        };
+
+        dialog.Content = new StackPanel
+        {
+            Margin = new Thickness(18),
+            Spacing = 10,
+            Children =
+            {
+                new TextBlock { Text = $"{Tr.Loc.TranslateText("Calendar date")}: {calendarDate:dddd, dd MMMM yyyy}", FontWeight = FontWeight.SemiBold },
+                new TextBlock { Text = Tr.Loc.TranslateText("Header") }, header,
+                new TextBlock { Text = Tr.Loc.TranslateText("Note") }, body,
+                shared,
+                createdInfo,
+                status,
+                new StackPanel
+                {
+                    Orientation = Orientation.Horizontal,
+                    HorizontalAlignment = HorizontalAlignment.Right,
+                    Spacing = 8,
+                    Children = { delete, cancel, save }
+                }
+            }
+        };
+        AttachDialogLocalization(dialog);
+        await dialog.ShowDialog(this);
     }
 
     private TabControl customerTabs = null!;
