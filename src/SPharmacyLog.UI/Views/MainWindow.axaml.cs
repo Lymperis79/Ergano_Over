@@ -2677,4 +2677,13 @@ public partial class MainWindow : Window
         var appearance = new AppearanceWindow();
         await appearance.ShowDialog(this);
     }
+
+    private void OnLogoutClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        var login = new LoginWindow();
+        if (Application.Current?.ApplicationLifetime is Avalonia.Controls.ApplicationLifetimes.IClassicDesktopStyleApplicationLifetime desktop)
+            desktop.MainWindow = login;
+        login.Show();
+        Close();
+    }
 }
