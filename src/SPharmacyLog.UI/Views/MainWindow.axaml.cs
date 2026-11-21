@@ -382,7 +382,7 @@ public partial class MainWindow : Window
         var detailsGrid = new Grid
         {
             ColumnDefinitions = new ColumnDefinitions("*,*"),
-            RowDefinitions = new RowDefinitions("Auto,Auto,Auto,Auto,Auto")
+            RowDefinitions = new RowDefinitions("Auto,Auto,Auto,Auto,Auto,Auto")
         };
         AddGs1Detail(detailsGrid, "GTIN-14 (AI 01)", "Gtin14", 0, 0);
         AddGs1Detail(detailsGrid, "Serial number (AI 21)", "SerialNumber", 0, 1);
@@ -391,13 +391,14 @@ public partial class MainWindow : Window
         AddGs1Detail(detailsGrid, "Raw scanner payload", "RawPayload", 2, 0, 2);
         AddGs1Detail(detailsGrid, "Pack status", "HmvoStatus", 3, 0);
         AddGs1Detail(detailsGrid, "Medicine catalogue match", "MedicineMatch", 3, 1);
+        AddGs1Detail(detailsGrid, "NHRN (AI 715 — US NDC, optional)", "Nhrn715", 4, 0, 2);
         gs1ParsedFields["HmvoStatus"].Text = Tr.Loc.TranslateText(SerializedPackStatuses.Active);
         gs1ParsedFields["MedicineMatch"].Text = Tr.Loc.TranslateText("Not matched");
         var eofPanel = new StackPanel { Spacing = 3, Margin = new Thickness(5) };
         eofPanel.Children.Add(new TextBlock { Text = "Greek EOF / NTIN barcode (optional mapping)" });
         gs1EofEan13Input = new TextBox { Watermark = "13-digit 0280... EOF barcode", MaxLength = 13 };
         eofPanel.Children.Add(gs1EofEan13Input);
-        Grid.SetRow(eofPanel, 4);
+        Grid.SetRow(eofPanel, 5);
         Grid.SetColumnSpan(eofPanel, 2);
         detailsGrid.Children.Add(eofPanel);
 
@@ -513,6 +514,9 @@ public partial class MainWindow : Window
         gs1ParsedFields["SerialNumber"].Text = parsed.SerialNumber;
         gs1ParsedFields["ExpiryDate"].Text = parsed.ExpiryDate.ToString("dd/MM/yyyy");
         gs1ParsedFields["BatchLot"].Text = parsed.BatchLot;
+        gs1ParsedFields["Nhrn715"].Text = parsed.Nhrn715 ?? string.Empty;
+        if (!string.IsNullOrWhiteSpace(parsed.ResolvedEofBarcode))
+            gs1EofEan13Input.Text = parsed.ResolvedEofBarcode;
         gs1ParsedFields["RawPayload"].Text = raw.Replace(Gs1DataMatrixParser.GroupSeparator.ToString(), "<GS>", StringComparison.Ordinal);
         gs1ScanStatus.Foreground = Brushes.LightGreen;
         gs1ScanStatus.Text = Tr.Loc.TranslateText("GS1 scan parsed successfully. Review the extracted details before saving the borrowing.");
@@ -528,9 +532,11 @@ public partial class MainWindow : Window
 
         var mappedBarcode = await db.MedicineBarcodes
             .Include(x => x.Medicine)
-            .FirstOrDefaultAsync(x => x.BarcodeValue == parsed.Gtin14);
+            .FirstOrDefaultAsync(x => x.BarcodeValue == parsed.Gtin14 ||
+                (!string.IsNullOrWhiteSpace(parsed.ResolvedEofBarcode) && x.BarcodeValue == parsed.ResolvedEofBarcode));
         var medicine = mappedBarcode?.Medicine
-            ?? await db.Medicines.FirstOrDefaultAsync(x => x.Barcode == parsed.Gtin14);
+            ?? await db.Medicines.FirstOrDefaultAsync(x => x.Barcode == parsed.Gtin14 ||
+                (!string.IsNullOrWhiteSpace(parsed.ResolvedEofBarcode) && x.Barcode == parsed.ResolvedEofBarcode));
 
         if (medicine is not null)
         {
@@ -703,6 +709,8 @@ public partial class MainWindow : Window
             }
 
             var eofEan13 = gs1EofEan13Input.Text?.Trim();
+            if (string.IsNullOrWhiteSpace(eofEan13))
+                eofEan13 = parsedPack.ResolvedEofBarcode;
             if (!string.IsNullOrWhiteSpace(eofEan13) &&
                 (eofEan13.Length != 13 || eofEan13.Any(ch => !char.IsDigit(ch))))
             {
