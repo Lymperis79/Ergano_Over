@@ -164,9 +164,9 @@ public sealed class PharmacyDbContextModelSnapshot : ModelSnapshot
             entity.Property(subscription => subscription.Status).HasConversion<int>();
             entity.Property(subscription => subscription.Notes);
             entity.Property(subscription => subscription.CreatedAt);
-            entity.Property(subscription => subscription.CreatedBy).IsRequired();
+            entity.Property(subscription => subscription.CreatedBy).IsRequired().HasMaxLength(255);
             entity.Property(subscription => subscription.LastModifiedAt);
-            entity.Property(subscription => subscription.LastModifiedBy).IsRequired();
+            entity.Property(subscription => subscription.LastModifiedBy).IsRequired().HasMaxLength(255);
             entity.HasIndex(subscription => subscription.CustomerId);
             entity.HasIndex(subscription => subscription.Status);
             entity.HasOne(subscription => subscription.Customer)
@@ -180,10 +180,10 @@ public sealed class PharmacyDbContextModelSnapshot : ModelSnapshot
             entity.ToTable("SubscriptionAuditEntries");
             entity.HasKey(entry => entry.Id);
             entity.Property(entry => entry.Id).ValueGeneratedOnAdd();
-            entity.Property(entry => entry.Action).IsRequired();
+            entity.Property(entry => entry.Action).IsRequired().HasMaxLength(255);
             entity.Property(entry => entry.PreviousStatus);
             entity.Property(entry => entry.NewStatus);
-            entity.Property(entry => entry.ChangedBy).IsRequired();
+            entity.Property(entry => entry.ChangedBy).IsRequired().HasMaxLength(255);
             entity.Property(entry => entry.ChangedAt);
             entity.Property(entry => entry.Details);
             entity.HasIndex(entry => new { entry.SubscriptionId, entry.ChangedAt });
