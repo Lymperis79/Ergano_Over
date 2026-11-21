@@ -15,9 +15,9 @@ public partial class MainWindow : Window
     private readonly MainWindowViewModel viewModel;
     private ComboBox languageBox = null!;
     private readonly ContentControl pageHost;
-    private readonly TextBlock dailySummary = new();
-    private readonly ListBox dayRecords = new();
-    private readonly StackPanel calendarPanel = new();
+    private TextBlock dailySummary = new();
+    private ListBox dayRecords = new();
+    private StackPanel calendarPanel = new();
     private DateTime displayedMonth = new(DateTime.Today.Year, DateTime.Today.Month, 1);
 
     public MainWindow(PharmacyUser user)
