@@ -2,6 +2,7 @@
   <ScrollViewer Padding="28">
     <Border Classes="card" Padding="24">
       <StackPanel Spacing="14">
+        <ComboBox x:Name="LanguageBox" Width="130" HorizontalAlignment="Right" SelectedIndex="0" SelectionChanged="OnLanguageChanged"><ComboBoxItem Content="English"/><ComboBoxItem Content="Ελληνικά"/></ComboBox>
         <StackPanel Orientation="Horizontal" Spacing="12">
           <Border Width="48" Height="48" CornerRadius="12" Background="{DynamicResource AccentSoftBrush}">
             <TextBlock Text="🔐" FontSize="23" VerticalAlignment="Center" HorizontalAlignment="Center"/>
