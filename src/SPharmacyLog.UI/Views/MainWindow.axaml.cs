@@ -143,6 +143,7 @@ public partial class MainWindow : Window
     private ListBox paymentList = null!;
     private ListBox ledgerList = null!;
     private List<BorrowingRecord> currentBorrowings = new();
+    private TextBlock borrowingSelectionDetails = null!;
     private TextBox gs1ScanInput = null!;
     private TextBox gs1EofEan13Input = null!;
     private TextBlock gs1ScanStatus = null!;
@@ -221,6 +222,13 @@ public partial class MainWindow : Window
     private TabItem BuildBorrowingsTab()
     {
         borrowingList = new ListBox { MinHeight = 180 };
+        borrowingSelectionDetails = new TextBlock
+        {
+            Text = "Select an existing borrowing to view its saved GS1 scan details.",
+            TextWrapping = TextWrapping.Wrap,
+            Margin = new Thickness(4, 0, 4, 8)
+        };
+        borrowingList.SelectionChanged += (_, _) => ShowSelectedBorrowingScanDetails();
 
         // A scanner configured as USB keyboard/HID writes directly into this field.
         // Most scanners send Enter after the DataMatrix payload.
@@ -310,6 +318,7 @@ public partial class MainWindow : Window
             Children =
             {
                 borrowingList,
+                borrowingSelectionDetails,
                 scanPanel,
                 detailsGrid,
                 fields,
@@ -317,6 +326,27 @@ public partial class MainWindow : Window
             }
         };
         return new TabItem { Header = "Borrowings", Content = new ScrollViewer { Content = panel } };
+    }
+
+    private void ShowSelectedBorrowingScanDetails()
+    {
+        if (borrowingList.SelectedIndex < 0 || borrowingList.SelectedIndex >= currentBorrowings.Count)
+        {
+            borrowingSelectionDetails.Text = "Select an existing borrowing to view its saved GS1 scan details.";
+            return;
+        }
+
+        var borrowing = currentBorrowings[borrowingList.SelectedIndex];
+        var pack = borrowing.SerializedPackScan;
+        if (pack is null)
+        {
+            borrowingSelectionDetails.Text = $"Selected item: {borrowing.MedicineName}. This is a legacy borrowing without a linked GS1 DataMatrix scan.";
+            return;
+        }
+
+        var raw = pack.RawGs1String.Replace(Gs1DataMatrixParser.GroupSeparator.ToString(), "<GS>", StringComparison.Ordinal);
+        borrowingSelectionDetails.Text =
+            $"SAVED GS1 PACK DETAILS\nMedicine: {borrowing.MedicineName}\nGTIN-14: {pack.Gtin14}\nEOF / NTIN: {pack.EofEan13 ?? "—"}\nSerial number: {pack.SerialNumber}\nExpiry: {pack.ExpiryDate:dd/MM/yyyy}\nBatch / lot: {pack.BatchLot}\nPack status: {pack.HmvoStatus}\nScanned at: {pack.ScannedAt:dd/MM/yyyy HH:mm:ss}\nRaw scanner payload: {raw}";
     }
 
     private Button CreateGs1ParseButton()
