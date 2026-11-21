@@ -1015,7 +1015,7 @@ public partial class MainWindow : Window
             }
 
             await using var db = new PharmacyDbContext(PharmacyDb.Options());
-            CalendarNote record;
+            CalendarNote? record;
             if (existing is null)
             {
                 record = new CalendarNote
