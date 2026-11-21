@@ -41,6 +41,14 @@ public sealed class PharmacyDbContext : DbContext
             .IsUnique();
 
         modelBuilder.Entity<MedicineBarcode>()
+            .Property(barcode => barcode.BarcodeValue)
+            .HasMaxLength(64);
+
+        modelBuilder.Entity<MedicineBarcode>()
+            .Property(barcode => barcode.BarcodeType)
+            .HasMaxLength(24);
+
+        modelBuilder.Entity<MedicineBarcode>()
             .HasIndex(barcode => barcode.BarcodeValue)
             .IsUnique();
 
