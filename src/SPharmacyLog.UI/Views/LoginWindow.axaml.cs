@@ -1,5 +1,6 @@
 using Avalonia.Controls;
 using Avalonia.Interactivity;
+using Avalonia.Markup.Xaml;
 using SPharmacyLog.UI.Localization;
 using SPharmacyLog.UI.ViewModels;
 
@@ -12,13 +13,18 @@ public partial class LoginWindow : Window
     public LoginWindow()
     {
         InitializeComponent();
+
         DataContext = viewModel;
         Opened += async (_, _) => await InitializeLoginAsync();
+
         Tr.Loc.LanguageChanged += (_, _) => ApplyTranslations();
         ApplyTranslations();
     }
 
-    private void InitializeComponent() => Avalonia.Markup.Xaml.AvaloniaXamlLoader.Load(this);
+    private void InitializeComponent()
+    {
+        AvaloniaXamlLoader.Load(this);
+    }
 
     private async Task InitializeLoginAsync()
     {
@@ -29,8 +35,8 @@ public partial class LoginWindow : Window
     private void ApplyTranslations()
     {
         Title = Tr.Loc["App.Title"];
-        UsernameBox.Watermark = Tr.Loc["Login.Username"];
-        PasswordBox.Watermark = Tr.Loc["Login.Password"];
+        UsernameBox.PlaceholderText = Tr.Loc["Login.Username"];
+        PasswordBox.PlaceholderText = Tr.Loc["Login.Password"];
         SubmitButton.Content = viewModel.SubmitText;
         MessageText.Text = viewModel.Message;
     }
@@ -38,18 +44,27 @@ public partial class LoginWindow : Window
     private async void OnSubmitClick(object? sender, RoutedEventArgs e)
     {
         SubmitButton.IsEnabled = false;
+
         viewModel.Username = UsernameBox.Text ?? string.Empty;
         viewModel.Password = PasswordBox.Text ?? string.Empty;
 
-        var user = await viewModel.SubmitAsync();
-        MessageText.Text = viewModel.Message;
-        SubmitButton.Content = viewModel.SubmitText;
-        PasswordBox.Text = viewModel.Password;
-        if (user is not null)
+        try
         {
-            new MainWindow(user).Show();
-            Close();
+            var user = await viewModel.SubmitAsync();
+
+            MessageText.Text = viewModel.Message;
+            SubmitButton.Content = viewModel.SubmitText;
+            PasswordBox.Text = viewModel.Password;
+
+            if (user is not null)
+            {
+                new MainWindow(user).Show();
+                Close();
+            }
         }
-        SubmitButton.IsEnabled = true;
+        finally
+        {
+            SubmitButton.IsEnabled = true;
+        }
     }
 }
