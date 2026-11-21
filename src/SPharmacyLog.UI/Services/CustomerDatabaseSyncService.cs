@@ -194,7 +194,7 @@ public static class CustomerDatabaseSyncService
             .ToDictionary(group => group.Key, group => group.First(), StringComparer.OrdinalIgnoreCase);
 
         await using var transaction = await destination.Database.BeginTransactionAsync(cancellationToken);
-        await using var reader = await command.ExecuteReaderAsync(CommandBehavior.SequentialAccess, cancellationToken);
+        await using var reader = await command.ExecuteReaderAsync(cancellationToken);
         var ordinalByColumn = selectedColumns.ToDictionary(column => column, reader.GetOrdinal, StringComparer.OrdinalIgnoreCase);
 
         while (await reader.ReadAsync(cancellationToken))
