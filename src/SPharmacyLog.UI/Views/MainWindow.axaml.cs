@@ -32,6 +32,7 @@ public partial class MainWindow : Window
     private TextBlock? calendarMonthTitle;
     private bool showingExpiryCalendar;
     private bool suppressCustomerSelectionChanged;
+    private const string MenuDashboard = "Dashboard";
     private const string MenuCalendar = "ExpiryCalendar";
     private const string MenuCustomers = "Customers";
     private const string MenuBorrowing = "Borrowing";
@@ -40,6 +41,7 @@ public partial class MainWindow : Window
     private const string MenuReports = "Reports";
     private static readonly (string Key, string LabelKey)[] ConfigurableMenus =
     {
+        (MenuDashboard, "Dashboard"),
         (MenuCalendar, "Navigation.ExpiryCalendar"),
         (MenuCustomers, "Navigation.Customers"),
         (MenuBorrowing, "Navigation.Borrowing"),
@@ -72,7 +74,8 @@ public partial class MainWindow : Window
         pageHost = PageHost;
 
         BuildNavigation();
-        if (CanAccessMenu(MenuCalendar)) ShowExpiryCalendar();
+        if (CanAccessMenu(MenuDashboard)) ShowDashboard();
+        else if (CanAccessMenu(MenuCalendar)) ShowExpiryCalendar();
         else if (CanAccessMenu(MenuCustomers)) ShowCustomers();
         else if (CanAccessMenu(MenuBorrowing)) ShowPlaceholder(Tr.Loc["Navigation.Borrowing"]);
         else if (CanAccessMenu(MenuSubscriptions)) ShowPlaceholder(Tr.Loc["Navigation.Subscriptions"]);
@@ -106,6 +109,7 @@ public partial class MainWindow : Window
             if (!CanAccessMenu(item.Key)) continue;
             Action action = item.Key switch
             {
+                MenuDashboard => ShowDashboard,
                 MenuCalendar => ShowExpiryCalendar,
                 MenuCustomers => ShowCustomers,
                 MenuBorrowing => () => ShowPlaceholder(Tr.Loc[item.LabelKey]),
@@ -140,6 +144,7 @@ public partial class MainWindow : Window
                 Margin = new Thickness(4, 12, 0, 0)
             });
             AddNavigationButton("Navigation.Users", () => _ = ShowUsersAsync());
+            AddNavigationButton("Weather settings", OpenWeatherSettings);
         }
     }
 
@@ -148,6 +153,103 @@ public partial class MainWindow : Window
         var button = new Button { Content = Tr.Loc[labelKey], Classes = { "nav" }, MinWidth = 190 };
         button.Click += (_, _) => action();
         NavigationPanel.Children.Add(button);
+    }
+
+    private async void ShowDashboard()
+    {
+        if (!CanAccessMenu(MenuDashboard)) { ShowNoMenuAccess(); return; }
+        showingExpiryCalendar = false;
+        var root = new StackPanel { Margin = new Thickness(22), Spacing = 14 };
+        root.Children.Add(new TextBlock { Text = Tr.Loc.TranslateText("Dashboard"), FontSize = 25, FontWeight = FontWeight.Bold });
+        root.Children.Add(new TextBlock { Text = DateTime.Today.ToString("dddd, dd MMMM yyyy"), Foreground = Brushes.LightGray });
+
+        var weatherRow = new Grid { ColumnDefinitions = CreateColumns(GridLength.Star, GridLength.Auto), Background = new SolidColorBrush(Color.Parse("#202733")), Margin = new Thickness(0, 2, 0, 4) };
+        var weatherText = new TextBlock { Text = "Weather: loading…", VerticalAlignment = VerticalAlignment.Center, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(14, 12) };
+        var weatherRefresh = new Button { Content = "↻", ToolTip = "Refresh weather", Margin = new Thickness(6), VerticalAlignment = VerticalAlignment.Center };
+        weatherRow.Children.Add(weatherText);
+        Grid.SetColumn(weatherRefresh, 1); weatherRow.Children.Add(weatherRefresh);
+        root.Children.Add(new Border { Child = weatherRow, CornerRadius = new CornerRadius(9), BorderThickness = new Thickness(1), BorderBrush = new SolidColorBrush(Color.Parse("#354152")) });
+
+        var cards = new Grid { ColumnDefinitions = CreateColumns(GridLength.Star, GridLength.Star), RowDefinitions = CreateRows(GridLength.Auto, GridLength.Auto) };
+        var customersValue = new TextBlock { Text = "—", FontSize = 30, FontWeight = FontWeight.Bold };
+        var activeValue = new TextBlock { Text = "—", FontSize = 30, FontWeight = FontWeight.Bold };
+        var dueValue = new TextBlock { Text = "—", FontSize = 30, FontWeight = FontWeight.Bold };
+        var overdueValue = new TextBlock { Text = "—", FontSize = 30, FontWeight = FontWeight.Bold };
+        void AddCard(string label, TextBlock value, int column, int row, string accent)
+        {
+            var body = new StackPanel { Spacing = 5, Children =
+            {
+                new TextBlock { Text = Tr.Loc.TranslateText(label), Foreground = Brushes.LightGray, FontSize = 13 },
+                value
+            }};
+            var card = new Border { Background = new SolidColorBrush(Color.Parse("#202733")), BorderBrush = new SolidColorBrush(Color.Parse(accent)), BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(10), Padding = new Thickness(18), Margin = new Thickness(4), Child = body };
+            Grid.SetColumn(card, column); Grid.SetRow(card, row); cards.Children.Add(card);
+        }
+        AddCard("Total customers", customersValue, 0, 0, "#397DA5");
+        AddCard("Active subscriptions", activeValue, 1, 0, "#397DA5");
+        AddCard("Subscriptions due today", dueValue, 0, 1, "#D39A35");
+        AddCard("Overdue open subscriptions", overdueValue, 1, 1, "#C65D5D");
+        root.Children.Add(cards);
+
+        var todayPanel = new Border { Background = new SolidColorBrush(Color.Parse("#202733")), BorderBrush = new SolidColorBrush(Color.Parse("#354152")), BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(10), Padding = new Thickness(16), Child = new StackPanel { Spacing = 7 } };
+        var todayStack = (StackPanel)todayPanel.Child!;
+        todayStack.Children.Add(new TextBlock { Text = Tr.Loc.TranslateText("Today's status"), FontSize = 17, FontWeight = FontWeight.SemiBold });
+        var todaySummary = new TextBlock { Text = "Loading today's activity…", TextWrapping = TextWrapping.Wrap, Foreground = Brushes.LightGray };
+        todayStack.Children.Add(todaySummary);
+        root.Children.Add(todayPanel);
+        pageHost.Content = new ScrollViewer { Content = root, VerticalScrollBarVisibility = ScrollBarVisibility.Auto };
+
+        async Task RefreshWeatherAsync()
+        {
+            weatherRefresh.IsEnabled = false;
+            try
+            {
+                var settings = WeatherSettingsService.Load();
+                var snapshot = await WeatherSettingsService.GetCurrentAsync(settings.Location);
+                var parts = new List<string> { "Weather" };
+                if (settings.ShowLocation && !string.IsNullOrWhiteSpace(settings.Location)) parts.Add(settings.Location);
+                if (settings.ShowTemperature) parts.Add($"{snapshot.Temperature:0.#} °C");
+                if (settings.ShowCondition) parts.Add(WeatherSettingsService.Describe(snapshot.WeatherCode));
+                if (settings.ShowFeelsLike) parts.Add($"Feels like {snapshot.FeelsLike:0.#} °C");
+                if (settings.ShowHumidity) parts.Add($"Humidity {snapshot.Humidity}%");
+                if (settings.ShowWind) parts.Add($"Wind {snapshot.WindSpeed:0.#} km/h");
+                weatherText.Text = string.Join("   ·   ", parts);
+            }
+            catch (Exception ex) { weatherText.Text = ex.Message; }
+            finally { weatherRefresh.IsEnabled = true; }
+        }
+        weatherRefresh.Click += async (_, _) => await RefreshWeatherAsync();
+        await RefreshWeatherAsync();
+
+        try
+        {
+            await using var db = new PharmacyDbContext(PharmacyDb.Options());
+            var today = DateTime.Today;
+            var tomorrow = today.AddDays(1);
+            var customerCount = await db.Customers.CountAsync();
+            var activeCount = await db.Subscriptions.CountAsync(item => item.Status == SubscriptionStatus.Active);
+            var dueToday = await db.Subscriptions.CountAsync(item => item.Status == SubscriptionStatus.Active && item.NextDueDate >= today && item.NextDueDate < tomorrow);
+            var overdue = await db.Subscriptions.CountAsync(item => item.Status == SubscriptionStatus.Active && item.NextDueDate < today);
+            customersValue.Text = customerCount.ToString();
+            activeValue.Text = activeCount.ToString();
+            dueValue.Text = dueToday.ToString();
+            overdueValue.Text = overdue.ToString();
+            todaySummary.Text = $"{dueToday} subscription(s) due today. {overdue} overdue active subscription(s) remain open. {activeCount} active subscription(s) in total.";
+        }
+        catch (Exception ex)
+        {
+            todaySummary.Text = "Unable to load today's status: " + ex.Message;
+        }
+        ApplyTranslations();
+    }
+
+    private async void OpenWeatherSettings()
+    {
+        if (viewModel.User.Role != PharmacyRole.Admin) return;
+        var dialog = new WeatherSettingsWindow();
+        var saved = await dialog.ShowDialog<bool>(this);
+        if (saved)
+            ShowDashboard();
     }
 
     private void ShowReports()
