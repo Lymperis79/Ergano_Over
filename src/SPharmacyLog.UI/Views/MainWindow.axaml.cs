@@ -1,11 +1,13 @@
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Layout;
+using Avalonia.Input;
 using Avalonia.Media;
 using Microsoft.EntityFrameworkCore;
 using SPharmacyLog.Data;
 using SPharmacyLog.Data.Entities;
 using SPharmacyLog.UI.Localization;
+using SPharmacyLog.UI.Services;
 using SPharmacyLog.UI.ViewModels;
 
 namespace SPharmacyLog.UI.Views;
@@ -141,6 +143,11 @@ public partial class MainWindow : Window
     private ListBox paymentList = null!;
     private ListBox ledgerList = null!;
     private List<BorrowingRecord> currentBorrowings = new();
+    private TextBox gs1ScanInput = null!;
+    private TextBox gs1EofEan13Input = null!;
+    private TextBlock gs1ScanStatus = null!;
+    private readonly Dictionary<string, TextBox> gs1ParsedFields = new();
+    private Gs1DataMatrixParser.ParsedPack? currentParsedPack;
 
     private void ShowCustomers()
     {
@@ -214,18 +221,152 @@ public partial class MainWindow : Window
     private TabItem BuildBorrowingsTab()
     {
         borrowingList = new ListBox { MinHeight = 180 };
+
+        // A scanner configured as USB keyboard/HID writes directly into this field.
+        // Most scanners send Enter after the DataMatrix payload.
+        gs1ScanInput = new TextBox
+        {
+            Watermark = "Scan GS1 DataMatrix here (scanner suffix: Enter)",
+            MinHeight = 38,
+            FontSize = 15
+        };
+        gs1ScanInput.KeyDown += async (_, e) =>
+        {
+            if (e.Key == Key.Enter)
+            {
+                e.Handled = true;
+                await PreviewGs1ScanAsync();
+            }
+        };
+
+        gs1ScanStatus = new TextBlock
+        {
+            Text = "Ready for a GS1 DataMatrix scan.",
+            Foreground = Brushes.Gray,
+            TextWrapping = TextWrapping.Wrap
+        };
+
+        var scanPanel = new StackPanel
+        {
+            Spacing = 8,
+            Margin = new Thickness(0, 0, 0, 8),
+            Children =
+            {
+                new TextBlock { Text = "PHARMACEUTICAL PACK SCAN", FontSize = 16, FontWeight = FontWeight.Bold },
+                new TextBlock { Text = "Scan the 2D DataMatrix. The original scanner text is retained exactly; the fields below are extracted from GS1 Application Identifiers.", TextWrapping = TextWrapping.Wrap },
+                gs1ScanInput,
+                gs1ScanStatus
+            }
+        };
+
+        var detailsGrid = new Grid
+        {
+            ColumnDefinitions = new ColumnDefinitions("*,*"),
+            RowDefinitions = new RowDefinitions("Auto,Auto,Auto,Auto")
+        };
+        AddGs1Detail(detailsGrid, "GTIN-14 (AI 01)", "Gtin14", 0, 0);
+        AddGs1Detail(detailsGrid, "Serial number (AI 21)", "SerialNumber", 0, 1);
+        AddGs1Detail(detailsGrid, "Expiry date (AI 17)", "ExpiryDate", 1, 0);
+        AddGs1Detail(detailsGrid, "Batch / lot (AI 10)", "BatchLot", 1, 1);
+        AddGs1Detail(detailsGrid, "Raw scanner payload", "RawPayload", 2, 0, 2);
+        var eofPanel = new StackPanel { Spacing = 3, Margin = new Thickness(5) };
+        eofPanel.Children.Add(new TextBlock { Text = "Greek EOF / NTIN barcode (optional mapping)" });
+        gs1EofEan13Input = new TextBox { Watermark = "13-digit 0280... EOF barcode", MaxLength = 13 };
+        eofPanel.Children.Add(gs1EofEan13Input);
+        Grid.SetRow(eofPanel, 3);
+        Grid.SetColumnSpan(eofPanel, 2);
+        detailsGrid.Children.Add(eofPanel);
+
         var fields = new StackPanel { Spacing = 6 };
-        AddActivityField(fields, "Borrowing item / medicine", "BorrowingName");
-        AddActivityField(fields, "Quantity", "BorrowingQuantity", "1");
-        AddActivityField(fields, "Internal barcode", "BorrowingBarcode");
+        AddActivityField(fields, "Medicine name (auto-filled when barcode is mapped)", "BorrowingName");
+        AddActivityField(fields, "Quantity (one serialized pack per record)", "BorrowingQuantity", "1");
+        AddActivityField(fields, "Internal barcode / borrowing reference", "BorrowingBarcode");
         AddActivityField(fields, "Due date (yyyy-MM-dd)", "BorrowingDueDate");
         AddActivityField(fields, "Value", "BorrowingValue");
         AddActivityField(fields, "Notes", "BorrowingNotes");
+
         var add = new Button { Content = "＋ Add borrowing", Classes = { "accent" } };
         add.Click += async (_, _) => await AddBorrowingAsync();
         var returned = new Button { Content = "Mark selected as returned" };
         returned.Click += async (_, _) => await ReturnSelectedBorrowingAsync();
-        return new TabItem { Header = "Borrowings", Content = new StackPanel { Spacing = 10, Children = { borrowingList, fields, new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, Children = { add, returned } } } } };
+
+        var panel = new StackPanel
+        {
+            Spacing = 10,
+            Children =
+            {
+                borrowingList,
+                scanPanel,
+                detailsGrid,
+                fields,
+                new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, Children = { add, returned } }
+            }
+        };
+        return new TabItem { Header = "Borrowings", Content = new ScrollViewer { Content = panel } };
+    }
+
+    private void AddGs1Detail(Grid grid, string label, string key, int row, int column, int columnSpan = 1)
+    {
+        var panel = new StackPanel { Spacing = 3, Margin = new Thickness(5) };
+        panel.Children.Add(new TextBlock { Text = label });
+        var value = new TextBox { IsReadOnly = true, MinHeight = 32 };
+        gs1ParsedFields[key] = value;
+        panel.Children.Add(value);
+        Grid.SetRow(panel, row);
+        Grid.SetColumn(panel, column);
+        Grid.SetColumnSpan(panel, columnSpan);
+        grid.Children.Add(panel);
+    }
+
+    private async Task PreviewGs1ScanAsync()
+    {
+        var raw = gs1ScanInput.Text ?? string.Empty;
+        if (!Gs1DataMatrixParser.TryParse(raw, out var parsed, out var error) || parsed is null)
+        {
+            currentParsedPack = null;
+            gs1ScanStatus.Foreground = Brushes.OrangeRed;
+            gs1ScanStatus.Text = error;
+            ClearGs1ParsedFields();
+            return;
+        }
+
+        currentParsedPack = parsed;
+        gs1ParsedFields["Gtin14"].Text = parsed.Gtin14;
+        gs1ParsedFields["SerialNumber"].Text = parsed.SerialNumber;
+        gs1ParsedFields["ExpiryDate"].Text = parsed.ExpiryDate.ToString("dd/MM/yyyy");
+        gs1ParsedFields["BatchLot"].Text = parsed.BatchLot;
+        gs1ParsedFields["RawPayload"].Text = raw.Replace(Gs1DataMatrixParser.GroupSeparator.ToString(), "<GS>", StringComparison.Ordinal);
+        gs1ScanStatus.Foreground = Brushes.LightGreen;
+        gs1ScanStatus.Text = "GS1 scan parsed successfully. Review the extracted details before saving the borrowing.";
+
+        await using var db = new PharmacyDbContext(PharmacyDb.Options());
+        var mappedBarcode = await db.MedicineBarcodes
+            .Include(x => x.Medicine)
+            .FirstOrDefaultAsync(x => x.BarcodeValue == parsed.Gtin14);
+        var medicine = mappedBarcode?.Medicine
+            ?? await db.Medicines.FirstOrDefaultAsync(x => x.Barcode == parsed.Gtin14);
+
+        if (medicine is not null)
+        {
+            if (activityFields.TryGetValue("BorrowingName", out var nameBox))
+                nameBox.Text = medicine.Name;
+            var eofBarcode = await db.MedicineBarcodes
+                .Where(x => x.MedicineId == medicine.Id && x.BarcodeType == "EOF_EAN13")
+                .Select(x => x.BarcodeValue)
+                .FirstOrDefaultAsync();
+            if (!string.IsNullOrWhiteSpace(eofBarcode))
+                gs1EofEan13Input.Text = eofBarcode;
+            gs1ScanStatus.Text += $" Medicine matched: {medicine.Name}.";
+        }
+        else
+        {
+            gs1ScanStatus.Text += " No medicine catalogue match yet; you can enter the medicine name and EOF barcode manually.";
+        }
+    }
+
+    private void ClearGs1ParsedFields()
+    {
+        foreach (var field in gs1ParsedFields.Values) field.Text = string.Empty;
     }
 
     private TabItem BuildSubscriptionsTab()
@@ -284,7 +425,7 @@ public partial class MainWindow : Window
         await using var db = new PharmacyDbContext(PharmacyDb.Options());
         var customer = await db.Customers.AsNoTracking().FirstOrDefaultAsync(c => c.Id == id);
         if (customer is null) return;
-        var borrowings = await db.Borrowings.AsNoTracking().Where(x => x.CustomerId == id).OrderByDescending(x => x.BorrowedAt).ToListAsync();
+        var borrowings = await db.Borrowings.AsNoTracking().Include(x => x.SerializedPackScan).Where(x => x.CustomerId == id).OrderByDescending(x => x.BorrowedAt).ToListAsync();
         var subscriptions = await db.Subscriptions.AsNoTracking().Where(x => x.CustomerId == id).OrderByDescending(x => x.StartDate).ToListAsync();
         var payments = await db.Payments.AsNoTracking().Where(x => x.CustomerId == id).OrderByDescending(x => x.PaidAt).ToListAsync();
         var ledger = await db.LedgerEntries.AsNoTracking().Where(x => x.CustomerId == id).OrderByDescending(x => x.EntryDate).ToListAsync();
@@ -293,7 +434,11 @@ public partial class MainWindow : Window
         var balance = charges - credits;
         customerOverview.Text = $"{customer.CustomerNumber}  |  {customer.FullName}\n{customer.Address}, {customer.City} {customer.Postcode}\nTelephone: {customer.Telephone ?? customer.Phone}  |  Mobile: {customer.Mobile}\nEmail: {customer.Email}\n\nBORROWINGS: {borrowings.Count} total, {borrowings.Count(x => x.Status == BorrowingStatus.Borrowed)} currently borrowed\nSUBSCRIPTIONS: {subscriptions.Count(x => x.Status == SubscriptionStatus.Active)} active of {subscriptions.Count}\nPAYMENTS: {payments.Count} recorded  |  Total paid: {payments.Sum(x => x.Amount):C}\nACCOUNT BALANCE: {balance:C}\n\nRecent activity:\n{string.Join("\n", ledger.Take(5).Select(x => $"{x.EntryDate:dd/MM/yyyy}  {x.Type}  {x.Amount:C}  {x.Description}"))}";
         currentBorrowings = borrowings;
-        borrowingList.ItemsSource = borrowings.Select(x => $"{x.BorrowedAt:dd/MM/yyyy} | {x.MedicineName} | Qty {x.Quantity} | {x.Status} | Due {x.DueDate:dd/MM/yyyy} | {x.InternalBarcode}").ToList();
+        borrowingList.ItemsSource = borrowings.Select(x =>
+            x.SerializedPackScan is null
+                ? $"{x.BorrowedAt:dd/MM/yyyy} | {x.MedicineName} | Qty {x.Quantity} | {x.Status} | Due {x.DueDate:dd/MM/yyyy} | {x.InternalBarcode}"
+                : $"{x.BorrowedAt:dd/MM/yyyy} | {x.MedicineName} | SN {x.SerializedPackScan.SerialNumber} | GTIN {x.SerializedPackScan.Gtin14} | Exp {x.SerializedPackScan.ExpiryDate:dd/MM/yyyy} | Lot {x.SerializedPackScan.BatchLot} | {x.Status}")
+            .ToList();
         subscriptionList.ItemsSource = subscriptions.Select(x => $"{x.Title} | {x.Status} | Next: {x.NextDueDate:dd/MM/yyyy} | Expires: {x.ExpiryDate:dd/MM/yyyy} | {x.Frequency}").ToList();
         paymentList.ItemsSource = payments.Select(x => $"{x.PaidAt:dd/MM/yyyy} | {x.Amount:C} | {x.Method} | {x.Reference}").ToList();
         ledgerList.ItemsSource = ledger.Select(x => $"{x.EntryDate:dd/MM/yyyy} | {x.Type} | {x.Amount:C} | {x.Description}").ToList();
@@ -302,14 +447,109 @@ public partial class MainWindow : Window
     private async Task AddBorrowingAsync()
     {
         if (!selectedCustomerId.HasValue) { SetActivityStatus("Save or select a customer first."); return; }
-        if (string.IsNullOrWhiteSpace(ActivityValue("BorrowingName")) || string.IsNullOrWhiteSpace(ActivityValue("BorrowingBarcode"))) { SetActivityStatus("Item name and internal barcode are required."); return; }
-        if (!int.TryParse(ActivityValue("BorrowingQuantity"), out var quantity) || quantity < 1) { SetActivityStatus("Enter a valid quantity."); return; }
+
+        // Parse on Save as well, so a scanner does not have to send an Enter suffix.
+        var rawGs1 = gs1ScanInput?.Text ?? string.Empty;
+        Gs1DataMatrixParser.ParsedPack? parsedPack = null;
+        if (!string.IsNullOrWhiteSpace(rawGs1))
+        {
+            if (!Gs1DataMatrixParser.TryParse(rawGs1, out parsedPack, out var parseError) || parsedPack is null)
+            {
+                SetActivityStatus("GS1 scan is incomplete or invalid: " + parseError);
+                return;
+            }
+            currentParsedPack = parsedPack;
+        }
+
+        if (string.IsNullOrWhiteSpace(ActivityValue("BorrowingName")) || string.IsNullOrWhiteSpace(ActivityValue("BorrowingBarcode")))
+        {
+            SetActivityStatus("Medicine name and internal borrowing reference are required.");
+            return;
+        }
+        if (!int.TryParse(ActivityValue("BorrowingQuantity"), out var quantity) || quantity < 1)
+        {
+            SetActivityStatus("Enter a valid quantity.");
+            return;
+        }
+        if (parsedPack is not null && quantity != 1)
+        {
+            SetActivityStatus("A serialized DataMatrix identifies one physical pack. Create one borrowing record per scanned pack (quantity 1).");
+            return;
+        }
+
         DateTime? due = DateTime.TryParse(ActivityValue("BorrowingDueDate"), out var dueDate) ? dueDate : null;
         decimal? value = decimal.TryParse(ActivityValue("BorrowingValue"), out var amount) ? amount : null;
         await using var db = new PharmacyDbContext(PharmacyDb.Options());
-        if (await db.Borrowings.AnyAsync(x => x.InternalBarcode == ActivityValue("BorrowingBarcode"))) { SetActivityStatus("This internal barcode is already in use."); return; }
-        db.Borrowings.Add(new BorrowingRecord { CustomerId = selectedCustomerId.Value, MedicineName = ActivityValue("BorrowingName"), Quantity = quantity, InternalBarcode = ActivityValue("BorrowingBarcode"), DueDate = due, Value = value, Notes = ActivityValue("BorrowingNotes") });
-        await db.SaveChangesAsync(); SetActivityStatus("Borrowing record added."); await RefreshCustomerWorkspaceAsync();
+        if (await db.Borrowings.AnyAsync(x => x.InternalBarcode == ActivityValue("BorrowingBarcode")))
+        {
+            SetActivityStatus("This internal barcode is already in use.");
+            return;
+        }
+
+        SerializedPackScan? serializedPack = null;
+        if (parsedPack is not null)
+        {
+            if (await db.SerializedPackScans.AnyAsync(x => x.Gtin14 == parsedPack.Gtin14 && x.SerialNumber == parsedPack.SerialNumber))
+            {
+                SetActivityStatus("This exact physical pack (GTIN + serial number) has already been scanned. Duplicate registration is blocked.");
+                return;
+            }
+
+            var eofEan13 = gs1EofEan13Input.Text?.Trim();
+            if (!string.IsNullOrWhiteSpace(eofEan13) &&
+                (eofEan13.Length != 13 || eofEan13.Any(ch => !char.IsDigit(ch))))
+            {
+                SetActivityStatus("The EOF / NTIN barcode must contain exactly 13 digits.");
+                return;
+            }
+
+            var matchedMedicine = await db.MedicineBarcodes
+                .Include(x => x.Medicine)
+                .Where(x => x.BarcodeValue == parsedPack.Gtin14 || (!string.IsNullOrWhiteSpace(eofEan13) && x.BarcodeValue == eofEan13))
+                .Select(x => x.Medicine)
+                .FirstOrDefaultAsync()
+                ?? await db.Medicines.FirstOrDefaultAsync(x => x.Barcode == parsedPack.Gtin14 ||
+                    (!string.IsNullOrWhiteSpace(eofEan13) && x.Barcode == eofEan13));
+
+            serializedPack = new SerializedPackScan
+            {
+                RawGs1String = rawGs1,
+                Gtin14 = parsedPack.Gtin14,
+                EofEan13 = string.IsNullOrWhiteSpace(eofEan13) ? null : eofEan13,
+                SerialNumber = parsedPack.SerialNumber,
+                ExpiryDate = parsedPack.ExpiryDate,
+                BatchLot = parsedPack.BatchLot,
+                HmvoStatus = SerializedPackStatuses.Active,
+                ScannedAt = DateTime.UtcNow,
+                MedicineId = matchedMedicine?.Id
+            };
+        }
+
+        var borrowing = new BorrowingRecord
+        {
+            CustomerId = selectedCustomerId.Value,
+            MedicineName = ActivityValue("BorrowingName"),
+            OriginalBarcode = parsedPack?.Gtin14,
+            SerializedPackScan = serializedPack,
+            Quantity = quantity,
+            InternalBarcode = ActivityValue("BorrowingBarcode"),
+            DueDate = due,
+            Value = value,
+            Notes = ActivityValue("BorrowingNotes")
+        };
+        db.Borrowings.Add(borrowing);
+        await db.SaveChangesAsync();
+
+        SetActivityStatus(parsedPack is null
+            ? "Borrowing record added."
+            : "GS1 pack scan and borrowing saved successfully. The raw payload and all parsed fields are stored.");
+        if (gs1ScanInput is not null) gs1ScanInput.Text = string.Empty;
+        if (gs1EofEan13Input is not null) gs1EofEan13Input.Text = string.Empty;
+        currentParsedPack = null;
+        ClearGs1ParsedFields();
+        gs1ScanStatus.Text = "Ready for the next GS1 DataMatrix scan.";
+        gs1ScanStatus.Foreground = Brushes.Gray;
+        await RefreshCustomerWorkspaceAsync();
     }
 
     private async Task ReturnSelectedBorrowingAsync()
@@ -317,9 +557,12 @@ public partial class MainWindow : Window
         if (borrowingList.SelectedIndex < 0 || borrowingList.SelectedIndex >= currentBorrowings.Count || !selectedCustomerId.HasValue) { SetActivityStatus("Select a borrowing record first."); return; }
         var selectedId = currentBorrowings[borrowingList.SelectedIndex].Id;
         await using var db = new PharmacyDbContext(PharmacyDb.Options());
-        var record = await db.Borrowings.FirstOrDefaultAsync(x => x.Id == selectedId && x.CustomerId == selectedCustomerId.Value && x.Status == BorrowingStatus.Borrowed);
+        var record = await db.Borrowings.Include(x => x.SerializedPackScan).FirstOrDefaultAsync(x => x.Id == selectedId && x.CustomerId == selectedCustomerId.Value && x.Status == BorrowingStatus.Borrowed);
         if (record is null) { SetActivityStatus("No active borrowing matches the entered barcode."); return; }
-        record.Status = BorrowingStatus.Returned; record.ReturnedAt = DateTime.Now;
+        record.Status = BorrowingStatus.Returned;
+        record.ReturnedAt = DateTime.Now;
+        if (record.SerializedPackScan is not null)
+            record.SerializedPackScan.HmvoStatus = SerializedPackStatuses.Returned;
         await db.SaveChangesAsync(); SetActivityStatus("Item marked as returned."); await RefreshCustomerWorkspaceAsync();
     }
 
