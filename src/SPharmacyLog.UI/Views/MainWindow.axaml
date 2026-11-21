@@ -1,17 +1,40 @@
-<Window xmlns="https://github.com/avaloniaui"
-        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        x:Class="SPharmacyLog.UI.Views.MainWindow"
-        Title="S Pharmacy Log" Width="1120" Height="760" MinWidth="900" MinHeight="600"
-        WindowStartupLocation="CenterScreen">
-  <DockPanel>
-    <StackPanel DockPanel.Dock="Top" Margin="12" Spacing="8">
-      <StackPanel Orientation="Horizontal" Spacing="12">
-        <TextBlock Text="S Pharmacy Log" FontSize="24" FontWeight="Bold" />
-        <TextBlock x:Name="UserLabel" VerticalAlignment="Center" Foreground="Gray" />
-        <ComboBox x:Name="LanguageBox" Width="120" SelectedIndex="0" SelectionChanged="OnLanguageChanged"><ComboBoxItem Content="English"/><ComboBoxItem Content="Ελληνικά"/></ComboBox>
+<Window xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" x:Class="SPharmacyLog.UI.Views.MainWindow" Title="S Pharmacy Log" Width="1240" Height="820" MinWidth="980" MinHeight="650" WindowStartupLocation="CenterScreen" Background="{DynamicResource WindowBrush}">
+  <Grid ColumnDefinitions="230,*" RowDefinitions="*,Auto">
+    <Border Grid.Column="0" Grid.RowSpan="2" Background="{DynamicResource SidebarBrush}" BorderBrush="{DynamicResource LineBrush}" BorderThickness="0,0,1,0">
+      <StackPanel Margin="18,20" Spacing="16">
+        <StackPanel Orientation="Horizontal" Spacing="10">
+          <Border Width="42" Height="42" CornerRadius="12" Background="{DynamicResource AccentSoftBrush}">
+            <TextBlock Text="✚" FontSize="25" Foreground="{DynamicResource AccentLightBrush}" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+          </Border>
+          <StackPanel VerticalAlignment="Center" Spacing="1">
+            <TextBlock Text="S Pharmacy Log" FontWeight="Bold" FontSize="17"/>
+            <TextBlock Text="PHARMACY MANAGEMENT" FontSize="9" Foreground="#8293A8"/>
+          </StackPanel>
+        </StackPanel>
+        <TextBlock Text="WORKSPACE" FontSize="10" FontWeight="Bold" Foreground="#8293A8" Margin="4,12,0,0"/>
+        <StackPanel x:Name="NavigationPanel" Spacing="5"/>
       </StackPanel>
-      <StackPanel x:Name="NavigationPanel" Orientation="Horizontal" Spacing="6" />
-    </StackPanel>
-    <ContentControl x:Name="PageHost" />
-  </DockPanel>
+    </Border>
+    <Grid Grid.Column="1" Grid.Row="0" RowDefinitions="Auto,*">
+      <Border Grid.Row="0" Background="{DynamicResource PanelBrush}" Padding="22,15" BorderBrush="{DynamicResource LineBrush}" BorderThickness="0,0,0,1">
+        <Grid ColumnDefinitions="*,Auto,Auto" VerticalAlignment="Center">
+          <StackPanel Spacing="2">
+            <TextBlock Text="Pharmacy workspace" FontSize="19" FontWeight="SemiBold"/>
+            <TextBlock Text="Manage prescriptions, customers and services" FontSize="12" Foreground="#93A2B6"/>
+          </StackPanel>
+          <TextBlock x:Name="UserLabel" Grid.Column="1" VerticalAlignment="Center" Foreground="#C8D4E2" Margin="0,0,18,0"/>
+          <ComboBox x:Name="LanguageBox" Grid.Column="2" Width="130" SelectedIndex="0" SelectionChanged="OnLanguageChanged">
+            <ComboBoxItem Content="English"/>
+            <ComboBoxItem Content="Ελληνικά"/>
+          </ComboBox>
+        </Grid>
+      </Border>
+      <Border Grid.Row="1" Margin="18" Background="{DynamicResource CardBrush}" BorderBrush="{DynamicResource LineBrush}" BorderThickness="1" CornerRadius="12" ClipToBounds="True">
+        <ContentControl x:Name="PageHost"/>
+      </Border>
+    </Grid>
+    <Border Grid.Column="1" Grid.Row="1" Background="{DynamicResource SidebarBrush}" BorderBrush="{DynamicResource LineBrush}" BorderThickness="0,1,0,0" Padding="16,9">
+      <TextBlock Text="S Pharmacy Log  •  Local pharmacy operations" Foreground="#77879A" FontSize="11" HorizontalAlignment="Right"/>
+    </Border>
+  </Grid>
 </Window>
