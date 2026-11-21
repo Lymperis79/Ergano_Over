@@ -86,10 +86,23 @@ public sealed class MedicineCatalogWindow : Window
         };
         Grid.SetColumn(header.Children[1], 1);
 
-        var body = new StackPanel
+        // A StackPanel measures children with effectively unlimited height, which
+        // prevents a nested ScrollViewer from receiving a bounded viewport.
+        // Use a Grid with a star-sized final row so both scrollbars can work.
+        rowsPanel.MinWidth = 850;
+        var body = new Grid
         {
             Margin = new Avalonia.Thickness(18),
-            Spacing = 10,
+            RowDefinitions = new RowDefinitions
+            {
+                new RowDefinition(GridLength.Auto),
+                new RowDefinition(GridLength.Auto),
+                new RowDefinition(GridLength.Auto),
+                new RowDefinition(GridLength.Auto),
+                new RowDefinition(GridLength.Auto),
+                new RowDefinition(GridLength.Star)
+            },
+            RowSpacing = 10,
             Children =
             {
                 title,
@@ -97,9 +110,16 @@ public sealed class MedicineCatalogWindow : Window
                 new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, Children = { searchBox, searchButton, updateButton, refreshButton } },
                 statusText,
                 header,
-                new ScrollViewer { Content = rowsPanel, VerticalScrollBarVisibility = Avalonia.Controls.Primitives.ScrollBarVisibility.Auto }
+                new ScrollViewer
+                {
+                    Content = rowsPanel,
+                    HorizontalScrollBarVisibility = Avalonia.Controls.Primitives.ScrollBarVisibility.Visible,
+                    VerticalScrollBarVisibility = Avalonia.Controls.Primitives.ScrollBarVisibility.Visible
+                }
             }
         };
+        for (var rowIndex = 0; rowIndex < body.Children.Count; rowIndex++)
+            Grid.SetRow(body.Children[rowIndex], rowIndex);
         Content = body;
 
         _ = RefreshRowsAsync();
