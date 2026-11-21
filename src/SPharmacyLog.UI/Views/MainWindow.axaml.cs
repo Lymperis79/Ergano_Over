@@ -1,5 +1,6 @@
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Controls.Primitives;
 using Avalonia.Layout;
 using Avalonia.Input;
 using Avalonia.Media;
@@ -84,7 +85,7 @@ public partial class MainWindow : Window
                 case Button button when button.Content is string content:
                     button.Content = Tr.Loc.TranslateText(content);
                     break;
-                case TextBox textBox when !string.IsNullOrEmpty(textBox.Watermark):
+                case TextBox textBox when !string.IsNullOrEmpty(textBox.PlaceholderText):
                     textBox.Watermark = Tr.Loc.TranslateText(textBox.Watermark);
                     break;
                 case TabItem tab when tab.Header is string header:
@@ -132,6 +133,23 @@ public partial class MainWindow : Window
         else if (languageBox?.SelectedIndex == 0) Tr.Loc.SetLanguage(AppLanguage.English);
     }
 
+
+    private static ColumnDefinitions CreateColumns(params GridLength[] widths)
+    {
+        var definitions = new ColumnDefinitions();
+        foreach (var width in widths)
+            definitions.Add(new ColumnDefinition { Width = width });
+        return definitions;
+    }
+
+    private static RowDefinitions CreateRows(params GridLength[] heights)
+    {
+        var definitions = new RowDefinitions();
+        foreach (var height in heights)
+            definitions.Add(new RowDefinition { Height = height });
+        return definitions;
+    }
+
     private void ShowExpiryCalendar()
     {
         showingExpiryCalendar = true;
@@ -150,7 +168,7 @@ public partial class MainWindow : Window
         next.Click += async (_, _) => { displayedMonth = displayedMonth.AddMonths(1); await RenderCalendarAsync(monthTitle); };
         monthBar.Children.Add(previous); monthBar.Children.Add(monthTitle); monthBar.Children.Add(next);
         content.Children.Add(monthBar);
-        var weekdayGrid = new Grid { ColumnDefinitions = new ColumnDefinitions("*,*,*,*,*,*,*") };
+        var weekdayGrid = new Grid { ColumnDefinitions = CreateColumns(GridLength.Star, GridLength.Star, GridLength.Star, GridLength.Star, GridLength.Star, GridLength.Star, GridLength.Star) };
         string[] weekdays = { "Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun" };
         for (var i = 0; i < weekdays.Length; i++) { var label = new TextBlock { Text = weekdays[i], HorizontalAlignment = HorizontalAlignment.Center }; Grid.SetColumn(label, i); weekdayGrid.Children.Add(label); }
         content.Children.Add(weekdayGrid);
@@ -170,7 +188,7 @@ public partial class MainWindow : Window
         var expiryCounts = await db.Prescriptions.Where(p => p.Status == PrescriptionStatus.Active && p.ExpiryDate >= start && p.ExpiryDate < end)
             .GroupBy(p => p.ExpiryDate.Date).Select(g => new { Date = g.Key, Count = g.Count() }).ToDictionaryAsync(x => x.Date, x => x.Count);
         calendarPanel.Children.Clear();
-        var grid = new Grid { ColumnDefinitions = new ColumnDefinitions("*,*,*,*,*,*,*"), RowDefinitions = new RowDefinitions("Auto,Auto,Auto,Auto,Auto,Auto") };
+        var grid = new Grid { ColumnDefinitions = new ColumnDefinitions("*,*,*,*,*,*,*"), RowDefinitions = CreateRows(GridLength.Auto, GridLength.Auto, GridLength.Auto, GridLength.Auto, GridLength.Auto, GridLength.Auto) };
         var offset = ((int)displayedMonth.DayOfWeek + 6) % 7; var daysInMonth = DateTime.DaysInMonth(displayedMonth.Year, displayedMonth.Month);
         for (var cell = 0; cell < 42; cell++)
         {
@@ -259,7 +277,7 @@ public partial class MainWindow : Window
         var right = new Grid
         {
             Margin = new Thickness(12, 0, 12, 0),
-            RowDefinitions = new RowDefinitions("*,Auto")
+            RowDefinitions = CreateRows(GridLength.Star, GridLength.Auto)
         };
         customerTabs.HorizontalAlignment = HorizontalAlignment.Stretch;
         customerTabs.VerticalAlignment = VerticalAlignment.Stretch;
@@ -268,8 +286,8 @@ public partial class MainWindow : Window
         right.Children.Add(customerStatus);
         var layout = new Grid
         {
-            ColumnDefinitions = new ColumnDefinitions("290,*"),
-            RowDefinitions = new RowDefinitions("*"),
+            ColumnDefinitions = CreateColumns(new GridLength(290), GridLength.Star),
+            RowDefinitions = CreateRows(GridLength.Star),
             Margin = new Thickness(18)
         };
         layout.Children.Add(left);
@@ -283,7 +301,7 @@ public partial class MainWindow : Window
 
     private TabItem BuildCustomerDetailsTab()
     {
-        var fieldsGrid = new Grid { ColumnDefinitions = new ColumnDefinitions("*,*"), RowDefinitions = new RowDefinitions("Auto,Auto,Auto,Auto,Auto,Auto,Auto") };
+        var fieldsGrid = new Grid { ColumnDefinitions = CreateColumns(GridLength.Star, GridLength.Star), RowDefinitions = CreateRows(GridLength.Auto, GridLength.Auto, GridLength.Auto, GridLength.Auto, GridLength.Auto, GridLength.Auto, GridLength.Auto) };
         AddCustomerField(fieldsGrid, "Customer number", "CustomerNumber", 0, 0);
         AddCustomerField(fieldsGrid, "Name", "FirstName", 0, 1);
         AddCustomerField(fieldsGrid, "Surname", "Surname", 1, 0);
@@ -382,7 +400,7 @@ public partial class MainWindow : Window
         var detailsGrid = new Grid
         {
             ColumnDefinitions = new ColumnDefinitions("*,*"),
-            RowDefinitions = new RowDefinitions("Auto,Auto,Auto,Auto,Auto,Auto")
+            RowDefinitions = CreateRows(GridLength.Auto, GridLength.Auto, GridLength.Auto, GridLength.Auto, GridLength.Auto, GridLength.Auto)
         };
         AddGs1Detail(detailsGrid, "GTIN-14 (AI 01)", "Gtin14", 0, 0);
         AddGs1Detail(detailsGrid, "Serial number (AI 21)", "SerialNumber", 0, 1);
