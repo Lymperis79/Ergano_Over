@@ -41,7 +41,7 @@ public sealed class MedicineCatalogWindow : Window
         {
             MinWidth = 260,
             MinHeight = 36,
-            Watermark = Tr.Loc.TranslateText("Search by medicine name or barcode")
+            PlaceholderText = Tr.Loc.TranslateText("Search by medicine name or barcode")
         };
         var searchButton = new Button { Content = Tr.Loc.TranslateText("Search"), MinWidth = 90 };
         searchButton.Click += async (_, _) => await RefreshRowsAsync();
@@ -74,7 +74,7 @@ public sealed class MedicineCatalogWindow : Window
 
         var header = new Grid
         {
-            ColumnDefinitions = new ColumnDefinitions("2*,2*"),
+            ColumnDefinitions = CreateTableColumns(),
             Background = new SolidColorBrush(Color.Parse("#263447")),
             Margin = new Avalonia.Thickness(0, 8, 0, 0),
             Children =
@@ -101,8 +101,15 @@ public sealed class MedicineCatalogWindow : Window
         };
         Content = body;
 
-        Closed += (_, _) => { };
         _ = RefreshRowsAsync();
+    }
+
+    private static ColumnDefinitions CreateTableColumns()
+    {
+        var columns = new ColumnDefinitions();
+        columns.Add(new ColumnDefinition(new GridLength(2, GridUnitType.Star)));
+        columns.Add(new ColumnDefinition(new GridLength(2, GridUnitType.Star)));
+        return columns;
     }
 
     private async Task RefreshRowsAsync()
