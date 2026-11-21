@@ -36,7 +36,6 @@ public static class MedicineCatalogImportService
 
         await using var db = new PharmacyDbContext(PharmacyDb.Options());
         var medicines = await db.Medicines.Include(x => x.Barcodes).ToListAsync(cancellationToken);
-        var byId = medicines.ToDictionary(x => x.Id);
         var byName = medicines
             .Where(x => !string.IsNullOrWhiteSpace(x.Name))
             .GroupBy(x => NormalizeName(x.Name))
