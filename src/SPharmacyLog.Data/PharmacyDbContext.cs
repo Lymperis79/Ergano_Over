@@ -98,6 +98,9 @@ public sealed class PharmacyDbContext : DbContext
         modelBuilder.Entity<SerializedPackScan>()
             .HasIndex(pack => pack.MedicineId);
 
+        modelBuilder.Entity<SerializedPackScan>()
+            .HasIndex(pack => new { pack.HmvoStatus, pack.ExpiryDate });
+
         modelBuilder.Entity<BorrowingRecord>()
             .HasIndex(borrowing => borrowing.SerializedPackScanId);
 
