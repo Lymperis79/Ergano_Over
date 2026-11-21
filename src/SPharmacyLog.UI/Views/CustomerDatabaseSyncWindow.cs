@@ -22,6 +22,10 @@ public sealed class CustomerDatabaseSyncWindow : Window
     private readonly StackPanel mappingsPanel = new() { Spacing = 7 };
     private readonly Dictionary<string, ComboBox> mappingBoxes = new(StringComparer.OrdinalIgnoreCase);
     private IReadOnlyList<string> availableColumns = Array.Empty<string>();
+    private string? savedTable;
+    private string? savedFilterColumn;
+    private Dictionary<string, string> savedMappings = new(StringComparer.OrdinalIgnoreCase);
+    private bool suppressTableSelectionChanged;
 
     private static readonly (string Target, string Label, string SuggestedSource)[] MappingDefinitions =
     {
@@ -88,7 +92,7 @@ public sealed class CustomerDatabaseSyncWindow : Window
         root.Children.Add(Card(mappingPanel));
 
         var bottom = new StackPanel { Spacing = 8 };
-        var previewButton = new Button { Content = "Preview matching source rows", MinWidth = 210 };
+        var previewButton = new Button { Content = "Count matching source rows", MinWidth = 210 };
         var importButton = new Button { Content = "Import customers", MinWidth = 150 };
         bottom.Children.Add(new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, Children = { previewButton, importButton } });
         bottom.Children.Add(status);
@@ -106,18 +110,30 @@ public sealed class CustomerDatabaseSyncWindow : Window
         {
             await CustomerDatabaseSyncService.TestConnectionAsync(settings);
             var tables = await CustomerDatabaseSyncService.GetTablesAsync(settings);
+            suppressTableSelectionChanged = true;
             table.ItemsSource = tables;
-            if (!string.IsNullOrWhiteSpace(settings.Table) && tables.Contains(settings.Table))
-                table.SelectedItem = settings.Table;
+            if (!string.IsNullOrWhiteSpace(savedTable) && tables.Contains(savedTable))
+                table.SelectedItem = savedTable;
             else if (tables.Count > 0)
                 table.SelectedIndex = 0;
-            await LoadColumnsAsync(settings.Table);
+            suppressTableSelectionChanged = false;
+            var selectedTable = table.SelectedItem?.ToString() ?? string.Empty;
+            if (!string.IsNullOrWhiteSpace(selectedTable))
+            {
+                await LoadColumnsAsync(selectedTable);
+                ApplySavedMappings();
+            }
             status.Text = $"Loaded {tables.Count} table(s). Select the source table and review the field mappings.";
         });
         table.SelectionChanged += async (_, _) =>
         {
-            if (table.SelectedItem is string selected)
-                await RunAsync(async settings => { await LoadColumnsAsync(selected); status.Text = $"Loaded {availableColumns.Count} source column(s)."; });
+            if (suppressTableSelectionChanged || table.SelectedItem is not string selected) return;
+            await RunAsync(async settings =>
+            {
+                await LoadColumnsAsync(selected);
+                ApplySavedMappings();
+                status.Text = $"Loaded {availableColumns.Count} source column(s).";
+            });
         };
         saveButton.Click += async (_, _) => await RunAsync(settings =>
         {
@@ -250,14 +266,23 @@ public sealed class CustomerDatabaseSyncWindow : Window
         username.Text = settings.Username;
         password.Text = settings.Password;
         filterValue.Text = settings.FilterValue;
-        if (settings.FieldMappings is not null)
-            foreach (var pair in settings.FieldMappings)
-                if (mappingBoxes.TryGetValue(pair.Key, out var combo))
-                    combo.SelectedItem = pair.Value;
-        if (!string.IsNullOrWhiteSpace(settings.Table))
-            table.SelectedItem = settings.Table;
-        if (!string.IsNullOrWhiteSpace(settings.FilterColumn))
-            filterColumn.SelectedItem = settings.FilterColumn;
+        savedTable = settings.Table;
+        savedFilterColumn = settings.FilterColumn;
+        savedMappings = settings.FieldMappings ?? new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+    }
+
+    private void ApplySavedMappings()
+    {
+        foreach (var definition in MappingDefinitions)
+        {
+            if (!savedMappings.TryGetValue(definition.Target, out var source) || string.IsNullOrWhiteSpace(source))
+                continue;
+            if (availableColumns.Contains(source, StringComparer.OrdinalIgnoreCase))
+                mappingBoxes[definition.Target].SelectedItem = availableColumns.First(column => column.Equals(source, StringComparison.OrdinalIgnoreCase));
+        }
+        if (!string.IsNullOrWhiteSpace(savedFilterColumn) &&
+            availableColumns.Contains(savedFilterColumn, StringComparer.OrdinalIgnoreCase))
+            filterColumn.SelectedItem = availableColumns.First(column => column.Equals(savedFilterColumn, StringComparison.OrdinalIgnoreCase));
     }
 
     private void UpdateAuthenticationFields()
