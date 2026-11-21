@@ -11,6 +11,7 @@ public partial class LoginWindow : Window
 {
     private readonly LoginViewModel viewModel = new();
     private ComboBox languageBox = null!;
+    private bool isApplyingTranslations;
 
     public LoginWindow()
     {
@@ -35,6 +36,7 @@ public partial class LoginWindow : Window
 
     private void ApplyTranslations()
     {
+        isApplyingTranslations = true;
         Title = Tr.Loc["App.Title"];
         if (languageBox is not null) languageBox.SelectedIndex = Tr.Loc.CurrentLanguage == AppLanguage.Greek ? 1 : 0;
         UsernameBox.PlaceholderText = Tr.Loc["Login.Username"];
@@ -59,10 +61,12 @@ public partial class LoginWindow : Window
                     break;
             }
         }
+        isApplyingTranslations = false;
     }
 
     private void OnLanguageChanged(object? sender, SelectionChangedEventArgs e)
     {
+        if (isApplyingTranslations) return;
         if (languageBox?.SelectedIndex == 1) Tr.Loc.SetLanguage(AppLanguage.Greek);
         else if (languageBox?.SelectedIndex == 0) Tr.Loc.SetLanguage(AppLanguage.English);
     }
