@@ -468,6 +468,15 @@ public partial class MainWindow : Window
                 case TabItem tab when tab.Header is string header:
                     tab.Header = Tr.Loc.TranslateText(header);
                     break;
+                case ComboBox comboBox when comboBox.ItemsSource is IEnumerable<string> options:
+                {
+                    var selected = comboBox.SelectedItem?.ToString();
+                    var translatedOptions = options.Select(Tr.Loc.TranslateText).ToArray();
+                    comboBox.ItemsSource = translatedOptions;
+                    if (selected is not null)
+                        comboBox.SelectedItem = Tr.Loc.TranslateText(selected);
+                    break;
+                }
                 case ComboBoxItem item when item.Content is string itemText:
                     item.Content = Tr.Loc.TranslateText(itemText);
                     break;
