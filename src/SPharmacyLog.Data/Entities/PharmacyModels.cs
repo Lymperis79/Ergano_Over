@@ -42,6 +42,18 @@ public enum LedgerEntryType
 }
 
 /// <summary>
+/// Lifecycle state of a serialized pharmaceutical pack.
+/// Values are stored as text to match GS1/HMVO terminology.
+/// </summary>
+public static class SerializedPackStatuses
+{
+    public const string Active = "ACTIVE";
+    public const string Dispensed = "DISPENSED";
+    public const string Returned = "RETURNED";
+    public const string Alert = "ALERT";
+}
+
+/// <summary>
 /// A user account that can sign in to S Pharmacy Log.
 /// </summary>
 public class PharmacyUser
@@ -163,6 +175,70 @@ public class MedicineCatalogItem
     public string? Notes { get; set; }
 
     public bool IsActive { get; set; } = true;
+
+    /// <summary>All known manufacturer, EOF/NTIN and other barcodes for this medicine.</summary>
+    public ICollection<MedicineBarcode> Barcodes { get; set; } = new List<MedicineBarcode>();
+
+    /// <summary>Serialized physical packs identified by GS1 DataMatrix.</summary>
+    public ICollection<SerializedPackScan> SerializedPacks { get; set; } = new List<SerializedPackScan>();
+}
+
+/// <summary>
+/// An alternate barcode that resolves to a medicine catalogue item.
+/// A medicine may have multiple barcode rows (for example GTIN and EOF/NTIN).
+/// </summary>
+public class MedicineBarcode
+{
+    public int Id { get; set; }
+
+    public int MedicineId { get; set; }
+
+    public MedicineCatalogItem? Medicine { get; set; }
+
+    /// <summary>Exact barcode value without scanner symbology prefixes.</summary>
+    public string BarcodeValue { get; set; } = string.Empty;
+
+    /// <summary>GTIN14, EOF_EAN13, OTHER or LEGACY.</summary>
+    public string BarcodeType { get; set; } = "OTHER";
+}
+
+/// <summary>
+/// One physical medicine pack scanned from a GS1 DataMatrix.
+/// The raw payload is retained exactly, including ASCII 29 group separators.
+/// </summary>
+public class SerializedPackScan
+{
+    public int Id { get; set; }
+
+    /// <summary>Exact scanner output; ASCII 29 (0x1D) must be preserved.</summary>
+    public string RawGs1String { get; set; } = string.Empty;
+
+    /// <summary>GS1 AI (01), exactly 14 digits.</summary>
+    public string Gtin14 { get; set; } = string.Empty;
+
+    /// <summary>Optional mapped Greek EOF/NTIN barcode, exactly 13 digits.</summary>
+    public string? EofEan13 { get; set; }
+
+    /// <summary>GS1 AI (21).</summary>
+    public string SerialNumber { get; set; } = string.Empty;
+
+    /// <summary>GS1 AI (17), interpreted as a calendar date.</summary>
+    public DateTime ExpiryDate { get; set; }
+
+    /// <summary>GS1 AI (10).</summary>
+    public string BatchLot { get; set; } = string.Empty;
+
+    /// <summary>ACTIVE, DISPENSED, RETURNED or ALERT.</summary>
+    public string HmvoStatus { get; set; } = SerializedPackStatuses.Active;
+
+    public DateTime ScannedAt { get; set; } = DateTime.UtcNow;
+
+    /// <summary>Resolved medicine catalogue item; null when not yet matched.</summary>
+    public int? MedicineId { get; set; }
+
+    public MedicineCatalogItem? Medicine { get; set; }
+
+    public ICollection<BorrowingRecord> Borrowings { get; set; } = new List<BorrowingRecord>();
 }
 
 /// <summary>
@@ -179,6 +255,11 @@ public class BorrowingRecord
     public string MedicineName { get; set; } = string.Empty;
 
     public string? OriginalBarcode { get; set; }
+
+    /// <summary>Optional link to the exact serialized pack scanned for this borrowing.</summary>
+    public int? SerializedPackScanId { get; set; }
+
+    public SerializedPackScan? SerializedPackScan { get; set; }
 
     public string InternalBarcode { get; set; } = string.Empty;
 
