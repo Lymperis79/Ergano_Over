@@ -133,6 +133,7 @@ public sealed class DatabaseSetupWindow : Window
             RefreshProviderFields();
 
         Tr.Loc.LanguageChanged += (_, _) => ApplyTranslations();
+        Opened += (_, _) => ApplyTranslations();
         ApplyTranslations();
     }
 
