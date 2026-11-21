@@ -202,7 +202,7 @@ public sealed class LocalizationService : ILocalizationService
         ["Medicine matched:"] = "Αντιστοιχισμένο φάρμακο:",
         ["ACTIVE"] = "ΕΝΕΡΓΗ",
         ["RETURNED"] = "ΕΠΙΣΤΡΑΦΗΚΕ",
-        ["NHRN (AI 715 — US NDC, optional)"] = "NHRN (AI 715 — κωδικός NDC ΗΠΑ, προαιρετικό)",
+        ["NHRN (AI 715 — US FDA, optional)"] = "NHRN (AI 715 — κωδικός FDA ΗΠΑ, προαιρετικό)",
         ["AI (715) occurs more than once in the same scan."] = "Το AI (715) εμφανίζεται περισσότερες από μία φορές στην ίδια σάρωση.",
         ["AI ({ai}) occurs more than once in the same scan."] = "Το AI ({ai}) εμφανίζεται περισσότερες από μία φορές στην ίδια σάρωση.",
         ["Unsupported GS1 Application Identifier ({ai2}). The scanner currently supports AIs 01, 10, 17, 21 and optional 715."] = "Μη υποστηριζόμενο GS1 Application Identifier ({ai2}). Η σάρωση υποστηρίζει τα AI 01, 10, 17, 21 και προαιρετικά 715."
