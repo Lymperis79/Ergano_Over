@@ -2,18 +2,19 @@
   <Grid Margin="28">
     <Border Classes="card" VerticalAlignment="Center" Padding="30">
       <StackPanel Spacing="15">
+        <ComboBox x:Name="LanguageBox" Width="130" HorizontalAlignment="Right" SelectedIndex="0" SelectionChanged="OnLanguageChanged"><ComboBoxItem Content="English"/><ComboBoxItem Content="Ελληνικά"/></ComboBox>
         <Border Width="74" Height="74" CornerRadius="18" Background="{DynamicResource AccentSoftBrush}" HorizontalAlignment="Center">
           <TextBlock Text="✚" FontSize="38" Foreground="{DynamicResource AccentLightBrush}" VerticalAlignment="Center" HorizontalAlignment="Center"/>
         </Border>
         <TextBlock Text="S Pharmacy Log" FontSize="29" FontWeight="Bold" HorizontalAlignment="Center"/>
-        <TextBlock Text="Prescription, customer and medicine tracking" Foreground="#91A1B5" HorizontalAlignment="Center" TextWrapping="Wrap" TextAlignment="Center" Margin="0,-5,0,8"/>
+        <TextBlock x:Name="SubtitleText" Text="Prescription, customer and medicine tracking" Foreground="#91A1B5" HorizontalAlignment="Center" TextWrapping="Wrap" TextAlignment="Center" Margin="0,-5,0,8"/>
         <TextBlock Text="Username" FontWeight="SemiBold"/>
         <TextBox x:Name="UsernameBox" PlaceholderText="Enter your username"/>
         <TextBlock Text="Password" FontWeight="SemiBold"/>
         <TextBox x:Name="PasswordBox" PlaceholderText="Enter your password" PasswordChar="•"/>
         <TextBlock x:Name="MessageText" TextWrapping="Wrap" Foreground="#F0A65A"/>
         <Button x:Name="SubmitButton" Content="Sign in" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Classes="accent" MinHeight="44" Click="OnSubmitClick"/>
-        <TextBlock Text="Secure pharmacy management" FontSize="12" Foreground="#738397" HorizontalAlignment="Center" Margin="0,6,0,0"/>
+        <TextBlock x:Name="FooterText" Text="Secure pharmacy management" FontSize="12" Foreground="#738397" HorizontalAlignment="Center" Margin="0,6,0,0"/>
       </StackPanel>
     </Border>
   </Grid>
