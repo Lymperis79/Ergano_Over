@@ -404,6 +404,23 @@ public sealed class LocalizationService : ILocalizationService
         ["Status"] = "Κατάσταση",
         ["Open customer"] = "Άνοιγμα πελάτη",
         ["Subscription details"] = "Στοιχεία συνδρομής",
+        ["Executed"] = "Εκτελεσμένη",
+        ["Created by"] = "Δημιουργήθηκε από",
+        ["Last changed by"] = "Τελευταία αλλαγή από",
+        ["Audit history"] = "Ιστορικό ενεργειών",
+        ["EXECUTED SUBSCRIPTIONS HISTORY"] = "ΙΣΤΟΡΙΚΟ ΕΚΤΕΛΕΣΜΕΝΩΝ ΣΥΝΔΡΟΜΩΝ",
+        ["Executed subscriptions are kept here and can be opened to review their audit history."] = "Οι εκτελεσμένες συνδρομές διατηρούνται εδώ και μπορείτε να τις ανοίξετε για να δείτε το ιστορικό ενεργειών τους.",
+        ["Executed on"] = "Εκτελέστηκε στις",
+        ["Save status"] = "Αποθήκευση κατάστασης",
+        ["Status changed"] = "Αλλαγή κατάστασης",
+        ["Updated"] = "Ενημερώθηκε",
+        ["Created"] = "Δημιουργήθηκε",
+        ["Imported existing record"] = "Εισαγωγή υπάρχουσας εγγραφής",
+        ["Subscription details updated."] = "Τα στοιχεία της συνδρομής ενημερώθηκαν.",
+        ["Subscription created."] = "Η συνδρομή δημιουργήθηκε.",
+        ["Subscription status changed."] = "Η κατάσταση της συνδρομής άλλαξε.",
+        ["Original creator unavailable; audit metadata initialized during migration."] = "Ο αρχικός δημιουργός δεν είναι διαθέσιμος· τα στοιχεία ελέγχου αρχικοποιήθηκαν κατά τη μεταφορά.",
+        ["Choose Active or Executed status."] = "Επιλέξτε κατάσταση Ενεργή ή Εκτελεσμένη."
         ["Scan this barcode with your scanner"] = "Σαρώστε αυτό το barcode με τον σαρωτή σας"
 
     };
