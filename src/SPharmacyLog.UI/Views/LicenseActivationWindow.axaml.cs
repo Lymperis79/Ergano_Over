@@ -109,11 +109,11 @@ public partial class LicenseActivationWindow : Window
         var files = await StorageProvider.OpenFilePickerAsync(
             new FilePickerOpenOptions
             {
-                Title = "Load licence file",
+                Title = Tr.Loc.TranslateText("Load licence file"),
                 AllowMultiple = false,
                 FileTypeFilter =
                 [
-                    new FilePickerFileType("Licence files")
+                    new FilePickerFileType(Tr.Loc.TranslateText("Licence files"))
                     {
                         Patterns = ["*.lic", "*.key", "*.txt"]
                     },
