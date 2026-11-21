@@ -7,8 +7,8 @@
     <StackPanel Grid.Row="0" VerticalAlignment="Center" HorizontalAlignment="Center" Width="320" Spacing="14">
       <TextBlock Text="S Pharmacy Log" FontSize="30" FontWeight="Bold" HorizontalAlignment="Center"/>
       <TextBlock Text="Prescription, customer and medicine tracking" Foreground="Gray" HorizontalAlignment="Center" TextWrapping="Wrap"/>
-      <TextBox x:Name="UsernameBox" Watermark="Username"/>
-      <TextBox x:Name="PasswordBox" Watermark="Password" PasswordChar="•"/>
+      <TextBox x:Name="UsernameBox" PlaceholderText="Username"/>
+      <TextBox x:Name="PasswordBox" PlaceholderText="Password" PasswordChar="•"/>
       <TextBlock x:Name="MessageText" TextWrapping="Wrap" Foreground="OrangeRed"/>
       <Button x:Name="SubmitButton" Content="Sign in" HorizontalAlignment="Stretch" Click="OnSubmitClick"/>
     </StackPanel>
