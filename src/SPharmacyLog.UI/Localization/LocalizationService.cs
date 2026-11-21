@@ -215,6 +215,22 @@ public sealed class LocalizationService : ILocalizationService
         ["Transfer"] = "Μεταφορά",
         ["Admin"] = "Διαχειριστής",
         ["Pharmacist"] = "Φαρμακοποιός",
+        ["Email:"] = "Email:",
+        ["Mobile:"] = "Κινητό:",
+        ["Address:"] = "Διεύθυνση:",
+        ["City:"] = "Πόλη:",
+        [" (Admin)"] = " (Διαχειριστής)",
+        [" (Pharmacist)"] = " (Φαρμακοποιός)",
+        [" | Active |"] = " | Ενεργή |",
+        [" | Borrowed |"] = " | Δανεισμένο |",
+        [" | Returned |"] = " | Επιστραφέν |",
+        [" | Charge |"] = " | Χρέωση |",
+        [" | Adjustment |"] = " | Προσαρμογή |",
+        [" | Reversal |"] = " | Αντιστροφή |",
+        [" | Payment |"] = " | Πληρωμή |",
+        [" | Card |"] = " | Κάρτα |",
+        [" | Cash |"] = " | Μετρητά |",
+        [" | Monthly"] = " | Μηνιαία"
         ["Username"] = "Όνομα χρήστη",
         ["Password"] = "Κωδικός πρόσβασης",
         ["S Pharmacy Log — Database setup"] = "S Pharmacy Log — Ρύθμιση βάσης δεδομένων",
@@ -297,16 +313,39 @@ public sealed class LocalizationService : ILocalizationService
     public string TranslateText(string text)
     {
         if (string.IsNullOrEmpty(text)) return text;
-        var english = text;
-        foreach (var pair in UiGreek.OrderByDescending(x => x.Value.Length))
-            english = english.Replace(pair.Value, pair.Key, StringComparison.Ordinal);
-        if (CurrentLanguage == AppLanguage.English) return english;
 
-        if (UiGreek.TryGetValue(english, out var exact)) return exact;
-        foreach (var pair in UiGreek.OrderByDescending(x => x.Key.Length))
-            english = english.Replace(pair.Key, pair.Value, StringComparison.Ordinal);
-        return english;
+        if (CurrentLanguage == AppLanguage.Greek && UiGreek.TryGetValue(text, out var exactGreek))
+            return exactGreek;
+
+        if (CurrentLanguage == AppLanguage.English)
+        {
+            var exactEnglish = UiGreek.FirstOrDefault(pair => pair.Value == text);
+            if (!string.IsNullOrEmpty(exactEnglish.Key))
+                return exactEnglish.Key;
+        }
+
+        // For composite text, translate phrases and labelled values only. This
+        // avoids changing a customer's actual name, address or other entered data.
+        var safePhrases = UiGreek.Where(pair => IsSafePhrase(pair.Key));
+        var normalized = text;
+        foreach (var pair in safePhrases.OrderByDescending(pair => pair.Value.Length))
+            normalized = normalized.Replace(pair.Value, pair.Key, StringComparison.Ordinal);
+
+        if (CurrentLanguage == AppLanguage.English)
+            return normalized;
+
+        foreach (var pair in safePhrases.OrderByDescending(pair => pair.Key.Length))
+            normalized = normalized.Replace(pair.Key, pair.Value, StringComparison.Ordinal);
+
+        return normalized;
     }
+
+    private static bool IsSafePhrase(string key) =>
+        key.Length >= 8 ||
+        key.Contains(' ') ||
+        key.EndsWith(':', StringComparison.Ordinal) ||
+        key.StartsWith("＋", StringComparison.Ordinal) ||
+        key.All(char.IsUpper);
 
     private IReadOnlyDictionary<string, string> current = English;
     public AppLanguage CurrentLanguage { get; private set; } = AppLanguage.English;
