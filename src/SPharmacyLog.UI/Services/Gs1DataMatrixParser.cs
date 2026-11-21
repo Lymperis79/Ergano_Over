@@ -43,7 +43,8 @@ public static class Gs1DataMatrixParser
 
         // Human-readable separator spellings are accepted for test/paste workflows.
         payload = payload.Replace("\\u001d", GroupSeparator.ToString(), StringComparison.OrdinalIgnoreCase)
-                         .Replace("<GS>", GroupSeparator.ToString(), StringComparison.OrdinalIgnoreCase);
+                         .Replace("<GS>", GroupSeparator.ToString(), StringComparison.OrdinalIgnoreCase)
+                         .Replace("[GS]", GroupSeparator.ToString(), StringComparison.OrdinalIgnoreCase);
 
         string? gtin = null;
         string? serial = null;
