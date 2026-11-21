@@ -3,6 +3,7 @@ using Avalonia.Controls;
 using Avalonia.Layout;
 using Avalonia.Input;
 using Avalonia.Media;
+using Avalonia.VisualTree;
 using Microsoft.EntityFrameworkCore;
 using SPharmacyLog.Data;
 using SPharmacyLog.Data.Entities;
@@ -61,6 +62,43 @@ public partial class MainWindow : Window
     {
         Title = Tr.Loc["App.Title"];
         if (languageBox is not null) languageBox.SelectedIndex = Tr.Loc.CurrentLanguage == AppLanguage.Greek ? 1 : 0;
+
+        // Translate the live visual tree in place. This keeps the current page,
+        // selected customer, typed values and open form intact while switching languages.
+        foreach (var control in this.GetVisualDescendants().OfType<Control>())
+        {
+            switch (control)
+            {
+                case TextBlock textBlock when !string.IsNullOrEmpty(textBlock.Text):
+                    textBlock.Text = Tr.Loc.TranslateText(textBlock.Text);
+                    break;
+                case Button button when button.Content is string content:
+                    button.Content = Tr.Loc.TranslateText(content);
+                    break;
+                case TextBox textBox when !string.IsNullOrEmpty(textBox.Watermark):
+                    textBox.Watermark = Tr.Loc.TranslateText(textBox.Watermark);
+                    break;
+                case TabItem tab when tab.Header is string header:
+                    tab.Header = Tr.Loc.TranslateText(header);
+                    break;
+                case ComboBoxItem item when item.Content is string itemText:
+                    item.Content = Tr.Loc.TranslateText(itemText);
+                    break;
+            }
+        }
+
+        TranslateListItems(dayRecords);
+        TranslateListItems(customerList);
+        TranslateListItems(borrowingList);
+        TranslateListItems(subscriptionList);
+        TranslateListItems(paymentList);
+        TranslateListItems(ledgerList);
+    }
+
+    private static void TranslateListItems(ListBox? list)
+    {
+        if (list?.ItemsSource is IEnumerable<string> values)
+            list.ItemsSource = values.Select(Tr.Loc.TranslateText).ToList();
     }
 
     private void OnLanguageChanged(object? sender, SelectionChangedEventArgs e)
