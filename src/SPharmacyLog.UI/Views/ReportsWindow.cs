@@ -60,7 +60,9 @@ public sealed class ReportsWindow : Window
         };
         generate.Click += async (_, _) => await GenerateReportAsync();
         exportButton.Click += async (_, _) => await ExportReportAsync();
-        reportType.SelectionChanged += (_, _) => UpdateFilterVisibility();
+        reportType.SelectionChanged += (_, _) => { UpdateFilterVisibility(); exportButton.IsEnabled = false; };
+        customerFilter.SelectionChanged += (_, _) => exportButton.IsEnabled = false;
+        reportDate.TextChanged += (_, _) => exportButton.IsEnabled = false;
 
         var content = new StackPanel
         {
@@ -114,8 +116,15 @@ public sealed class ReportsWindow : Window
         var detailLines = results.ItemsSource is IEnumerable<string> lines
             ? lines.ToList()
             : new List<string>();
-        await using var output = await file.OpenWriteAsync();
-        await ExcelReportExporter.WriteAsync(output, reportName, summary.Text ?? string.Empty, detailLines);
+        try
+        {
+            await using var output = await file.OpenWriteAsync();
+            await ExcelReportExporter.WriteAsync(output, reportName, summary.Text ?? string.Empty, detailLines);
+        }
+        catch (Exception ex)
+        {
+            summary.Text = Tr.Loc.TranslateText("The Excel file could not be saved.") + " " + ex.Message;
+        }
     }
 
     private void UpdateFilterVisibility()
