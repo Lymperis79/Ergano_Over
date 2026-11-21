@@ -6,12 +6,14 @@ using Avalonia.Markup.Xaml;
 using Microsoft.EntityFrameworkCore;
 using SPharmacyLog.Data;
 using SPharmacyLog.Data.Entities;
+using SPharmacyLog.UI.Localization;
+using SPharmacyLog.UI.ViewModels;
 
 namespace SPharmacyLog.UI.Views;
 
 public partial class MainWindow : Window
 {
-    private readonly DateTime selectedDate = DateTime.Today;
+    private readonly MainWindowViewModel viewModel;
     private readonly ContentControl pageHost;
     private readonly TextBlock dailySummary = new();
     private readonly ListBox dayRecords = new();
@@ -21,24 +23,28 @@ public partial class MainWindow : Window
     public MainWindow(PharmacyUser user)
     {
         InitializeComponent();
-        UserLabel.Text = $"{user.Username} ({user.Role})";
+        viewModel = new MainWindowViewModel(user);
+        DataContext = viewModel;
+        UserLabel.Text = viewModel.UserDisplay;
+        Tr.Loc.LanguageChanged += (_, _) => ApplyTranslations();
+        ApplyTranslations();
         pageHost = PageHost;
 
         var navigation = new (string Label, Action Action)[]
         {
-            ("Expiry calendar", ShowExpiryCalendar),
-            ("Customers", () => ShowPlaceholder("Customers")),
-            ("Borrowing", () => ShowPlaceholder("Borrowing")),
-            ("Subscriptions", () => ShowPlaceholder("Subscriptions")),
-            ("Payments & ledger", () => ShowPlaceholder("Payments & ledger")),
-            ("Users", () => ShowPlaceholder("Users"))
+            (Tr.Loc["Navigation.ExpiryCalendar"], ShowExpiryCalendar),
+            (Tr.Loc["Navigation.Customers"], () => ShowPlaceholder(Tr.Loc["Navigation.Customers"])),
+            (Tr.Loc["Navigation.Borrowing"], () => ShowPlaceholder(Tr.Loc["Navigation.Borrowing"])),
+            (Tr.Loc["Navigation.Subscriptions"], () => ShowPlaceholder(Tr.Loc["Navigation.Subscriptions"])),
+            (Tr.Loc["Navigation.Payments"], () => ShowPlaceholder(Tr.Loc["Navigation.Payments"])),
+            (Tr.Loc["Navigation.Users"], () => ShowPlaceholder(Tr.Loc["Navigation.Users"]))
         };
 
         foreach (var item in navigation)
         {
             var button = new Button { Content = item.Label };
             button.Click += (_, _) => item.Action();
-            if (item.Label == "Users" && user.Role != PharmacyRole.Admin)
+            if (item.Label == Tr.Loc["Navigation.Users"] && user.Role != PharmacyRole.Admin)
                 button.IsVisible = false;
             NavigationPanel.Children.Add(button);
         }
@@ -46,11 +52,23 @@ public partial class MainWindow : Window
         ShowExpiryCalendar();
     }
 
+    private void ApplyTranslations()
+    {
+        Title = Tr.Loc["App.Title"];
+        LanguageBox.SelectedIndex = Tr.Loc.CurrentLanguage == AppLanguage.Greek ? 1 : 0;
+    }
+
+    private void OnLanguageChanged(object? sender, SelectionChangedEventArgs e)
+    {
+        if (LanguageBox.SelectedIndex == 1) Tr.Loc.SetLanguage(AppLanguage.Greek);
+        else if (LanguageBox.SelectedIndex == 0) Tr.Loc.SetLanguage(AppLanguage.English);
+    }
+
     private void ShowExpiryCalendar()
     {
         var content = new StackPanel { Margin = new Thickness(16), Spacing = 10 };
-        content.Children.Add(new TextBlock { Text = "Prescription expiry calendar", FontSize = 24, FontWeight = FontWeight.Bold });
-        content.Children.Add(new TextBlock { Text = "Each day shows active prescriptions expiring. Select a date for the list." });
+        content.Children.Add(new TextBlock { Text = Tr.Loc["Calendar.Title"], FontSize = 24, FontWeight = FontWeight.Bold });
+        content.Children.Add(new TextBlock { Text = Tr.Loc["Calendar.Description"] });
 
         var monthBar = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Center, Spacing = 10 };
         var previous = new Button { Content = "‹" };
@@ -121,7 +139,7 @@ public partial class MainWindow : Window
                     Children =
                     {
                         new TextBlock { Text = dayNumber.ToString(), HorizontalAlignment = HorizontalAlignment.Center, FontWeight = date == SelectedCalendarDate ? FontWeight.Bold : FontWeight.Normal },
-                        new TextBlock { Text = count > 0 ? $"{count} expiring" : "—", FontSize = 11, Foreground = count > 0 ? Brushes.Orange : Brushes.Gray, HorizontalAlignment = HorizontalAlignment.Center }
+                        new TextBlock { Text = count > 0 ? $"{count} {Tr.Loc["Calendar.Expiring"]}" : Tr.Loc["Calendar.None"], FontSize = 11, Foreground = count > 0 ? Brushes.Orange : Brushes.Gray, HorizontalAlignment = HorizontalAlignment.Center }
                     }
                 };
                 if (date == SelectedCalendarDate) button.Background = Brushes.SteelBlue;
@@ -148,7 +166,7 @@ public partial class MainWindow : Window
 
         dayRecords.ItemsSource = records.Select(p =>
             $"{p.Customer?.CustomerNumber} | {p.Customer?.FullName} | {p.MedicineName} | Rx {p.PrescriptionNumber ?? "—"} | expires {p.ExpiryDate:dd/MM/yyyy}").ToList();
-        dailySummary.Text = $"{SelectedCalendarDate:dddd, dd MMM yyyy} — {records.Count} active prescription(s) expiring";
+        dailySummary.Text = string.Format(Tr.Loc["Calendar.DaySummary"], SelectedCalendarDate.ToString("dddd, dd MMM yyyy"), records.Count);
         dailySummary.FontWeight = FontWeight.SemiBold;
     }
 
@@ -157,7 +175,7 @@ public partial class MainWindow : Window
         pageHost.Content = new StackPanel
         {
             Margin = new Thickness(20),
-            Children = { new TextBlock { Text = title, FontSize = 24, FontWeight = FontWeight.Bold }, new TextBlock { Text = "Module is queued for implementation." } }
+            Children = { new TextBlock { Text = title, FontSize = 24, FontWeight = FontWeight.Bold }, new TextBlock { Text = Tr.Loc["Common.Queued"] } }
         };
     }
 
