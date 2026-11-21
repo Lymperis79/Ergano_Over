@@ -23,6 +23,8 @@ public partial class MainWindow : Window
     private ListBox dayRecords = new();
     private StackPanel calendarPanel = new();
     private DateTime displayedMonth = new(DateTime.Today.Year, DateTime.Today.Month, 1);
+    private TextBlock? calendarMonthTitle;
+    private bool showingExpiryCalendar;
     private readonly Dictionary<string, TextBox> customerFields = new();
     private ListBox customerList = null!;
     private TextBox customerSearch = null!;
@@ -36,7 +38,11 @@ public partial class MainWindow : Window
         viewModel = new MainWindowViewModel(user);
         DataContext = viewModel;
         UserLabel.Text = viewModel.UserDisplay;
-        Tr.Loc.LanguageChanged += (_, _) => ApplyTranslations();
+        Tr.Loc.LanguageChanged += (_, _) =>
+        {
+            ApplyTranslations();
+            if (showingExpiryCalendar) _ = LoadSelectedDayAsync();
+        };
         Opened += (_, _) => ApplyTranslations();
         ApplyTranslations();
         pageHost = PageHost;
@@ -96,6 +102,8 @@ public partial class MainWindow : Window
         TranslateListItems(subscriptionList);
         TranslateListItems(paymentList);
         TranslateListItems(ledgerList);
+        if (calendarMonthTitle is not null)
+            calendarMonthTitle.Text = displayedMonth.ToString("MMMM yyyy");
         isApplyingTranslations = false;
     }
 
@@ -114,6 +122,7 @@ public partial class MainWindow : Window
 
     private void ShowExpiryCalendar()
     {
+        showingExpiryCalendar = true;
         calendarPanel = new StackPanel();
         dailySummary = new TextBlock();
         dayRecords = new ListBox();
@@ -123,6 +132,7 @@ public partial class MainWindow : Window
         var monthBar = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Center, Spacing = 10 };
         var previous = new Button { Content = "‹" };
         var monthTitle = new TextBlock { FontSize = 18, MinWidth = 160, VerticalAlignment = VerticalAlignment.Center, TextAlignment = TextAlignment.Center };
+        calendarMonthTitle = monthTitle;
         var next = new Button { Content = "›" };
         previous.Click += async (_, _) => { displayedMonth = displayedMonth.AddMonths(-1); await RenderCalendarAsync(monthTitle); };
         next.Click += async (_, _) => { displayedMonth = displayedMonth.AddMonths(1); await RenderCalendarAsync(monthTitle); };
@@ -198,6 +208,7 @@ public partial class MainWindow : Window
 
     private void ShowCustomers()
     {
+        showingExpiryCalendar = false;
         customerFields.Clear(); activityFields.Clear(); gs1ParsedFields.Clear(); selectedCustomerId = null; currentParsedPack = null;
         customerSearch = new TextBox { Watermark = Tr.Loc["Customers.Search"], Margin = new Thickness(0, 0, 0, 10) };
         customerList = new ListBox { MinWidth = 300 };
@@ -877,6 +888,7 @@ public partial class MainWindow : Window
 
     private void ShowPlaceholder(string title)
     {
+        showingExpiryCalendar = false;
         pageHost.Content = new StackPanel { Margin = new Thickness(20), Children = { new TextBlock { Text = title, FontSize = 24, FontWeight = FontWeight.Bold }, new TextBlock { Text = Tr.Loc["Common.Queued"] } } };
     }
 }
