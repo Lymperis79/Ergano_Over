@@ -8,7 +8,7 @@ using Avalonia.Media.Imaging;
 using Avalonia.Platform;
 using System.Runtime.InteropServices;
 using ZXing;
-using ZXing.DataMatrix;
+using ZXing.Datamatrix;
 using Avalonia.VisualTree;
 using Microsoft.EntityFrameworkCore;
 using SPharmacyLog.Data;
@@ -520,6 +520,7 @@ public partial class MainWindow : Window
     {
         var hints = new Dictionary<EncodeHintType, object>
         {
+            [EncodeHintType.DATA_MATRIX_COMPACT] = true,
             [EncodeHintType.GS1_FORMAT] = true,
             [EncodeHintType.MARGIN] = 4
         };
