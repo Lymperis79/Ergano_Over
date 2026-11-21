@@ -21,7 +21,7 @@ public sealed class WeatherSettingsWindow : Window
         WindowStartupLocation = WindowStartupLocation.CenterOwner;
         Background = new SolidColorBrush(Color.Parse("#202733"));
 
-        location = new TextBox { Text = settings.Location, Watermark = "City, country or latitude, longitude", MinHeight = 38 };
+        location = new TextBox { Text = settings.Location, PlaceholderText = "City, country or latitude, longitude", MinHeight = 38 };
         showLocation = Check("Show location", settings.ShowLocation);
         temperature = Check("Show temperature", settings.ShowTemperature);
         condition = Check("Show weather condition", settings.ShowCondition);
