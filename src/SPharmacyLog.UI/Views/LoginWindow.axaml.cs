@@ -78,12 +78,13 @@ public partial class LoginWindow : Window
             SubmitButton.Content = viewModel.SubmitText;
             PasswordBox.Text = viewModel.Password;
 
+            if (RememberCredentialsBox.IsChecked != true)
+                SPharmacyLog.UI.Services.RememberedLoginService.Delete();
+
             if (user is not null)
             {
                 if (RememberCredentialsBox.IsChecked == true)
                     SPharmacyLog.UI.Services.RememberedLoginService.Save(viewModel.Username.Trim(), viewModel.Password);
-                else
-                    SPharmacyLog.UI.Services.RememberedLoginService.Delete();
 
                 var main = new MainWindow(user);
                 if (Application.Current?.ApplicationLifetime is Avalonia.Controls.ApplicationLifetimes.IClassicDesktopStyleApplicationLifetime desktop)
