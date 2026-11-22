@@ -46,6 +46,33 @@
     <Style Selector="CheckBox">
       <Setter Property="Padding" Value="4"/>
     </Style>
+    <!-- Shared list styling keeps list-based screens consistent across the application. -->
+    <Style Selector="ListBox">
+      <Setter Property="Background" Value="#171E28"/>
+      <Setter Property="BorderBrush" Value="{DynamicResource LineBrush}"/>
+      <Setter Property="BorderThickness" Value="1"/>
+      <Setter Property="Padding" Value="5"/>
+    </Style>
+    <Style Selector="ListBoxItem">
+      <Setter Property="MinHeight" Value="38"/>
+      <Setter Property="Padding" Value="10,8"/>
+      <Setter Property="Margin" Value="1,2"/>
+      <Setter Property="Background" Value="Transparent"/>
+      <Setter Property="Foreground" Value="#E1E8F0"/>
+      <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+    </Style>
+    <Style Selector="ListBoxItem:pointerover">
+      <Setter Property="Background" Value="{DynamicResource HoverBrush}"/>
+    </Style>
+    <Style Selector="ListBoxItem:selected">
+      <Setter Property="Background" Value="{DynamicResource NavActiveBrush}"/>
+      <Setter Property="Foreground" Value="White"/>
+      <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}"/>
+      <Setter Property="BorderThickness" Value="1"/>
+    </Style>
+    <Style Selector="ListBoxItem:selected:pointerover">
+      <Setter Property="Background" Value="{DynamicResource NavActiveHoverBrush}"/>
+    </Style>
     <Style Selector="Border.card">
       <Setter Property="Background" Value="{DynamicResource CardBrush}"/>
       <Setter Property="BorderBrush" Value="{DynamicResource LineBrush}"/>
