@@ -1999,6 +1999,14 @@ public partial class MainWindow : Window
     private TabItem BuildSubscriptionsTab()
     {
         subscriptionList = new ListBox { MinHeight = 220 };
+        subscriptionList.DoubleTapped += async (_, _) =>
+        {
+            var index = subscriptionList.SelectedIndex;
+            if (index < 0 || index >= currentSubscriptions.Count)
+                return;
+
+            await OpenSubscriptionEditorAsync(currentSubscriptions[index]);
+        };
         var add = new Button { Content = "＋ Add subscription", Classes = { "accent" }, MinWidth = 145, MinHeight = 38 };
         add.Click += async (_, _) => await OpenSubscriptionEditorAsync(null);
         var view = new Button { Content = "View details", MinWidth = 125, MinHeight = 38 };
