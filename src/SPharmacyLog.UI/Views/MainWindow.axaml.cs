@@ -1533,7 +1533,7 @@ public partial class MainWindow : Window
                 await RenderCalendarAsync(calendarMonthTitle);
         };
 
-        dialog.Content = new StackPanel
+        var noteForm = new StackPanel
         {
             Margin = new Thickness(18),
             Spacing = 10,
@@ -1546,16 +1546,37 @@ public partial class MainWindow : Window
                 createdInfo,
                 completionInfo,
                 toggleCompletion,
-                status,
-                new StackPanel
-                {
-                    Orientation = Orientation.Horizontal,
-                    HorizontalAlignment = HorizontalAlignment.Right,
-                    Spacing = 8,
-                    Children = { delete, cancel, save }
-                }
+                status
             }
         };
+        var noteFooter = new Border
+        {
+            Background = new SolidColorBrush(Color.Parse("#172331")),
+            BorderBrush = new SolidColorBrush(Color.Parse("#34495E")),
+            BorderThickness = new Thickness(1, 1, 0, 0),
+            Padding = new Thickness(16, 10),
+            Child = new StackPanel
+            {
+                Orientation = Orientation.Horizontal,
+                HorizontalAlignment = HorizontalAlignment.Right,
+                Spacing = 8,
+                Children = { delete, cancel, save }
+            }
+        };
+        var noteDialogLayout = new Grid
+        {
+            RowDefinitions = new RowDefinitions("*,Auto"),
+            RowSpacing = 0
+        };
+        noteDialogLayout.Children.Add(new ScrollViewer
+        {
+            Content = noteForm,
+            VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
+            HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled
+        });
+        Grid.SetRow(noteFooter, 1);
+        noteDialogLayout.Children.Add(noteFooter);
+        dialog.Content = noteDialogLayout;
         AttachDialogLocalization(dialog);
         await dialog.ShowDialog(this);
     }
