@@ -2896,9 +2896,9 @@ public partial class MainWindow : Window
         var popup = new Window
         {
             Title = Tr.Loc.TranslateText("Subscription details"),
-            Width = 820,
+            Width = 600,
             Height = 685,
-            MinWidth = 650,
+            MinWidth = 580,
             MinHeight = 560,
             CanResize = true,
             Topmost = true,
