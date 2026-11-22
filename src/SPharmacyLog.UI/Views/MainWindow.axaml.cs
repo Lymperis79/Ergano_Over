@@ -367,7 +367,9 @@ public partial class MainWindow : Window
             activeValue.Text = activeCount.ToString();
             dueValue.Text = dueToday.ToString();
             overdueValue.Text = overdue.ToString();
-            todaySummary.Text = $"{dueToday} subscription(s) due today. {overdue} overdue active subscription(s) remain open. {activeCount} active subscription(s) in total.";
+            borrowedValue.Text = currentlyBorrowed.ToString();
+            returnedTodayValue.Text = returnedToday.ToString();
+            todaySummary.Text = $"{dueToday} subscription(s) due today. {overdue} overdue active subscription(s) remain open. {activeCount} active subscription(s) in total. {currentlyBorrowed} medicine item(s) currently borrowed; {returnedToday} returned today.";
         }
         catch (Exception ex)
         {
