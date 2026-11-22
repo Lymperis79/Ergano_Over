@@ -1,4 +1,4 @@
-<Window xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" x:Class="SPharmacyLog.UI.Views.MainWindow" Title="S Pharmacy Log" Width="1240" Height="820" MinWidth="980" MinHeight="650" WindowStartupLocation="CenterScreen" Background="{DynamicResource WindowBrush}">
+<Window xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" x:Class="SPharmacyLog.UI.Views.MainWindow" Icon="avares://SPharmacyLog.UI/Assets/spharmacy.ico" Title="S Pharmacy Log" Width="1240" Height="820" MinWidth="980" MinHeight="650" WindowStartupLocation="CenterScreen" Background="{DynamicResource WindowBrush}">
   <Grid ColumnDefinitions="230,*" RowDefinitions="*,Auto">
     <Border Grid.Column="0" Grid.RowSpan="2" Background="{DynamicResource SidebarBrush}" BorderBrush="{DynamicResource LineBrush}" BorderThickness="0,0,1,0">
       <StackPanel Margin="18,20" Spacing="16">
