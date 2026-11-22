@@ -398,4 +398,7 @@ public class CalendarNote
     public string CreatedBy { get; set; } = string.Empty;
     public bool IsShared { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public bool IsCompleted { get; set; }
+    public string? CompletedBy { get; set; }
+    public DateTime? CompletedAt { get; set;}
 }
