@@ -294,7 +294,7 @@ public partial class MainWindow : Window
         root.Children.Add(new Border { Child = weatherRow, CornerRadius = new CornerRadius(9), BorderThickness = new Thickness(1), BorderBrush = new SolidColorBrush(Color.Parse("#354152")) });
 
         var cards = new Grid { ColumnDefinitions = CreateColumns(GridLength.Star, GridLength.Star), RowDefinitions = CreateRows(GridLength.Auto, GridLength.Auto) };
-        var customersValue = new TextBlock { Text = "—", FontSize = 30, FontWeight = FontWeight.Bold };
+        var customersValue = new TextBlock { Text = "—", FontSize = 26, FontWeight = FontWeight.Bold };
         var activeValue = new TextBlock { Text = "—", FontSize = 30, FontWeight = FontWeight.Bold };
         var dueValue = new TextBlock { Text = "—", FontSize = 30, FontWeight = FontWeight.Bold };
         var overdueValue = new TextBlock { Text = "—", FontSize = 30, FontWeight = FontWeight.Bold };
@@ -2680,7 +2680,7 @@ public partial class MainWindow : Window
             BorderBrush = panelBorder,
             BorderThickness = new Thickness(1),
             CornerRadius = new CornerRadius(12),
-            Padding = padding ?? new Thickness(16),
+            Padding = padding ?? new Thickness(12),
             Child = child
         };
 
@@ -2767,7 +2767,7 @@ public partial class MainWindow : Window
             BorderBrush = new SolidColorBrush(Color.Parse("#2E6688")),
             BorderThickness = new Thickness(1),
             CornerRadius = new CornerRadius(15),
-            Padding = new Thickness(22, 20),
+            Padding = new Thickness(16, 14),
             Child = hero
         };
 
@@ -2827,8 +2827,8 @@ public partial class MainWindow : Window
         barcodeInfo.Children.Add(new Image
         {
             Source = barcodeBitmap,
-            Width = 205,
-            Height = 175,
+            Width = 170,
+            Height = 140,
             Stretch = Stretch.Uniform,
             HorizontalAlignment = HorizontalAlignment.Center
         });
@@ -2863,8 +2863,8 @@ public partial class MainWindow : Window
 
         var details = new StackPanel
         {
-            Spacing = 14,
-            Margin = new Thickness(20),
+            Spacing = 10,
+            Margin = new Thickness(14),
             Children = { heroPanel, metrics, primaryColumns, notesPanel }
         };
 
@@ -2888,7 +2888,7 @@ public partial class MainWindow : Window
             Orientation = Orientation.Horizontal,
             HorizontalAlignment = HorizontalAlignment.Right,
             Spacing = 8,
-            Margin = new Thickness(14, 10, 14, 14),
+            Margin = new Thickness(10, 8, 10, 10),
             Children = { openCustomer, editSubscription, saveStatus, close }
         };
         var content = new Grid
@@ -2909,10 +2909,10 @@ public partial class MainWindow : Window
         var popup = new Window
         {
             Title = Tr.Loc.TranslateText("Subscription details"),
-            Width = 940,
-            Height = 900,
-            MinWidth = 680,
-            MinHeight = 650,
+            Width = 820,
+            Height = 760,
+            MinWidth = 650,
+            MinHeight = 560,
             CanResize = true,
             Topmost = true,
             WindowStartupLocation = WindowStartupLocation.CenterOwner,
