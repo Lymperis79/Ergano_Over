@@ -2823,7 +2823,7 @@ public partial class MainWindow : Window
         identityText.Children.Add(new TextBlock { Text = $"{Tr.Loc.TranslateText("Customer number")}: {customer.CustomerNumber}", FontSize = 12, Foreground = muted });
         customerIdentity.Children.Add(identityText);
         customerInfo.Children.Add(customerIdentity);
-        customerInfo.Children.Add(new Divider { Margin = new Thickness(0, 4) });
+        customerInfo.Children.Add(new Border { Height = 1, Background = panelBorder, Margin = new Thickness(0, 4) });
         customerInfo.Children.Add(new TextBlock { Text = $"{Tr.Loc.TranslateText("Address")}: {customer.Address}, {customer.City} {customer.Postcode}".Trim(' ', ','), TextWrapping = TextWrapping.Wrap });
         customerInfo.Children.Add(new TextBlock { Text = $"{Tr.Loc.TranslateText("Telephone")}: {customer.Telephone ?? customer.Phone}", TextWrapping = TextWrapping.Wrap });
         customerInfo.Children.Add(new TextBlock { Text = $"{Tr.Loc.TranslateText("Mobile")}: {customer.Mobile}", TextWrapping = TextWrapping.Wrap });
