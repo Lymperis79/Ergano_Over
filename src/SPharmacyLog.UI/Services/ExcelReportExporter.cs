@@ -74,7 +74,7 @@ public static class ExcelReportExporter
 
             var trimmed = line.Trim();
             var isSection = trimmed.EndsWith(':');
-            var isIndented = rawLine.StartsWith("  ", StringComparison.Ordinal);
+            var isIndented = line.StartsWith("  ", StringComparison.Ordinal);
             var style = isSection ? 5 : isIndented ? 7 : 6;
             var height = Math.Clamp(18 + (line.Length / 105) * 15, 18, 90);
             rows.Add(CreateRow(rowNumber, height, CreateCell($"A{rowNumber}", trimmed, style)));
