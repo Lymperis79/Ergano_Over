@@ -2910,7 +2910,7 @@ public partial class MainWindow : Window
         {
             Title = Tr.Loc.TranslateText("Subscription details"),
             Width = 820,
-            Height = 760,
+            Height = 685,
             MinWidth = 650,
             MinHeight = 560,
             CanResize = true,
