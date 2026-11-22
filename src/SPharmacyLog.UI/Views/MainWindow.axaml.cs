@@ -2658,11 +2658,6 @@ public partial class MainWindow : Window
         var subscriptionNumber = GetSubscriptionNumber(subscription);
         var barcodeBitmap = CreateSubscriptionBarcodeBitmap(subscriptionNumber);
         var statusSelector = CreateSubscriptionStatusSelector(subscription.Status);
-        var auditEntries = await db.SubscriptionAuditEntries.AsNoTracking()
-            .Where(entry => entry.SubscriptionId == subscription.Id)
-            .OrderByDescending(entry => entry.ChangedAt)
-            .ToListAsync();
-
         var muted = new SolidColorBrush(Color.Parse("#AFC0D1"));
         var panelBrush = new SolidColorBrush(Color.Parse("#1B2836"));
         var panelBorder = new SolidColorBrush(Color.Parse("#34495E"));
@@ -2746,29 +2741,29 @@ public partial class MainWindow : Window
             Foreground = muted
         });
 
-        var statusBadge = new Border
+        var statusControl = new StackPanel
         {
-            Background = new SolidColorBrush(statusColor),
-            CornerRadius = new CornerRadius(18),
-            Padding = new Thickness(15, 8),
-            VerticalAlignment = VerticalAlignment.Top,
-            Child = new TextBlock
-            {
-                Text = statusText.ToUpperInvariant(),
-                Foreground = Brushes.White,
-                FontWeight = FontWeight.Bold,
-                FontSize = 12
-            }
+            Spacing = 7,
+            MinWidth = 180,
+            VerticalAlignment = VerticalAlignment.Center
         };
+        statusControl.Children.Add(new TextBlock
+        {
+            Text = Tr.Loc.TranslateText("SUBSCRIPTION STATUS"),
+            FontSize = 10,
+            FontWeight = FontWeight.Bold,
+            Foreground = new SolidColorBrush(Color.Parse("#C5D8E8"))
+        });
+        statusControl.Children.Add(statusSelector);
 
         var hero = new Grid
         {
             ColumnDefinitions = CreateColumns(GridLength.Star, GridLength.Auto),
             ColumnSpacing = 16,
             Background = new SolidColorBrush(Color.Parse("#193A54")),
-            Children = { heroInfo, statusBadge }
+            Children = { heroInfo, statusControl }
         };
-        Grid.SetColumn(statusBadge, 1);
+        Grid.SetColumn(statusControl, 1);
         var heroPanel = new Border
         {
             Background = new SolidColorBrush(Color.Parse("#193A54")),
@@ -2866,10 +2861,7 @@ public partial class MainWindow : Window
         };
         var scheduleValues = new[]
         {
-            Metric("START DATE", subscription.StartDate.ToString("dd/MM/yyyy"), Tr.Loc.TranslateText("Subscription start")),
-            Metric("NEXT DUE DATE", subscription.NextDueDate.ToString("dd/MM/yyyy"), Tr.Loc.TranslateText("Next scheduled visit")),
-            Metric("EXPIRY DATE", subscription.ExpiryDate?.ToString("dd/MM/yyyy") ?? "—", Tr.Loc.TranslateText("Optional end date")),
-            Metric("FREQUENCY", subscription.Frequency, Tr.Loc.TranslateText("Repeat interval"))
+            Metric("START DATE", subscription.StartDate.ToString("dd/MM/yyyy"), Tr.Loc.TranslateText("Subscription start"))
         };
         for (var i = 0; i < scheduleValues.Length; i++)
         {
@@ -2877,18 +2869,6 @@ public partial class MainWindow : Window
             Grid.SetRow(scheduleValues[i], i / 2);
             schedule.Children.Add(scheduleValues[i]);
         }
-
-        var statusEditor = new StackPanel { Spacing = 8 };
-        statusEditor.Children.Add(SectionTitle("Manage status"));
-        statusEditor.Children.Add(new TextBlock
-        {
-            Text = Tr.Loc.TranslateText("Change the current subscription status below, then save your changes."),
-            FontSize = 12,
-            Foreground = muted,
-            TextWrapping = TextWrapping.Wrap
-        });
-        statusEditor.Children.Add(statusSelector);
-        var statusPanel = Panel(statusEditor);
 
         var notesContent = new StackPanel { Spacing = 8 };
         notesContent.Children.Add(SectionTitle("Notes"));
@@ -2902,45 +2882,11 @@ public partial class MainWindow : Window
         });
         var notesPanel = Panel(notesContent);
 
-        var auditList = new ListBox { MinHeight = 110, MaxHeight = 210 };
-        void RefreshAuditList()
-        {
-            auditList.ItemsSource = auditEntries.Select(entry =>
-            {
-                var change = entry.PreviousStatus.HasValue
-                    ? $"{Tr.Loc.TranslateText(((SubscriptionStatus)entry.PreviousStatus.Value).ToString())} → {Tr.Loc.TranslateText(((SubscriptionStatus)entry.NewStatus).ToString())}"
-                    : Tr.Loc.TranslateText(entry.Details ?? string.Empty);
-                return $"{ToLocalSubscriptionTime(entry.ChangedAt):dd/MM/yyyy HH:mm:ss}  •  {Tr.Loc.TranslateText(entry.Action)}\n{entry.ChangedBy} — {change}";
-            }).ToList();
-        }
-        RefreshAuditList();
-        var auditContent = new StackPanel { Spacing = 8 };
-        auditContent.Children.Add(SectionTitle("Activity history"));
-        auditContent.Children.Add(auditList);
-        var auditPanel = Panel(auditContent);
-
-        var metadata = new TextBlock
-        {
-            Text = $"{Tr.Loc.TranslateText("Created by")}: {subscription.CreatedBy}  •  {ToLocalSubscriptionTime(subscription.CreatedAt):dd/MM/yyyy HH:mm}\n{Tr.Loc.TranslateText("Last changed by")}: {subscription.LastModifiedBy}  •  {ToLocalSubscriptionTime(subscription.LastModifiedAt):dd/MM/yyyy HH:mm}",
-            FontSize = 11,
-            Foreground = muted,
-            TextWrapping = TextWrapping.Wrap,
-            Margin = new Thickness(4, 0)
-        };
-
-        var lowerColumns = new Grid
-        {
-            ColumnDefinitions = CreateColumns(GridLength.Star, GridLength.Star),
-            ColumnSpacing = 12,
-            Children = { statusPanel, notesPanel }
-        };
-        Grid.SetColumn(notesPanel, 1);
-
         var details = new StackPanel
         {
             Spacing = 14,
             Margin = new Thickness(20),
-            Children = { heroPanel, metrics, primaryColumns, SectionTitle("Subscription schedule"), schedule, lowerColumns, auditPanel, metadata }
+            Children = { heroPanel, metrics, primaryColumns, SectionTitle("Subscription schedule"), schedule, notesPanel }
         };
 
         var openCustomer = new Button
@@ -2995,9 +2941,6 @@ public partial class MainWindow : Window
             Content = content
         };
         AttachDialogLocalization(popup);
-        EventHandler auditLanguageChanged = (_, _) => RefreshAuditList();
-        Tr.Loc.LanguageChanged += auditLanguageChanged;
-        popup.Closed += (_, _) => Tr.Loc.LanguageChanged -= auditLanguageChanged;
         close.Click += (_, _) => popup.Close();
         saveStatus.Click += async (_, _) =>
         {
