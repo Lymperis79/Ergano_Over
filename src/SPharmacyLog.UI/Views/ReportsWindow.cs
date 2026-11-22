@@ -89,6 +89,16 @@ public sealed class ReportsWindow : Window
         actionRow.Children.Add(generate);
         actionRow.Children.Add(exportButton);
 
+        var summaryContent = new StackPanel { Spacing = 6 };
+        summaryContent.Children.Add(new TextBlock
+        {
+            Text = Tr.Loc.TranslateText("Report summary"),
+            FontSize = 12,
+            FontWeight = FontWeight.Bold,
+            Foreground = new SolidColorBrush(Color.Parse("#9BA8B8"))
+        });
+        summaryContent.Children.Add(summary);
+
         var summaryCard = new Border
         {
             Padding = new Thickness(16),
@@ -96,15 +106,7 @@ public sealed class ReportsWindow : Window
             BorderBrush = new SolidColorBrush(Color.Parse("#354152")),
             BorderThickness = new Thickness(1),
             CornerRadius = new CornerRadius(10),
-            Child = new StackPanel
-            {
-                Spacing = 6,
-                Children
-                {
-                    new TextBlock { Text = Tr.Loc.TranslateText("Report summary"), FontSize = 12, FontWeight = FontWeight.Bold, Foreground = new SolidColorBrush(Color.Parse("#9BA8B8")) },
-                    summary
-                }
-            }
+            Child = summaryContent
         };
         var resultsCard = new Border
         {
