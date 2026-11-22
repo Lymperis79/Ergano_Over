@@ -1007,16 +1007,35 @@ public partial class MainWindow : Window
                     {
                         var noteButton = new Button
                         {
-                            Content = "📝 " + note.Header,
+                            Content = new StackPanel
+                            {
+                                Spacing = 1,
+                                Children =
+                                {
+                                    new TextBlock
+                                    {
+                                        Text = (note.IsCompleted ? "✓ " : "📝 ") + note.Header,
+                                        FontSize = 10,
+                                        FontWeight = FontWeight.SemiBold,
+                                        TextTrimming = TextTrimming.CharacterEllipsis
+                                    },
+                                    new TextBlock
+                                    {
+                                        Text = Tr.Loc.TranslateText(note.IsCompleted ? "Completed" : "Not completed"),
+                                        FontSize = 9,
+                                        Foreground = new SolidColorBrush(Color.Parse(note.IsCompleted ? "#75D99A" : "#E4B45D"))
+                                    }
+                                }
+                            },
                             FontSize = 10,
-                            Padding = new Thickness(4, 2),
-                            MinHeight = 23,
+                            Padding = new Thickness(4, 3),
+                            MinHeight = 34,
                             HorizontalAlignment = HorizontalAlignment.Stretch,
                             HorizontalContentAlignment = HorizontalAlignment.Left,
-                            Background = new SolidColorBrush(Color.Parse("#263B4D")),
-                            BorderBrush = new SolidColorBrush(Color.Parse(note.IsShared ? "#477B63" : "#477DA5")),
+                            Background = new SolidColorBrush(Color.Parse(note.IsCompleted ? "#203B32" : "#263B4D")),
+                            BorderBrush = new SolidColorBrush(Color.Parse(note.IsCompleted ? "#397B59" : note.IsShared ? "#477B63" : "#477DA5")),
                             BorderThickness = new Thickness(1),
-                            Foreground = note.IsShared ? Brushes.LightGreen : Brushes.LightSkyBlue
+                            Foreground = note.IsCompleted ? new SolidColorBrush(Color.Parse("#9BE2B0")) : note.IsShared ? Brushes.LightGreen : Brushes.LightSkyBlue
                         };
                         noteButton.Click += async (_, _) =>
                         {
@@ -1401,6 +1420,45 @@ public partial class MainWindow : Window
             FontSize = 11
         };
         var status = new TextBlock { Foreground = Brushes.Orange, TextWrapping = TextWrapping.Wrap };
+        var completionInfo = new TextBlock
+        {
+            Text = existing is null
+                ? string.Empty
+                : existing.IsCompleted
+                    ? $"{Tr.Loc.TranslateText("Completed")} · {existing.CompletedBy} · {DateTime.SpecifyKind(existing.CompletedAt ?? existing.CreatedAt, DateTimeKind.Utc).ToLocalTime():dd/MM/yyyy HH:mm}"
+                    : Tr.Loc.TranslateText("Not completed"),
+            Foreground = new SolidColorBrush(Color.Parse(existing?.IsCompleted == true ? "#65C18C" : "#D39A35")),
+            FontSize = 12,
+            IsVisible = existing is not null
+        };
+        var toggleCompletion = new Button
+        {
+            Content = Tr.Loc.TranslateText(existing?.IsCompleted == true ? "Mark as not completed" : "Mark as completed"),
+            MinWidth = 170,
+            IsVisible = existing is not null
+        };
+        toggleCompletion.Click += async (_, _) =>
+        {
+            if (existing is null) return;
+            await using var statusDb = new PharmacyDbContext(PharmacyDb.Options());
+            var record = await statusDb.CalendarNotes.FirstOrDefaultAsync(note => note.Id == existing.Id);
+            if (record is null) return;
+            record.IsCompleted = !record.IsCompleted;
+            record.CompletedBy = record.IsCompleted ? (viewModel.User.Username ?? string.Empty) : null;
+            record.CompletedAt = record.IsCompleted ? DateTime.UtcNow : null;
+            await statusDb.SaveChangesAsync();
+            existing.IsCompleted = record.IsCompleted;
+            existing.CompletedBy = record.CompletedBy;
+            existing.CompletedAt = record.CompletedAt;
+            completionInfo.Text = record.IsCompleted
+                ? $"{Tr.Loc.TranslateText("Completed")} · {record.CompletedBy} · {DateTime.SpecifyKind(record.CompletedAt ?? DateTime.UtcNow, DateTimeKind.Utc).ToLocalTime():dd/MM/yyyy HH:mm}"
+                : Tr.Loc.TranslateText("Not completed");
+            completionInfo.Foreground = new SolidColorBrush(Color.Parse(record.IsCompleted ? "#65C18C" : "#D39A35"));
+            toggleCompletion.Content = Tr.Loc.TranslateText(record.IsCompleted ? "Mark as not completed" : "Mark as completed");
+            if (calendarMonthTitle is not null)
+                await RenderCalendarAsync(calendarMonthTitle);
+            await LoadSelectedDayAsync();
+        };
         var save = new Button { Content = Tr.Loc.TranslateText("Save"), Classes = { "accent" }, MinWidth = 100, IsVisible = isOwner };
         var cancel = new Button { Content = Tr.Loc.TranslateText(isOwner ? "Cancel" : "Close"), MinWidth = 100 };
         var delete = new Button
@@ -1486,6 +1544,8 @@ public partial class MainWindow : Window
                 new TextBlock { Text = Tr.Loc.TranslateText("Note") }, body,
                 shared,
                 createdInfo,
+                completionInfo,
+                toggleCompletion,
                 status,
                 new StackPanel
                 {
