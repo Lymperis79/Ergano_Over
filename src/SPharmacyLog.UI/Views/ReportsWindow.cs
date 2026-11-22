@@ -29,6 +29,14 @@ public sealed class ReportsWindow : Window
     private readonly TextBlock summary = new() { FontSize = 15, FontWeight = FontWeight.SemiBold, TextWrapping = TextWrapping.Wrap };
     private readonly StackPanel resultsContent = new() { Spacing = 6 };
     private List<string> currentReportLines = new();
+    private List<string> customerSummaryLines = new();
+    private List<string> customerDetailLines = new();
+    private readonly CheckBox showCustomerDetails = new()
+    {
+        Content = Tr.Loc.TranslateText("Show payment history and account ledger details"),
+        IsChecked = false,
+        IsVisible = false
+    };
     private readonly StackPanel customerFilterPanel = new() { Spacing = 4 };
     private readonly StackPanel dateFilterPanel = new() { Spacing = 4 };
     private readonly Button exportButton = new() { Content = Tr.Loc.TranslateText("Export to Excel"), MinWidth = 150, MinHeight = 38, IsEnabled = false };
@@ -69,6 +77,16 @@ public sealed class ReportsWindow : Window
         };
         generate.Click += async (_, _) => await GenerateReportAsync();
         exportButton.Click += async (_, _) => await ExportReportAsync();
+        showCustomerDetails.IsChecked = false;
+        showCustomerDetails.IsVisible = false;
+        showCustomerDetails.IsCheckedChanged += (_, _) =>
+        {
+            currentReportLines = customerSummaryLines.ToList();
+            if (showCustomerDetails.IsChecked == true)
+                currentReportLines.AddRange(customerDetailLines);
+            RenderResults(currentReportLines);
+            exportButton.IsEnabled = true;
+        };
         reportType.SelectionChanged += (_, _) => { UpdateFilterVisibility(); exportButton.IsEnabled = false; };
         customerSearch.TextChanged += (_, _) =>
         {
@@ -112,6 +130,7 @@ public sealed class ReportsWindow : Window
         var actionRow = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 10 };
         actionRow.Children.Add(generate);
         actionRow.Children.Add(exportButton);
+        actionRow.Children.Add(showCustomerDetails);
 
         var summaryContent = new StackPanel { Spacing = 6 };
         summaryContent.Children.Add(new TextBlock
@@ -215,6 +234,7 @@ public sealed class ReportsWindow : Window
         var selected = (reportType.SelectedItem as ComboBoxItem)?.Tag?.ToString();
         customerFilterPanel.IsVisible = selected == "customers";
         dateFilterPanel.IsVisible = selected == "daily";
+        showCustomerDetails.IsVisible = selected == "customers";
     }
 
     private async Task LoadCustomersAsync()
@@ -352,11 +372,14 @@ public sealed class ReportsWindow : Window
         if (customers.Count == 0)
         {
             summary.Text = Tr.Loc.TranslateText("No customers found.");
+            customerSummaryLines.Clear();
+            customerDetailLines.Clear();
             RenderResults(Array.Empty<string>());
             return;
         }
 
-        var lines = new List<string>();
+        customerSummaryLines = new List<string>();
+        customerDetailLines = new List<string>();
         decimal grandBalance = 0;
         decimal grandPayments = 0;
         foreach (var customer in customers)
@@ -376,25 +399,29 @@ public sealed class ReportsWindow : Window
             grandBalance += balance;
             grandPayments += paid;
 
-            lines.Add("============================================================");
-            lines.Add($"{customer.CustomerNumber} | {customer.FullName}");
-            lines.Add($"{Tr.Loc.TranslateText("Total charges")}: {charges:C}    {Tr.Loc.TranslateText("Total payments")}: {paid:C}    {Tr.Loc.TranslateText("Balance owed")}: {balance:C}");
-            lines.Add(Tr.Loc.TranslateText("Payment history") + ":");
+            customerSummaryLines.Add($"{customer.CustomerNumber} | {customer.FullName} | {Tr.Loc.TranslateText("Total charges")}: {charges:C} | {Tr.Loc.TranslateText("Total payments")}: {paid:C} | {Tr.Loc.TranslateText("Balance owed")}: {balance:C}");
+
+            customerDetailLines.Add("============================================================");
+            customerDetailLines.Add($"{customer.CustomerNumber} | {customer.FullName}");
+            customerDetailLines.Add(Tr.Loc.TranslateText("Payment history") + ":");
             if (payments.Count == 0)
-                lines.Add("  " + Tr.Loc.TranslateText("No payments recorded."));
+                customerDetailLines.Add("  " + Tr.Loc.TranslateText("No payments recorded."));
             else
-                lines.AddRange(payments.Select(payment =>
+                customerDetailLines.AddRange(payments.Select(payment =>
                     $"  {payment.PaidAt:dd/MM/yyyy HH:mm} | {payment.Amount:C} | {Tr.Loc.TranslateText(payment.Method)} | {payment.Reference} | {payment.Notes}"));
-            lines.Add(Tr.Loc.TranslateText("Account ledger") + ":");
+            customerDetailLines.Add(Tr.Loc.TranslateText("Account ledger") + ":");
             if (ledger.Count == 0)
-                lines.Add("  " + Tr.Loc.TranslateText("No ledger entries."));
+                customerDetailLines.Add("  " + Tr.Loc.TranslateText("No ledger entries."));
             else
-                lines.AddRange(ledger.Select(entry =>
+                customerDetailLines.AddRange(ledger.Select(entry =>
                     $"  {entry.EntryDate:dd/MM/yyyy HH:mm} | {Tr.Loc.TranslateText(entry.Type.ToString())} | {entry.Amount:C} | {entry.Description}"));
         }
 
         summary.Text = $"{Tr.Loc.TranslateText("Customers")}: {customers.Count}    |    {Tr.Loc.TranslateText("Payments received")}: {grandPayments:C}    |    {Tr.Loc.TranslateText("Total balance owed")}: {grandBalance:C}";
-        RenderResults(lines);
+        currentReportLines = customerSummaryLines.ToList();
+        if (showCustomerDetails.IsChecked == true)
+            currentReportLines.AddRange(customerDetailLines);
+        RenderResults(currentReportLines);
     }
 
     private async Task GenerateUpcomingSubscriptionsAsync()
