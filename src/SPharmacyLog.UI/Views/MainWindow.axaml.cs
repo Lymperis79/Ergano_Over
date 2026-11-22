@@ -293,11 +293,13 @@ public partial class MainWindow : Window
         Grid.SetColumn(weatherRefresh, 1); weatherRow.Children.Add(weatherRefresh);
         root.Children.Add(new Border { Child = weatherRow, CornerRadius = new CornerRadius(9), BorderThickness = new Thickness(1), BorderBrush = new SolidColorBrush(Color.Parse("#354152")) });
 
-        var cards = new Grid { ColumnDefinitions = CreateColumns(GridLength.Star, GridLength.Star), RowDefinitions = CreateRows(GridLength.Auto, GridLength.Auto) };
+        var cards = new Grid { ColumnDefinitions = CreateColumns(GridLength.Star, GridLength.Star, GridLength.Star), RowDefinitions = CreateRows(GridLength.Auto, GridLength.Auto) };
         var customersValue = new TextBlock { Text = "—", FontSize = 26, FontWeight = FontWeight.Bold };
         var activeValue = new TextBlock { Text = "—", FontSize = 30, FontWeight = FontWeight.Bold };
         var dueValue = new TextBlock { Text = "—", FontSize = 30, FontWeight = FontWeight.Bold };
         var overdueValue = new TextBlock { Text = "—", FontSize = 30, FontWeight = FontWeight.Bold };
+        var borrowedValue = new TextBlock { Text = "—", FontSize = 30, FontWeight = FontWeight.Bold };
+        var returnedTodayValue = new TextBlock { Text = "—", FontSize = 30, FontWeight = FontWeight.Bold };
         void AddCard(string label, TextBlock value, int column, int row, string accent)
         {
             var body = new StackPanel { Spacing = 5, Children =
@@ -310,8 +312,10 @@ public partial class MainWindow : Window
         }
         AddCard("Total customers", customersValue, 0, 0, "#397DA5");
         AddCard("Active subscriptions", activeValue, 1, 0, "#397DA5");
+        AddCard("Currently borrowed", borrowedValue, 2, 0, "#397DA5");
         AddCard("Subscriptions due today", dueValue, 0, 1, "#D39A35");
         AddCard("Overdue open subscriptions", overdueValue, 1, 1, "#C65D5D");
+        AddCard("Returned today", returnedTodayValue, 2, 1, "#4A9B72");
         root.Children.Add(cards);
 
         var todayPanel = new Border { Background = new SolidColorBrush(Color.Parse("#202733")), BorderBrush = new SolidColorBrush(Color.Parse("#354152")), BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(10), Padding = new Thickness(16), Child = new StackPanel { Spacing = 7 } };
@@ -353,6 +357,12 @@ public partial class MainWindow : Window
             var activeCount = await db.Subscriptions.CountAsync(item => item.Status == SubscriptionStatus.Active);
             var dueToday = await db.Subscriptions.CountAsync(item => item.Status == SubscriptionStatus.Active && item.NextDueDate >= today && item.NextDueDate < tomorrow);
             var overdue = await db.Subscriptions.CountAsync(item => item.Status == SubscriptionStatus.Active && item.NextDueDate < today);
+            var currentlyBorrowed = await db.Borrowings
+                .Where(item => item.Status == BorrowingStatus.Borrowed)
+                .SumAsync(item => (int?)item.Quantity) ?? 0;
+            var returnedToday = await db.Borrowings
+                .Where(item => item.Status == BorrowingStatus.Returned && item.ReturnedAt.HasValue && item.ReturnedAt.Value >= today && item.ReturnedAt.Value < tomorrow)
+                .SumAsync(item => (int?)item.Quantity) ?? 0;
             customersValue.Text = customerCount.ToString();
             activeValue.Text = activeCount.ToString();
             dueValue.Text = dueToday.ToString();
