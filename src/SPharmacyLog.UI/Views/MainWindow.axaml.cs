@@ -1199,7 +1199,7 @@ public partial class MainWindow : Window
 
     private TabControl customerTabs = null!;
     private TabItem customerDetailsTab = null!;
-    private TextBlock customerOverview = null!;
+    private StackPanel customerOverview = null!;
     private readonly Dictionary<string, TextBox> activityFields = new();
     private ListBox borrowingList = null!;
     private ListBox subscriptionList = null!;
@@ -1263,8 +1263,9 @@ public partial class MainWindow : Window
 
         var details = BuildCustomerDetailsTab();
         customerDetailsTab = details;
-        customerOverview = new TextBlock { Text = "Select a customer to see their account summary.", TextWrapping = TextWrapping.Wrap, Margin = new Thickness(12) };
-        var overviewTab = new TabItem { Header = "Overview", Content = new StackPanel { Spacing = 12, Children = { customerOverview } } };
+        customerOverview = new StackPanel { Spacing = 14, Margin = new Thickness(8) };
+        var overviewTab = new TabItem { Header = "Overview", Content = new ScrollViewer { Content = customerOverview, VerticalScrollBarVisibility = ScrollBarVisibility.Auto } };
+        customerOverview.Children.Add(new TextBlock { Text = Tr.Loc.TranslateText("Select a customer to see their account summary."), TextWrapping = TextWrapping.Wrap, Margin = new Thickness(12) });
         var borrowingTab = BuildBorrowingsTab();
         var historyTab = BuildCustomerHistoryTab();
         var subscriptionsTab = BuildSubscriptionsTab();
@@ -2077,24 +2078,7 @@ public partial class MainWindow : Window
         var charges = ledger.Where(x => x.Type == LedgerEntryType.Charge || x.Type == LedgerEntryType.Adjustment).Sum(x => x.Amount);
         var credits = ledger.Where(x => x.Type == LedgerEntryType.Payment || x.Type == LedgerEntryType.Reversal).Sum(x => x.Amount);
         var balance = charges - credits;
-        var overviewLines = new List<string>
-        {
-            $"{customer.CustomerNumber}  |  {customer.FullName}",
-            $"{customer.Address}, {customer.City} {customer.Postcode}",
-            $"Telephone: {customer.Telephone ?? customer.Phone}  |  Mobile: {customer.Mobile}",
-            $"Email: {customer.Email}"
-        };
-        if (CanAccessMenu(MenuBorrowing))
-            overviewLines.Add($"BORROWINGS: {allBorrowings.Count} total, {borrowings.Count} currently borrowed");
-        if (CanAccessMenu(MenuSubscriptions))
-            overviewLines.Add($"SUBSCRIPTIONS: {subscriptions.Count} active | {executedSubscriptions.Count} executed");
-        if (CanAccessMenu(MenuPayments))
-        {
-            overviewLines.Add($"PAYMENTS: {payments.Count} recorded  |  Total paid: {payments.Sum(x => x.Amount):C}");
-            overviewLines.Add($"ACCOUNT BALANCE: {balance:C}");
-            overviewLines.AddRange(ledger.Take(5).Select(x => $"{x.EntryDate:dd/MM/yyyy}  {x.Type}  {x.Amount:C}  {x.Description}"));
-        }
-        customerOverview.Text = string.Join("\n", overviewLines);
+        RenderCustomerOverview(customer, borrowings, allBorrowings.Count, subscriptions, executedSubscriptions, payments, balance, ledger);
         currentBorrowings = borrowings;
         borrowingList.ItemsSource = borrowings.Select(x =>
             x.SerializedPackScan is null
@@ -2118,6 +2102,314 @@ public partial class MainWindow : Window
         subscriptionHistoryList.ItemsSource = executedSubscriptions.Select(x => $"{GetSubscriptionNumber(x)} | {x.Title} | Last changed {ToLocalSubscriptionTime(x.LastModifiedAt):dd/MM/yyyy HH:mm}").ToList();
         ledgerList.ItemsSource = ledger.Select(x => $"{x.EntryDate:dd/MM/yyyy HH:mm} | {x.Type} | {x.Amount:C} | {x.Description}").ToList();
         ApplyTranslations();
+    }
+
+    private void RenderCustomerOverview(
+        Customer customer,
+        IReadOnlyList<BorrowingRecord> activeBorrowings,
+        int totalBorrowings,
+        IReadOnlyList<Subscription> activeSubscriptions,
+        IReadOnlyList<Subscription> executedSubscriptions,
+        IReadOnlyList<Payment> payments,
+        decimal balance,
+        IReadOnlyList<LedgerEntry> ledger)
+    {
+        customerOverview.Children.Clear();
+
+        var displayName = !string.IsNullOrWhiteSpace(customer.FullName)
+            ? customer.FullName
+            : $"{customer.FirstName} {customer.Surname}".Trim();
+        if (string.IsNullOrWhiteSpace(displayName))
+            displayName = Tr.Loc.TranslateText("Customer");
+
+        var initials = string.Join("", displayName.Split(' ', StringSplitOptions.RemoveEmptyEntries)
+            .Take(2).Select(part => part[..1].ToUpperInvariant()));
+        var nameAndNumber = new StackPanel { Spacing = 4, VerticalAlignment = VerticalAlignment.Center };
+        nameAndNumber.Children.Add(new TextBlock
+        {
+            Text = displayName,
+            FontSize = 25,
+            FontWeight = FontWeight.Bold,
+            TextWrapping = TextWrapping.Wrap
+        });
+        nameAndNumber.Children.Add(new TextBlock
+        {
+            Text = $"{Tr.Loc.TranslateText("Customer number")}: {customer.CustomerNumber}",
+            FontSize = 13,
+            Foreground = Brushes.LightGray
+        });
+        var identityRow = new Grid
+        {
+            ColumnDefinitions = CreateColumns(GridLength.Auto, GridLength.Star),
+            ColumnSpacing = 16,
+            VerticalAlignment = VerticalAlignment.Center
+        };
+        var avatar = new Border
+        {
+            Width = 66,
+            Height = 66,
+            CornerRadius = new CornerRadius(33),
+            Background = new SolidColorBrush(Color.Parse("#315A78")),
+            Child = new TextBlock
+            {
+                Text = string.IsNullOrWhiteSpace(initials) ? "?" : initials,
+                FontSize = 22,
+                FontWeight = FontWeight.Bold,
+                HorizontalAlignment = HorizontalAlignment.Center,
+                VerticalAlignment = VerticalAlignment.Center,
+                Foreground = Brushes.White
+            }
+        };
+        identityRow.Children.Add(avatar);
+        Grid.SetColumn(nameAndNumber, 1);
+        identityRow.Children.Add(nameAndNumber);
+
+        var identityHeader = new Border
+        {
+            Background = new SolidColorBrush(Color.Parse("#202D3C")),
+            BorderBrush = new SolidColorBrush(Color.Parse("#3A536B")),
+            BorderThickness = new Thickness(1),
+            CornerRadius = new CornerRadius(12),
+            Padding = new Thickness(18),
+            Child = identityRow
+        };
+        customerOverview.Children.Add(identityHeader);
+
+        var contactGrid = new Grid
+        {
+            ColumnDefinitions = CreateColumns(GridLength.Star, GridLength.Star),
+            RowDefinitions = CreateRows(GridLength.Auto, GridLength.Auto, GridLength.Auto),
+            ColumnSpacing = 10,
+            RowSpacing = 10
+        };
+        void AddContact(string icon, string label, string? value, int column, int row)
+        {
+            var card = new Border
+            {
+                Background = new SolidColorBrush(Color.Parse("#1C2937")),
+                BorderBrush = new SolidColorBrush(Color.Parse("#34485C")),
+                BorderThickness = new Thickness(1),
+                CornerRadius = new CornerRadius(9),
+                Padding = new Thickness(12),
+                Child = new StackPanel
+                {
+                    Spacing = 4,
+                    Children =
+                    {
+                        new TextBlock { Text = $"{icon}  {Tr.Loc.TranslateText(label)}", FontSize = 11, Foreground = Brushes.LightGray },
+                        new TextBlock
+                        {
+                            Text = string.IsNullOrWhiteSpace(value) ? "—" : value,
+                            FontSize = 14,
+                            FontWeight = FontWeight.SemiBold,
+                            TextWrapping = TextWrapping.Wrap
+                        }
+                    }
+                }
+            };
+            Grid.SetColumn(card, column);
+            Grid.SetRow(card, row);
+            contactGrid.Children.Add(card);
+        }
+
+        var address = string.Join(", ", new[] { customer.Address, customer.Postcode, customer.City }
+            .Where(value => !string.IsNullOrWhiteSpace(value)));
+        AddContact("⌖", "Address", address, 0, 0);
+        AddContact("☎", "Telephone", customer.Telephone ?? customer.Phone, 1, 0);
+        AddContact("▣", "Mobile", customer.Mobile, 0, 1);
+        AddContact("✉", "Email", customer.Email, 1, 1);
+        AddContact("▤", "Insurance", customer.Insurance, 0, 2);
+        AddContact("◎", "AMKA", customer.Amka, 1, 2);
+        customerOverview.Children.Add(contactGrid);
+
+        var metrics = new Grid
+        {
+            ColumnDefinitions = CreateColumns(GridLength.Star, GridLength.Star, GridLength.Star),
+            ColumnSpacing = 10
+        };
+        void AddMetric(string icon, string label, string value, int column, string accent)
+        {
+            var card = new Border
+            {
+                Background = new SolidColorBrush(Color.Parse("#202733")),
+                BorderBrush = new SolidColorBrush(Color.Parse(accent)),
+                BorderThickness = new Thickness(1),
+                CornerRadius = new CornerRadius(9),
+                Padding = new Thickness(12),
+                Child = new StackPanel
+                {
+                    Spacing = 5,
+                    Children =
+                    {
+                        new TextBlock { Text = icon, FontSize = 19 },
+                        new TextBlock { Text = value, FontSize = 22, FontWeight = FontWeight.Bold },
+                        new TextBlock { Text = Tr.Loc.TranslateText(label), FontSize = 11, Foreground = Brushes.LightGray, TextWrapping = TextWrapping.Wrap }
+                    }
+                }
+            };
+            Grid.SetColumn(card, column);
+            metrics.Children.Add(card);
+        }
+        var metricCount = (CanAccessMenu(MenuBorrowing) ? 1 : 0) +
+                          (CanAccessMenu(MenuSubscriptions) ? 1 : 0) +
+                          (CanAccessMenu(MenuPayments) ? 1 : 0);
+        if (metricCount > 0)
+        {
+            if (CanAccessMenu(MenuBorrowing))
+                AddMetric("💊", "Currently borrowed", activeBorrowings.Count.ToString(), metrics.Children.Count, "#397DA5");
+            if (CanAccessMenu(MenuSubscriptions))
+                AddMetric("▣", "Active subscriptions", activeSubscriptions.Count.ToString(), metrics.Children.Count, "#4B9B83");
+            if (CanAccessMenu(MenuPayments))
+                AddMetric("€", "Account balance", balance.ToString("C"), metrics.Children.Count, balance > 0 ? "#C58B3B" : "#4B9B83");
+            customerOverview.Children.Add(metrics);
+        }
+
+        void AddSectionTitle(string icon, string title, string? subtitle = null)
+        {
+            var section = new StackPanel { Spacing = 3, Margin = new Thickness(0, 8, 0, 0) };
+            section.Children.Add(new TextBlock
+            {
+                Text = $"{icon}  {Tr.Loc.TranslateText(title)}",
+                FontSize = 17,
+                FontWeight = FontWeight.Bold
+            });
+            if (!string.IsNullOrWhiteSpace(subtitle))
+                section.Children.Add(new TextBlock { Text = subtitle, FontSize = 11, Foreground = Brushes.LightGray });
+            customerOverview.Children.Add(section);
+        }
+
+        Border CreateRecordCard(string icon, string title, IEnumerable<string> details, string status, string accent)
+        {
+            var content = new Grid
+            {
+                ColumnDefinitions = CreateColumns(GridLength.Auto, GridLength.Star, GridLength.Auto),
+                ColumnSpacing = 12,
+                VerticalAlignment = VerticalAlignment.Center
+            };
+            var glyph = new Border
+            {
+                Width = 42,
+                Height = 42,
+                CornerRadius = new CornerRadius(10),
+                Background = new SolidColorBrush(Color.Parse(accent)),
+                Child = new TextBlock
+                {
+                    Text = icon,
+                    FontSize = 19,
+                    HorizontalAlignment = HorizontalAlignment.Center,
+                    VerticalAlignment = VerticalAlignment.Center
+                }
+            };
+            content.Children.Add(glyph);
+            var info = new StackPanel { Spacing = 4, VerticalAlignment = VerticalAlignment.Center };
+            info.Children.Add(new TextBlock { Text = title, FontWeight = FontWeight.SemiBold, FontSize = 14, TextWrapping = TextWrapping.Wrap });
+            foreach (var detail in details.Where(value => !string.IsNullOrWhiteSpace(value)))
+                info.Children.Add(new TextBlock { Text = detail, FontSize = 11, Foreground = Brushes.LightGray, TextWrapping = TextWrapping.Wrap });
+            Grid.SetColumn(info, 1);
+            content.Children.Add(info);
+            var statusText = new TextBlock
+            {
+                Text = status,
+                FontSize = 10,
+                FontWeight = FontWeight.SemiBold,
+                Foreground = new SolidColorBrush(Color.Parse(accent)),
+                VerticalAlignment = VerticalAlignment.Center,
+                TextWrapping = TextWrapping.Wrap,
+                MaxWidth = 105
+            };
+            Grid.SetColumn(statusText, 2);
+            content.Children.Add(statusText);
+            return new Border
+            {
+                Background = new SolidColorBrush(Color.Parse("#1C2937")),
+                BorderBrush = new SolidColorBrush(Color.Parse("#34485C")),
+                BorderThickness = new Thickness(1),
+                CornerRadius = new CornerRadius(10),
+                Padding = new Thickness(12),
+                Child = content
+            };
+        }
+
+        void AddEmptyState(string message)
+        {
+            customerOverview.Children.Add(new Border
+            {
+                Background = new SolidColorBrush(Color.Parse("#1C2937")),
+                CornerRadius = new CornerRadius(9),
+                Padding = new Thickness(14),
+                Child = new TextBlock { Text = Tr.Loc.TranslateText(message), Foreground = Brushes.LightGray, TextWrapping = TextWrapping.Wrap }
+            });
+        }
+
+        if (CanAccessMenu(MenuBorrowing))
+        {
+            AddSectionTitle("💊", "Current borrowings", $"{activeBorrowings.Count} / {totalBorrowings} {Tr.Loc.TranslateText("records")}");
+            if (activeBorrowings.Count == 0)
+                AddEmptyState("No active borrowings.");
+            else
+                foreach (var item in activeBorrowings.OrderByDescending(x => x.BorrowedAt))
+                    customerOverview.Children.Add(CreateRecordCard(
+                        "💊",
+                        item.MedicineName,
+                        new[]
+                        {
+                            $"{Tr.Loc.TranslateText("Quantity")}: {item.Quantity}",
+                            $"{Tr.Loc.TranslateText("Borrowed")}: {item.BorrowedAt:dd/MM/yyyy HH:mm}",
+                            item.DueDate.HasValue ? $"{Tr.Loc.TranslateText("Due date")}: {item.DueDate.Value:dd/MM/yyyy}" : string.Empty
+                        },
+                        Tr.Loc.TranslateText("Borrowed"),
+                        "#397DA5"));
+        }
+
+        if (CanAccessMenu(MenuSubscriptions))
+        {
+            AddSectionTitle("▣", "Active subscriptions", $"{executedSubscriptions.Count} {Tr.Loc.TranslateText("executed")}");
+            if (activeSubscriptions.Count == 0)
+                AddEmptyState("No active subscriptions.");
+            else
+                foreach (var item in activeSubscriptions.OrderBy(x => x.NextDueDate))
+                    customerOverview.Children.Add(CreateRecordCard(
+                        "▣",
+                        item.Title,
+                        new[]
+                        {
+                            $"{Tr.Loc.TranslateText("Frequency")}: {Tr.Loc.TranslateText(item.Frequency)}",
+                            $"{Tr.Loc.TranslateText("Next due")}: {item.NextDueDate:dd/MM/yyyy}",
+                            item.ExpiryDate.HasValue ? $"{Tr.Loc.TranslateText("Expiry date")}: {item.ExpiryDate.Value:dd/MM/yyyy}" : string.Empty
+                        },
+                        Tr.Loc.TranslateText(item.Status.ToString()),
+                        "#4B9B83"));
+        }
+
+        if (CanAccessMenu(MenuPayments))
+        {
+            AddSectionTitle("€", "Account activity", $"{payments.Count} {Tr.Loc.TranslateText("payments")} · {ledger.Count} {Tr.Loc.TranslateText("ledger entries")}");
+            var totals = new Border
+            {
+                Background = new SolidColorBrush(Color.Parse("#1C2937")),
+                BorderBrush = new SolidColorBrush(Color.Parse("#34485C")),
+                BorderThickness = new Thickness(1),
+                CornerRadius = new CornerRadius(9),
+                Padding = new Thickness(13),
+                Child = new StackPanel
+                {
+                    Spacing = 5,
+                    Children =
+                    {
+                        new TextBlock { Text = $"{Tr.Loc.TranslateText("Total paid")}: {payments.Sum(x => x.Amount):C}", FontSize = 13 },
+                        new TextBlock { Text = $"{Tr.Loc.TranslateText("Account balance")}: {balance:C}", FontSize = 17, FontWeight = FontWeight.Bold }
+                    }
+                }
+            };
+            customerOverview.Children.Add(totals);
+            foreach (var entry in ledger.Take(3))
+                customerOverview.Children.Add(CreateRecordCard(
+                    entry.Type == LedgerEntryType.Payment || entry.Type == LedgerEntryType.Reversal ? "↙" : "↗",
+                    entry.Description ?? Tr.Loc.TranslateText(entry.Type.ToString()),
+                    new[] { $"{entry.EntryDate:dd/MM/yyyy} · {Tr.Loc.TranslateText(entry.Type.ToString())}" },
+                    entry.Amount.ToString("C"),
+                    entry.Type == LedgerEntryType.Payment || entry.Type == LedgerEntryType.Reversal ? "#4B9B83" : "#C58B3B"));
+        }
     }
 
     private async Task AddBorrowingAsync()
