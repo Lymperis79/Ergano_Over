@@ -782,7 +782,6 @@ public partial class MainWindow : Window
                     foreach (var subscription in daySubscriptions)
                     {
                         var customer = subscription.Customer;
-                        var subscriptionNumber = GetSubscriptionNumber(subscription);
                         var subscriptionBox = new Button
                         {
                             MinHeight = 34,
@@ -799,7 +798,7 @@ public partial class MainWindow : Window
                                 {
                                     new TextBlock
                                     {
-                                        Text = $"{subscriptionNumber} | {customer?.CustomerNumber}",
+                                        Text = $"{customer?.CustomerNumber} | {subscription.Title}",
                                         FontSize = 10,
                                         FontWeight = FontWeight.Bold,
                                         TextTrimming = TextTrimming.CharacterEllipsis
@@ -923,7 +922,7 @@ public partial class MainWindow : Window
         var dayItems = records.Select(p =>
                 $"{p.Customer?.CustomerNumber} | {p.Customer?.FullName} | {p.MedicineName} | Rx {p.PrescriptionNumber ?? "—"} | expires {p.ExpiryDate:dd/MM/yyyy}")
             .Concat(subscriptions.Select(subscription =>
-                $"{GetSubscriptionNumber(subscription)} | {subscription.Customer?.CustomerNumber} | {subscription.Customer?.FullName} | {subscription.Title} | due {subscription.NextDueDate:dd/MM/yyyy}"))
+                $"{subscription.Customer?.CustomerNumber} | {subscription.Customer?.FullName} | {subscription.Title} | due {subscription.NextDueDate:dd/MM/yyyy}"))
             .ToList();
         if (ApplicationSettingsService.Load().ShowOfficialHolidays)
         {
@@ -2135,8 +2134,8 @@ public partial class MainWindow : Window
         currentExecutedSubscriptions = executedSubscriptions;
         currentPayments = payments;
         currentLedgerEntries = ledger;
-        subscriptionList.ItemsSource = subscriptions.Select(x => $"{GetSubscriptionNumber(x)} | {x.Title} | {Tr.Loc.TranslateText(x.Status.ToString())} | Next: {x.NextDueDate:dd/MM/yyyy} | Expires: {x.ExpiryDate?.ToString("dd/MM/yyyy") ?? "—"} | {x.Frequency}").ToList();
-        subscriptionHistoryList.ItemsSource = executedSubscriptions.Select(x => $"{GetSubscriptionNumber(x)} | {x.Title} | Last changed {ToLocalSubscriptionTime(x.LastModifiedAt):dd/MM/yyyy HH:mm}").ToList();
+        subscriptionList.ItemsSource = subscriptions.Select(x => $"{x.Title} | {Tr.Loc.TranslateText(x.Status.ToString())} | Next: {x.NextDueDate:dd/MM/yyyy} | Expires: {x.ExpiryDate?.ToString("dd/MM/yyyy") ?? "—"} | {x.Frequency}").ToList();
+        subscriptionHistoryList.ItemsSource = executedSubscriptions.Select(x => $"{x.Title} | Last changed {ToLocalSubscriptionTime(x.LastModifiedAt):dd/MM/yyyy HH:mm}").ToList();
         ledgerList.ItemsSource = ledger.Select(x => $"{x.EntryDate:dd/MM/yyyy HH:mm} | {x.Type} | {x.Amount:C} | {x.Description}").ToList();
         ApplyTranslations();
     }
@@ -2600,11 +2599,6 @@ public partial class MainWindow : Window
         await db.SaveChangesAsync(); SetActivityStatus("Item marked as returned."); await RefreshCustomerWorkspaceAsync();
     }
 
-    private static string GetSubscriptionNumber(Subscription subscription) =>
-        string.IsNullOrWhiteSpace(subscription.Barcode)
-            ? $"SUB-{subscription.Id:D8}"
-            : subscription.Barcode;
-
     private static DateTime ToLocalSubscriptionTime(DateTime utcTime) =>
         DateTime.SpecifyKind(utcTime, DateTimeKind.Utc).ToLocalTime();
 
@@ -2648,15 +2642,8 @@ public partial class MainWindow : Window
             .FirstOrDefaultAsync(item => item.Id == subscriptionId);
         if (subscription?.Customer is null) return;
 
-        if (string.IsNullOrWhiteSpace(subscription.Barcode))
-        {
-            subscription.Barcode = GetSubscriptionNumber(subscription);
-            await db.SaveChangesAsync();
-        }
-
         var customer = subscription.Customer;
-        var subscriptionNumber = GetSubscriptionNumber(subscription);
-        var barcodeBitmap = CreateSubscriptionBarcodeBitmap(subscriptionNumber);
+        var barcodeBitmap = CreateSubscriptionBarcodeBitmap(subscription.Title);
         var statusSelector = CreateSubscriptionStatusSelector(subscription.Status);
         var muted = new SolidColorBrush(Color.Parse("#AFC0D1"));
         var panelBrush = new SolidColorBrush(Color.Parse("#1B2836"));
@@ -2732,7 +2719,7 @@ public partial class MainWindow : Window
         });
         heroInfo.Children.Add(new TextBlock
         {
-            Text = $"{Tr.Loc.TranslateText("Subscription number")}: {subscriptionNumber}   •   {Tr.Loc.TranslateText("Created")}: {ToLocalSubscriptionTime(subscription.CreatedAt):dd/MM/yyyy}   •   {Tr.Loc.TranslateText("Starts")}: {subscription.StartDate:dd/MM/yyyy}",
+            Text = $"{Tr.Loc.TranslateText("Created")}: {ToLocalSubscriptionTime(subscription.CreatedAt):dd/MM/yyyy}   •   {Tr.Loc.TranslateText("Starts")}: {subscription.StartDate:dd/MM/yyyy}",
             FontSize = 12,
             Foreground = muted,
             TextWrapping = TextWrapping.Wrap
@@ -2834,7 +2821,7 @@ public partial class MainWindow : Window
         });
         barcodeInfo.Children.Add(new TextBlock
         {
-            Text = subscriptionNumber,
+            Text = subscription.Title,
             FontSize = 13,
             FontWeight = FontWeight.Bold,
             HorizontalAlignment = HorizontalAlignment.Center
@@ -3101,8 +3088,6 @@ public partial class MainWindow : Window
             record.Frequency = string.IsNullOrWhiteSpace(frequency.Text) ? "Monthly" : frequency.Text.Trim();
             record.Notes = notes.Text?.Trim();
             await db.SaveChangesAsync();
-            if (string.IsNullOrWhiteSpace(record.Barcode))
-                record.Barcode = GetSubscriptionNumber(record);
             db.SubscriptionAuditEntries.Add(new SubscriptionAuditEntry
             {
                 SubscriptionId = record.Id,
