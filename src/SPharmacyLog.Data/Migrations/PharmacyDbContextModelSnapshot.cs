@@ -204,6 +204,9 @@ public sealed class PharmacyDbContextModelSnapshot : ModelSnapshot
             entity.Property(note => note.CreatedBy).IsRequired().HasMaxLength(255);
             entity.Property(note => note.IsShared);
             entity.Property(note => note.CreatedAt);
+            entity.Property(note => note.IsCompleted).HasDefaultValue(false);
+            entity.Property(note => note.CompletedBy).HasMaxLength(255);
+            entity.Property(note => note.CompletedAt);
             entity.HasIndex(note => new { note.CalendarDate, note.IsShared, note.CreatedBy });
         });
 
