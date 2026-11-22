@@ -3,6 +3,7 @@ using Avalonia.Controls;
 using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.Platform.Storage;
+using Avalonia.Threading;
 using Microsoft.EntityFrameworkCore;
 using SPharmacyLog.Data;
 using SPharmacyLog.Data.Entities;
@@ -66,8 +67,16 @@ public sealed class ReportsWindow : Window
         customerFilter.SelectionChanged += (_, _) => exportButton.IsEnabled = false;
         customerFilter.PropertyChanged += (_, e) =>
         {
-            if (e.Property == ComboBox.TextProperty && !isFilteringCustomers)
-                FilterCustomers(customerFilter.Text ?? string.Empty);
+            if (e.Property != ComboBox.TextProperty || isFilteringCustomers)
+                return;
+
+            // ComboBox updates Text while committing a selection. Do not rebuild Items
+            // during that selection transaction.
+            if (customerFilter.SelectedItem is ComboBoxItem selected &&
+                string.Equals(selected.Content?.ToString(), customerFilter.Text, StringComparison.CurrentCulture))
+                return;
+
+            FilterCustomers(customerFilter.Text ?? string.Empty);
         };
         reportDate.TextChanged += (_, _) => exportButton.IsEnabled = false;
 
@@ -204,26 +213,56 @@ public sealed class ReportsWindow : Window
 
     private void FilterCustomers(string searchText)
     {
-        var selectedId = (customerFilter.SelectedItem as ComboBoxItem)?.Tag as int?;
+        // Defer collection changes until Avalonia has finished processing the
+        // ComboBox text/selection change that raised this callback.
+        Dispatcher.UIThread.Post(() => ApplyCustomerFilter(searchText), DispatcherPriority.Background);
+    }
+
+    private void ApplyCustomerFilter(string searchText)
+    {
+        if (!IsVisible || isFilteringCustomers)
+            return;
+
         var query = searchText.Trim();
         var matches = string.IsNullOrWhiteSpace(query)
             ? customerOptions
             : customerOptions.Where(option => option.SearchText.Contains(query, StringComparison.CurrentCultureIgnoreCase)).ToList();
 
+        // Preserve an existing customer selection only when it is still present.
+        var selectedId = (customerFilter.SelectedItem as ComboBoxItem)?.Tag as int?;
         isFilteringCustomers = true;
-        customerFilter.Items.Clear();
-        customerFilter.Items.Add(new ComboBoxItem { Content = Tr.Loc.TranslateText("All customers"), Tag = null });
-        foreach (var option in matches)
-            customerFilter.Items.Add(new ComboBoxItem { Content = option.Display, Tag = option.Id });
+        try
+        {
+            customerFilter.Items.Clear();
+            var allCustomersItem = new ComboBoxItem
+            {
+                Content = Tr.Loc.TranslateText("All customers"),
+                Tag = null
+            };
+            customerFilter.Items.Add(allCustomersItem);
 
-        if (selectedId.HasValue && matches.Any(option => option.Id == selectedId.Value))
-            customerFilter.SelectedItem = customerFilter.Items.Cast<ComboBoxItem>().First(item => (item.Tag as int?) == selectedId);
-        else if (string.IsNullOrWhiteSpace(query))
-            customerFilter.SelectedIndex = 0;
-        else
-            customerFilter.SelectedIndex = -1;
-        customerFilter.Text = searchText;
-        isFilteringCustomers = false;
+            ComboBoxItem? selectedMatch = null;
+            foreach (var option in matches)
+            {
+                var item = new ComboBoxItem { Content = option.Display, Tag = option.Id };
+                customerFilter.Items.Add(item);
+                if (selectedId.HasValue && option.Id == selectedId.Value)
+                    selectedMatch = item;
+            }
+
+            if (selectedMatch is not null)
+                customerFilter.SelectedItem = selectedMatch;
+            else if (string.IsNullOrWhiteSpace(query))
+                customerFilter.SelectedItem = allCustomersItem;
+            else
+                customerFilter.SelectedIndex = -1;
+
+            customerFilter.Text = searchText;
+        }
+        finally
+        {
+            isFilteringCustomers = false;
+        }
     }
 
     private sealed record CustomerFilterOption(int Id, string Display, string SearchText);
