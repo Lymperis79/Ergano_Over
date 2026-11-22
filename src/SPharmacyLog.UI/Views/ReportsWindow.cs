@@ -1,5 +1,6 @@
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Controls.Primitives;
 using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.Platform.Storage;
@@ -18,7 +19,7 @@ namespace SPharmacyLog.UI.Views;
 public sealed class ReportsWindow : Window
 {
     private readonly ComboBox reportType = new() { MinWidth = 250 };
-    private readonly TextBox customerSearch = new() { MinWidth = 300, Watermark = "Search customer..." };
+    private readonly TextBox customerSearch = new() { MinWidth = 300, PlaceholderText = "Search customer..." };
     private readonly ListBox customerSuggestions = new() { MaxHeight = 190, MinWidth = 300 };
     private List<CustomerFilterOption> customerOptions = new();
     private List<CustomerFilterOption> visibleCustomerMatches = new();
