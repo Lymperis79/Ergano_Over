@@ -293,14 +293,19 @@ public partial class MainWindow : Window
         Grid.SetColumn(weatherRefresh, 1); weatherRow.Children.Add(weatherRefresh);
         root.Children.Add(new Border { Child = weatherRow, CornerRadius = new CornerRadius(9), BorderThickness = new Thickness(1), BorderBrush = new SolidColorBrush(Color.Parse("#354152")) });
 
-        var cards = new Grid { ColumnDefinitions = CreateColumns(GridLength.Star, GridLength.Star, GridLength.Star), RowDefinitions = CreateRows(GridLength.Auto, GridLength.Auto) };
-        var customersValue = new TextBlock { Text = "—", FontSize = 26, FontWeight = FontWeight.Bold };
-        var activeValue = new TextBlock { Text = "—", FontSize = 30, FontWeight = FontWeight.Bold };
-        var dueValue = new TextBlock { Text = "—", FontSize = 30, FontWeight = FontWeight.Bold };
-        var overdueValue = new TextBlock { Text = "—", FontSize = 30, FontWeight = FontWeight.Bold };
-        var borrowedValue = new TextBlock { Text = "—", FontSize = 30, FontWeight = FontWeight.Bold };
-        var returnedTodayValue = new TextBlock { Text = "—", FontSize = 30, FontWeight = FontWeight.Bold };
-        void AddCard(string label, TextBlock value, int column, int row, string accent)
+        void AddGroupHeader(string title)
+        {
+            root.Children.Add(new TextBlock
+            {
+                Text = Tr.Loc.TranslateText(title),
+                FontSize = 17,
+                FontWeight = FontWeight.SemiBold,
+                Margin = new Thickness(4, 8, 4, 0),
+                Foreground = Brushes.White
+            });
+        }
+
+        void AddCard(Grid target, string label, TextBlock value, int column, string accent)
         {
             var body = new StackPanel { Spacing = 5, Children =
             {
@@ -308,15 +313,33 @@ public partial class MainWindow : Window
                 value
             }};
             var card = new Border { Background = new SolidColorBrush(Color.Parse("#202733")), BorderBrush = new SolidColorBrush(Color.Parse(accent)), BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(10), Padding = new Thickness(18), Margin = new Thickness(4), Child = body };
-            Grid.SetColumn(card, column); Grid.SetRow(card, row); cards.Children.Add(card);
+            Grid.SetColumn(card, column);
+            target.Children.Add(card);
         }
-        AddCard("Total customers", customersValue, 0, 0, "#397DA5");
-        AddCard("Active subscriptions", activeValue, 1, 0, "#397DA5");
-        AddCard("Currently borrowed", borrowedValue, 2, 0, "#397DA5");
-        AddCard("Subscriptions due today", dueValue, 0, 1, "#D39A35");
-        AddCard("Overdue open subscriptions", overdueValue, 1, 1, "#C65D5D");
-        AddCard("Returned today", returnedTodayValue, 2, 1, "#4A9B72");
-        root.Children.Add(cards);
+
+        var customersValue = new TextBlock { Text = "—", FontSize = 30, FontWeight = FontWeight.Bold };
+        AddGroupHeader("General");
+        var generalCards = new Grid { ColumnDefinitions = CreateColumns(GridLength.Star) };
+        AddCard(generalCards, "Total customers", customersValue, 0, "#397DA5");
+        root.Children.Add(generalCards);
+
+        var activeValue = new TextBlock { Text = "—", FontSize = 30, FontWeight = FontWeight.Bold };
+        var dueValue = new TextBlock { Text = "—", FontSize = 30, FontWeight = FontWeight.Bold };
+        var overdueValue = new TextBlock { Text = "—", FontSize = 30, FontWeight = FontWeight.Bold };
+        AddGroupHeader("Subscriptions");
+        var subscriptionCards = new Grid { ColumnDefinitions = CreateColumns(GridLength.Star, GridLength.Star, GridLength.Star) };
+        AddCard(subscriptionCards, "Active subscriptions", activeValue, 0, "#397DA5");
+        AddCard(subscriptionCards, "Subscriptions due today", dueValue, 1, "#D39A35");
+        AddCard(subscriptionCards, "Overdue open subscriptions", overdueValue, 2, "#C65D5D");
+        root.Children.Add(subscriptionCards);
+
+        var borrowedValue = new TextBlock { Text = "—", FontSize = 30, FontWeight = FontWeight.Bold };
+        var returnedTodayValue = new TextBlock { Text = "—", FontSize = 30, FontWeight = FontWeight.Bold };
+        AddGroupHeader("Medicine");
+        var medicineCards = new Grid { ColumnDefinitions = CreateColumns(GridLength.Star, GridLength.Star) };
+        AddCard(medicineCards, "Currently borrowed", borrowedValue, 0, "#397DA5");
+        AddCard(medicineCards, "Returned today", returnedTodayValue, 1, "#4A9B72");
+        root.Children.Add(medicineCards);
 
         var todayPanel = new Border { Background = new SolidColorBrush(Color.Parse("#202733")), BorderBrush = new SolidColorBrush(Color.Parse("#354152")), BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(10), Padding = new Thickness(16), Child = new StackPanel { Spacing = 7 } };
         var todayStack = (StackPanel)todayPanel.Child!;
