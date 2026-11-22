@@ -365,9 +365,24 @@ public sealed class ReportsWindow : Window
     {
         await using var db = new PharmacyDbContext(PharmacyDb.Options());
         var selectedId = selectedCustomerId;
+        var searchText = customerSearch.Text?.Trim();
         var customersQuery = db.Customers.AsNoTracking().AsQueryable();
+
+        // Apply the filter either from the selected suggestion or from the typed search text.
+        // This ensures Generate Report works even if the user does not click a suggestion.
         if (selectedId.HasValue)
+        {
             customersQuery = customersQuery.Where(customer => customer.Id == selectedId.Value);
+        }
+        else if (!string.IsNullOrWhiteSpace(searchText))
+        {
+            var matchingCustomerIds = customerOptions
+                .Where(option => option.SearchText.Contains(searchText, StringComparison.CurrentCultureIgnoreCase))
+                .Select(option => option.Id)
+                .ToArray();
+            customersQuery = customersQuery.Where(customer => matchingCustomerIds.Contains(customer.Id));
+        }
+
         var customers = await customersQuery.OrderBy(customer => customer.FullName).ToListAsync();
         if (customers.Count == 0)
         {
