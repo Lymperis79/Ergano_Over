@@ -82,6 +82,8 @@ public sealed class LocalizationService : ILocalizationService
         ["Control which built-in information is displayed in the application calendar."] = "Επιλέξτε ποιες ενσωματωμένες πληροφορίες θα εμφανίζονται στο ημερολόγιο της εφαρμογής.",
         ["Show official Greek public holidays in the calendar"] = "Εμφάνιση επίσημων ελληνικών αργιών στο ημερολόγιο",
         ["Total customers"] = "Σύνολο πελατών",
+        ["Currently borrowed"] = "Σε δανεισμό",
+        ["Returned today"] = "Επιστράφηκαν σήμερα",
         ["Active subscriptions"] = "Ενεργές συνδρομές",
         ["Subscriptions due today"] = "Συνδρομές που λήγουν σήμερα",
         ["Overdue open subscriptions"] = "Εκπρόθεσμες εκκρεμείς συνδρομές",
