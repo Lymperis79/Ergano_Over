@@ -358,7 +358,7 @@ public partial class MainWindow : Window
             target.Children.Add(surface);
         }
 
-        async Task ShowSubscriptionExpiryListAsync(bool dueTodayOnly)
+        async Task ShowSubscriptionExpiryListAsync(bool? dueTodayOnly)
         {
             if (!CanAccessMenu(MenuSubscriptions)) { ShowNoMenuAccess(); return; }
             var today = DateTime.Today;
@@ -367,9 +367,10 @@ public partial class MainWindow : Window
             var subscriptions = await db.Subscriptions.AsNoTracking()
                 .Include(item => item.Customer)
                 .Where(item => item.Status == SubscriptionStatus.Active &&
-                    (dueTodayOnly
-                        ? item.NextDueDate >= today && item.NextDueDate < tomorrow
-                        : item.NextDueDate < today))
+                    (!dueTodayOnly.HasValue ||
+                        (dueTodayOnly.Value
+                            ? item.NextDueDate >= today && item.NextDueDate < tomorrow
+                            : item.NextDueDate < today)))
                 .OrderBy(item => item.NextDueDate)
                 .ThenBy(item => item.Customer!.Surname)
                 .ThenBy(item => item.Customer!.FirstName)
@@ -377,7 +378,9 @@ public partial class MainWindow : Window
 
             var dialog = new Window
             {
-                Title = Tr.Loc.TranslateText(dueTodayOnly ? "Subscriptions due today" : "Overdue open subscriptions"),
+                Title = Tr.Loc.TranslateText(dueTodayOnly.HasValue
+                    ? (dueTodayOnly.Value ? "Subscriptions due today" : "Overdue open subscriptions")
+                    : "Active subscriptions"),
                 Width = 760,
                 Height = 620,
                 MinWidth = 520,
@@ -414,7 +417,9 @@ public partial class MainWindow : Window
                         new TextBlock
                         {
                             Text = $"{Tr.Loc.TranslateText("Next due")}: {subscription.NextDueDate:dd/MM/yyyy}",
-                            Foreground = new SolidColorBrush(Color.Parse(dueTodayOnly ? "#D39A35" : "#E07878")),
+                            Foreground = new SolidColorBrush(Color.Parse(dueTodayOnly.HasValue
+                                ? (dueTodayOnly.Value ? "#D39A35" : "#E07878")
+                                : "#397DA5")),
                             FontSize = 12
                         }
                     }
@@ -480,7 +485,7 @@ public partial class MainWindow : Window
         var overdueValue = new TextBlock { Text = "—", FontSize = 30, FontWeight = FontWeight.Bold };
         AddGroupHeader("Subscriptions", "📋", "#D39A35");
         var subscriptionCards = new Grid { ColumnDefinitions = CreateColumns(GridLength.Star, GridLength.Star, GridLength.Star) };
-        AddCard(subscriptionCards, "Active subscriptions", activeValue, 0, "#397DA5");
+        AddCard(subscriptionCards, "Active subscriptions", activeValue, 0, "#397DA5", () => _ = ShowSubscriptionExpiryListAsync(null));
         AddCard(subscriptionCards, "Subscriptions due today", dueValue, 1, "#D39A35", () => _ = ShowSubscriptionExpiryListAsync(true));
         AddCard(subscriptionCards, "Overdue open subscriptions", overdueValue, 2, "#C65D5D", () => _ = ShowSubscriptionExpiryListAsync(false));
         root.Children.Add(subscriptionCards);
