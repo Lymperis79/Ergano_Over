@@ -498,6 +498,73 @@ public partial class MainWindow : Window
         AddCard(medicineCards, "Returned today", returnedTodayValue, 1, "#4A9B72");
         root.Children.Add(medicineCards);
 
+        var notesPanel = new Border
+        {
+            Background = new SolidColorBrush(Color.Parse("#202733")),
+            BorderBrush = new SolidColorBrush(Color.Parse("#354152")),
+            BorderThickness = new Thickness(1),
+            CornerRadius = new CornerRadius(10),
+            Padding = new Thickness(16),
+            Child = new StackPanel { Spacing = 9 }
+        };
+        var notesStack = (StackPanel)notesPanel.Child!;
+        notesStack.Children.Add(new TextBlock { Text = Tr.Loc.TranslateText("Today's notes"), FontSize = 17, FontWeight = FontWeight.SemiBold });
+        var todayNotes = await LoadDashboardNotesAsync();
+        if (todayNotes.Count == 0)
+            notesStack.Children.Add(new TextBlock { Text = Tr.Loc.TranslateText("No notes for today."), Foreground = Brushes.LightGray });
+        foreach (var note in todayNotes)
+        {
+            var details = new StackPanel
+            {
+                Spacing = 3,
+                Children =
+                {
+                    new TextBlock { Text = note.Header, FontWeight = FontWeight.SemiBold },
+                    new TextBlock { Text = note.Note, TextWrapping = TextWrapping.Wrap, Foreground = Brushes.LightGray },
+                    new TextBlock
+                    {
+                        Text = note.IsCompleted ? $"{Tr.Loc.TranslateText("Completed")} · {note.CompletedBy}" : Tr.Loc.TranslateText("Not completed"),
+                        Foreground = new SolidColorBrush(Color.Parse(note.IsCompleted ? "#65C18C" : "#D39A35")),
+                        FontSize = 12
+                    }
+                }
+            };
+            var statusButton = new Button
+            {
+                Content = Tr.Loc.TranslateText(note.IsCompleted ? "Mark as not completed" : "Mark as completed"),
+                MinWidth = 150,
+                VerticalAlignment = VerticalAlignment.Center
+            };
+            statusButton.Click += async (_, _) =>
+            {
+                await using var noteDb = new PharmacyDbContext(PharmacyDb.Options());
+                var current = await noteDb.CalendarNotes.FirstOrDefaultAsync(item => item.Id == note.Id);
+                if (current is null) return;
+                current.IsCompleted = !current.IsCompleted;
+                current.CompletedBy = current.IsCompleted ? (viewModel.User.Username ?? string.Empty) : null;
+                current.CompletedAt = current.IsCompleted ? DateTime.UtcNow : null;
+                await noteDb.SaveChangesAsync();
+                ShowDashboard();
+            };
+            var noteRow = new Grid
+            {
+                ColumnDefinitions = CreateColumns(GridLength.Star, GridLength.Auto),
+                ColumnSpacing = 12,
+                Children = { new Border { Padding = new Thickness(10), Child = details }, statusButton }
+            };
+            Grid.SetColumn(statusButton, 1);
+            notesStack.Children.Add(new Border
+            {
+                Background = new SolidColorBrush(Color.Parse("#1D2B3B")),
+                BorderBrush = new SolidColorBrush(Color.Parse("#3A536B")),
+                BorderThickness = new Thickness(1),
+                CornerRadius = new CornerRadius(8),
+                Padding = new Thickness(4),
+                Child = noteRow
+            });
+        }
+        root.Children.Add(notesPanel);
+
         var todayPanel = new Border { Background = new SolidColorBrush(Color.Parse("#202733")), BorderBrush = new SolidColorBrush(Color.Parse("#354152")), BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(10), Padding = new Thickness(16), Child = new StackPanel { Spacing = 7 } };
         var todayStack = (StackPanel)todayPanel.Child!;
         todayStack.Children.Add(new TextBlock { Text = Tr.Loc.TranslateText("Today's status"), FontSize = 17, FontWeight = FontWeight.SemiBold });
@@ -556,6 +623,20 @@ public partial class MainWindow : Window
             todaySummary.Text = "Unable to load today's status: " + ex.Message;
         }
         ApplyTranslations();
+    }
+
+    private async Task<List<CalendarNote>> LoadDashboardNotesAsync()
+    {
+        await using var db = new PharmacyDbContext(PharmacyDb.Options());
+        var today = DateTime.Today;
+        var tomorrow = today.AddDays(1);
+        var username = viewModel.User.Username?.Trim() ?? string.Empty;
+        var notes = await db.CalendarNotes.AsNoTracking()
+            .Where(note => note.CalendarDate >= today && note.CalendarDate < tomorrow)
+            .OrderBy(note => note.CreatedAt)
+            .ToListAsync();
+        return notes.Where(note => note.IsShared ||
+            string.Equals(note.CreatedBy?.Trim(), username, StringComparison.OrdinalIgnoreCase)).ToList();
     }
 
     private void ApplyCompanyBranding()
@@ -1155,6 +1236,12 @@ public partial class MainWindow : Window
                         new TextBlock { Text = note.Note, TextWrapping = TextWrapping.Wrap },
                         new TextBlock
                         {
+                            Text = note.IsCompleted ? $"{Tr.Loc.TranslateText("Completed")} · {note.CompletedBy}" : Tr.Loc.TranslateText("Not completed"),
+                            Foreground = new SolidColorBrush(Color.Parse(note.IsCompleted ? "#65C18C" : "#D39A35")),
+                            FontSize = 12
+                        },
+                        new TextBlock
+                        {
                             Text = $"{(note.IsShared ? Tr.Loc.TranslateText("Visible to everyone") : Tr.Loc.TranslateText("Private note"))} · {note.CreatedBy} · {DateTime.SpecifyKind(note.CreatedAt, DateTimeKind.Utc).ToLocalTime():dd/MM/yyyy HH:mm}",
                             FontSize = 10,
                             Foreground = Brushes.LightGray
@@ -1167,6 +1254,7 @@ public partial class MainWindow : Window
                     {
                         new ColumnDefinition(GridLength.Star),
                         new ColumnDefinition(GridLength.Auto),
+                        new ColumnDefinition(GridLength.Auto),
                         new ColumnDefinition(GridLength.Auto)
                     },
                     Background = new SolidColorBrush(Color.Parse("#202F40")),
@@ -1178,6 +1266,27 @@ public partial class MainWindow : Window
                     Child = details
                 };
                 noteRow.Children.Add(detailsBorder);
+                var completionButton = new Button
+                {
+                    Content = Tr.Loc.TranslateText(note.IsCompleted ? "Mark as not completed" : "Mark as completed"),
+                    MinWidth = 145,
+                    Margin = new Thickness(4),
+                    VerticalAlignment = VerticalAlignment.Center
+                };
+                completionButton.Click += async (_, _) =>
+                {
+                    await using var statusDb = new PharmacyDbContext(PharmacyDb.Options());
+                    var current = await statusDb.CalendarNotes.FirstOrDefaultAsync(item => item.Id == note.Id);
+                    if (current is null) return;
+                    current.IsCompleted = !current.IsCompleted;
+                    current.CompletedBy = current.IsCompleted ? (viewModel.User.Username ?? string.Empty) : null;
+                    current.CompletedAt = current.IsCompleted ? DateTime.UtcNow : null;
+                    await statusDb.SaveChangesAsync();
+                    await LoadSelectedDayAsync();
+                    if (calendarMonthTitle is not null) await RenderCalendarAsync(calendarMonthTitle);
+                };
+                Grid.SetColumn(completionButton, 1);
+                noteRow.Children.Add(completionButton);
                 if (isOwner)
                 {
                     var editButton = new Button
@@ -1188,7 +1297,7 @@ public partial class MainWindow : Window
                         VerticalAlignment = VerticalAlignment.Center
                     };
                     editButton.Click += async (_, _) => await OpenCalendarNoteEditorAsync(note.CalendarDate, note);
-                    Grid.SetColumn(editButton, 1);
+                    Grid.SetColumn(editButton, 2);
                     noteRow.Children.Add(editButton);
 
                     var deleteButton = new Button
@@ -1236,7 +1345,7 @@ public partial class MainWindow : Window
                             }
                         }
                     };
-                    Grid.SetColumn(deleteButton, 2);
+                    Grid.SetColumn(deleteButton, 3);
                     noteRow.Children.Add(deleteButton);
                 }
                 calendarNotesPanel.Children.Add(new Border
