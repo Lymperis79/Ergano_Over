@@ -293,16 +293,41 @@ public partial class MainWindow : Window
         Grid.SetColumn(weatherRefresh, 1); weatherRow.Children.Add(weatherRefresh);
         root.Children.Add(new Border { Child = weatherRow, CornerRadius = new CornerRadius(9), BorderThickness = new Thickness(1), BorderBrush = new SolidColorBrush(Color.Parse("#354152")) });
 
-        void AddGroupHeader(string title)
+        void AddGroupHeader(string title, string symbol, string accent)
         {
-            root.Children.Add(new TextBlock
+            var header = new StackPanel
             {
-                Text = Tr.Loc.TranslateText(title),
-                FontSize = 17,
-                FontWeight = FontWeight.SemiBold,
-                Margin = new Thickness(4, 8, 4, 0),
-                Foreground = Brushes.White
-            });
+                Orientation = Orientation.Horizontal,
+                Spacing = 10,
+                Margin = new Thickness(4, 10, 4, 0),
+                VerticalAlignment = VerticalAlignment.Center,
+                Children =
+                {
+                    new Border
+                    {
+                        Width = 34,
+                        Height = 34,
+                        CornerRadius = new CornerRadius(9),
+                        Background = new SolidColorBrush(Color.Parse(accent)),
+                        Child = new TextBlock
+                        {
+                            Text = symbol,
+                            FontSize = 19,
+                            HorizontalAlignment = HorizontalAlignment.Center,
+                            VerticalAlignment = VerticalAlignment.Center
+                        }
+                    },
+                    new TextBlock
+                    {
+                        Text = Tr.Loc.TranslateText(title),
+                        FontSize = 18,
+                        FontWeight = FontWeight.SemiBold,
+                        VerticalAlignment = VerticalAlignment.Center,
+                        Foreground = Brushes.White
+                    }
+                }
+            };
+            root.Children.Add(header);
         }
 
         void AddCard(Grid target, string label, TextBlock value, int column, string accent)
@@ -318,7 +343,7 @@ public partial class MainWindow : Window
         }
 
         var customersValue = new TextBlock { Text = "—", FontSize = 30, FontWeight = FontWeight.Bold };
-        AddGroupHeader("General");
+        AddGroupHeader("General", "👥", "#397DA5");
         var generalCards = new Grid { ColumnDefinitions = CreateColumns(GridLength.Star) };
         AddCard(generalCards, "Total customers", customersValue, 0, "#397DA5");
         root.Children.Add(generalCards);
@@ -326,7 +351,7 @@ public partial class MainWindow : Window
         var activeValue = new TextBlock { Text = "—", FontSize = 30, FontWeight = FontWeight.Bold };
         var dueValue = new TextBlock { Text = "—", FontSize = 30, FontWeight = FontWeight.Bold };
         var overdueValue = new TextBlock { Text = "—", FontSize = 30, FontWeight = FontWeight.Bold };
-        AddGroupHeader("Subscriptions");
+        AddGroupHeader("Subscriptions", "📋", "#D39A35");
         var subscriptionCards = new Grid { ColumnDefinitions = CreateColumns(GridLength.Star, GridLength.Star, GridLength.Star) };
         AddCard(subscriptionCards, "Active subscriptions", activeValue, 0, "#397DA5");
         AddCard(subscriptionCards, "Subscriptions due today", dueValue, 1, "#D39A35");
@@ -335,7 +360,7 @@ public partial class MainWindow : Window
 
         var borrowedValue = new TextBlock { Text = "—", FontSize = 30, FontWeight = FontWeight.Bold };
         var returnedTodayValue = new TextBlock { Text = "—", FontSize = 30, FontWeight = FontWeight.Bold };
-        AddGroupHeader("Medicine");
+        AddGroupHeader("Medicine", "💊", "#4A9B72");
         var medicineCards = new Grid { ColumnDefinitions = CreateColumns(GridLength.Star, GridLength.Star) };
         AddCard(medicineCards, "Currently borrowed", borrowedValue, 0, "#397DA5");
         AddCard(medicineCards, "Returned today", returnedTodayValue, 1, "#4A9B72");
