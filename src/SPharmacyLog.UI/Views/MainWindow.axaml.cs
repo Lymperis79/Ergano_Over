@@ -92,6 +92,7 @@ public partial class MainWindow : Window
     private ListBox customerList = null!;
     private TextBox customerSearch = null!;
     private TextBlock customerStatus = null!;
+    private Border customerStatusBanner = null!;
     private CheckBox customerActiveCheckBox = null!;
     private CheckBox showInactiveCustomersCheckBox = null!;
     private int? selectedCustomerId;
@@ -1238,7 +1239,33 @@ public partial class MainWindow : Window
         };
         showInactiveCustomersCheckBox.IsCheckedChanged += async (_, _) => await SearchCustomersAsync();
         customerList = new ListBox { MinWidth = 300 };
-        customerStatus = new TextBlock { Foreground = Brushes.LightGreen, Margin = new Thickness(0, 8, 0, 0) };
+        customerStatus = new TextBlock
+        {
+            Foreground = new SolidColorBrush(Color.Parse("#9BE2B0")),
+            VerticalAlignment = VerticalAlignment.Center,
+            TextWrapping = TextWrapping.Wrap,
+            FontSize = 13,
+            FontWeight = FontWeight.SemiBold
+        };
+        customerStatusBanner = new Border
+        {
+            Background = new SolidColorBrush(Color.Parse("#203B32")),
+            BorderBrush = new SolidColorBrush(Color.Parse("#397B59")),
+            BorderThickness = new Thickness(1),
+            CornerRadius = new CornerRadius(10),
+            Padding = new Thickness(12, 9),
+            Margin = new Thickness(12, 8, 12, 0),
+            Child = new StackPanel
+            {
+                Orientation = Orientation.Horizontal,
+                Spacing = 9,
+                Children =
+                {
+                    new TextBlock { Text = "●", Foreground = new SolidColorBrush(Color.Parse("#75D99A")), FontSize = 12, VerticalAlignment = VerticalAlignment.Center },
+                    customerStatus
+                }
+            }
+        };
         customerSearch.TextChanged += async (_, _) => await SearchCustomersAsync();
         customerList.SelectionChanged += async (_, _) =>
         {
@@ -1297,13 +1324,13 @@ public partial class MainWindow : Window
         var right = new Grid
         {
             Margin = new Thickness(12, 0, 12, 0),
-            RowDefinitions = CreateRows(GridLength.Star, GridLength.Auto)
+            RowDefinitions = CreateRows(GridLength.Auto, GridLength.Star)
         };
         customerTabs.HorizontalAlignment = HorizontalAlignment.Stretch;
         customerTabs.VerticalAlignment = VerticalAlignment.Stretch;
+        right.Children.Add(customerStatusBanner);
+        Grid.SetRow(customerTabs, 1);
         right.Children.Add(customerTabs);
-        Grid.SetRow(customerStatus, 1);
-        right.Children.Add(customerStatus);
         var layout = new Grid
         {
             ColumnDefinitions = CreateColumns(new GridLength(290), GridLength.Star),
@@ -3258,7 +3285,12 @@ public partial class MainWindow : Window
     private void SetActivityStatus(string message)
     {
         customerStatus.Text = Tr.Loc.TranslateText(message);
-        customerStatus.Foreground = Brushes.LightGreen;
+        customerStatus.Foreground = new SolidColorBrush(Color.Parse("#9BE2B0"));
+        if (customerStatusBanner is not null)
+        {
+            customerStatusBanner.Background = new SolidColorBrush(Color.Parse("#203B32"));
+            customerStatusBanner.BorderBrush = new SolidColorBrush(Color.Parse("#397B59"));
+        }
     }
 
     private void AddCustomerField(Grid grid, string label, string key, int row, int column, int columnSpan = 1, bool multiline = false)
