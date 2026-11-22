@@ -429,7 +429,7 @@ public partial class MainWindow : Window
                 edit.Click += async (_, _) =>
                 {
                     dialog.Close();
-                    await OpenCustomerFromSubscriptionAsync(subscription.CustomerId, subscription);
+                    await OpenSubscriptionDetailsAsync(subscription.Id);
                 };
                 Grid.SetColumn(edit, 1);
                 row.Children.Add(edit);
