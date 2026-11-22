@@ -3707,7 +3707,10 @@ public partial class MainWindow : Window
         SetField("Telephone", c.Telephone ?? c.Phone); SetField("Mobile", c.Mobile); SetField("Email", c.Email);
         SetField("Amka", c.Amka); SetField("Insurance", c.Insurance); SetField("Notes", c.Notes);
         customerActiveCheckBox.IsChecked = c.IsActive;
-        customerStatus.Text = string.Format(Tr.Loc["Customers.Editing"], c.CustomerNumber);
+        var displayCustomerName = string.IsNullOrWhiteSpace(c.FullName)
+            ? $"{c.FirstName ?? parts.First} {c.Surname ?? parts.Last}".Trim()
+            : c.FullName.Trim();
+        customerStatus.Text = string.Format(Tr.Loc["Customers.Editing"], displayCustomerName);
     }
 
     private void ClearCustomerForm(bool showNewCustomerForm = true)
