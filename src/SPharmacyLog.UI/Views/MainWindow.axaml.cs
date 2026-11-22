@@ -2732,9 +2732,10 @@ public partial class MainWindow : Window
         });
         heroInfo.Children.Add(new TextBlock
         {
-            Text = $"{Tr.Loc.TranslateText("Subscription number")}  •  {subscriptionNumber}",
-            FontSize = 13,
-            Foreground = muted
+            Text = $"{Tr.Loc.TranslateText("Subscription number")}: {subscriptionNumber}   •   {Tr.Loc.TranslateText("Created")}: {ToLocalSubscriptionTime(subscription.CreatedAt):dd/MM/yyyy}   •   {Tr.Loc.TranslateText("Starts")}: {subscription.StartDate:dd/MM/yyyy}",
+            FontSize = 12,
+            Foreground = muted,
+            TextWrapping = TextWrapping.Wrap
         });
 
         var statusControl = new StackPanel
@@ -2848,24 +2849,6 @@ public partial class MainWindow : Window
         };
         Grid.SetColumn(barcodePanel, 1);
 
-        var schedule = new Grid
-        {
-            ColumnDefinitions = CreateColumns(GridLength.Star, GridLength.Star),
-            RowDefinitions = CreateRows(GridLength.Auto, GridLength.Auto),
-            ColumnSpacing = 10,
-            RowSpacing = 10
-        };
-        var scheduleValues = new[]
-        {
-            Metric("START DATE", subscription.StartDate.ToString("dd/MM/yyyy"), Tr.Loc.TranslateText("Subscription start"))
-        };
-        for (var i = 0; i < scheduleValues.Length; i++)
-        {
-            Grid.SetColumn(scheduleValues[i], i % 2);
-            Grid.SetRow(scheduleValues[i], i / 2);
-            schedule.Children.Add(scheduleValues[i]);
-        }
-
         var notesContent = new StackPanel { Spacing = 8 };
         notesContent.Children.Add(SectionTitle("Notes"));
         notesContent.Children.Add(new TextBlock
@@ -2882,7 +2865,7 @@ public partial class MainWindow : Window
         {
             Spacing = 14,
             Margin = new Thickness(20),
-            Children = { heroPanel, metrics, primaryColumns, SectionTitle("Subscription schedule"), schedule, notesPanel }
+            Children = { heroPanel, metrics, primaryColumns, notesPanel }
         };
 
         var openCustomer = new Button
