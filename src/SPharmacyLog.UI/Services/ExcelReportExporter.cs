@@ -81,20 +81,11 @@ public static class ExcelReportExporter
             rowNumber++;
         }
 
-        var lastRow = Math.Max(5, rowNumber - 1);
         var worksheet = new XDocument(new XElement(MainNs + "worksheet",
-            new XElement(MainNs + "sheetViews",
-                new XElement(MainNs + "sheetView", new XAttribute("workbookViewId", "0"),
-                    new XElement(MainNs + "pane",
-                        new XAttribute("ySplit", "5"),
-                        new XAttribute("topLeftCell", "A6"),
-                        new XAttribute("activePane", "bottomLeft"),
-                        new XAttribute("state", "frozen")))),
             new XElement(MainNs + "cols",
                 new XElement(MainNs + "col", new XAttribute("min", "1"), new XAttribute("max", "1"), new XAttribute("width", "105"), new XAttribute("customWidth", "1")),
                 new XElement(MainNs + "col", new XAttribute("min", "2"), new XAttribute("max", "2"), new XAttribute("width", "55"), new XAttribute("customWidth", "1"))),
-            new XElement(MainNs + "sheetData", rows),
-            new XElement(MainNs + "autoFilter", new XAttribute("ref", $"A5:A{lastRow}"))));
+            new XElement(MainNs + "sheetData", rows)));
         WriteEntry(archive, "xl/worksheets/sheet1.xml", worksheet);
         WriteEntry(archive, "xl/styles.xml", CreateStyles());
 
