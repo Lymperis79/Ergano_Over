@@ -22,6 +22,7 @@ public sealed class LocalizationService : ILocalizationService
         ["Login.InvalidCredentials"] = "Login failed. Check the username, password, and account status.",
         ["Login.AdminCreated"] = "Administrator created. Sign in with the new credentials.",
         ["Login.Subtitle"] = "Prescription, customer and medicine tracking",
+        ["Dashboard"] = "Dashboard",
         ["Navigation.ExpiryCalendar"] = "Expiry calendar",
         ["Navigation.Customers"] = "Customers",
         ["Customers.Search"] = "Search by customer no, name, surname, AMKA, phone or email…",
