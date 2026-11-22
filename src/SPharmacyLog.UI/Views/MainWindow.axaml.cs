@@ -2979,35 +2979,15 @@ public partial class MainWindow : Window
     {
         if (customerList is null) return;
 
-        // Match every search word against any customer field, so users can
-        // combine terms (e.g. surname + city or street + postcode).
+        // '*' is a wildcard matching any sequence of characters. Terms without
+        // wildcards retain the normal contains-search behavior. Multiple terms
+        // must each match somewhere in the customer's searchable fields.
         var searchTerms = (customerSearch.Text?.Trim() ?? string.Empty)
             .Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
         await using var db = new PharmacyDbContext(PharmacyDb.Options());
         var query = db.Customers.AsNoTracking();
         if (showInactiveCustomersCheckBox?.IsChecked != true)
             query = query.Where(c => c.IsActive);
-
-        if (searchTerms.Length > 0)
-        {
-            var firstTerm = searchTerms[0];
-            query = query.Where(c =>
-                c.CustomerNumber.Contains(firstTerm) ||
-                c.FullName.Contains(firstTerm) ||
-                (c.FirstName != null && c.FirstName.Contains(firstTerm)) ||
-                (c.Surname != null && c.Surname.Contains(firstTerm)) ||
-                (c.Address != null && c.Address.Contains(firstTerm)) ||
-                (c.City != null && c.City.Contains(firstTerm)) ||
-                (c.Postcode != null && c.Postcode.Contains(firstTerm)) ||
-                (c.Telephone != null && c.Telephone.Contains(firstTerm)) ||
-                c.Phone.Contains(firstTerm) ||
-                (c.Mobile != null && c.Mobile.Contains(firstTerm)) ||
-                (c.Email != null && c.Email.Contains(firstTerm)) ||
-                (c.Amka != null && c.Amka.Contains(firstTerm)) ||
-                (c.Insurance != null && c.Insurance.Contains(firstTerm)) ||
-                (c.Notes != null && c.Notes.Contains(firstTerm));
-        }
-
         var candidates = await query.OrderBy(c => c.Surname ?? c.FullName)
             .ThenBy(c => c.FirstName).ToListAsync();
 
@@ -3016,8 +2996,19 @@ public partial class MainWindow : Window
             customer.Address, customer.City, customer.Postcode, customer.Telephone, customer.Phone,
             customer.Mobile, customer.Email, customer.Amka, customer.Insurance, customer.Notes);
 
+        static bool TermMatches(string text, string term)
+        {
+            if (!term.Contains('*'))
+                return text.Contains(term, StringComparison.OrdinalIgnoreCase);
+
+            var pattern = "^" + string.Join(".*", term.Split('*').Select(System.Text.RegularExpressions.Regex.Escape)) + "$";
+            return System.Text.RegularExpressions.Regex.IsMatch(text, pattern,
+                System.Text.RegularExpressions.RegexOptions.IgnoreCase |
+                System.Text.RegularExpressions.RegexOptions.CultureInvariant);
+        }
+
         var rows = candidates
-            .Where(c => searchTerms.All(term => SearchableFields(c).Contains(term, StringComparison.OrdinalIgnoreCase)))
+            .Where(c => searchTerms.All(term => TermMatches(SearchableFields(c), term)))
             .Take(250)
             .ToList();
 
