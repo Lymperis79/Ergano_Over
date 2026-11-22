@@ -17,7 +17,9 @@ namespace SPharmacyLog.UI.Views;
 public sealed class ReportsWindow : Window
 {
     private readonly ComboBox reportType = new() { MinWidth = 250 };
-    private readonly ComboBox customerFilter = new() { MinWidth = 300 };
+    private readonly ComboBox customerFilter = new() { MinWidth = 300, IsEditable = true };
+    private List<CustomerFilterOption> customerOptions = new();
+    private bool isFilteringCustomers;
     private readonly TextBox reportDate = new() { MinWidth = 150, Text = DateTime.Today.ToString("yyyy-MM-dd") };
     private readonly TextBlock summary = new() { FontSize = 15, FontWeight = FontWeight.SemiBold, TextWrapping = TextWrapping.Wrap };
     private readonly ListBox results = new() { MinHeight = 300 };
@@ -62,6 +64,11 @@ public sealed class ReportsWindow : Window
         exportButton.Click += async (_, _) => await ExportReportAsync();
         reportType.SelectionChanged += (_, _) => { UpdateFilterVisibility(); exportButton.IsEnabled = false; };
         customerFilter.SelectionChanged += (_, _) => exportButton.IsEnabled = false;
+        customerFilter.PropertyChanged += (_, e) =>
+        {
+            if (e.Property == ComboBox.TextProperty && !isFilteringCustomers)
+                FilterCustomers(customerFilter.Text ?? string.Empty);
+        };
         reportDate.TextChanged += (_, _) => exportButton.IsEnabled = false;
 
         var content = new StackPanel
@@ -140,16 +147,51 @@ public sealed class ReportsWindow : Window
         var customers = await db.Customers.AsNoTracking()
             .OrderBy(customer => customer.FullName)
             .ToListAsync();
+        customerOptions = customers.Select(customer => new CustomerFilterOption(
+            customer.Id,
+            `${customer.CustomerNumber} | ${customer.FullName}`,
+            string.Join(" ", new[]
+            {
+                customer.CustomerNumber, customer.FullName, customer.Address,
+                customer.Postcode, customer.City, customer.Telephone,
+                customer.Phone, customer.Amka, customer.Insurance
+            }.Where(value => !string.IsNullOrWhiteSpace(value)))))
+            .ToList();
+        isFilteringCustomers = true;
         customerFilter.Items.Clear();
         customerFilter.Items.Add(new ComboBoxItem { Content = Tr.Loc.TranslateText("All customers"), Tag = null });
-        foreach (var customer in customers)
-            customerFilter.Items.Add(new ComboBoxItem
-            {
-                Content = $"{customer.CustomerNumber} | {customer.FullName}",
-                Tag = customer.Id
-            });
+        foreach (var option in customerOptions)
+            customerFilter.Items.Add(new ComboBoxItem { Content = option.Display, Tag = option.Id });
         customerFilter.SelectedIndex = 0;
+        customerFilter.Text = Tr.Loc.TranslateText("All customers");
+        isFilteringCustomers = false;
     }
+
+    private void FilterCustomers(string searchText)
+    {
+        var selectedId = (customerFilter.SelectedItem as ComboBoxItem)?.Tag as int?;
+        var query = searchText.Trim();
+        var matches = string.IsNullOrWhiteSpace(query)
+            ? customerOptions
+            : customerOptions.Where(option => option.SearchText.Contains(query, StringComparison.CurrentCultureIgnoreCase)).ToList();
+
+        isFilteringCustomers = true;
+        customerFilter.Items.Clear();
+        customerFilter.Items.Add(new ComboBoxItem { Content = Tr.Loc.TranslateText("All customers"), Tag = null });
+        foreach (var option in matches)
+            customerFilter.Items.Add(new ComboBoxItem { Content = option.Display, Tag = option.Id });
+
+        if (selectedId.HasValue && matches.Any(option => option.Id == selectedId.Value))
+            customerFilter.SelectedItem = customerFilter.Items.Cast<ComboBoxItem>().First(item => (item.Tag as int?) == selectedId);
+        else if (string.IsNullOrWhiteSpace(query))
+            customerFilter.SelectedIndex = 0;
+        else
+            customerFilter.SelectedIndex = -1;
+        customerFilter.Text = searchText;
+        isFilteringCustomers = false;
+    }
+
+    private sealed record CustomerFilterOption(int Id, string Display, string SearchText);
 
     private async Task GenerateReportAsync()
     {
@@ -185,7 +227,7 @@ public sealed class ReportsWindow : Window
     private async Task GenerateCustomerReportAsync()
     {
         await using var db = new PharmacyDbContext(PharmacyDb.Options());
-        var selectedCustomerId = (customerFilter.SelectedItem as ComboBoxItem)?.Tag as int?;
+        var selectedCustomerId = (customerFilter.SelectedItem as ComboBoxItem)?.Tag is int customerId ? customerId : (int?)null;
         var customersQuery = db.Customers.AsNoTracking().AsQueryable();
         if (selectedCustomerId.HasValue)
             customersQuery = customersQuery.Where(customer => customer.Id == selectedCustomerId.Value);
