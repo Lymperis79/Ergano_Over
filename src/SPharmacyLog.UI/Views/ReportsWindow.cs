@@ -21,6 +21,7 @@ public sealed class ReportsWindow : Window
     private readonly TextBox customerSearch = new() { MinWidth = 300, Watermark = "Search customer..." };
     private readonly ListBox customerSuggestions = new() { MaxHeight = 190, MinWidth = 300 };
     private List<CustomerFilterOption> customerOptions = new();
+    private List<CustomerFilterOption> visibleCustomerMatches = new();
     private int? selectedCustomerId;
     private bool isUpdatingCustomerSearch;
     private readonly TextBox reportDate = new() { MinWidth = 150, Text = DateTime.Today.ToString("yyyy-MM-dd") };
@@ -78,9 +79,11 @@ public sealed class ReportsWindow : Window
         };
         customerSuggestions.SelectionChanged += (_, _) =>
         {
-            if (customerSuggestions.SelectedItem is not CustomerFilterOption option)
+            var selectedIndex = customerSuggestions.SelectedIndex;
+            if (selectedIndex < 0 || selectedIndex >= visibleCustomerMatches.Count)
                 return;
 
+            var option = visibleCustomerMatches[selectedIndex];
             selectedCustomerId = option.Id;
             isUpdatingCustomerSearch = true;
             customerSearch.Text = option.Display;
@@ -205,7 +208,8 @@ public sealed class ReportsWindow : Window
                 .Where(value => !string.IsNullOrWhiteSpace(value))))).ToList();
         customerSearch.Text = string.Empty;
         selectedCustomerId = null;
-        customerSuggestions.ItemsSource = Array.Empty<CustomerFilterOption>();
+        visibleCustomerMatches.Clear();
+        customerSuggestions.ItemsSource = Array.Empty<string>();
         customerSuggestions.IsVisible = false;
     }
 
@@ -220,7 +224,8 @@ public sealed class ReportsWindow : Window
         }
         var matches = customerOptions.Where(option => option.SearchText.Contains(query, StringComparison.CurrentCultureIgnoreCase)).Take(100).ToArray();
         customerSuggestions.SelectedIndex = -1;
-        customerSuggestions.ItemsSource = matches;
+        visibleCustomerMatches = matches.ToList();
+        customerSuggestions.ItemsSource = matches.Select(option => option.Display).ToArray();
         customerSuggestions.IsVisible = matches.Length > 0;
     }
     private sealed record CustomerFilterOption(int Id, string Display, string SearchText);
