@@ -3804,48 +3804,126 @@ public partial class MainWindow : Window
         if (existing?.Id == viewModel.User.Id)
             role.IsEnabled = false;
 
+        Border CreateSection(string title, Control content)
+        {
+            var sectionContent = new StackPanel { Spacing = 9 };
+            sectionContent.Children.Add(new TextBlock
+            {
+                Text = title,
+                FontSize = 15,
+                FontWeight = FontWeight.SemiBold,
+                Foreground = Brushes.White
+            });
+            sectionContent.Children.Add(content);
+            return new Border
+            {
+                Background = new SolidColorBrush(Color.Parse("#1D2B3B")),
+                BorderBrush = new SolidColorBrush(Color.Parse("#34495E")),
+                BorderThickness = new Thickness(1),
+                CornerRadius = new CornerRadius(10),
+                Padding = new Thickness(14),
+                Child = sectionContent
+            };
+        }
+
+        var accountFields = new StackPanel { Spacing = 7 };
+        accountFields.Children.Add(new TextBlock { Text = Tr.Loc.TranslateText("Username") });
+        accountFields.Children.Add(username);
+        accountFields.Children.Add(new TextBlock
+        {
+            Text = Tr.Loc.TranslateText("Password (minimum 8 characters)"),
+            IsVisible = !isEdit
+        });
+        accountFields.Children.Add(password);
+
+        var accessFields = new StackPanel { Spacing = 9 };
+        accessFields.Children.Add(new TextBlock { Text = Tr.Loc.TranslateText("Role") });
+        accessFields.Children.Add(role);
+        accessFields.Children.Add(canSaveCredentials);
+
         var form = new StackPanel
         {
             Margin = new Thickness(18),
-            Spacing = 8,
+            Spacing = 12,
             Children =
             {
-                new TextBlock { Text = isEdit ? Tr.Loc.TranslateText("Edit user") : Tr.Loc.TranslateText("New user"), FontSize = 20, FontWeight = FontWeight.Bold },
-                new TextBlock { Text = Tr.Loc.TranslateText("Username") }, username,
-                new TextBlock { Text = Tr.Loc.TranslateText("Password (minimum 8 characters)"), IsVisible = !isEdit }, password,
-                new TextBlock { Text = Tr.Loc.TranslateText("Role") }, role,
-                canSaveCredentials,
-                menuPicker
+                new TextBlock
+                {
+                    Text = isEdit ? Tr.Loc.TranslateText("Edit user") : Tr.Loc.TranslateText("New user"),
+                    FontSize = 22,
+                    FontWeight = FontWeight.Bold,
+                    Margin = new Thickness(0, 0, 0, 4)
+                },
+                CreateSection(Tr.Loc.TranslateText("Account details"), accountFields),
+                CreateSection(Tr.Loc.TranslateText("Access and permissions"), accessFields),
+                CreateSection(Tr.Loc.TranslateText("Workspace menus"), menuPicker)
             }
         };
-        var status = new TextBlock { Foreground = Brushes.Orange, TextWrapping = TextWrapping.Wrap };
-        var save = new Button { Content = Tr.Loc.TranslateText("Save"), Classes = { "accent" }, MinWidth = 110 };
-        var cancel = new Button { Content = Tr.Loc.TranslateText("Cancel"), MinWidth = 100 };
-        var actions = new StackPanel
+
+        var status = new TextBlock
         {
-            Orientation = Orientation.Horizontal,
-            HorizontalAlignment = HorizontalAlignment.Right,
-            Spacing = 8,
-            Children = { status, cancel, save }
+            Foreground = Brushes.Orange,
+            TextWrapping = TextWrapping.Wrap,
+            MaxHeight = 42,
+            VerticalAlignment = VerticalAlignment.Center
         };
+        var save = new Button
+        {
+            Content = Tr.Loc.TranslateText("Save"),
+            Classes = { "accent" },
+            MinWidth = 120,
+            MinHeight = 42
+        };
+        var cancel = new Button
+        {
+            Content = Tr.Loc.TranslateText("Cancel"),
+            MinWidth = 110,
+            MinHeight = 42
+        };
+        var actions = new Grid
+        {
+            ColumnDefinitions = CreateColumns(GridLength.Star, GridLength.Auto, GridLength.Auto),
+            ColumnSpacing = 8
+        };
+        actions.Children.Add(status);
+        Grid.SetColumn(cancel, 1);
+        actions.Children.Add(cancel);
+        Grid.SetColumn(save, 2);
+        actions.Children.Add(save);
+
+        var footer = new Border
+        {
+            Background = new SolidColorBrush(Color.Parse("#172331")),
+            BorderBrush = new SolidColorBrush(Color.Parse("#34495E")),
+            BorderThickness = new Thickness(1, 1, 0, 0),
+            Padding = new Thickness(16, 10),
+            Child = actions
+        };
+        var dialogLayout = new Grid
+        {
+            RowDefinitions = new RowDefinitions("*,Auto"),
+            RowSpacing = 0
+        };
+        var scroll = new ScrollViewer
+        {
+            Content = form,
+            VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
+            HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled
+        };
+        dialogLayout.Children.Add(scroll);
+        Grid.SetRow(footer, 1);
+        dialogLayout.Children.Add(footer);
+
         var dialog = new Window
         {
             Title = isEdit ? Tr.Loc.TranslateText("Edit user") : Tr.Loc.TranslateText("New user"),
-            Width = 600,
-            Height = 690,
+            Width = 640,
+            Height = 720,
             MinWidth = 520,
             MinHeight = 520,
             CanResize = true,
             WindowStartupLocation = WindowStartupLocation.CenterOwner,
-            Content = new StackPanel
-            {
-                Spacing = 10,
-                Children =
-                {
-                    new ScrollViewer { Content = form, VerticalScrollBarVisibility = ScrollBarVisibility.Auto },
-                    new Border { Padding = new Thickness(12), Child = actions }
-                }
-            }
+            Content = dialogLayout
         };
         cancel.Click += (_, _) => dialog.Close();
         save.Click += async (_, _) =>
