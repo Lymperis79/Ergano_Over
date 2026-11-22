@@ -2654,7 +2654,7 @@ public partial class MainWindow : Window
             await db.SaveChangesAsync();
         }
 
-        var customer = subscription.Customer!;
+        var customer = subscription.Customer;
         var subscriptionNumber = GetSubscriptionNumber(subscription);
         var barcodeBitmap = CreateSubscriptionBarcodeBitmap(subscriptionNumber);
         var statusSelector = CreateSubscriptionStatusSelector(subscription.Status);
@@ -2662,7 +2662,202 @@ public partial class MainWindow : Window
             .Where(entry => entry.SubscriptionId == subscription.Id)
             .OrderByDescending(entry => entry.ChangedAt)
             .ToListAsync();
-        var auditList = new ListBox { MinHeight = 110 };
+
+        var muted = Color.Parse("#AAB8C8");
+        var cardBackground = new SolidColorBrush(Color.Parse("#202B39"));
+        var cardBorder = new SolidColorBrush(Color.Parse("#35485D"));
+        var accent = new SolidColorBrush(Color.Parse("#4DA3D9"));
+
+        TextBlock MakeLabel(string value) => new TextBlock
+        {
+            Text = Tr.Loc.TranslateText(value).ToUpperInvariant(),
+            FontSize = 10,
+            FontWeight = FontWeight.Bold,
+            Foreground = new SolidColorBrush(muted),
+            Margin = new Thickness(0, 0, 0, 4)
+        };
+
+        TextBlock MakeValue(string value) => new TextBlock
+        {
+            Text = string.IsNullOrWhiteSpace(value) ? "—" : value,
+            FontSize = 14,
+            FontWeight = FontWeight.SemiBold,
+            TextWrapping = TextWrapping.Wrap
+        };
+
+        Border MakeInfoCard(string label, string value)
+        {
+            var content = new StackPanel { Spacing = 2 };
+            content.Children.Add(MakeLabel(label));
+            content.Children.Add(MakeValue(value));
+            return new Border
+            {
+                Background = cardBackground,
+                BorderBrush = cardBorder,
+                BorderThickness = new Thickness(1),
+                CornerRadius = new CornerRadius(9),
+                Padding = new Thickness(12, 10),
+                Child = content
+            };
+        }
+
+        var header = new Grid
+        {
+            ColumnDefinitions = CreateColumns(GridLength.Star, GridLength.Auto),
+            ColumnSpacing = 12
+        };
+        var heading = new StackPanel { Spacing = 5, VerticalAlignment = VerticalAlignment.Center };
+        heading.Children.Add(new TextBlock
+        {
+            Text = subscription.Title,
+            FontSize = 25,
+            FontWeight = FontWeight.Bold,
+            TextWrapping = TextWrapping.Wrap
+        });
+        heading.Children.Add(new TextBlock
+        {
+            Text = $"{Tr.Loc.TranslateText("Subscription number")}  {subscriptionNumber}",
+            FontSize = 13,
+            Foreground = accent,
+            FontWeight = FontWeight.SemiBold
+        });
+        header.Children.Add(heading);
+
+        var statusHeader = new Border
+        {
+            Background = new SolidColorBrush(Color.Parse(subscription.Status == SubscriptionStatus.Active ? "#1F493B" : "#493B2A")),
+            BorderBrush = new SolidColorBrush(Color.Parse(subscription.Status == SubscriptionStatus.Active ? "#3B9B70" : "#B88743")),
+            BorderThickness = new Thickness(1),
+            CornerRadius = new CornerRadius(16),
+            Padding = new Thickness(12, 7),
+            VerticalAlignment = VerticalAlignment.Center,
+            Child = new TextBlock
+            {
+                Text = Tr.Loc.TranslateText(subscription.Status.ToString()),
+                FontWeight = FontWeight.Bold,
+                FontSize = 12
+            }
+        };
+        Grid.SetColumn(statusHeader, 1);
+        header.Children.Add(statusHeader);
+
+        var barcodeCardContent = new StackPanel { Spacing = 6, HorizontalAlignment = HorizontalAlignment.Center };
+        barcodeCardContent.Children.Add(new TextBlock
+        {
+            Text = Tr.Loc.TranslateText("Scan subscription"),
+            FontSize = 11,
+            Foreground = new SolidColorBrush(muted),
+            HorizontalAlignment = HorizontalAlignment.Center
+        });
+        barcodeCardContent.Children.Add(new Image
+        {
+            Source = barcodeBitmap,
+            Width = 190,
+            Height = 150,
+            Stretch = Stretch.Uniform,
+            HorizontalAlignment = HorizontalAlignment.Center
+        });
+        barcodeCardContent.Children.Add(new TextBlock
+        {
+            Text = subscriptionNumber,
+            FontSize = 12,
+            FontWeight = FontWeight.Bold,
+            HorizontalAlignment = HorizontalAlignment.Center
+        });
+        var barcodeCard = new Border
+        {
+            Background = cardBackground,
+            BorderBrush = cardBorder,
+            BorderThickness = new Thickness(1),
+            CornerRadius = new CornerRadius(10),
+            Padding = new Thickness(12),
+            Child = barcodeCardContent
+        };
+
+        var customerName = string.IsNullOrWhiteSpace(customer.FullName)
+            ? $"{customer.FirstName} {customer.Surname}".Trim()
+            : customer.FullName;
+        var customerCard = new Border
+        {
+            Background = cardBackground,
+            BorderBrush = cardBorder,
+            BorderThickness = new Thickness(1),
+            CornerRadius = new CornerRadius(10),
+            Padding = new Thickness(14),
+            Child = new StackPanel
+            {
+                Spacing = 7,
+                Children =
+                {
+                    MakeLabel("Customer"),
+                    new TextBlock { Text = customerName, FontSize = 17, FontWeight = FontWeight.Bold, TextWrapping = TextWrapping.Wrap },
+                    new TextBlock { Text = $"{Tr.Loc.TranslateText("Customer number")}: {customer.CustomerNumber}", FontSize = 12, Foreground = new SolidColorBrush(muted) },
+                    new TextBlock { Text = $"{customer.Address}, {customer.City} {customer.Postcode}".Trim(' ', ','), TextWrapping = TextWrapping.Wrap },
+                    new TextBlock { Text = $"{Tr.Loc.TranslateText("Telephone")}: {customer.Telephone ?? customer.Phone}    {Tr.Loc.TranslateText("Mobile")}: {customer.Mobile}", TextWrapping = TextWrapping.Wrap },
+                    new TextBlock { Text = $"{Tr.Loc.TranslateText("Email")}: {customer.Email}", TextWrapping = TextWrapping.Wrap }
+                }
+            }
+        };
+
+        var scheduleGrid = new Grid
+        {
+            ColumnDefinitions = CreateColumns(GridLength.Star, GridLength.Star),
+            RowDefinitions = CreateRows(GridLength.Auto, GridLength.Auto),
+            ColumnSpacing = 8,
+            RowSpacing = 8
+        };
+        var scheduleCards = new[]
+        {
+            MakeInfoCard("Start date", subscription.StartDate.ToString("dd/MM/yyyy")),
+            MakeInfoCard("Next due date", subscription.NextDueDate.ToString("dd/MM/yyyy")),
+            MakeInfoCard("Expiry date", subscription.ExpiryDate?.ToString("dd/MM/yyyy") ?? "—"),
+            MakeInfoCard("Frequency", subscription.Frequency)
+        };
+        for (var i = 0; i < scheduleCards.Length; i++)
+        {
+            Grid.SetColumn(scheduleCards[i], i % 2);
+            Grid.SetRow(scheduleCards[i], i / 2);
+            scheduleGrid.Children.Add(scheduleCards[i]);
+        }
+
+        var statusPanel = new Border
+        {
+            Background = cardBackground,
+            BorderBrush = cardBorder,
+            BorderThickness = new Thickness(1),
+            CornerRadius = new CornerRadius(9),
+            Padding = new Thickness(12),
+            Child = new StackPanel
+            {
+                Spacing = 7,
+                Children = { MakeLabel("Change subscription status"), statusSelector }
+            }
+        };
+
+        var notesPanel = new Border
+        {
+            Background = cardBackground,
+            BorderBrush = cardBorder,
+            BorderThickness = new Thickness(1),
+            CornerRadius = new CornerRadius(9),
+            Padding = new Thickness(12),
+            Child = new StackPanel
+            {
+                Spacing = 5,
+                Children =
+                {
+                    MakeLabel("Notes"),
+                    new TextBlock
+                    {
+                        Text = string.IsNullOrWhiteSpace(subscription.Notes) ? Tr.Loc.TranslateText("No notes added.") : subscription.Notes,
+                        TextWrapping = TextWrapping.Wrap,
+                        MinHeight = 22
+                    }
+                }
+            }
+        };
+
+        var auditList = new ListBox { MinHeight = 100, MaxHeight = 190 };
         void RefreshAuditList()
         {
             auditList.ItemsSource = auditEntries.Select(entry =>
@@ -2670,36 +2865,59 @@ public partial class MainWindow : Window
                 var change = entry.PreviousStatus.HasValue
                     ? $"{Tr.Loc.TranslateText(((SubscriptionStatus)entry.PreviousStatus.Value).ToString())} → {Tr.Loc.TranslateText(((SubscriptionStatus)entry.NewStatus).ToString())}"
                     : Tr.Loc.TranslateText(entry.Details ?? string.Empty);
-                return $"{ToLocalSubscriptionTime(entry.ChangedAt):dd/MM/yyyy HH:mm:ss} | {Tr.Loc.TranslateText(entry.Action)} | {entry.ChangedBy} | {change}";
+                return $"{ToLocalSubscriptionTime(entry.ChangedAt):dd/MM/yyyy HH:mm:ss}  ·  {Tr.Loc.TranslateText(entry.Action)}\n{entry.ChangedBy}  —  {change}";
             }).ToList();
         }
         RefreshAuditList();
+
+        var auditPanel = new Border
+        {
+            Background = cardBackground,
+            BorderBrush = cardBorder,
+            BorderThickness = new Thickness(1),
+            CornerRadius = new CornerRadius(9),
+            Padding = new Thickness(12),
+            Child = new StackPanel
+            {
+                Spacing = 7,
+                Children =
+                {
+                    new TextBlock { Text = Tr.Loc.TranslateText("Audit history"), FontSize = 15, FontWeight = FontWeight.Bold },
+                    auditList
+                }
+            }
+        };
+
+        var metadata = new TextBlock
+        {
+            Text = $"{Tr.Loc.TranslateText("Created by")}: {subscription.CreatedBy} · {ToLocalSubscriptionTime(subscription.CreatedAt):dd/MM/yyyy HH:mm}\n{Tr.Loc.TranslateText("Last changed by")}: {subscription.LastModifiedBy} · {ToLocalSubscriptionTime(subscription.LastModifiedAt):dd/MM/yyyy HH:mm}",
+            FontSize = 11,
+            Foreground = new SolidColorBrush(muted),
+            TextWrapping = TextWrapping.Wrap
+        };
+
         var details = new StackPanel
         {
-            Spacing = 8,
+            Spacing = 12,
             Margin = new Thickness(18),
             Children =
             {
-                new TextBlock { Text = subscription.Title, FontSize = 22, FontWeight = FontWeight.Bold, TextWrapping = TextWrapping.Wrap },
-                new TextBlock { Text = $"{Tr.Loc.TranslateText("Subscription number")}: {subscriptionNumber}", FontSize = 15, FontWeight = FontWeight.SemiBold },
-                new Image { Source = barcodeBitmap, Width = 230, Height = 190, Stretch = Stretch.Uniform, HorizontalAlignment = HorizontalAlignment.Center },
-                new TextBlock { Text = $"{Tr.Loc.TranslateText("Customer")}: {customer.CustomerNumber} | {customer.FullName}", TextWrapping = TextWrapping.Wrap },
-                new TextBlock { Text = $"{Tr.Loc.TranslateText("Address")}: {customer.Address}, {customer.City} {customer.Postcode}", TextWrapping = TextWrapping.Wrap },
-                new TextBlock { Text = $"{Tr.Loc.TranslateText("Telephone")}: {customer.Telephone ?? customer.Phone} | {Tr.Loc.TranslateText("Mobile")}: {customer.Mobile}", TextWrapping = TextWrapping.Wrap },
-                new TextBlock { Text = $"{Tr.Loc.TranslateText("Email")}: {customer.Email}", TextWrapping = TextWrapping.Wrap },
-                new TextBlock { Text = $"{Tr.Loc.TranslateText("Start date")}: {subscription.StartDate:dd/MM/yyyy}" },
-                new TextBlock { Text = $"{Tr.Loc.TranslateText("Next due date")}: {subscription.NextDueDate:dd/MM/yyyy}" },
-                new TextBlock { Text = $"{Tr.Loc.TranslateText("Expiry date")}: {subscription.ExpiryDate?.ToString("dd/MM/yyyy") ?? "—"}" },
-                new TextBlock { Text = $"{Tr.Loc.TranslateText("Frequency")}: {subscription.Frequency}" },
-                new TextBlock { Text = $"{Tr.Loc.TranslateText("Status")}" },
-                statusSelector,
-                new TextBlock { Text = $"{Tr.Loc.TranslateText("Created by")}: {subscription.CreatedBy} | {ToLocalSubscriptionTime(subscription.CreatedAt):dd/MM/yyyy HH:mm:ss}", TextWrapping = TextWrapping.Wrap },
-                new TextBlock { Text = $"{Tr.Loc.TranslateText("Last changed by")}: {subscription.LastModifiedBy} | {ToLocalSubscriptionTime(subscription.LastModifiedAt):dd/MM/yyyy HH:mm:ss}", TextWrapping = TextWrapping.Wrap },
-                new TextBlock { Text = $"{Tr.Loc.TranslateText("Notes")}: {subscription.Notes}", TextWrapping = TextWrapping.Wrap },
-                new TextBlock { Text = Tr.Loc.TranslateText("Audit history"), FontSize = 16, FontWeight = FontWeight.Bold },
-                auditList
+                header,
+                new Grid
+                {
+                    ColumnDefinitions = CreateColumns(new GridLength(220), GridLength.Star),
+                    ColumnSpacing = 12,
+                    Children = { barcodeCard, customerCard }
+                },
+                scheduleGrid,
+                statusPanel,
+                notesPanel,
+                auditPanel,
+                metadata
             }
         };
+        Grid.SetColumn(customerCard, 1);
+
         var openCustomer = new Button
         {
             Content = Tr.Loc.TranslateText("Open customer"),
@@ -2720,6 +2938,7 @@ public partial class MainWindow : Window
             Orientation = Orientation.Horizontal,
             HorizontalAlignment = HorizontalAlignment.Right,
             Spacing = 8,
+            Margin = new Thickness(12, 8, 12, 12),
             Children = { openCustomer, editSubscription, saveStatus, close }
         };
         var content = new Grid
@@ -2727,7 +2946,7 @@ public partial class MainWindow : Window
             RowDefinitions = CreateRows(GridLength.Star, GridLength.Auto),
             Children =
             {
-                new ScrollViewer { Content = details, VerticalScrollBarVisibility = ScrollBarVisibility.Auto },
+                new ScrollViewer { Content = details, VerticalScrollBarVisibility = ScrollBarVisibility.Auto, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled },
                 actions
             }
         };
@@ -2735,10 +2954,10 @@ public partial class MainWindow : Window
         var popup = new Window
         {
             Title = Tr.Loc.TranslateText("Subscription details"),
-            Width = 560,
-            Height = 690,
-            MinWidth = 480,
-            MinHeight = 520,
+            Width = 760,
+            Height = 820,
+            MinWidth = 560,
+            MinHeight = 620,
             CanResize = true,
             Topmost = true,
             WindowStartupLocation = WindowStartupLocation.CenterOwner,
