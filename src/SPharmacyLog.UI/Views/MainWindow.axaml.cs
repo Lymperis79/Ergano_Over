@@ -109,6 +109,8 @@ public partial class MainWindow : Window
             BuildNavigation();
             ApplyTranslations();
             if (showingExpiryCalendar) _ = LoadSelectedDayAsync();
+            else if (activeNavigationKey == "Navigation.Customers" && selectedCustomerId.HasValue)
+                _ = RefreshCustomerWorkspaceAsync();
         };
         Opened += (_, _) => ApplyTranslations();
         ApplyTranslations();
