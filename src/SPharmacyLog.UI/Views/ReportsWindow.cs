@@ -18,9 +18,11 @@ namespace SPharmacyLog.UI.Views;
 public sealed class ReportsWindow : Window
 {
     private readonly ComboBox reportType = new() { MinWidth = 250 };
-    private readonly ComboBox customerFilter = new() { MinWidth = 300, IsEditable = true };
+    private readonly TextBox customerSearch = new() { MinWidth = 300, Watermark = "Search customer..." };
+    private readonly ListBox customerSuggestions = new() { MaxHeight = 190, MinWidth = 300 };
     private List<CustomerFilterOption> customerOptions = new();
-    private bool isFilteringCustomers;
+    private int? selectedCustomerId;
+    private bool isUpdatingCustomerSearch;
     private readonly TextBox reportDate = new() { MinWidth = 150, Text = DateTime.Today.ToString("yyyy-MM-dd") };
     private readonly TextBlock summary = new() { FontSize = 15, FontWeight = FontWeight.SemiBold, TextWrapping = TextWrapping.Wrap };
     private readonly ListBox results = new() { MinHeight = 300 };
@@ -44,7 +46,8 @@ public sealed class ReportsWindow : Window
         reportType.SelectedIndex = 0;
 
         customerFilterPanel.Children.Add(new TextBlock { Text = Tr.Loc.TranslateText("Customer") });
-        customerFilterPanel.Children.Add(customerFilter);
+        customerFilterPanel.Children.Add(customerSearch);
+        customerFilterPanel.Children.Add(customerSuggestions);
         dateFilterPanel.Children.Add(new TextBlock { Text = Tr.Loc.TranslateText("Activity date (yyyy-MM-dd)") });
         dateFilterPanel.Children.Add(reportDate);
 
@@ -64,19 +67,26 @@ public sealed class ReportsWindow : Window
         generate.Click += async (_, _) => await GenerateReportAsync();
         exportButton.Click += async (_, _) => await ExportReportAsync();
         reportType.SelectionChanged += (_, _) => { UpdateFilterVisibility(); exportButton.IsEnabled = false; };
-        customerFilter.SelectionChanged += (_, _) => exportButton.IsEnabled = false;
-        customerFilter.PropertyChanged += (_, e) =>
+        customerSearch.TextChanged += (_, _) =>
         {
-            if (e.Property != ComboBox.TextProperty || isFilteringCustomers)
+            if (!isUpdatingCustomerSearch)
+            {
+                selectedCustomerId = null;
+                FilterCustomers(customerSearch.Text ?? string.Empty);
+                exportButton.IsEnabled = false;
+            }
+        };
+        customerSuggestions.SelectionChanged += (_, _) =>
+        {
+            if (customerSuggestions.SelectedItem is not CustomerFilterOption option)
                 return;
 
-            // ComboBox updates Text while committing a selection. Do not rebuild Items
-            // during that selection transaction.
-            if (customerFilter.SelectedItem is ComboBoxItem selected &&
-                string.Equals(selected.Content?.ToString(), customerFilter.Text, StringComparison.CurrentCulture))
-                return;
-
-            FilterCustomers(customerFilter.Text ?? string.Empty);
+            selectedCustomerId = option.Id;
+            isUpdatingCustomerSearch = true;
+            customerSearch.Text = option.Display;
+            isUpdatingCustomerSearch = false;
+            customerSuggestions.IsVisible = false;
+            exportButton.IsEnabled = false;
         };
         reportDate.TextChanged += (_, _) => exportButton.IsEnabled = false;
 
@@ -188,87 +198,31 @@ public sealed class ReportsWindow : Window
     private async Task LoadCustomersAsync()
     {
         await using var db = new PharmacyDbContext(PharmacyDb.Options());
-        var customers = await db.Customers.AsNoTracking()
-            .OrderBy(customer => customer.FullName)
-            .ToListAsync();
-        customerOptions = customers.Select(customer => new CustomerFilterOption(
-            customer.Id,
+        var customers = await db.Customers.AsNoTracking().OrderBy(customer => customer.FullName).ToListAsync();
+        customerOptions = customers.Select(customer => new CustomerFilterOption(customer.Id,
             $"{customer.CustomerNumber} | {customer.FullName}",
-            string.Join(" ", new[]
-            {
-                customer.CustomerNumber, customer.FullName, customer.Address,
-                customer.Postcode, customer.City, customer.Telephone,
-                customer.Phone, customer.Amka, customer.Insurance
-            }.Where(value => !string.IsNullOrWhiteSpace(value)))))
-            .ToList();
-        isFilteringCustomers = true;
-        customerFilter.Items.Clear();
-        customerFilter.Items.Add(new ComboBoxItem { Content = Tr.Loc.TranslateText("All customers"), Tag = null });
-        foreach (var option in customerOptions)
-            customerFilter.Items.Add(new ComboBoxItem { Content = option.Display, Tag = option.Id });
-        customerFilter.SelectedIndex = 0;
-        customerFilter.Text = Tr.Loc.TranslateText("All customers");
-        isFilteringCustomers = false;
+            string.Join(" ", new[] { customer.CustomerNumber, customer.FullName, customer.Address, customer.Postcode, customer.City, customer.Telephone, customer.Phone, customer.Amka, customer.Insurance }
+                .Where(value => !string.IsNullOrWhiteSpace(value))))).ToList();
+        customerSearch.Text = string.Empty;
+        selectedCustomerId = null;
+        customerSuggestions.ItemsSource = Array.Empty<CustomerFilterOption>();
+        customerSuggestions.IsVisible = false;
     }
 
     private void FilterCustomers(string searchText)
     {
-        // Defer collection changes until Avalonia has finished processing the
-        // ComboBox text/selection change that raised this callback.
-        Dispatcher.UIThread.Post(() => ApplyCustomerFilter(searchText), DispatcherPriority.Background);
-    }
-
-    private void ApplyCustomerFilter(string searchText)
-    {
-        if (!IsVisible || isFilteringCustomers)
-            return;
-
         var query = searchText.Trim();
-        var matches = string.IsNullOrWhiteSpace(query)
-            ? customerOptions
-            : customerOptions.Where(option => option.SearchText.Contains(query, StringComparison.CurrentCultureIgnoreCase)).ToList();
-
-        // Preserve an existing customer selection only when it is still present.
-        var selectedId = (customerFilter.SelectedItem as ComboBoxItem)?.Tag as int?;
-        isFilteringCustomers = true;
-        try
+        if (string.IsNullOrWhiteSpace(query))
         {
-            customerFilter.Items.Clear();
-            var allCustomersItem = new ComboBoxItem
-            {
-                Content = Tr.Loc.TranslateText("All customers"),
-                Tag = null
-            };
-            customerFilter.Items.Add(allCustomersItem);
-
-            ComboBoxItem? selectedMatch = null;
-            foreach (var option in matches)
-            {
-                var item = new ComboBoxItem { Content = option.Display, Tag = option.Id };
-                customerFilter.Items.Add(item);
-                if (selectedId.HasValue && option.Id == selectedId.Value)
-                    selectedMatch = item;
-            }
-
-            if (selectedMatch is not null)
-                customerFilter.SelectedItem = selectedMatch;
-            else if (string.IsNullOrWhiteSpace(query))
-                customerFilter.SelectedItem = allCustomersItem;
-            else
-                customerFilter.SelectedIndex = -1;
-
-            customerFilter.Text = searchText;
-
-            // An editable ComboBox does not always reopen its popup after its
-            // Items collection is rebuilt. Explicitly show the filtered matches.
-            customerFilter.IsDropDownOpen = customerFilter.Items.Count > 0;
+            customerSuggestions.ItemsSource = Array.Empty<CustomerFilterOption>();
+            customerSuggestions.IsVisible = false;
+            return;
         }
-        finally
-        {
-            isFilteringCustomers = false;
-        }
+        var matches = customerOptions.Where(option => option.SearchText.Contains(query, StringComparison.CurrentCultureIgnoreCase)).Take(100).ToArray();
+        customerSuggestions.SelectedIndex = -1;
+        customerSuggestions.ItemsSource = matches;
+        customerSuggestions.IsVisible = matches.Length > 0;
     }
-
     private sealed record CustomerFilterOption(int Id, string Display, string SearchText);
 
     private async Task GenerateReportAsync()
@@ -305,10 +259,10 @@ public sealed class ReportsWindow : Window
     private async Task GenerateCustomerReportAsync()
     {
         await using var db = new PharmacyDbContext(PharmacyDb.Options());
-        var selectedCustomerId = (customerFilter.SelectedItem as ComboBoxItem)?.Tag is int customerId ? customerId : (int?)null;
+        var selectedId = selectedCustomerId;
         var customersQuery = db.Customers.AsNoTracking().AsQueryable();
-        if (selectedCustomerId.HasValue)
-            customersQuery = customersQuery.Where(customer => customer.Id == selectedCustomerId.Value);
+        if (selectedId.HasValue)
+            customersQuery = customersQuery.Where(customer => customer.Id == selectedId.Value);
         var customers = await customersQuery.OrderBy(customer => customer.FullName).ToListAsync();
         if (customers.Count == 0)
         {
