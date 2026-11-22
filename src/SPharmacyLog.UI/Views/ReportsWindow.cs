@@ -258,6 +258,10 @@ public sealed class ReportsWindow : Window
                 customerFilter.SelectedIndex = -1;
 
             customerFilter.Text = searchText;
+
+            // An editable ComboBox does not always reopen its popup after its
+            // Items collection is rebuilt. Explicitly show the filtered matches.
+            customerFilter.IsDropDownOpen = customerFilter.Items.Count > 0;
         }
         finally
         {
