@@ -2978,18 +2978,51 @@ public partial class MainWindow : Window
     private async Task SearchCustomersAsync()
     {
         if (customerList is null) return;
-        var term = customerSearch.Text?.Trim() ?? "";
+
+        // Match every search word against any customer field, so users can
+        // combine terms (e.g. surname + city or street + postcode).
+        var searchTerms = (customerSearch.Text?.Trim() ?? string.Empty)
+            .Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
         await using var db = new PharmacyDbContext(PharmacyDb.Options());
         var query = db.Customers.AsNoTracking();
         if (showInactiveCustomersCheckBox?.IsChecked != true)
             query = query.Where(c => c.IsActive);
-        if (!string.IsNullOrWhiteSpace(term))
-            query = query.Where(c => c.CustomerNumber.Contains(term) || c.FullName.Contains(term)
-                || (c.FirstName != null && c.FirstName.Contains(term)) || (c.Surname != null && c.Surname.Contains(term))
-                || (c.Amka != null && c.Amka.Contains(term)) || (c.Mobile != null && c.Mobile.Contains(term))
-                || c.Phone.Contains(term) || (c.Telephone != null && c.Telephone.Contains(term)) || (c.Email != null && c.Email.Contains(term)));
-        var rows = await query.OrderBy(c => c.Surname ?? c.FullName).ThenBy(c => c.FirstName).Take(250).ToListAsync();
-        customerList.ItemsSource = rows.Select(c => new CustomerListItem(c.Id, $"{c.CustomerNumber} | {(string.IsNullOrWhiteSpace(c.FullName) ? $"{c.FirstName} {c.Surname}" : c.FullName)}")).ToList();
+
+        if (searchTerms.Length > 0)
+        {
+            var firstTerm = searchTerms[0];
+            query = query.Where(c =>
+                c.CustomerNumber.Contains(firstTerm) ||
+                c.FullName.Contains(firstTerm) ||
+                (c.FirstName != null && c.FirstName.Contains(firstTerm)) ||
+                (c.Surname != null && c.Surname.Contains(firstTerm)) ||
+                (c.Address != null && c.Address.Contains(firstTerm)) ||
+                (c.City != null && c.City.Contains(firstTerm)) ||
+                (c.Postcode != null && c.Postcode.Contains(firstTerm)) ||
+                (c.Telephone != null && c.Telephone.Contains(firstTerm)) ||
+                c.Phone.Contains(firstTerm) ||
+                (c.Mobile != null && c.Mobile.Contains(firstTerm)) ||
+                (c.Email != null && c.Email.Contains(firstTerm)) ||
+                (c.Amka != null && c.Amka.Contains(firstTerm)) ||
+                (c.Insurance != null && c.Insurance.Contains(firstTerm)) ||
+                (c.Notes != null && c.Notes.Contains(firstTerm));
+        }
+
+        var candidates = await query.OrderBy(c => c.Surname ?? c.FullName)
+            .ThenBy(c => c.FirstName).ToListAsync();
+
+        static string SearchableFields(Customer customer) => string.Join(" ",
+            customer.CustomerNumber, customer.FullName, customer.FirstName, customer.Surname,
+            customer.Address, customer.City, customer.Postcode, customer.Telephone, customer.Phone,
+            customer.Mobile, customer.Email, customer.Amka, customer.Insurance, customer.Notes);
+
+        var rows = candidates
+            .Where(c => searchTerms.All(term => SearchableFields(c).Contains(term, StringComparison.OrdinalIgnoreCase)))
+            .Take(250)
+            .ToList();
+
+        customerList.ItemsSource = rows.Select(c => new CustomerListItem(c.Id,
+            $"{c.CustomerNumber} | {(string.IsNullOrWhiteSpace(c.FullName) ? $"{c.FirstName} {c.Surname}" : c.FullName)}")).ToList();
     }
 
     private async Task LoadCustomerAsync(int id)
