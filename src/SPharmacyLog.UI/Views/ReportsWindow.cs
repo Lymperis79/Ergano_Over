@@ -182,7 +182,7 @@ public sealed class ReportsWindow : Window
             .ToListAsync();
         customerOptions = customers.Select(customer => new CustomerFilterOption(
             customer.Id,
-            `${customer.CustomerNumber} | ${customer.FullName}`,
+            $"{customer.CustomerNumber} | {customer.FullName}",
             string.Join(" ", new[]
             {
                 customer.CustomerNumber, customer.FullName, customer.Address,
