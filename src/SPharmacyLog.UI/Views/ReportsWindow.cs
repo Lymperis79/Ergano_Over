@@ -410,7 +410,7 @@ public sealed class ReportsWindow : Window
             .ToListAsync();
 
         var lines = subscriptions.Select(subscription =>
-            $"{subscription.NextDueDate:dd/MM/yyyy} | {subscription.Customer?.CustomerNumber} | {subscription.Customer?.FullName} | {subscription.Title} | {subscription.Frequency} | {subscription.Barcode ?? $"SUB-{subscription.Id:D8}"}").ToList();
+            $"{subscription.NextDueDate:dd/MM/yyyy} | {subscription.Customer?.CustomerNumber} | {subscription.Customer?.FullName} | {subscription.Title} | {subscription.Frequency}").ToList();
         if (lines.Count == 0)
             lines.Add(Tr.Loc.TranslateText("No open subscriptions are due in the next 7 days."));
         summary.Text = $"{Tr.Loc.TranslateText("Period")}: {start:dd/MM/yyyy} - {end.AddDays(-1):dd/MM/yyyy}    |    {Tr.Loc.TranslateText("Open subscriptions due")}: {subscriptions.Count}";
