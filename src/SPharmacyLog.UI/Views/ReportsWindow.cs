@@ -366,47 +366,42 @@ public sealed class ReportsWindow : Window
         await using var db = new PharmacyDbContext(PharmacyDb.Options());
         var selectedId = selectedCustomerId;
         var searchText = customerSearch.Text?.Trim();
-        var customersQuery = db.Customers.AsNoTracking().AsQueryable();
-
-        // Apply the filter either from the selected suggestion or from the typed search text.
-        // This ensures Generate Report works even if the user does not click a suggestion.
+        // Load the customer list first and apply the filter in memory. This avoids
+        // provider-specific SQL translation issues with Contains over ID arrays and
+        // guarantees the selected suggestion is resolved against the same DB records.
+        var allCustomers = await db.Customers.AsNoTracking().OrderBy(customer => customer.FullName).ToListAsync();
+        List<Customer> customers;
         if (selectedId.HasValue)
         {
-            // Prefer the selected database ID, but keep a display/search fallback to avoid
-            // an empty report if the suggestion selection is stale after a UI refresh.
-            customersQuery = customersQuery.Where(customer => customer.Id == selectedId.Value);
+            customers = allCustomers.Where(customer => customer.Id == selectedId.Value).ToList();
+            if (customers.Count == 0)
+            {
+                var selectedOption = customerOptions.FirstOrDefault(option => option.Id == selectedId.Value);
+                var selectedDisplay = selectedOption?.Display;
+                if (!string.IsNullOrWhiteSpace(selectedDisplay))
+                {
+                    customers = allCustomers.Where(customer =>
+                        string.Equals($"{customer.CustomerNumber} | {customer.FullName}", selectedDisplay, StringComparison.CurrentCultureIgnoreCase)
+                        || string.Equals(customer.FullName, selectedDisplay, StringComparison.CurrentCultureIgnoreCase)
+                        || string.Equals(customer.CustomerNumber, selectedDisplay, StringComparison.CurrentCultureIgnoreCase))
+                        .ToList();
+                }
+            }
         }
         else if (!string.IsNullOrWhiteSpace(searchText))
         {
-            var matchingCustomerIds = customerOptions
-                .Where(option => option.SearchText.Contains(searchText, StringComparison.CurrentCultureIgnoreCase)
-                    || option.Display.Contains(searchText, StringComparison.CurrentCultureIgnoreCase))
-                .Select(option => option.Id)
-                .Distinct()
-                .ToArray();
-            customersQuery = customersQuery.Where(customer => matchingCustomerIds.Contains(customer.Id));
+            customers = allCustomers.Where(customer =>
+                string.Join(" ", new[] { customer.CustomerNumber, customer.FullName, customer.Address, customer.Postcode, customer.City, customer.Telephone, customer.Phone, customer.Amka, customer.Insurance }
+                    .Where(value => !string.IsNullOrWhiteSpace(value)))
+                .Contains(searchText, StringComparison.CurrentCultureIgnoreCase)
+                || $"{customer.CustomerNumber} | {customer.FullName}".Contains(searchText, StringComparison.CurrentCultureIgnoreCase))
+                .ToList();
         }
-
-        var customers = await customersQuery.OrderBy(customer => customer.FullName).ToListAsync();
-
-        // If a selected suggestion's ID no longer matches the loaded database rows,
-        // resolve it using the selected customer's saved display text as a safe fallback.
-        if (customers.Count == 0 && selectedId.HasValue)
+        else
         {
-            var selectedOption = customerOptions.FirstOrDefault(option => option.Id == selectedId.Value);
-            if (selectedOption is not null)
-            {
-                var fallbackIds = customerOptions
-                    .Where(option => option.Display.Equals(selectedOption.Display, StringComparison.CurrentCultureIgnoreCase))
-                    .Select(option => option.Id)
-                    .Distinct()
-                    .ToArray();
-                customers = await db.Customers.AsNoTracking()
-                    .Where(customer => fallbackIds.Contains(customer.Id))
-                    .OrderBy(customer => customer.FullName)
-                    .ToListAsync();
-            }
+            customers = allCustomers;
         }
+
         if (customers.Count == 0)
         {
             summary.Text = Tr.Loc.TranslateText("No customers found.");
