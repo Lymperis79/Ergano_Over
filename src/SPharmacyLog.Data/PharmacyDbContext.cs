@@ -40,6 +40,14 @@ public sealed class PharmacyDbContext : DbContext
             .HasMaxLength(255);
 
         modelBuilder.Entity<CalendarNote>()
+            .Property(note => note.IsCompleted)
+            .HasDefaultValue(false);
+
+        modelBuilder.Entity<CalendarNote>()
+            .Property(note => note.CompletedBy)
+            .HasMaxLength(255);
+
+        modelBuilder.Entity<CalendarNote>()
             .HasIndex(note => new { note.CalendarDate, note.IsShared, note.CreatedBy });
 
         modelBuilder.Entity<PharmacyUser>()
