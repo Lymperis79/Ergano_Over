@@ -26,7 +26,8 @@ public sealed class ReportsWindow : Window
     private bool isUpdatingCustomerSearch;
     private readonly TextBox reportDate = new() { MinWidth = 150, Text = DateTime.Today.ToString("yyyy-MM-dd") };
     private readonly TextBlock summary = new() { FontSize = 15, FontWeight = FontWeight.SemiBold, TextWrapping = TextWrapping.Wrap };
-    private readonly ListBox results = new() { MinHeight = 300 };
+    private readonly StackPanel resultsContent = new() { Spacing = 6 };
+    private List<string> currentReportLines = new();
     private readonly StackPanel customerFilterPanel = new() { Spacing = 4 };
     private readonly StackPanel dateFilterPanel = new() { Spacing = 4 };
     private readonly Button exportButton = new() { Content = Tr.Loc.TranslateText("Export to Excel"), MinWidth = 150, MinHeight = 38, IsEnabled = false };
@@ -130,18 +131,37 @@ public sealed class ReportsWindow : Window
             CornerRadius = new CornerRadius(10),
             Child = summaryContent
         };
+        var resultsHeader = new TextBlock
+        {
+            Text = Tr.Loc.TranslateText("Report details"),
+            FontSize = 16,
+            FontWeight = FontWeight.Bold,
+            Margin = new Thickness(2, 0, 2, 6)
+        };
         var resultsCard = new Border
         {
-            Padding = new Thickness(8),
+            Padding = new Thickness(14),
             Background = new SolidColorBrush(Color.Parse("#151B24")),
             BorderBrush = new SolidColorBrush(Color.Parse("#303B4A")),
             BorderThickness = new Thickness(1),
             CornerRadius = new CornerRadius(10),
-            Child = results
+            Child = new StackPanel
+            {
+                Spacing = 8,
+                Children =
+                {
+                    resultsHeader,
+                    new ScrollViewer
+                    {
+                        MinHeight = 360,
+                        MaxHeight = 560,
+                        VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
+                        HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled,
+                        Content = resultsContent
+                    }
+                }
+            }
         };
-        results.FontSize = 14;
-        results.Padding = new Thickness(4);
-        results.MinHeight = 380;
 
         var content = new StackPanel
         {
@@ -177,9 +197,7 @@ public sealed class ReportsWindow : Window
         });
         if (file is null) return;
 
-        var detailLines = results.ItemsSource is IEnumerable<string> lines
-            ? lines.ToList()
-            : new List<string>();
+        var detailLines = currentReportLines.ToList();
         try
         {
             await using var output = await file.OpenWriteAsync();
@@ -230,6 +248,67 @@ public sealed class ReportsWindow : Window
     }
     private sealed record CustomerFilterOption(int Id, string Display, string SearchText);
 
+    private void RenderResults(IEnumerable<string> sourceLines)
+    {
+        currentReportLines = sourceLines.ToList();
+        resultsContent.Children.Clear();
+        var rowIndex = 0;
+
+        foreach (var rawLine in currentReportLines)
+        {
+            if (string.IsNullOrWhiteSpace(rawLine))
+            {
+                resultsContent.Children.Add(new Border { Height = 5 });
+                continue;
+            }
+
+            var line = rawLine.Trim();
+            if (line.All(character => character == '='))
+            {
+                resultsContent.Children.Add(new Border
+                {
+                    Height = 1,
+                    Margin = new Thickness(0, 5),
+                    Background = new SolidColorBrush(Color.Parse("#344355"))
+                });
+                continue;
+            }
+
+            var isSection = line.EndsWith(':');
+            var isIndented = rawLine.StartsWith("  ", StringComparison.Ordinal);
+            var text = new TextBlock
+            {
+                Text = line,
+                TextWrapping = TextWrapping.Wrap,
+                FontSize = isSection ? 14 : isIndented ? 12 : 13,
+                FontWeight = isSection ? FontWeight.Bold : isIndented ? FontWeight.Normal : FontWeight.SemiBold,
+                Foreground = new SolidColorBrush(Color.Parse(isSection ? "#75C8F2" : isIndented ? "#C3CEDA" : "#F0F4F8"))
+            };
+            var background = isSection ? "#202F40" : (rowIndex++ % 2 == 0 ? "#1A2430" : "#17212C");
+            resultsContent.Children.Add(new Border
+            {
+                Padding = new Thickness(isIndented ? 12 : 10, isSection ? 9 : 7),
+                Margin = new Thickness(0, 1),
+                CornerRadius = new CornerRadius(6),
+                Background = new SolidColorBrush(Color.Parse(background)),
+                BorderBrush = new SolidColorBrush(Color.Parse(isSection ? "#344E66" : "#263443")),
+                BorderThickness = new Thickness(isSection ? 1 : 0),
+                Child = text
+            });
+        }
+
+        if (currentReportLines.Count == 0)
+        {
+            resultsContent.Children.Add(new TextBlock
+            {
+                Text = Tr.Loc.TranslateText("No report details available."),
+                Foreground = new SolidColorBrush(Color.Parse("#9BA8B8")),
+                FontStyle = FontStyle.Italic,
+                Margin = new Thickness(8)
+            });
+        }
+    }
+
     private async Task GenerateReportAsync()
     {
         var selected = (reportType.SelectedItem as ComboBoxItem)?.Tag?.ToString();
@@ -249,7 +328,7 @@ public sealed class ReportsWindow : Window
                     break;
                 default:
                     summary.Text = Tr.Loc.TranslateText("Select a report.");
-                    results.ItemsSource = Array.Empty<string>();
+                    RenderResults(Array.Empty<string>());
                     break;
             }
             exportButton.IsEnabled = true;
@@ -257,7 +336,7 @@ public sealed class ReportsWindow : Window
         catch (Exception ex)
         {
             summary.Text = Tr.Loc.TranslateText("The report could not be generated.") + " " + ex.Message;
-            results.ItemsSource = Array.Empty<string>();
+            RenderResults(Array.Empty<string>());
         }
     }
 
@@ -272,7 +351,7 @@ public sealed class ReportsWindow : Window
         if (customers.Count == 0)
         {
             summary.Text = Tr.Loc.TranslateText("No customers found.");
-            results.ItemsSource = Array.Empty<string>();
+            RenderResults(Array.Empty<string>());
             return;
         }
 
@@ -314,7 +393,7 @@ public sealed class ReportsWindow : Window
         }
 
         summary.Text = $"{Tr.Loc.TranslateText("Customers")}: {customers.Count}    |    {Tr.Loc.TranslateText("Payments received")}: {grandPayments:C}    |    {Tr.Loc.TranslateText("Total balance owed")}: {grandBalance:C}";
-        results.ItemsSource = lines;
+        RenderResults(lines);
     }
 
     private async Task GenerateUpcomingSubscriptionsAsync()
@@ -335,7 +414,7 @@ public sealed class ReportsWindow : Window
         if (lines.Count == 0)
             lines.Add(Tr.Loc.TranslateText("No open subscriptions are due in the next 7 days."));
         summary.Text = $"{Tr.Loc.TranslateText("Period")}: {start:dd/MM/yyyy} - {end.AddDays(-1):dd/MM/yyyy}    |    {Tr.Loc.TranslateText("Open subscriptions due")}: {subscriptions.Count}";
-        results.ItemsSource = lines;
+        RenderResults(lines);
     }
 
     private async Task GenerateDailyStatusAsync()
@@ -343,7 +422,7 @@ public sealed class ReportsWindow : Window
         if (!DateTime.TryParse(reportDate.Text, out var selectedDate))
         {
             summary.Text = Tr.Loc.TranslateText("Enter a valid date using yyyy-MM-dd.");
-            results.ItemsSource = Array.Empty<string>();
+            RenderResults(Array.Empty<string>());
             return;
         }
 
@@ -419,6 +498,6 @@ public sealed class ReportsWindow : Window
         if (borrowings.Count == 0) lines.Add("  " + Tr.Loc.TranslateText("No medicine borrowing or return activity on this date."));
 
         summary.Text = $"{dayStart:dddd, dd MMMM yyyy}    |    {Tr.Loc.TranslateText("Opened")}: {opened.Count}    |    {Tr.Loc.TranslateText("Closed")}: {closed.Count}    |    {Tr.Loc.TranslateText("Borrowing / return records")}: {borrowings.Count}";
-        results.ItemsSource = lines;
+        RenderResults(lines);
     }
 }
