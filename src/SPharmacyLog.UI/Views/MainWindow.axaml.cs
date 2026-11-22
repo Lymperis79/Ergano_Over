@@ -2665,10 +2665,6 @@ public partial class MainWindow : Window
         var customerName = string.IsNullOrWhiteSpace(customer.FullName)
             ? $"{customer.FirstName} {customer.Surname}".Trim()
             : customer.FullName;
-        var statusText = Tr.Loc.TranslateText(subscription.Status.ToString());
-        var statusColor = subscription.Status == SubscriptionStatus.Active
-            ? Color.Parse("#36B783")
-            : Color.Parse("#D99A4E");
 
         TextBlock Label(string text) => new TextBlock
         {
