@@ -330,7 +330,7 @@ public partial class MainWindow : Window
             root.Children.Add(header);
         }
 
-        void AddCard(Grid target, string label, TextBlock value, int column, string accent)
+        void AddCard(Grid target, string label, TextBlock value, int column, string accent, Action? onClick = null)
         {
             var body = new StackPanel { Spacing = 5, Children =
             {
@@ -338,8 +338,135 @@ public partial class MainWindow : Window
                 value
             }};
             var card = new Border { Background = new SolidColorBrush(Color.Parse("#202733")), BorderBrush = new SolidColorBrush(Color.Parse(accent)), BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(10), Padding = new Thickness(18), Margin = new Thickness(4), Child = body };
-            Grid.SetColumn(card, column);
-            target.Children.Add(card);
+            Control surface = card;
+            if (onClick is not null)
+            {
+                var button = new Button
+                {
+                    Content = card,
+                    Background = Brushes.Transparent,
+                    BorderThickness = new Thickness(0),
+                    Padding = new Thickness(0),
+                    HorizontalAlignment = HorizontalAlignment.Stretch,
+                    HorizontalContentAlignment = HorizontalAlignment.Stretch,
+                    Cursor = new Avalonia.Input.Cursor(Avalonia.Input.StandardCursorType.Hand)
+                };
+                button.Click += (_, _) => onClick();
+                surface = button;
+            }
+            Grid.SetColumn(surface, column);
+            target.Children.Add(surface);
+        }
+
+        async Task ShowSubscriptionExpiryListAsync(bool dueTodayOnly)
+        {
+            if (!CanAccessMenu(MenuSubscriptions)) { ShowNoMenuAccess(); return; }
+            var today = DateTime.Today;
+            var tomorrow = today.AddDays(1);
+            await using var db = new PharmacyDbContext(PharmacyDb.Options());
+            var subscriptions = await db.Subscriptions.AsNoTracking()
+                .Include(item => item.Customer)
+                .Where(item => item.Status == SubscriptionStatus.Active &&
+                    (dueTodayOnly
+                        ? item.NextDueDate >= today && item.NextDueDate < tomorrow
+                        : item.NextDueDate < today))
+                .OrderBy(item => item.NextDueDate)
+                .ThenBy(item => item.Customer!.Surname)
+                .ThenBy(item => item.Customer!.FirstName)
+                .ToListAsync();
+
+            var dialog = new Window
+            {
+                Title = Tr.Loc.TranslateText(dueTodayOnly ? "Subscriptions due today" : "Overdue open subscriptions"),
+                Width = 760,
+                Height = 620,
+                MinWidth = 520,
+                MinHeight = 380,
+                WindowStartupLocation = WindowStartupLocation.CenterOwner
+            };
+            var list = new StackPanel { Spacing = 7 };
+            if (subscriptions.Count == 0)
+            {
+                list.Children.Add(new TextBlock
+                {
+                    Text = Tr.Loc.TranslateText("No subscriptions found."),
+                    Margin = new Thickness(12),
+                    Foreground = Brushes.LightGray
+                });
+            }
+            foreach (var subscription in subscriptions)
+            {
+                var customerName = subscription.Customer?.FullName;
+                if (string.IsNullOrWhiteSpace(customerName))
+                    customerName = $"{subscription.Customer?.FirstName} {subscription.Customer?.Surname}".Trim();
+                var row = new Grid
+                {
+                    ColumnDefinitions = CreateColumns(GridLength.Star, GridLength.Auto),
+                    ColumnSpacing = 12
+                };
+                row.Children.Add(new StackPanel
+                {
+                    Spacing = 3,
+                    Children =
+                    {
+                        new TextBlock { Text = subscription.Title, FontWeight = FontWeight.SemiBold },
+                        new TextBlock { Text = customerName, Foreground = Brushes.LightGray },
+                        new TextBlock
+                        {
+                            Text = $"{Tr.Loc.TranslateText("Next due")}: {subscription.NextDueDate:dd/MM/yyyy}",
+                            Foreground = new SolidColorBrush(Color.Parse(dueTodayOnly ? "#D39A35" : "#E07878")),
+                            FontSize = 12
+                        }
+                    }
+                });
+                var edit = new Button
+                {
+                    Content = Tr.Loc.TranslateText("Edit"),
+                    Classes = { "accent" },
+                    MinWidth = 90,
+                    VerticalAlignment = VerticalAlignment.Center
+                };
+                edit.Click += async (_, _) =>
+                {
+                    dialog.Close();
+                    await OpenCustomerFromSubscriptionAsync(subscription.CustomerId, subscription);
+                };
+                Grid.SetColumn(edit, 1);
+                row.Children.Add(edit);
+                list.Children.Add(new Border
+                {
+                    Background = new SolidColorBrush(Color.Parse("#202733")),
+                    BorderBrush = new SolidColorBrush(Color.Parse("#354152")),
+                    BorderThickness = new Thickness(1),
+                    CornerRadius = new CornerRadius(8),
+                    Padding = new Thickness(12),
+                    Child = row
+                });
+            }
+            var close = new Button { Content = Tr.Loc.TranslateText("Close"), MinWidth = 100 };
+            close.Click += (_, _) => dialog.Close();
+            dialog.Content = new Grid
+            {
+                RowDefinitions = new RowDefinitions("*,Auto"),
+                Margin = new Thickness(14),
+                Children =
+                {
+                    new ScrollViewer { Content = list, VerticalScrollBarVisibility = ScrollBarVisibility.Auto },
+                    new Border
+                    {
+                        Padding = new Thickness(0, 12, 0, 0),
+                        Child = new StackPanel
+                        {
+                            Orientation = Orientation.Horizontal,
+                            HorizontalAlignment = HorizontalAlignment.Right,
+                            Children = { close }
+                        }
+                    }
+                }
+            };
+            Grid.SetRow((Control)((Grid)dialog.Content).Children[1], 1);
+            AttachDialogLocalization(dialog);
+            await dialog.ShowDialog(this);
         }
 
         var customersValue = new TextBlock { Text = "—", FontSize = 30, FontWeight = FontWeight.Bold };
@@ -354,8 +481,8 @@ public partial class MainWindow : Window
         AddGroupHeader("Subscriptions", "📋", "#D39A35");
         var subscriptionCards = new Grid { ColumnDefinitions = CreateColumns(GridLength.Star, GridLength.Star, GridLength.Star) };
         AddCard(subscriptionCards, "Active subscriptions", activeValue, 0, "#397DA5");
-        AddCard(subscriptionCards, "Subscriptions due today", dueValue, 1, "#D39A35");
-        AddCard(subscriptionCards, "Overdue open subscriptions", overdueValue, 2, "#C65D5D");
+        AddCard(subscriptionCards, "Subscriptions due today", dueValue, 1, "#D39A35", () => _ = ShowSubscriptionExpiryListAsync(true));
+        AddCard(subscriptionCards, "Overdue open subscriptions", overdueValue, 2, "#C65D5D", () => _ = ShowSubscriptionExpiryListAsync(false));
         root.Children.Add(subscriptionCards);
 
         var borrowedValue = new TextBlock { Text = "—", FontSize = 30, FontWeight = FontWeight.Bold };
