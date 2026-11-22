@@ -71,26 +71,59 @@ public sealed class ReportsWindow : Window
         };
         reportDate.TextChanged += (_, _) => exportButton.IsEnabled = false;
 
-        var content = new StackPanel
+        var reportHeader = new StackPanel
         {
-            Margin = new Thickness(20),
-            Spacing = 12,
+            Spacing = 3,
             Children =
             {
-                new TextBlock { Text = Tr.Loc.TranslateText("Reports"), FontSize = 24, FontWeight = FontWeight.Bold },
-                filters,
-                new StackPanel { Orientation = Orientation.Horizontal, Spacing = 10, Children = { generate, exportButton } },
-                new Border
+                new TextBlock { Text = Tr.Loc.TranslateText("Reports"), FontSize = 28, FontWeight = FontWeight.Bold },
+                new TextBlock
                 {
-                    Padding = new Thickness(12),
-                    Background = new SolidColorBrush(Color.Parse("#202733")),
-                    BorderBrush = new SolidColorBrush(Color.Parse("#354152")),
-                    BorderThickness = new Thickness(1),
-                    CornerRadius = new CornerRadius(8),
-                    Child = summary
-                },
-                results
+                    Text = Tr.Loc.TranslateText("Review customer accounts, subscriptions and daily activity"),
+                    FontSize = 13,
+                    Foreground = new SolidColorBrush(Color.Parse("#8B96A5"))
+                }
             }
+        };
+        var actionRow = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 10 };
+        actionRow.Children.Add(generate);
+        actionRow.Children.Add(exportButton);
+
+        var summaryCard = new Border
+        {
+            Padding = new Thickness(16),
+            Background = new SolidColorBrush(Color.Parse("#202733")),
+            BorderBrush = new SolidColorBrush(Color.Parse("#354152")),
+            BorderThickness = new Thickness(1),
+            CornerRadius = new CornerRadius(10),
+            Child = new StackPanel
+            {
+                Spacing = 6,
+                Children
+                {
+                    new TextBlock { Text = Tr.Loc.TranslateText("Report summary"), FontSize = 12, FontWeight = FontWeight.Bold, Foreground = new SolidColorBrush(Color.Parse("#9BA8B8")) },
+                    summary
+                }
+            }
+        };
+        var resultsCard = new Border
+        {
+            Padding = new Thickness(8),
+            Background = new SolidColorBrush(Color.Parse("#151B24")),
+            BorderBrush = new SolidColorBrush(Color.Parse("#303B4A")),
+            BorderThickness = new Thickness(1),
+            CornerRadius = new CornerRadius(10),
+            Child = results
+        };
+        results.FontSize = 14;
+        results.Padding = new Thickness(4);
+        results.MinHeight = 380;
+
+        var content = new StackPanel
+        {
+            Margin = new Thickness(22),
+            Spacing = 16,
+            Children = { reportHeader, filters, actionRow, summaryCard, resultsCard }
         };
         Content = new ScrollViewer { Content = content };
         Opened += async (_, _) =>
