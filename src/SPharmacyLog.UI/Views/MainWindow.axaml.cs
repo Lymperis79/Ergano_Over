@@ -1726,8 +1726,10 @@ public partial class MainWindow : Window
             customerSyncButton = new Button
             {
                 Content = "↻",
-                HorizontalAlignment = HorizontalAlignment.Right,
+                HorizontalAlignment = HorizontalAlignment.Stretch,
                 VerticalAlignment = VerticalAlignment.Stretch,
+                HorizontalContentAlignment = HorizontalAlignment.Center,
+                VerticalContentAlignment = VerticalAlignment.Center,
                 Width = 40,
                 MinHeight = 34,
                 Padding = new Thickness(0),
