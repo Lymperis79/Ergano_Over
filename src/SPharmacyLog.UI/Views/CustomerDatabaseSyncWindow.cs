@@ -13,6 +13,7 @@ public sealed class CustomerDatabaseSyncWindow : Window
     private readonly TextBox server = new() { PlaceholderText = "SQL Server / instance" };
     private readonly TextBox database = new() { PlaceholderText = "Database name" };
     private readonly CheckBox integrated = new() { Content = "Windows authentication", IsChecked = true };
+    private readonly CheckBox trustServerCertificate = new() { Content = "Trust SQL Server certificate (for self-signed / untrusted certificates)" };
     private readonly TextBox username = new() { PlaceholderText = "SQL username" };
     private readonly TextBox password = new() { PlaceholderText = "SQL password", PasswordChar = '●' };
     private readonly ComboBox table = new() { MinWidth = 300 };
@@ -67,6 +68,7 @@ public sealed class CustomerDatabaseSyncWindow : Window
         connectionPanel.Children.Add(new TextBlock { Text = "SQL SERVER CONNECTION", FontWeight = FontWeight.SemiBold });
         connectionPanel.Children.Add(Row("Server / instance", server, "Database", database));
         connectionPanel.Children.Add(integrated);
+        connectionPanel.Children.Add(trustServerCertificate);
         connectionPanel.Children.Add(Row("Username", username, "Password", password));
         var testButton = new Button { Content = "Test connection", MinWidth = 130 };
         var loadTablesButton = new Button { Content = "Load tables", MinWidth = 110 };
@@ -269,6 +271,7 @@ public sealed class CustomerDatabaseSyncWindow : Window
         server.Text = settings.Server;
         database.Text = settings.Database;
         integrated.IsChecked = settings.IntegratedSecurity;
+        trustServerCertificate.IsChecked = settings.TrustServerCertificate;
         username.Text = settings.Username;
         password.Text = settings.Password;
         filterValue.Text = settings.FilterValue;
@@ -305,6 +308,7 @@ public sealed class CustomerDatabaseSyncWindow : Window
             Server = server.Text?.Trim() ?? string.Empty,
             Database = database.Text?.Trim() ?? string.Empty,
             IntegratedSecurity = integrated.IsChecked == true,
+            TrustServerCertificate = trustServerCertificate.IsChecked == true,
             Username = username.Text ?? string.Empty,
             Password = password.Text ?? string.Empty,
             Table = table.SelectedItem?.ToString() ?? string.Empty,
