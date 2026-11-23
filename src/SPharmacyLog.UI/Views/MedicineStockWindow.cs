@@ -179,6 +179,7 @@ public sealed class MedicineStockWindow : Window
         }
         var fields = new StackPanel { Spacing = 8, Margin = new Thickness(14) };
         AddField(fields, "Barcode scan", barcode);
+        AddField(fields, "Search medicine", medicineSearch);
         AddField(fields, "Medicine", medicine);
         AddField(fields, type == MedicineStockMovementType.Count ? "Counted quantity" : "Quantity", quantity);
         AddField(fields, "Expiry date (optional)", expiry);
@@ -194,8 +195,8 @@ public sealed class MedicineStockWindow : Window
         cancel.Click += (_, _) => dialog.Close();
         save.Click += async (_, _) =>
         {
-            var selectedName = medicine.SelectedItem?.ToString() ?? medicine.Text;
-            var selected = allMedicines.FirstOrDefault(m => string.Equals(m.Name, selectedName, StringComparison.CurrentCultureIgnoreCase));
+            var selectedName = medicine.SelectedItem?.ToString();
+            var selected = visibleMedicines.FirstOrDefault(m => string.Equals(m.Name, selectedName, StringComparison.CurrentCultureIgnoreCase));
             if (selected == null) { status.Text = Tr.Loc.TranslateText("Select a medicine before saving."); return; }
             if (!decimal.TryParse(quantity.Text, System.Globalization.NumberStyles.Number, System.Globalization.CultureInfo.CurrentCulture, out var qty) || qty < 0 || (type != MedicineStockMovementType.Count && qty <= 0))
             { status.Text = Tr.Loc.TranslateText("Enter a valid quantity."); return; }
