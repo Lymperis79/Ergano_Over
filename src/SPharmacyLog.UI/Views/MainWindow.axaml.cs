@@ -3802,10 +3802,10 @@ public partial class MainWindow : Window
             };
             var greek = selectedType switch
             {
-                "Charge" => "Προσθέτει ποσό που οφείλει ο πελάτης και αυξάνει το υπόλοιπο.",
-                "Payment" => "Καταγράφει χρήματα που εισπράχθηκαν, μειώνει το υπόλοιπο και εμφανίζεται στο ιστορικό πληρωμών.",
-                "Adjustment" => "Προσθέτει θετική διόρθωση στο υπόλοιπο και αυξάνει το οφειλόμενο ποσό.",
-                "Reversal" => "Καταγράφει πίστωση για αντιλογισμό προηγούμενης συναλλαγής και μειώνει το υπόλοιπο. Δεν διαγράφει αυτόματα την αρχική συναλλαγή.",
+                "Charge" or "Χρέωση" => "Προσθέτει ποσό που οφείλει ο πελάτης και αυξάνει το υπόλοιπο.",
+                "Payment" or "Πληρωμή" => "Καταγράφει χρήματα που εισπράχθηκαν, μειώνει το υπόλοιπο και εμφανίζεται στο ιστορικό πληρωμών.",
+                "Adjustment" or "Προσαρμογή" => "Προσθέτει θετική διόρθωση στο υπόλοιπο και αυξάνει το οφειλόμενο ποσό.",
+                "Reversal" or "Αντιστροφή" => "Καταγράφει πίστωση για αντιλογισμό προηγούμενης συναλλαγής και μειώνει το υπόλοιπο. Δεν διαγράφει αυτόματα την αρχική συναλλαγή.",
                 _ => "Επιλέξτε τι αντιπροσωπεύει αυτή η εγγραφή."
             };
             return Tr.Loc.CurrentLanguage == AppLanguage.Greek ? greek : english;
@@ -3831,7 +3831,16 @@ public partial class MainWindow : Window
         cancel.Click += (_, _) => dialog.Close();
         save.Click += async (_, _) =>
         {
-            if (!Enum.TryParse<LedgerEntryType>(type.SelectedItem?.ToString(), true, out var parsedType) ||
+            var selectedType = type.SelectedItem?.ToString();
+            var normalizedType = selectedType switch
+            {
+                "Χρέωση" => nameof(LedgerEntryType.Charge),
+                "Πληρωμή" => nameof(LedgerEntryType.Payment),
+                "Προσαρμογή" => nameof(LedgerEntryType.Adjustment),
+                "Αντιστροφή" => nameof(LedgerEntryType.Reversal),
+                _ => selectedType
+            };
+            if (!Enum.TryParse<LedgerEntryType>(normalizedType, true, out var parsedType) ||
                 !TryParseLocalizedAmount(amount.Text, out var parsedAmount) || parsedAmount <= 0 ||
                 string.IsNullOrWhiteSpace(description.Text) ||
                 !TryParseUserDate(entryDate.Text, out var parsedDate))
