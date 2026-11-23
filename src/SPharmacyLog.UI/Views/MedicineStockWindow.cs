@@ -143,6 +143,7 @@ public sealed class MedicineStockWindow : Window
         var barcode = new TextBox { MinWidth = 320, Watermark = Tr.Loc.TranslateText("Scan medicine barcode") };
         var medicineSearch = new TextBox { MinWidth = 320, Watermark = Tr.Loc.TranslateText("Type to filter medicines") };
         var medicine = new ComboBox { MinWidth = 320 };
+        var scanFeedback = new TextBlock { TextWrapping = TextWrapping.Wrap, Foreground = Brushes.LightGray };
         var quantity = new TextBox { MinWidth = 320, Text = "1" };
         var expiry = new DatePicker { SelectedDate = null };
         var batch = new TextBox { MinWidth = 320, Watermark = Tr.Loc.TranslateText("Optional batch / lot") };
@@ -173,12 +174,13 @@ public sealed class MedicineStockWindow : Window
                 if (string.IsNullOrWhiteSpace(scanned)) return;
                 var match = allMedicines.FirstOrDefault(m => string.Equals(m.Barcode, scanned, StringComparison.OrdinalIgnoreCase))
                     ?? allMedicines.FirstOrDefault(m => alternates.Any(b => b.MedicineId == m.Id && string.Equals(b.BarcodeValue, scanned, StringComparison.OrdinalIgnoreCase)));
-                if (match != null) { medicineSearch.Text = ""; medicine.SelectedIndex = visibleMedicines.FindIndex(m => m.Id == match.Id); }
-                else status.Text = Tr.Loc.TranslateText("No medicine matches this barcode. Select or create the medicine in the Medicine workspace.");
+                if (match != null) { medicineSearch.Text = ""; medicine.SelectedIndex = visibleMedicines.FindIndex(m => m.Id == match.Id); scanFeedback.Text = Tr.Loc.TranslateText("Barcode matched") + ": " + match.Name; }
+                else { medicineSearch.Text = scanned; scanFeedback.Text = Tr.Loc.TranslateText("Barcode not found in medicine catalogue. Search or add the medicine first."); }
             };
         }
         var fields = new StackPanel { Spacing = 8, Margin = new Thickness(14) };
         AddField(fields, "Barcode scan", barcode);
+        fields.Children.Add(scanFeedback);
         AddField(fields, "Search medicine", medicineSearch);
         AddField(fields, "Medicine", medicine);
         AddField(fields, type == MedicineStockMovementType.Count ? "Counted quantity" : "Quantity", quantity);
