@@ -124,6 +124,7 @@ public partial class MainWindow : Window
         else if (CanAccessMenu(MenuCalendar)) ShowExpiryCalendar();
         else if (CanAccessMenu(MenuCustomers)) ShowCustomers();
         else if (CanAccessMenu(MenuReports)) ShowReports();
+        else if (CanAccessMenu(MenuMedicine)) OpenMedicineManagement();
         else ShowNoMenuAccess();
     }
 
