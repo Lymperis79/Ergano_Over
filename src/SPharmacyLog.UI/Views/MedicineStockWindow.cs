@@ -141,7 +141,7 @@ public sealed class MedicineStockWindow : Window
     {
         var formTitle = type switch { MedicineStockMovementType.Count => "Stock count", MedicineStockMovementType.Add => "Add stock", _ => "Remove stock" };
         var barcode = new TextBox { MinWidth = 320, Watermark = Tr.Loc.TranslateText("Scan medicine barcode") };
-        var medicine = new ComboBox { MinWidth = 320, PlaceholderText = Tr.Loc.TranslateText("Select medicine"), IsEditable = true };
+        var medicine = new ComboBox { MinWidth = 320, IsEditable = true };
         var quantity = new TextBox { MinWidth = 320, Text = "1" };
         var expiry = new DatePicker { SelectedDate = null };
         var batch = new TextBox { MinWidth = 320, Watermark = Tr.Loc.TranslateText("Optional batch / lot") };
