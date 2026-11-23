@@ -14,6 +14,7 @@ public sealed class CustomerDatabaseSyncSettings
     public string Server { get; set; } = string.Empty;
     public string Database { get; set; } = string.Empty;
     public bool IntegratedSecurity { get; set; } = true;
+    public bool TrustServerCertificate { get; set; } = false;
     public string Username { get; set; } = string.Empty;
     public string Password { get; set; } = string.Empty;
     public string Table { get; set; } = string.Empty;
@@ -80,7 +81,7 @@ public static class CustomerDatabaseSyncService
             InitialCatalog = settings.Database.Trim(),
             IntegratedSecurity = settings.IntegratedSecurity,
             Encrypt = true,
-            TrustServerCertificate = false,
+            TrustServerCertificate = settings.TrustServerCertificate,
             ConnectTimeout = 10,
             ApplicationName = "S Pharmacy Log customer import"
         };
