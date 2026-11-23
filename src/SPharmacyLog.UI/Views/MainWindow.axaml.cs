@@ -78,6 +78,7 @@ public partial class MainWindow : Window
     private const string MenuPayments = "Payments";
     private const string MenuReports = "Reports";
     private const string MenuMedicine = "Medicine";
+    private const string MenuStock = "MedicineStock";
     private static readonly (string Key, string LabelKey)[] ConfigurableMenus =
     {
         (MenuDashboard, "Dashboard"),
@@ -87,6 +88,7 @@ public partial class MainWindow : Window
         (MenuSubscriptions, "Navigation.Subscriptions"),
         (MenuPayments, "Navigation.Payments"),
         (MenuMedicine, "Medicine"),
+        (MenuStock, "Medicine stock control"),
         (MenuReports, "Navigation.Reports")
     };
     private bool skipNextCustomerSearch;
@@ -125,6 +127,7 @@ public partial class MainWindow : Window
         else if (CanAccessMenu(MenuCustomers)) ShowCustomers();
         else if (CanAccessMenu(MenuReports)) ShowReports();
         else if (CanAccessMenu(MenuMedicine)) OpenMedicineManagement();
+        else if (CanAccessMenu(MenuStock)) OpenMedicineStock();
         else ShowNoMenuAccess();
     }
 
@@ -164,6 +167,7 @@ public partial class MainWindow : Window
                 MenuSubscriptions => () => ShowPlaceholder(Tr.Loc[item.LabelKey]),
                 MenuPayments => () => ShowPlaceholder(Tr.Loc[item.LabelKey]),
                 MenuMedicine => OpenMedicineManagement,
+                MenuStock => OpenMedicineStock,
                 _ => () => ShowPlaceholder(Tr.Loc[item.LabelKey])
             };
             var icon = item.Key switch
@@ -175,6 +179,7 @@ public partial class MainWindow : Window
                 MenuSubscriptions => "◷",
                 MenuPayments => "€",
                 MenuMedicine => "💊",
+                MenuStock => "▦",
                 _ => "•"
             };
             AddNavigationButton(item.LabelKey, action, icon);
@@ -4567,6 +4572,14 @@ public partial class MainWindow : Window
         if (!CanAccessMenu(MenuMedicine)) { ShowNoMenuAccess(); return; }
         showingExpiryCalendar = false;
         var window = new MedicineManagementWindow();
+        await window.ShowDialog(this);
+    }
+
+    private async void OpenMedicineStock()
+    {
+        if (!CanAccessMenu(MenuStock)) { ShowNoMenuAccess(); return; }
+        showingExpiryCalendar = false;
+        var window = new MedicineStockWindow(viewModel.User.Username);
         await window.ShowDialog(this);
     }
 
