@@ -179,7 +179,7 @@ public sealed class LocalizationService : ILocalizationService
         ["Stock save failed"] = "Αποτυχία αποθήκευσης αποθέματος",
         ["You may record expiry and batch details to track stock by batch."] = "Μπορείτε να καταχωρίσετε λήξη και παρτίδα για παρακολούθηση ανά παρτίδα.",
         ["When expiry and batch are left blank, stock is removed from the earliest-expiring batches first."] = "Όταν λήξη και παρτίδα είναι κενά, η αφαίρεση γίνεται πρώτα από τις παρτίδες που λήγουν νωρίτερα.",
-        ["A count without expiry and batch resets total medicine stock; with either field, it counts that batch only."] = "Η καταμέτρηση χωρίς λήξη και παρτίδα αντικαθιστά το συνολικό απόθεμα του φαρμάκου. Αν συμπληρωθεί κάποιο από αυτά, αφορά τη συγκεκριμένη παρτίδα.",
+        ["A count without expiry and batch resets total medicine stock. With expiry or batch details, the count replaces stock for that matching group."] = "Η καταμέτρηση χωρίς λήξη και παρτίδα αντικαθιστά το συνολικό απόθεμα. Με λήξη ή παρτίδα, αντικαθιστά το απόθεμα της αντίστοιχης ομάδας.",
         ["Stock lines"] = "Γραμμές αποθέματος",
         ["Total quantity"] = "Συνολική ποσότητα",
         ["Movement records"] = "Εγγραφές κινήσεων",
