@@ -1899,16 +1899,6 @@ public partial class MainWindow : Window
 
         var isEdit = existing is not null;
         var fields = new Dictionary<string, TextBox>();
-        TextBox AddField(StackPanel host, string label, string key, string? value = null, string? placeholder = null)
-        {
-            var group = new StackPanel { Spacing = 4, Margin = new Thickness(0, 3) };
-            group.Children.Add(new TextBlock { Text = label, Foreground = Brushes.LightGray, FontSize = 12 });
-            var box = new TextBox { Text = value ?? string.Empty, PlaceholderText = placeholder ?? label, MinHeight = 34 };
-            fields[key] = box;
-            group.Children.Add(box);
-            host.Children.Add(group);
-            return box;
-        }
 
         var scanInput = new TextBox
         {
@@ -2059,7 +2049,7 @@ public partial class MainWindow : Window
         primaryFields.Children.Add(noteGroup);
         form.Children.Add(primaryFields);
 
-        else
+        if (isEdit)
         {
             var scanInfo = new TextBlock
             {
