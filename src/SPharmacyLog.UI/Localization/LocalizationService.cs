@@ -157,6 +157,8 @@ public sealed class LocalizationService : ILocalizationService
         ["User"] = "Χρήστης",
         ["Notes"] = "Σημειώσεις",
         ["Barcode scan"] = "Σάρωση barcode",
+        ["Barcode matched"] = "Το barcode αντιστοιχεί",
+        ["Barcode not found in medicine catalogue. Search or add the medicine first."] = "Το barcode δεν βρέθηκε στον κατάλογο. Αναζητήστε ή προσθέστε πρώτα το φάρμακο.",
         ["Scan medicine barcode"] = "Σαρώστε barcode φαρμάκου",
         ["Type to filter medicines"] = "Πληκτρολογήστε για φιλτράρισμα φαρμάκων",
         ["Select medicine"] = "Επιλογή φαρμάκου",
