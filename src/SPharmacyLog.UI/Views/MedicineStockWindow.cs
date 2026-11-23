@@ -189,10 +189,20 @@ public sealed class MedicineStockWindow : Window
             foreach (var item in allMedicines)
             {
                 if (!string.IsNullOrWhiteSpace(item.Barcode))
-                    barcodeIndex[item.Barcode.Trim()] = item.Id;
+                    AddBarcodeLookup(item.Barcode, item.Id);
                 foreach (var alternate in alternateGroups.GetValueOrDefault(item.Id) ?? new List<string>())
                     if (!string.IsNullOrWhiteSpace(alternate))
-                        barcodeIndex[alternate.Trim()] = item.Id;
+                        AddBarcodeLookup(alternate, item.Id);
+            }
+
+            void AddBarcodeLookup(string value, int medicineId)
+            {
+                var normalized = value.Trim();
+                barcodeIndex[normalized] = medicineId;
+                if (normalized.Length is 8 or 12 or 13 or 14
+                    && normalized.All(ch => ch is >= '0' and <= '9'))
+                    barcodeIndex[normalized.PadLeft(14, '0')] = medicineId;
+            }
             }
         }
 
