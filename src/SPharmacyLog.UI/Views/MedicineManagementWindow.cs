@@ -47,7 +47,7 @@ public sealed class MedicineManagementWindow : Window
         previousPage.Click += async (_, _) => { if (currentPage > 1) { currentPage--; await LoadAsync(); } };
         nextPage.Click += async (_, _) => { if (currentPage < TotalPages) { currentPage++; await LoadAsync(); } };
 
-        var header = new Grid { ColumnDefinitions = new ColumnDefinitions("2*,2*,*,Auto"), Background = new SolidColorBrush(Color.Parse("#263447")) };
+        var header = new Grid { ColumnDefinitions = new ColumnDefinitions("320,180,*,90"), MinWidth = 850, Background = new SolidColorBrush(Color.Parse("#263447")) };
         string[] labels = { "Name", "Barcode", "Notes", "Edit" };
         for (int col=0;col<labels.Length;col++)
         {
@@ -104,7 +104,7 @@ public sealed class MedicineManagementWindow : Window
             rows.Children.Clear();
             foreach(var medicine in loaded)
             {
-                var grid=new Grid { ColumnDefinitions=new ColumnDefinitions("2*,2*,*,Auto"), MinWidth=850 };
+                var grid=new Grid { ColumnDefinitions=new ColumnDefinitions("320,180,*,90"), MinWidth=850 };
                 var values=new[]{medicine.Name,medicine.Barcode??"",medicine.Notes??""};
                 for(int col=0;col<values.Length;col++)
                 {
