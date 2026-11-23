@@ -1944,11 +1944,7 @@ public partial class MainWindow : Window
         scanPanel.Children.Add(scanInput);
         scanPanel.Children.Add(new TextBlock { Text = "Raw barcode (GS separator shown as <GS>):", FontSize = 12, Foreground = Brushes.LightGray });
         scanPanel.Children.Add(scanEcho);
-        if (!isEdit)
-        {
-            scanPanel.Children.Add(new TextBlock { Text = "Medicine name", FontSize = 12, Foreground = Brushes.LightGray });
-            scanPanel.Children.Add(medicineNameInput);
-        }
+
         scanPanel.Children.Add(new TextBlock { Text = "Parsed fields — verify or correct before saving:", FontWeight = FontWeight.SemiBold, Margin = new Thickness(0, 5, 0, 0) });
         void AddScanField(string label, TextBox box)
         {
@@ -2026,6 +2022,39 @@ public partial class MainWindow : Window
             Text = isEdit ? "EDIT BORROWING" : "ADD MEDICINE / BORROWING",
             FontSize = 19, FontWeight = FontWeight.Bold
         });
+        // Main borrowing details are placed first for faster data entry.
+        var medicineNameGroup = new StackPanel { Spacing = 4, Margin = new Thickness(0, 3) };
+        medicineNameGroup.Children.Add(new TextBlock { Text = "Medicine name", Foreground = Brushes.LightGray, FontSize = 12 });
+        medicineNameGroup.Children.Add(medicineNameInput);
+        form.Children.Add(medicineNameGroup);
+
+        var primaryFields = new Grid
+        {
+            ColumnDefinitions = new ColumnDefinitions("*,*,*"),
+            ColumnSpacing = 10
+        };
+        var quantityGroup = new StackPanel { Spacing = 4, Margin = new Thickness(0, 3) };
+        quantityGroup.Children.Add(new TextBlock { Text = Tr.Loc.TranslateText("Quantity"), Foreground = Brushes.LightGray, FontSize = 12 });
+        var quantityInput = new TextBox { Text = (existing?.Quantity ?? 1).ToString(), MinHeight = 34 };
+        fields["Quantity"] = quantityInput;
+        quantityGroup.Children.Add(quantityInput);
+        primaryFields.Children.Add(quantityGroup);
+
+        var scanDateGroup = new StackPanel { Spacing = 4, Margin = new Thickness(0, 3) };
+        scanDateGroup.Children.Add(new TextBlock { Text = "Scan / borrowing date", Foreground = Brushes.LightGray, FontSize = 12 });
+        scanDateGroup.Children.Add(scanDateText);
+        Grid.SetColumn(scanDateGroup, 1);
+        primaryFields.Children.Add(scanDateGroup);
+
+        var noteGroup = new StackPanel { Spacing = 4, Margin = new Thickness(0, 3) };
+        noteGroup.Children.Add(new TextBlock { Text = Tr.Loc.TranslateText("Notes"), Foreground = Brushes.LightGray, FontSize = 12 });
+        var noteInput = new TextBox { Text = existing?.Notes ?? string.Empty, MinHeight = 34, PlaceholderText = Tr.Loc.TranslateText("Notes") };
+        fields["Notes"] = noteInput;
+        noteGroup.Children.Add(noteInput);
+        Grid.SetColumn(noteGroup, 2);
+        primaryFields.Children.Add(noteGroup);
+        form.Children.Add(primaryFields);
+
         if (!isEdit)
         {
             form.Children.Add(scanPanel);
@@ -2060,19 +2089,7 @@ public partial class MainWindow : Window
                 FontFamily = new FontFamily("Consolas")
             });
             form.Children.Add(rawBarcodeGroup);
-
-            var medicineNameGroup = new StackPanel { Spacing = 4, Margin = new Thickness(0, 3) };
-            medicineNameGroup.Children.Add(new TextBlock { Text = "Medicine name", Foreground = Brushes.LightGray, FontSize = 12 });
-            medicineNameGroup.Children.Add(medicineNameInput);
-            form.Children.Add(medicineNameGroup);
         }
-        AddField(form, "Quantity", "Quantity", (existing?.Quantity ?? 1).ToString());
-
-        var scanDateGroup = new StackPanel { Spacing = 4, Margin = new Thickness(0, 3) };
-        scanDateGroup.Children.Add(new TextBlock { Text = "Scan / borrowing date", Foreground = Brushes.LightGray, FontSize = 12 });
-        scanDateGroup.Children.Add(scanDateText);
-        form.Children.Add(scanDateGroup);
-        AddField(form, "Notes", "Notes", existing?.Notes);
 
         var status = new TextBlock { TextWrapping = TextWrapping.Wrap, Foreground = Brushes.Orange };
         var save = new Button { Content = "Save", Classes = { "accent" }, MinWidth = 110 };
