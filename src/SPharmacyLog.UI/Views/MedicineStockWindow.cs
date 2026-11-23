@@ -190,7 +190,7 @@ public sealed class MedicineStockWindow : Window
         AddField(fields, "Performed by", performed);
         AddField(fields, "Notes (optional)", notes);
         fields.Children.Add(new TextBlock { Text = Tr.Loc.TranslateText(type == MedicineStockMovementType.Count
-            ? "A count without expiry and batch resets total medicine stock; with either field, it counts that batch only."
+            ? "A count without expiry and batch resets total medicine stock. With expiry or batch details, the count replaces stock for that matching group."
             : type == MedicineStockMovementType.Remove
                 ? "When expiry and batch are left blank, stock is removed from the earliest-expiring batches first."
                 : "You may record expiry and batch details to track stock by batch."), TextWrapping = TextWrapping.Wrap, Foreground = Brushes.LightGray });
@@ -259,6 +259,10 @@ public sealed class MedicineStockWindow : Window
             {
                 // A count with no expiry and no lot is a full medicine count and resets all batches.
                 if (!movement.ExpiryDate.HasValue && string.IsNullOrWhiteSpace(movement.BatchLot)) balances.Clear();
+                else if (movement.ExpiryDate.HasValue && string.IsNullOrWhiteSpace(movement.BatchLot))
+                    foreach (var oldKey in balances.Keys.Where(k => k.Expiry == movement.ExpiryDate.Value.Date).ToList()) balances.Remove(oldKey);
+                else if (!movement.ExpiryDate.HasValue && !string.IsNullOrWhiteSpace(movement.BatchLot))
+                    foreach (var oldKey in balances.Keys.Where(k => k.Lot.Equals(movement.BatchLot, StringComparison.OrdinalIgnoreCase)).ToList()) balances.Remove(oldKey);
                 balances[key] = movement.CountedQuantity ?? 0;
             }
             else if (movement.Type == MedicineStockMovementType.Add) balances[key] = balances.GetValueOrDefault(key) + movement.Quantity;
