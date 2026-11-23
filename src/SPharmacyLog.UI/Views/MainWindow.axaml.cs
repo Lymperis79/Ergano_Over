@@ -1913,6 +1913,7 @@ public partial class MainWindow : Window
             MinHeight = 34
         };
         Gs1DataMatrixParser.ParsedPack? parsedPack = null;
+        string? gtinOnlyValue = null;
         var gtinInput = new TextBox { MaxLength = 14, PlaceholderText = "14-digit GTIN", IsEnabled = !isEdit };
         var serialInput = new TextBox { PlaceholderText = "Serial number (AI 21)", IsEnabled = !isEdit };
         var expiryInput = new TextBox { PlaceholderText = "Expiry date (yyyy-MM-dd)", IsEnabled = !isEdit };
@@ -1953,10 +1954,33 @@ public partial class MainWindow : Window
             var raw = scanInput.Text ?? string.Empty;
             if (!Gs1DataMatrixParser.TryParse(raw, out parsedPack, out var error) || parsedPack is null)
             {
+                // Also accept a simple GTIN/EAN barcode. Normalize valid numeric
+                // identifiers to GTIN-14 so future scans resolve consistently.
+                var digits = raw.Trim();
+                if (digits.Length is 8 or 12 or 13 or 14 && digits.All(char.IsDigit))
+                {
+                    gtinOnlyValue = digits.PadLeft(14, '0');
+                    scanCapturedAtUtc = DateTime.UtcNow;
+                    scanDateText.Text = scanCapturedAtUtc.Value.ToLocalTime().ToString("dd/MM/yyyy HH:mm:ss");
+                    gtinInput.Text = gtinOnlyValue;
+                    serialInput.Text = string.Empty; expiryInput.Text = string.Empty; lotInput.Text = string.Empty;
+                    await using var gtinDb = new PharmacyDbContext(PharmacyDb.Options());
+                    var gtinMatch = await gtinDb.MedicineBarcodes.Include(x => x.Medicine)
+                        .FirstOrDefaultAsync(x => x.BarcodeValue == gtinOnlyValue || x.BarcodeValue == digits)
+                        ?? null;
+                    var knownMedicine = gtinMatch?.Medicine ?? await gtinDb.Medicines.FirstOrDefaultAsync(m => m.Barcode == gtinOnlyValue || m.Barcode == digits);
+                    if (knownMedicine is not null) medicineNameInput.Text = knownMedicine.Name;
+                    scanStatus.Foreground = Brushes.LightGreen;
+                    scanStatus.Text = knownMedicine is null
+                        ? "GTIN barcode recognized. Enter the medicine name; it will be saved to the catalogue for next time."
+                        : $"GTIN matched: {knownMedicine.Name}. Medicine name filled automatically.";
+                    return;
+                }
                 scanStatus.Foreground = Brushes.OrangeRed;
                 scanStatus.Text = Tr.Loc.TranslateText(error);
                 return;
             }
+            gtinOnlyValue = null;
             scanCapturedAtUtc = DateTime.UtcNow;
             scanDateText.Text = scanCapturedAtUtc.Value.ToLocalTime().ToString("dd/MM/yyyy HH:mm:ss");
             await using var lookupDb = new PharmacyDbContext(PharmacyDb.Options());
@@ -2104,6 +2128,30 @@ public partial class MainWindow : Window
             else
             {
                 SerializedPackScan? serializedPack = null;
+                if (gtinOnlyValue is not null)
+                {
+                    // A plain GTIN barcode is a product identifier, not a unique pack
+                    // serial. Link it to a medicine catalogue item without creating an
+                    // HMVO serialized-pack record.
+                    var match = await db.MedicineBarcodes.Include(x => x.Medicine)
+                        .FirstOrDefaultAsync(x => x.BarcodeValue == gtinOnlyValue)
+                        ?? null;
+                    var matchedMedicine = match?.Medicine ?? await db.Medicines.FirstOrDefaultAsync(x => x.Barcode == gtinOnlyValue);
+                    if (matchedMedicine is null)
+                    {
+                        matchedMedicine = new MedicineCatalogItem { Name = name, Barcode = gtinOnlyValue, IsActive = true };
+                        db.Medicines.Add(matchedMedicine);
+                        await db.SaveChangesAsync();
+                    }
+                    var barcodeMapping = await db.MedicineBarcodes.FirstOrDefaultAsync(x => x.BarcodeValue == gtinOnlyValue);
+                    if (barcodeMapping is not null && barcodeMapping.MedicineId != matchedMedicine.Id)
+                    { status.Text = "This GTIN is already assigned to another medicine."; return; }
+                    if (barcodeMapping is null)
+                        db.MedicineBarcodes.Add(new MedicineBarcode { MedicineId = matchedMedicine.Id, BarcodeValue = gtinOnlyValue, BarcodeType = "GTIN14" });
+                    // If the employee entered a name for a previously unknown GTIN,
+                    // keep the new catalogue name and reuse it for subsequent scans.
+                    name = matchedMedicine.Name;
+                }
                 if (parsedPack is not null)
                 {
                     if (await db.SerializedPackScans.AnyAsync(x => x.Gtin14 == correctedGtin && x.SerialNumber == correctedSerial))
@@ -2141,7 +2189,7 @@ public partial class MainWindow : Window
                 }
                 db.Borrowings.Add(new BorrowingRecord
                 {
-                    CustomerId = selectedCustomerId.Value, MedicineName = name, OriginalBarcode = parsedPack is null ? null : correctedGtin,
+                    CustomerId = selectedCustomerId.Value, MedicineName = name, OriginalBarcode = parsedPack is not null ? correctedGtin : gtinOnlyValue,
                     SerializedPackScan = serializedPack, Quantity = quantity, InternalBarcode = "BOR-" + Guid.NewGuid().ToString("N"),
                     BorrowedAt = scanCapturedAtUtc?.ToLocalTime() ?? DateTime.Now, Notes = fields["Notes"].Text?.Trim()
                 });
