@@ -140,13 +140,13 @@ public sealed class MedicineStockWindow : Window
     private async Task OpenMovementFormAsync(MedicineStockMovementType type)
     {
         var formTitle = type switch { MedicineStockMovementType.Count => "Stock count", MedicineStockMovementType.Add => "Add stock", _ => "Remove stock" };
-        var barcode = new TextBox { MinWidth = 320, Watermark = Tr.Loc.TranslateText("Scan medicine barcode") };
-        var medicineSearch = new TextBox { MinWidth = 320, Watermark = Tr.Loc.TranslateText("Type to filter medicines") };
+        var barcode = new TextBox { MinWidth = 320, PlaceholderText = Tr.Loc.TranslateText("Scan medicine barcode") };
+        var medicineSearch = new TextBox { MinWidth = 320, PlaceholderText = Tr.Loc.TranslateText("Type to filter medicines") };
         var medicine = new ComboBox { MinWidth = 320 };
         var scanFeedback = new TextBlock { TextWrapping = TextWrapping.Wrap, Foreground = Brushes.LightGray };
         var quantity = new TextBox { MinWidth = 320, Text = "1" };
         var expiry = new DatePicker { SelectedDate = null };
-        var batch = new TextBox { MinWidth = 320, Watermark = Tr.Loc.TranslateText("Optional batch / lot") };
+        var batch = new TextBox { MinWidth = 320, PlaceholderText = Tr.Loc.TranslateText("Optional batch / lot") };
         var movementDate = new DatePicker { SelectedDate = DateTime.Today };
         var performed = new TextBox { MinWidth = 320, Text = currentUser };
         var notes = new TextBox { MinWidth = 320, AcceptsReturn = true, Height = 70, TextWrapping = TextWrapping.Wrap };
