@@ -27,7 +27,7 @@ internal sealed record WeatherCacheEntry(string Location, WeatherSnapshot Snapsh
 
 public static class WeatherSettingsService
 {
-    private static readonly HttpClient Http = new() { Timeout = TimeSpan.FromSeconds(12) };
+    private static readonly HttpClient Http = new() { Timeout = TimeSpan.FromSeconds(30) };
     private static readonly string Folder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "SPharmacyLog");
     private static readonly string FilePath = Path.Combine(Folder, "weather.json");
     private static readonly string CachePath = Path.Combine(Folder, "weather-cache.json");
