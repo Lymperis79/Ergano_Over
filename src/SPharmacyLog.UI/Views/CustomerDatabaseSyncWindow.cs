@@ -17,14 +17,16 @@ public sealed class CustomerDatabaseSyncWindow : Window
     private readonly TextBox username = new() { PlaceholderText = "SQL username" };
     private readonly TextBox password = new() { PlaceholderText = "SQL password", PasswordChar = '●' };
     private readonly ComboBox table = new() { MinWidth = 300 };
-    private readonly ComboBox filterColumn = new() { MinWidth = 190, PlaceholderText = "Optional filter column" };
-    private readonly TextBox filterValue = new() { Text = "ΠΕΛ", Width = 150 };
+    private readonly StackPanel filtersPanel = new() { Spacing = 6 };
+    private readonly List<(ComboBox Column, ComboBox Operator, TextBox Value)> filterRows = new();
+    private readonly Button addFilterButton = new() { Content = "+ Add filter", MinWidth = 105 };
     private readonly TextBlock status = new() { TextWrapping = TextWrapping.Wrap };
     private readonly StackPanel mappingsPanel = new() { Spacing = 7 };
     private readonly Dictionary<string, ComboBox> mappingBoxes = new(StringComparer.OrdinalIgnoreCase);
     private IReadOnlyList<string> availableColumns = Array.Empty<string>();
     private string? savedTable;
     private string? savedFilterColumn;
+    private List<CustomerImportFilter> savedFilters = new();
     private Dictionary<string, string> savedMappings = new(StringComparer.OrdinalIgnoreCase);
     private bool suppressTableSelectionChanged;
 
@@ -72,16 +74,18 @@ public sealed class CustomerDatabaseSyncWindow : Window
         connectionPanel.Children.Add(Row("Username", username, "Password", password));
         var testButton = new Button { Content = "Test connection", MinWidth = 130 };
         var loadTablesButton = new Button { Content = "Load tables", MinWidth = 110 };
-        var saveButton = new Button { Content = "Save connection settings", MinWidth = 170 };
+        var saveButton = new Button { Content = "Save all import settings", MinWidth = 180 };
         var connectionButtons = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, Children = { testButton, loadTablesButton, saveButton } };
         connectionPanel.Children.Add(connectionButtons);
         root.Children.Add(Card(connectionPanel));
 
         var sourcePanel = new StackPanel { Spacing = 8 };
         sourcePanel.Children.Add(new TextBlock { Text = "SOURCE TABLE AND FILTER", FontWeight = FontWeight.SemiBold });
-        sourcePanel.Children.Add(Row("Source table", table, "Filter column", filterColumn));
-        sourcePanel.Children.Add(Row("Filter value", filterValue));
-        sourcePanel.Children.Add(new TextBlock { Text = "Default filter: KPP_KATHGOR = ΠΕΛ. Leave the value empty to import all rows.", Foreground = Brushes.LightGray, TextWrapping = TextWrapping.Wrap });
+        sourcePanel.Children.Add(Row("Source table", table));
+        sourcePanel.Children.Add(new TextBlock { Text = "Filters (all conditions must match):", Foreground = Brushes.LightGray });
+        sourcePanel.Children.Add(filtersPanel);
+        sourcePanel.Children.Add(addFilterButton);
+        sourcePanel.Children.Add(new TextBlock { Text = "Add as many filters as needed. Leave a filter value empty or remove the row to ignore it.", Foreground = Brushes.LightGray, TextWrapping = TextWrapping.Wrap });
         root.Children.Add(Card(sourcePanel));
 
         var mappingScroll = new ScrollViewer { Content = mappingsPanel, MaxHeight = 330, VerticalScrollBarVisibility = Avalonia.Controls.Primitives.ScrollBarVisibility.Auto };
@@ -103,6 +107,7 @@ public sealed class CustomerDatabaseSyncWindow : Window
         Content = new ScrollViewer { Content = root, VerticalScrollBarVisibility = Avalonia.Controls.Primitives.ScrollBarVisibility.Auto };
 
         integrated.IsCheckedChanged += (_, _) => UpdateAuthenticationFields();
+        addFilterButton.Click += (_, _) => AddFilterRow();
         testButton.Click += async (_, _) => await RunAsync(async settings =>
         {
             await CustomerDatabaseSyncService.TestConnectionAsync(settings);
@@ -140,7 +145,11 @@ public sealed class CustomerDatabaseSyncWindow : Window
         saveButton.Click += async (_, _) => await RunAsync(settings =>
         {
             CustomerDatabaseSyncService.SaveSettings(settings);
-            status.Text = "Connection and mapping settings saved securely for this Windows user.";
+            savedTable = settings.Table;
+            savedFilterColumn = settings.FilterColumn;
+            savedFilters = settings.Filters.ToList();
+            savedMappings = new Dictionary<string, string>(settings.FieldMappings, StringComparer.OrdinalIgnoreCase);
+            status.Text = "All connection, table, mapping and filter settings saved securely for this Windows user.";
             return Task.CompletedTask;
         });
         previewButton.Click += async (_, _) => await RunAsync(async settings =>
@@ -244,16 +253,14 @@ public sealed class CustomerDatabaseSyncWindow : Window
             combo.SelectedItem = options.FirstOrDefault(option => string.Equals(option, desired, StringComparison.OrdinalIgnoreCase))
                                  ?? options[0];
         }
-        filterColumn.ItemsSource = availableColumns;
-        if (availableColumns.Contains("KPP_KATHGOR", StringComparer.OrdinalIgnoreCase))
-            filterColumn.SelectedItem = availableColumns.First(c => c.Equals("KPP_KATHGOR", StringComparison.OrdinalIgnoreCase));
-        else if (string.IsNullOrWhiteSpace(savedFilterColumn) ||
-                 !availableColumns.Contains(savedFilterColumn, StringComparer.OrdinalIgnoreCase))
+        foreach (var row in filterRows)
         {
-            filterColumn.SelectedIndex = -1;
-            // Never silently apply the ILIDA category value to an unrelated column.
-            if (string.Equals(filterValue.Text, "ΠΕΛ", StringComparison.Ordinal))
-                filterValue.Text = string.Empty;
+            var selected = row.Column.SelectedItem?.ToString();
+            row.Column.ItemsSource = availableColumns;
+            if (!string.IsNullOrWhiteSpace(selected) && availableColumns.Contains(selected, StringComparer.OrdinalIgnoreCase))
+                row.Column.SelectedItem = availableColumns.First(c => c.Equals(selected, StringComparison.OrdinalIgnoreCase));
+            else if (string.IsNullOrWhiteSpace(selected) && availableColumns.Contains("KPP_KATHGOR", StringComparer.OrdinalIgnoreCase))
+                row.Column.SelectedItem = availableColumns.First(c => c.Equals("KPP_KATHGOR", StringComparison.OrdinalIgnoreCase));
         }
     }
 
@@ -274,9 +281,11 @@ public sealed class CustomerDatabaseSyncWindow : Window
         trustServerCertificate.IsChecked = settings.TrustServerCertificate;
         username.Text = settings.Username;
         password.Text = settings.Password;
-        filterValue.Text = settings.FilterValue;
         savedTable = settings.Table;
         savedFilterColumn = settings.FilterColumn;
+        savedFilters = settings.Filters ?? new List<CustomerImportFilter>();
+        if (savedFilters.Count == 0 && !string.IsNullOrWhiteSpace(settings.FilterValue))
+            savedFilters.Add(new CustomerImportFilter { Column = settings.FilterColumn, Operator = "Equals", Value = settings.FilterValue });
         savedMappings = settings.FieldMappings ?? new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
     }
 
@@ -289,9 +298,49 @@ public sealed class CustomerDatabaseSyncWindow : Window
             if (availableColumns.Contains(source, StringComparer.OrdinalIgnoreCase))
                 mappingBoxes[definition.Target].SelectedItem = availableColumns.First(column => column.Equals(source, StringComparison.OrdinalIgnoreCase));
         }
-        if (!string.IsNullOrWhiteSpace(savedFilterColumn) &&
-            availableColumns.Contains(savedFilterColumn, StringComparer.OrdinalIgnoreCase))
-            filterColumn.SelectedItem = availableColumns.First(column => column.Equals(savedFilterColumn, StringComparison.OrdinalIgnoreCase));
+        filtersPanel.Children.Clear();
+        filterRows.Clear();
+        if (savedFilters.Count == 0)
+            AddFilterRow();
+        else
+            foreach (var filter in savedFilters)
+                AddFilterRow(filter);
+    }
+
+
+    private void AddFilterRow(CustomerImportFilter? saved = null)
+    {
+        var column = new ComboBox { Width = 190, MinWidth = 150, PlaceholderText = "Select column" };
+        column.ItemsSource = availableColumns;
+        var op = new ComboBox
+        {
+            Width = 135,
+            ItemsSource = new[] { "Equals", "NotEquals", "Contains", "StartsWith", "GreaterThan", "LessThan", "IsEmpty", "IsNotEmpty" },
+            SelectedItem = saved?.Operator ?? "Equals"
+        };
+        var value = new TextBox { Width = 150, Watermark = "Value", Text = saved?.Value ?? string.Empty };
+        var remove = new Button { Content = "Remove", MinWidth = 70 };
+        var row = (column, op, value);
+        filterRows.Add(row);
+        if (!string.IsNullOrWhiteSpace(saved?.Column) &&
+            availableColumns.Contains(saved.Column, StringComparer.OrdinalIgnoreCase))
+            column.SelectedItem = availableColumns.First(c => c.Equals(saved.Column, StringComparison.OrdinalIgnoreCase));
+        else if (availableColumns.Contains("KPP_KATHGOR", StringComparer.OrdinalIgnoreCase))
+            column.SelectedItem = availableColumns.First(c => c.Equals("KPP_KATHGOR", StringComparison.OrdinalIgnoreCase));
+        remove.Click += (_, _) =>
+        {
+            filterRows.Remove(row);
+            filtersPanel.Children.Remove(row.Column.Parent as Control ?? new StackPanel());
+        };
+        var line = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 6 };
+        line.Children.Add(column);
+        line.Children.Add(op);
+        line.Children.Add(value);
+        line.Children.Add(remove);
+        filtersPanel.Children.Add(line);
+        remove.Click += (_, _) => filtersPanel.Children.Remove(line);
+        op.SelectionChanged += (_, _) => value.IsEnabled = op.SelectedItem?.ToString() is not ("IsEmpty" or "IsNotEmpty");
+        value.IsEnabled = op.SelectedItem?.ToString() is not ("IsEmpty" or "IsNotEmpty");
     }
 
     private void UpdateAuthenticationFields()
@@ -312,10 +361,23 @@ public sealed class CustomerDatabaseSyncWindow : Window
             Username = username.Text ?? string.Empty,
             Password = password.Text ?? string.Empty,
             Table = table.SelectedItem?.ToString() ?? string.Empty,
-            FilterColumn = filterColumn.SelectedItem?.ToString() ?? "KPP_KATHGOR",
-            FilterValue = filterValue.Text ?? string.Empty,
+            FilterColumn = string.Empty,
+            FilterValue = string.Empty,
+            Filters = filterRows
+                .Where(row => !string.IsNullOrWhiteSpace(row.Column.SelectedItem?.ToString()))
+                .Select(row => new CustomerImportFilter
+                {
+                    Column = row.Column.SelectedItem!.ToString()!,
+                    Operator = row.Operator.SelectedItem?.ToString() ?? "Equals",
+                    Value = row.Value.Text ?? string.Empty
+                }).ToList(),
             FieldMappings = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
         };
+        if (settings.Filters.Count > 0)
+        {
+            settings.FilterColumn = settings.Filters[0].Column;
+            settings.FilterValue = settings.Filters[0].Value;
+        }
         foreach (var pair in mappingBoxes)
         {
             var value = pair.Value.SelectedItem?.ToString();
