@@ -402,3 +402,31 @@ public class CalendarNote
     public string? CompletedBy { get; set; }
     public DateTime? CompletedAt { get; set;}
 }
+
+
+/// <summary>Stock movement types. Stock counts establish a baseline for a batch; subsequent movements are added to it.</summary>
+public enum MedicineStockMovementType
+{
+    Count = 0,
+    Add = 1,
+    Remove = 2
+}
+
+/// <summary>Immutable audit record for medicine stock counts and movements.</summary>
+public class MedicineStockMovement
+{
+    public int Id { get; set; }
+    public int MedicineId { get; set; }
+    public MedicineCatalogItem? Medicine { get; set; }
+    public MedicineStockMovementType Type { get; set; }
+    /// <summary>Positive amount for add/remove movements.</summary>
+    public decimal Quantity { get; set; }
+    /// <summary>Absolute counted quantity for a Count movement.</summary>
+    public decimal? CountedQuantity { get; set; }
+    public DateTime MovementDate { get; set; } = DateTime.Now;
+    public DateTime? ExpiryDate { get; set; }
+    public string? BarcodeScanned { get; set; }
+    public string? BatchLot { get; set; }
+    public string PerformedBy { get; set; } = string.Empty;
+    public string? Notes { get; set; }
+}
