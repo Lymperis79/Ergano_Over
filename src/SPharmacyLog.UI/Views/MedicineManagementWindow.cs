@@ -16,6 +16,13 @@ public sealed class MedicineManagementWindow : Window
     private readonly TextBox search = new() { MinWidth = 260, PlaceholderText = "Search medicine..." };
     private readonly StackPanel rows = new() { Spacing = 4 };
     private readonly TextBlock status = new() { TextWrapping = TextWrapping.Wrap, Foreground = Brushes.LightGray };
+    private readonly TextBlock pageInfo = new() { VerticalAlignment = VerticalAlignment.Center };
+    private readonly Button previousPage = new() { Content = Tr.Loc.TranslateText("Previous"), MinWidth = 90 };
+    private readonly Button nextPage = new() { Content = Tr.Loc.TranslateText("Next"), MinWidth = 90 };
+    private const int PageSize = 50;
+    private int currentPage = 1;
+    private int totalCount;
+    private CancellationTokenSource? searchDebounce;
     private List<MedicineCatalogItem> loaded = new();
 
     public MedicineManagementWindow()
@@ -35,7 +42,10 @@ public sealed class MedicineManagementWindow : Window
         import.Click += async (_, _) => await ImportAsync();
         var searchButton = new Button { Content = Tr.Loc.TranslateText("Search") };
         searchButton.Click += async (_, _) => await LoadAsync();
-        search.KeyDown += async (_, e) => { if (e.Key == Avalonia.Input.Key.Enter) { e.Handled = true; await LoadAsync(); } };
+        search.KeyDown += async (_, e) => { if (e.Key == Avalonia.Input.Key.Enter) { e.Handled = true; searchDebounce?.Cancel(); await LoadAsync(resetPage: true); } };
+        search.TextChanged += (_, _) => ScheduleSearch();
+        previousPage.Click += async (_, _) => { if (currentPage > 1) { currentPage--; await LoadAsync(); } };
+        nextPage.Click += async (_, _) => { if (currentPage < TotalPages) { currentPage++; await LoadAsync(); } };
 
         var header = new Grid { ColumnDefinitions = new ColumnDefinitions("2*,2*,*,Auto"), Background = new SolidColorBrush(Color.Parse("#263447")) };
         string[] labels = { "Name", "Barcode", "Notes", "Edit" };
@@ -45,25 +55,59 @@ public sealed class MedicineManagementWindow : Window
             Grid.SetColumn(tb,col); header.Children.Add(tb);
         }
         var toolbar = new StackPanel { Orientation=Orientation.Horizontal, Spacing=8, Children={search,searchButton,newButton,import,export,refresh} };
-        var content = new Grid { Margin = new Thickness(18), RowDefinitions = new RowDefinitions("Auto,Auto,Auto,Auto,*"), RowSpacing=10, Children={title,toolbar,status,header,new ScrollViewer { Content=rows, VerticalScrollBarVisibility=Avalonia.Controls.Primitives.ScrollBarVisibility.Auto, HorizontalScrollBarVisibility=Avalonia.Controls.Primitives.ScrollBarVisibility.Auto } } };
+        var pager = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Right, Children = { previousPage, pageInfo, nextPage } };
+        var listArea = new Grid { RowDefinitions = new RowDefinitions("Auto,*,Auto"), RowSpacing = 8, Children = { header, new ScrollViewer { Content=rows, VerticalScrollBarVisibility=Avalonia.Controls.Primitives.ScrollBarVisibility.Auto, HorizontalScrollBarVisibility=Avalonia.Controls.Primitives.ScrollBarVisibility.Auto }, pager } };
+        Grid.SetRow(listArea.Children[1], 1); Grid.SetRow(listArea.Children[2], 2);
+        var content = new Grid { Margin = new Thickness(18), RowDefinitions = new RowDefinitions("Auto,Auto,Auto,*"), RowSpacing=10, Children={title,toolbar,status,listArea} };
         for (int n=0;n<content.Children.Count;n++) Grid.SetRow(content.Children[n],n);
         Content=content;
         _=LoadAsync();
     }
 
-    private async Task LoadAsync()
+    private int TotalPages => Math.Max(1, (int)Math.Ceiling(totalCount / (double)PageSize));
+
+    private void ScheduleSearch()
+    {
+        searchDebounce?.Cancel();
+        searchDebounce?.Dispose();
+        var cts = new CancellationTokenSource();
+        searchDebounce = cts;
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                await Task.Delay(300, cts.Token);
+                await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(async () =>
+                {
+                    if (!cts.IsCancellationRequested) await LoadAsync(resetPage: true);
+                });
+            }
+            catch (OperationCanceledException) { }
+        });
+    }
+
+    private async Task LoadAsync(bool resetPage = false)
     {
         try
         {
+            if (resetPage) currentPage = 1;
             await using var db = new PharmacyDbContext(PharmacyDb.Options());
-            loaded = await db.Medicines.AsNoTracking().OrderBy(m=>m.Name).ToListAsync();
-            var term=search.Text?.Trim();
-            var filtered=string.IsNullOrWhiteSpace(term)?loaded:loaded.Where(m=>
-                m.Name.Contains(term,StringComparison.CurrentCultureIgnoreCase)
-                || (m.Barcode?.Contains(term,StringComparison.CurrentCultureIgnoreCase)??false)
-                || (m.Notes?.Contains(term,StringComparison.CurrentCultureIgnoreCase)??false)).ToList();
+            IQueryable<MedicineCatalogItem> query = db.Medicines.AsNoTracking();
+            var term = search.Text?.Trim();
+            if (!string.IsNullOrWhiteSpace(term))
+            {
+                query = query.Where(m =>
+                    m.Name.Contains(term)
+                    || (m.Barcode != null && m.Barcode.Contains(term))
+                    || m.Barcodes.Any(b => b.BarcodeValue.Contains(term)));
+            }
+
+            totalCount = await query.CountAsync();
+            currentPage = Math.Clamp(currentPage, 1, TotalPages);
+            loaded = await query.OrderBy(m => m.Name).ThenBy(m => m.Id)
+                .Skip((currentPage - 1) * PageSize).Take(PageSize).ToListAsync();
             rows.Children.Clear();
-            foreach(var medicine in filtered)
+            foreach(var medicine in loaded)
             {
                 var grid=new Grid { ColumnDefinitions=new ColumnDefinitions("2*,2*,*,Auto"), MinWidth=850 };
                 var values=new[]{medicine.Name,medicine.Barcode??"",medicine.Notes??""};
@@ -78,7 +122,10 @@ public sealed class MedicineManagementWindow : Window
                 Grid.SetColumn(buttons,3);grid.Children.Add(buttons);
                 rows.Children.Add(new Border { BorderBrush=new SolidColorBrush(Color.Parse("#354152")), BorderThickness=new Thickness(0,0,0,1), Child=grid });
             }
-            status.Text=$"{Tr.Loc.TranslateText("Medicines")}: {loaded.Count} | {Tr.Loc.TranslateText("Shown")}: {filtered.Count}";
+            status.Text = $"{Tr.Loc.TranslateText("Medicines")}: {totalCount} | {Tr.Loc.TranslateText("Shown")}: {loaded.Count}";
+            pageInfo.Text = $"{Tr.Loc.TranslateText("Page")} {currentPage} / {TotalPages}";
+            previousPage.IsEnabled = currentPage > 1;
+            nextPage.IsEnabled = currentPage < TotalPages;
         }
         catch(Exception ex){status.Text=Tr.Loc.TranslateText("Could not load medicines")+": "+ex.Message;}
     }
@@ -107,7 +154,7 @@ public sealed class MedicineManagementWindow : Window
             if(existing is null){item=new MedicineCatalogItem();db.Medicines.Add(item);}
             else {item=await db.Medicines.FirstOrDefaultAsync(x=>x.Id==existing.Id)??new MedicineCatalogItem();if(item.Id==0)db.Medicines.Add(item);}
             item.Name=name.Text.Trim();item.Barcode=string.IsNullOrWhiteSpace(barcode.Text)?null:barcode.Text.Trim();item.Notes=string.IsNullOrWhiteSpace(notes.Text)?null:notes.Text.Trim();item.IsActive=active.IsChecked==true;
-            await db.SaveChangesAsync();dialog.Close();await LoadAsync();
+            await db.SaveChangesAsync();dialog.Close();await LoadAsync(resetPage: existing is null);
         };
         await dialog.ShowDialog(this);
     }
@@ -118,7 +165,11 @@ public sealed class MedicineManagementWindow : Window
         if(file is null)return;
         await using var stream=await file.OpenWriteAsync();await using var writer=new StreamWriter(stream,new UTF8Encoding(true));
         await writer.WriteLineAsync("Name,Barcode,Notes,IsActive");
-        foreach(var m in loaded)await writer.WriteLineAsync(string.Join(",",new[]{m.Name,m.Barcode??"",m.Notes??"",m.IsActive.ToString()}.Select(CsvEscape)));
+        await using (var db = new PharmacyDbContext(PharmacyDb.Options()))
+        {
+            await foreach (var m in db.Medicines.AsNoTracking().OrderBy(m => m.Name).AsAsyncEnumerable())
+                await writer.WriteLineAsync(string.Join(",",new[]{m.Name,m.Barcode??"",m.Notes??"",m.IsActive.ToString()}.Select(CsvEscape)));
+        }
         status.Text=Tr.Loc.TranslateText("Medicine list exported.");
     }
 
