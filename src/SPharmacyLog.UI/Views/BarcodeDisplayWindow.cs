@@ -17,11 +17,13 @@ public sealed class BarcodeDisplayWindow : Window
         Title = Tr.Loc.TranslateText("Medicine barcode");
         Tr.Loc.LanguageChanged += OnLanguageChanged;
         Closed += (_, _) => Tr.Loc.LanguageChanged -= OnLanguageChanged;
-        Width = 260;
-        Height = 290;
-        MinWidth = 220;
-        MinHeight = 250;
-        CanResize = false;
+        Width = 340;
+        Height = 380;
+        MinWidth = 260;
+        MinHeight = 300;
+        MaxWidth = 600;
+        MaxHeight = 700;
+        CanResize = true;
         ShowInTaskbar = false;
         Topmost = true;
         WindowStartupLocation = WindowStartupLocation.CenterOwner;
@@ -40,9 +42,9 @@ public sealed class BarcodeDisplayWindow : Window
         barcodeImage = new Image
         {
             Source = barcodeBitmap,
-            Width = 200,
-            Height = 200,
             Stretch = Stretch.Uniform,
+            MaxWidth = 320,
+            MaxHeight = 320,
             HorizontalAlignment = HorizontalAlignment.Center,
             VerticalAlignment = VerticalAlignment.Center
         };
