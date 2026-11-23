@@ -847,7 +847,10 @@ public sealed class LocalizationService : ILocalizationService
         catch { Apply(AppLanguage.English); }
     }
 
-    public string this[string key] => ReplaceSubscriptionTerminology(current.TryGetValue(key, out var value)\n        ? value\n        : English.TryGetValue(key, out var fallback) ? fallback : $"[{key}]");
+    public string this[string key] => ReplaceSubscriptionTerminology(
+        current.TryGetValue(key, out var value)
+            ? value
+            : English.TryGetValue(key, out var fallback) ? fallback : $"[{key}]");
 
     public void SetLanguage(AppLanguage language)
     {
