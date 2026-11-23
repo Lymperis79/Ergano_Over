@@ -22,10 +22,37 @@ public sealed class PharmacyDbContext : DbContext
     public DbSet<Payment> Payments => Set<Payment>();
     public DbSet<LedgerEntry> LedgerEntries => Set<LedgerEntry>();
     public DbSet<CalendarNote> CalendarNotes => Set<CalendarNote>();
+    public DbSet<MedicineStockMovement> MedicineStockMovements => Set<MedicineStockMovement>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
+
+
+        modelBuilder.Entity<MedicineStockMovement>()
+            .Property(movement => movement.Type)
+            .HasConversion<int>();
+
+        modelBuilder.Entity<MedicineStockMovement>()
+            .Property(movement => movement.PerformedBy)
+            .HasMaxLength(255);
+
+        modelBuilder.Entity<MedicineStockMovement>()
+            .Property(movement => movement.BarcodeScanned)
+            .HasMaxLength(64);
+
+        modelBuilder.Entity<MedicineStockMovement>()
+            .Property(movement => movement.BatchLot)
+            .HasMaxLength(64);
+
+        modelBuilder.Entity<MedicineStockMovement>()
+            .HasIndex(movement => new { movement.MedicineId, movement.ExpiryDate, movement.MovementDate });
+
+        modelBuilder.Entity<MedicineStockMovement>()
+            .HasOne(movement => movement.Medicine)
+            .WithMany()
+            .HasForeignKey(movement => movement.MedicineId)
+            .OnDelete(DeleteBehavior.Restrict);
 
         modelBuilder.Entity<CalendarNote>()
             .Property(note => note.CalendarDate)
