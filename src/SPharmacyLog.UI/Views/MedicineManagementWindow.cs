@@ -175,7 +175,7 @@ public sealed class MedicineManagementWindow : Window
         try
         {
             await using var stream=await file[0].OpenReadAsync();using var reader=new StreamReader(stream,Encoding.UTF8,true);
-            var rows=new List<string[]>();string? line;while((line=await reader.ReadLineAsync())!=null)rows.Add(ParseCsv(line));
+            var rows=new List<string[]>();string? line=await reader.ReadLineAsync();if(line is null){status.Text=Tr.Loc.TranslateText("Import file has no medicine rows.");return;}var delimiter=DetectCsvDelimiter(line);rows.Add(ParseCsv(line,delimiter));while((line=await reader.ReadLineAsync())!=null)rows.Add(ParseCsv(line,delimiter));
             if(rows.Count<2){status.Text=Tr.Loc.TranslateText("Import file has no medicine rows.");return;}
             var headers=rows[0].Select(h=>h.Trim()).ToArray();int ix(string name)=>Array.FindIndex(headers,h=>h.Equals(name,StringComparison.OrdinalIgnoreCase));
             int nameIx=ix("Name"),barcodeIx=ix("Barcode"),notesIx=ix("Notes"),activeIx=ix("IsActive");
@@ -197,10 +197,28 @@ public sealed class MedicineManagementWindow : Window
     }
 
     private static string CsvEscape(string value) => "\"" + value.Replace("\"", "\"\"") + "\"";
-    private static string[] ParseCsv(string line)
+    private static char DetectCsvDelimiter(string header)
+    {
+        // Excel commonly uses semicolons instead of commas in locales where comma is the decimal separator.
+        // Count separators only outside quoted fields.
+        var counts = new Dictionary<char, int> { [','] = 0, [';'] = 0, ['\\t'] = 0 };
+        bool quoted = false;
+        for (int i = 0; i < header.Length; i++)
+        {
+            if (header[i] == '"')
+            {
+                if (quoted && i + 1 < header.Length && header[i + 1] == '"') { i++; continue; }
+                quoted = !quoted;
+            }
+            else if (!quoted && counts.ContainsKey(header[i])) counts[header[i]]++;
+        }
+        return counts.OrderByDescending(x => x.Value).First().Key;
+    }
+
+    private static string[] ParseCsv(string line, char delimiter)
     {
         var result=new List<string>();var current=new StringBuilder();bool quoted=false;
-        for(int i=0;i<line.Length;i++){char ch=line[i];if(ch=='"'){if(quoted&&i+1<line.Length&&line[i+1]=='"'){current.Append('"');i++;}else quoted=!quoted;}else if(ch==','&&!quoted){result.Add(current.ToString());current.Clear();}else current.Append(ch);}
+        for(int i=0;i<line.Length;i++){char ch=line[i];if(ch=='"'){if(quoted&&i+1<line.Length&&line[i+1]=='"'){current.Append('"');i++;}else quoted=!quoted;}else if(ch==delimiter&&!quoted){result.Add(current.ToString());current.Clear();}else current.Append(ch);}
         result.Add(current.ToString());return result.ToArray();
     }
 }
