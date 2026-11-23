@@ -485,9 +485,11 @@ public partial class MainWindow : Window
         }
 
         var customersValue = new TextBlock { Text = "—", FontSize = 30, FontWeight = FontWeight.Bold };
+        var medicineCountValue = new TextBlock { Text = "—", FontSize = 30, FontWeight = FontWeight.Bold };
         AddGroupHeader("General", "👥", "#397DA5");
-        var generalCards = new Grid { ColumnDefinitions = CreateColumns(GridLength.Star) };
+        var generalCards = new Grid { ColumnDefinitions = CreateColumns(GridLength.Star, GridLength.Star) };
         AddCard(generalCards, "Total customers", customersValue, 0, "#397DA5");
+        AddCard(generalCards, "Total medicines", medicineCountValue, 1, "#4A9B72");
         root.Children.Add(generalCards);
 
         var activeValue = new TextBlock { Text = "—", FontSize = 30, FontWeight = FontWeight.Bold };
@@ -611,6 +613,7 @@ public partial class MainWindow : Window
             var today = DateTime.Today;
             var tomorrow = today.AddDays(1);
             var customerCount = await db.Customers.CountAsync();
+            var medicineCount = await db.Medicines.CountAsync(item => item.IsActive);
             var activeCount = await db.Subscriptions.CountAsync(item => item.Status == SubscriptionStatus.Active);
             var dueToday = await db.Subscriptions.CountAsync(item => item.Status == SubscriptionStatus.Active && item.NextDueDate >= today && item.NextDueDate < tomorrow);
             var overdue = await db.Subscriptions.CountAsync(item => item.Status == SubscriptionStatus.Active && item.NextDueDate < today);
@@ -621,6 +624,7 @@ public partial class MainWindow : Window
                 .Where(item => item.Status == BorrowingStatus.Returned && item.ReturnedAt.HasValue && item.ReturnedAt.Value >= today && item.ReturnedAt.Value < tomorrow)
                 .SumAsync(item => (int?)item.Quantity) ?? 0;
             customersValue.Text = customerCount.ToString();
+            medicineCountValue.Text = medicineCount.ToString();
             activeValue.Text = activeCount.ToString();
             dueValue.Text = dueToday.ToString();
             overdueValue.Text = overdue.ToString();
