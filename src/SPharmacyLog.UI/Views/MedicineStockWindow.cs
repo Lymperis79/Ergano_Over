@@ -140,112 +140,306 @@ public sealed class MedicineStockWindow : Window
     private async Task OpenMovementFormAsync(MedicineStockMovementType type)
     {
         var formTitle = type switch { MedicineStockMovementType.Count => "Stock count", MedicineStockMovementType.Add => "Add stock", _ => "Remove stock" };
+        var isRemove = type == MedicineStockMovementType.Remove;
+        var isCount = type == MedicineStockMovementType.Count;
         var barcode = new TextBox { MinWidth = 320, PlaceholderText = Tr.Loc.TranslateText("Scan medicine barcode") };
-        var medicineSearch = new TextBox { MinWidth = 320, PlaceholderText = Tr.Loc.TranslateText("Type to filter medicines") };
+        var medicineSearch = new TextBox { MinWidth = 320, PlaceholderText = Tr.Loc.TranslateText("Type medicine name or barcode") };
         var medicine = new ComboBox { MinWidth = 320 };
         var scanFeedback = new TextBlock { TextWrapping = TextWrapping.Wrap, Foreground = Brushes.LightGray };
         var quantity = new TextBox { MinWidth = 320, Text = "1" };
         var expiry = new DatePicker { SelectedDate = null };
         var batch = new TextBox { MinWidth = 320, PlaceholderText = Tr.Loc.TranslateText("Optional batch / lot") };
-        var movementDate = new DatePicker { SelectedDate = DateTime.Today };
-        var performed = new TextBox { MinWidth = 320, Text = currentUser };
-        var notes = new TextBox { MinWidth = 320, AcceptsReturn = true, Height = 70, TextWrapping = TextWrapping.Wrap };
-        var dialog = new Window { Title = Tr.Loc.TranslateText(formTitle), Width = 540, Height = 700, MinWidth = 460, WindowStartupLocation = WindowStartupLocation.CenterOwner };
-        var allMedicines = new List<MedicineCatalogItem>();
-        var visibleMedicines = new List<MedicineCatalogItem>();
+        var notes = new TextBox { MinWidth = 320, AcceptsReturn = true, Height = 65, TextWrapping = TextWrapping.Wrap };
+        var availableText = new TextBlock
+        {
+            Text = isRemove ? Tr.Loc.TranslateText("Select a medicine to see available stock.") : "",
+            FontWeight = FontWeight.SemiBold,
+            TextWrapping = TextWrapping.Wrap
+        };
+        var dialog = new Window
+        {
+            Title = Tr.Loc.TranslateText(formTitle),
+            Width = 520,
+            Height = isCount ? 570 : 510,
+            MinWidth = 440,
+            MinHeight = 440,
+            WindowStartupLocation = WindowStartupLocation.CenterOwner
+        };
+
+        List<MedicineCatalogItem> allMedicines;
+        List<MedicineCatalogItem> visibleMedicines;
+        Dictionary<int, string> searchIndex;
+        Dictionary<string, int> barcodeIndex;
         await using (var db = new PharmacyDbContext(PharmacyDb.Options()))
         {
             allMedicines = await db.Medicines.AsNoTracking().OrderBy(m => m.Name).ToListAsync();
-            var alternates = await db.MedicineBarcodes.AsNoTracking().ToListAsync();
-            visibleMedicines = allMedicines.ToList();
-            medicine.ItemsSource = visibleMedicines.Select(m => m.Name).ToList();
-            medicineSearch.TextChanged += (_, _) =>
+            var alternateGroups = await db.MedicineBarcodes.AsNoTracking()
+                .GroupBy(b => b.MedicineId)
+                .ToDictionaryAsync(g => g.Key, g => g.Select(b => b.BarcodeValue).ToList());
+
+            searchIndex = allMedicines.ToDictionary(
+                m => m.Id,
+                m => string.Join(" ", new[] { m.Name, m.Barcode ?? "" }
+                    .Concat(alternateGroups.GetValueOrDefault(m.Id) ?? new List<string>())));
+            barcodeIndex = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+            foreach (var item in allMedicines)
             {
-                var filter = medicineSearch.Text?.Trim();
-                visibleMedicines = string.IsNullOrWhiteSpace(filter) ? allMedicines.ToList() : allMedicines.Where(m => m.Name.Contains(filter, StringComparison.CurrentCultureIgnoreCase) || (m.Barcode?.Contains(filter, StringComparison.OrdinalIgnoreCase) ?? false) || alternates.Any(b => b.MedicineId == m.Id && b.BarcodeValue.Contains(filter, StringComparison.OrdinalIgnoreCase))).ToList();
-                medicine.ItemsSource = visibleMedicines.Select(m => m.Name).ToList();
-                medicine.SelectedIndex = -1;
-            };
-            barcode.KeyDown += (_, e) =>
-            {
-                if (e.Key != Key.Enter) return;
-                e.Handled = true;
-                var scanned = barcode.Text?.Trim();
-                if (string.IsNullOrWhiteSpace(scanned)) return;
-                var match = allMedicines.FirstOrDefault(m => string.Equals(m.Barcode, scanned, StringComparison.OrdinalIgnoreCase))
-                    ?? allMedicines.FirstOrDefault(m => alternates.Any(b => b.MedicineId == m.Id && string.Equals(b.BarcodeValue, scanned, StringComparison.OrdinalIgnoreCase)));
-                if (match != null) { medicineSearch.Text = ""; medicine.SelectedIndex = visibleMedicines.FindIndex(m => m.Id == match.Id); scanFeedback.Text = Tr.Loc.TranslateText("Barcode matched") + ": " + match.Name; }
-                else { medicineSearch.Text = scanned; scanFeedback.Text = Tr.Loc.TranslateText("Barcode not found in medicine catalogue. Search or add the medicine first."); }
-            };
+                if (!string.IsNullOrWhiteSpace(item.Barcode))
+                    barcodeIndex[item.Barcode.Trim()] = item.Id;
+                foreach (var alternate in alternateGroups.GetValueOrDefault(item.Id) ?? new List<string>())
+                    if (!string.IsNullOrWhiteSpace(alternate))
+                        barcodeIndex[alternate.Trim()] = item.Id;
+            }
         }
-        var fields = new StackPanel { Spacing = 8, Margin = new Thickness(14) };
+
+        visibleMedicines = allMedicines.ToList();
+        medicine.ItemsSource = visibleMedicines.Select(m => m.Name).ToList();
+        var searchVersion = 0;
+        medicineSearch.TextChanged += (_, _) =>
+        {
+            var version = ++searchVersion;
+            _ = ApplyMedicineFilterAsync(version);
+        };
+
+        async Task ApplyMedicineFilterAsync(int version)
+        {
+            // Debounce input so the catalogue is filtered only after the user pauses typing.
+            await Task.Delay(200);
+            if (version != searchVersion) return;
+
+            var previouslySelectedId = visibleMedicines.ElementAtOrDefault(medicine.SelectedIndex)?.Id;
+            var filter = medicineSearch.Text?.Trim();
+            var matches = string.IsNullOrWhiteSpace(filter)
+                ? allMedicines
+                : allMedicines.Where(m => searchIndex[m.Id].Contains(filter, StringComparison.CurrentCultureIgnoreCase)).ToList();
+
+            if (version != searchVersion) return;
+            visibleMedicines = matches;
+            medicine.ItemsSource = visibleMedicines.Select(m => m.Name).ToList();
+            medicine.SelectedIndex = previouslySelectedId.HasValue
+                ? visibleMedicines.FindIndex(m => m.Id == previouslySelectedId.Value)
+                : -1;
+
+            if (visibleMedicines.Count == 0)
+                scanFeedback.Text = Tr.Loc.TranslateText("No matching medicine found.");
+            else if (!string.IsNullOrWhiteSpace(filter))
+                scanFeedback.Text = $"{visibleMedicines.Count} {Tr.Loc.TranslateText("matching medicines")}";
+            else
+                scanFeedback.Text = "";
+        }
+
+        async Task UpdateAvailableStockAsync()
+        {
+            if (!isRemove) return;
+            var selected = visibleMedicines.ElementAtOrDefault(medicine.SelectedIndex);
+            if (selected == null)
+            {
+                availableText.Text = Tr.Loc.TranslateText("Select a medicine to see available stock.");
+                return;
+            }
+
+            await using var stockDb = new PharmacyDbContext(PharmacyDb.Options());
+            var movements = await stockDb.MedicineStockMovements
+                .Where(m => m.MedicineId == selected.Id)
+                .AsNoTracking()
+                .OrderBy(m => m.MovementDate).ThenBy(m => m.Id)
+                .ToListAsync();
+            var total = CalculateBalances(movements).Values.Where(v => v > 0).Sum();
+            availableText.Text = $"{Tr.Loc.TranslateText("Available stock")}: {total:0.##}";
+            if (total <= 0)
+                availableText.Text += " — " + Tr.Loc.TranslateText("No stock available.");
+        }
+
+        medicine.SelectionChanged += async (_, _) => await UpdateAvailableStockAsync();
+
+        barcode.KeyDown += (_, e) =>
+        {
+            if (e.Key != Key.Enter) return;
+            e.Handled = true;
+            var scanned = barcode.Text?.Trim();
+            if (string.IsNullOrWhiteSpace(scanned)) return;
+
+            if (barcodeIndex.TryGetValue(scanned, out var medicineId))
+            {
+                medicineSearch.Text = "";
+                searchVersion++;
+                visibleMedicines = allMedicines;
+                medicine.ItemsSource = visibleMedicines.Select(m => m.Name).ToList();
+                medicine.SelectedIndex = visibleMedicines.FindIndex(m => m.Id == medicineId);
+                scanFeedback.Text = Tr.Loc.TranslateText("Barcode matched") + ": " + allMedicines.First(m => m.Id == medicineId).Name;
+            }
+            else
+            {
+                medicineSearch.Text = scanned;
+                scanFeedback.Text = Tr.Loc.TranslateText("Barcode not found in medicine catalogue.");
+            }
+        };
+
+        var fields = new StackPanel { Spacing = 9, Margin = new Thickness(16) };
+        fields.Children.Add(new TextBlock { Text = Tr.Loc.TranslateText("Scan or select a medicine"), FontSize = 17, FontWeight = FontWeight.Bold });
         AddField(fields, "Barcode scan", barcode);
-        fields.Children.Add(scanFeedback);
         AddField(fields, "Search medicine", medicineSearch);
         AddField(fields, "Medicine", medicine);
-        AddField(fields, type == MedicineStockMovementType.Count ? "Counted quantity" : "Quantity", quantity);
-        AddField(fields, "Expiry date (optional)", expiry);
-        AddField(fields, "Batch / Lot (optional)", batch);
-        AddField(fields, "Movement date", movementDate);
-        AddField(fields, "Performed by", performed);
-        AddField(fields, "Notes (optional)", notes);
-        fields.Children.Add(new TextBlock { Text = Tr.Loc.TranslateText(type == MedicineStockMovementType.Count
-            ? "A count without expiry and batch resets total medicine stock. With expiry or batch details, the count replaces stock for that matching group."
-            : type == MedicineStockMovementType.Remove
-                ? "When expiry and batch are left blank, stock is removed from the earliest-expiring batches first."
-                : "You may record expiry and batch details to track stock by batch."), TextWrapping = TextWrapping.Wrap, Foreground = Brushes.LightGray });
-        var save = new Button { Content = Tr.Loc.TranslateText("Save"), MinWidth = 100, Classes = { "accent" } };
-        var cancel = new Button { Content = Tr.Loc.TranslateText("Cancel"), MinWidth = 100 };
-        var footer = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, HorizontalAlignment = HorizontalAlignment.Right, Children = { save, cancel } };
-        var root = new Grid { RowDefinitions = new RowDefinitions("*,Auto"), Children = { new ScrollViewer { Content = fields }, footer }, Margin = new Thickness(10) };
-        Grid.SetRow(footer, 1); dialog.Content = root;
+        fields.Children.Add(scanFeedback);
+        if (isRemove)
+            fields.Children.Add(new Border
+            {
+                Padding = new Thickness(10),
+                CornerRadius = new CornerRadius(6),
+                Background = new SolidColorBrush(Color.Parse("#203B4B")),
+                Child = availableText
+            });
+
+        AddField(fields, isCount ? "Counted quantity" : "Quantity", quantity);
+
+        var advancedFields = new StackPanel { Spacing = 8, Margin = new Thickness(4, 8) };
+        AddField(advancedFields, isRemove ? "Expiry filter (optional)" : "Expiry date (optional)", expiry);
+        AddField(advancedFields, "Batch / Lot (optional)", batch);
+        AddField(advancedFields, "Notes (optional)", notes);
+        fields.Children.Add(new Expander
+        {
+            Header = Tr.Loc.TranslateText("Optional details"),
+            IsExpanded = false,
+            Content = advancedFields
+        });
+
+        fields.Children.Add(new TextBlock
+        {
+            Text = Tr.Loc.TranslateText(isCount
+                ? "A count without expiry and batch resets total medicine stock. With expiry or batch details, the count replaces stock for that matching group."
+                : isRemove
+                    ? "Stock is removed from the earliest-expiring batches first. Use optional details only to restrict removal to a particular expiry or batch."
+                    : "Expiry and batch details help track stock by batch."),
+            TextWrapping = TextWrapping.Wrap,
+            Foreground = Brushes.LightGray,
+            FontSize = 12
+        });
+
+        var save = new Button
+        {
+            Content = Tr.Loc.TranslateText(isRemove ? "Confirm removal" : isCount ? "Save count" : "Save stock"),
+            MinWidth = 130,
+            MinHeight = 38,
+            Classes = { "accent" }
+        };
+        var cancel = new Button { Content = Tr.Loc.TranslateText("Cancel"), MinWidth = 100, MinHeight = 38 };
+        var footer = new StackPanel
+        {
+            Orientation = Orientation.Horizontal,
+            Spacing = 8,
+            HorizontalAlignment = HorizontalAlignment.Right,
+            Children = { cancel, save }
+        };
+        var root = new Grid
+        {
+            RowDefinitions = new RowDefinitions("*,Auto"),
+            Children = { new ScrollViewer { Content = fields }, footer },
+            Margin = new Thickness(10)
+        };
+        Grid.SetRow(footer, 1);
+        dialog.Content = root;
         dialog.Opened += (_, _) => barcode.Focus();
         cancel.Click += (_, _) => dialog.Close();
+
         save.Click += async (_, _) =>
         {
-            var selectedName = medicine.SelectedItem?.ToString();
-            var selected = visibleMedicines.FirstOrDefault(m => string.Equals(m.Name, selectedName, StringComparison.CurrentCultureIgnoreCase));
-            if (selected == null) { status.Text = Tr.Loc.TranslateText("Select a medicine before saving."); return; }
-            if (!decimal.TryParse(quantity.Text, System.Globalization.NumberStyles.Number, System.Globalization.CultureInfo.CurrentCulture, out var qty) || qty < 0 || (type != MedicineStockMovementType.Count && qty <= 0))
-            { status.Text = Tr.Loc.TranslateText("Enter a valid quantity."); return; }
-            if (type == MedicineStockMovementType.Remove && qty <= 0) { status.Text = Tr.Loc.TranslateText("Removal quantity must be greater than zero."); return; }
-            if (movementDate.SelectedDate == null) { status.Text = Tr.Loc.TranslateText("Select a movement date."); return; }
+            var selected = visibleMedicines.ElementAtOrDefault(medicine.SelectedIndex);
+            if (selected == null)
+            {
+                scanFeedback.Text = Tr.Loc.TranslateText("Select a medicine before saving.");
+                return;
+            }
+
+            if (!decimal.TryParse(quantity.Text, System.Globalization.NumberStyles.Number,
+                    System.Globalization.CultureInfo.CurrentCulture, out var qty)
+                || qty < 0 || (!isCount && qty <= 0))
+            {
+                scanFeedback.Text = Tr.Loc.TranslateText("Enter a valid quantity.");
+                return;
+            }
+
             await using var db = new PharmacyDbContext(PharmacyDb.Options());
             var expiryDate = expiry.SelectedDate?.Date;
             var lotValue = string.IsNullOrWhiteSpace(batch.Text) ? null : batch.Text.Trim();
-            var movedAt = movementDate.SelectedDate.Value.Date + DateTime.Now.TimeOfDay;
-            var actor = string.IsNullOrWhiteSpace(performed.Text) ? currentUser : performed.Text.Trim();
+            var movedAt = DateTime.Now;
+            var actor = currentUser;
             var noteValue = string.IsNullOrWhiteSpace(notes.Text) ? null : notes.Text.Trim();
             var scannedValue = string.IsNullOrWhiteSpace(barcode.Text) ? selected.Barcode : barcode.Text.Trim();
-            if (type == MedicineStockMovementType.Remove)
+
+            if (isRemove)
             {
-                var allMovements = await db.MedicineStockMovements.Where(m => m.MedicineId == selected.Id).OrderBy(m => m.MovementDate).ThenBy(m => m.Id).ToListAsync();
+                var allMovements = await db.MedicineStockMovements
+                    .Where(m => m.MedicineId == selected.Id)
+                    .OrderBy(m => m.MovementDate).ThenBy(m => m.Id)
+                    .ToListAsync();
                 var balances = CalculateBalances(allMovements);
-                var buckets = balances.Where(b => b.Value > 0 && (!expiryDate.HasValue || b.Key.Expiry == expiryDate) && (string.IsNullOrWhiteSpace(lotValue) || b.Key.Lot.Equals(lotValue, StringComparison.OrdinalIgnoreCase)))
+                var buckets = balances
+                    .Where(b => b.Value > 0
+                        && (!expiryDate.HasValue || b.Key.Expiry == expiryDate)
+                        && (string.IsNullOrWhiteSpace(lotValue) || b.Key.Lot.Equals(lotValue, StringComparison.OrdinalIgnoreCase)))
                     .Select(b => new { b.Key.Expiry, b.Key.Lot, Balance = b.Value })
-                    .OrderBy(b => b.Expiry ?? DateTime.MaxValue).ThenBy(b => b.Lot).ToList();
+                    .OrderBy(b => b.Expiry ?? DateTime.MaxValue)
+                    .ThenBy(b => b.Lot)
+                    .ToList();
                 var available = buckets.Sum(b => b.Balance);
-                if (qty > available) { status.Text = Tr.Loc.TranslateText("Insufficient stock") + ". " + Tr.Loc.TranslateText("Available") + ": " + available.ToString("0.##"); return; }
+                if (qty > available)
+                {
+                    scanFeedback.Text = $"{Tr.Loc.TranslateText("Insufficient stock")}. {Tr.Loc.TranslateText("Available")}: {available:0.##}";
+                    return;
+                }
+
                 var remaining = qty;
                 foreach (var bucket in buckets)
                 {
                     if (remaining <= 0) break;
                     var take = Math.Min(remaining, bucket.Balance);
-                    db.MedicineStockMovements.Add(new MedicineStockMovement { MedicineId = selected.Id, Type = type, Quantity = take, MovementDate = movedAt, ExpiryDate = bucket.Expiry, BatchLot = string.IsNullOrEmpty(bucket.Lot) ? null : bucket.Lot, BarcodeScanned = scannedValue, PerformedBy = actor, Notes = noteValue });
+                    db.MedicineStockMovements.Add(new MedicineStockMovement
+                    {
+                        MedicineId = selected.Id,
+                        Type = type,
+                        Quantity = take,
+                        MovementDate = movedAt,
+                        ExpiryDate = bucket.Expiry,
+                        BatchLot = string.IsNullOrEmpty(bucket.Lot) ? null : bucket.Lot,
+                        BarcodeScanned = scannedValue,
+                        PerformedBy = actor,
+                        Notes = noteValue
+                    });
                     remaining -= take;
                 }
             }
             else
             {
-                var item = new MedicineStockMovement { MedicineId = selected.Id, Type = type, Quantity = type == MedicineStockMovementType.Count ? 0 : qty, CountedQuantity = type == MedicineStockMovementType.Count ? qty : null, MovementDate = movedAt, ExpiryDate = expiryDate, BarcodeScanned = scannedValue, BatchLot = lotValue, PerformedBy = actor, Notes = noteValue };
-                db.MedicineStockMovements.Add(item);
+                db.MedicineStockMovements.Add(new MedicineStockMovement
+                {
+                    MedicineId = selected.Id,
+                    Type = type,
+                    Quantity = isCount ? 0 : qty,
+                    CountedQuantity = isCount ? qty : null,
+                    MovementDate = movedAt,
+                    ExpiryDate = expiryDate,
+                    BarcodeScanned = scannedValue,
+                    BatchLot = lotValue,
+                    PerformedBy = actor,
+                    Notes = noteValue
+                });
             }
-            try { await db.SaveChangesAsync(); }
-            catch (Exception ex) { status.Text = Tr.Loc.TranslateText("Stock save failed") + ": " + ex.Message; return; }
+
+            try
+            {
+                await db.SaveChangesAsync();
+            }
+            catch (Exception ex)
+            {
+                scanFeedback.Text = Tr.Loc.TranslateText("Stock save failed") + ": " + ex.Message;
+                return;
+            }
+
             dialog.Close();
             status.Text = Tr.Loc.TranslateText("Stock movement saved.");
             await LoadAsync();
         };
+
         await dialog.ShowDialog(this);
     }
 
