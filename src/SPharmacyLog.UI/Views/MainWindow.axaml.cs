@@ -2740,7 +2740,27 @@ public partial class MainWindow : Window
         currentExecutedSubscriptions = executedSubscriptions;
         currentPayments = payments;
         currentLedgerEntries = ledger;
-        subscriptionList.ItemsSource = subscriptions.Select(x => $"{x.Title} | {Tr.Loc.TranslateText(x.Status.ToString())} | Next: {x.NextDueDate:dd/MM/yyyy} | Expires: {x.ExpiryDate?.ToString("dd/MM/yyyy") ?? "—"} | {x.Frequency}").ToList();
+        subscriptionList.ItemsSource = subscriptions.Select(subscription =>
+        {
+            var expiredButStillActive = subscription.ExpiryDate.HasValue &&
+                                        subscription.ExpiryDate.Value.Date < DateTime.Today;
+            return (Control)new Border
+            {
+                BorderBrush = expiredButStillActive
+                    ? new SolidColorBrush(Color.Parse("#E05252"))
+                    : Brushes.Transparent,
+                BorderThickness = expiredButStillActive ? new Thickness(2) : new Thickness(0),
+                CornerRadius = new CornerRadius(6),
+                Padding = new Thickness(8, 7),
+                Margin = new Thickness(2),
+                Child = new TextBlock
+                {
+                    Text = $"{subscription.Title} | {Tr.Loc.TranslateText(subscription.Status.ToString())} | Next: {subscription.NextDueDate:dd/MM/yyyy} | Expires: {subscription.ExpiryDate?.ToString("dd/MM/yyyy") ?? "—"} | {subscription.Frequency}",
+                    TextWrapping = TextWrapping.Wrap,
+                    VerticalAlignment = VerticalAlignment.Center
+                }
+            };
+        }).ToList();
         subscriptionHistoryList.ItemsSource = executedSubscriptions.Select(x => $"{x.Title} | Last changed {ToLocalSubscriptionTime(x.LastModifiedAt):dd/MM/yyyy HH:mm}").ToList();
         ledgerList.ItemsSource = ledger.Select(x => $"{x.EntryDate:dd/MM/yyyy HH:mm} | {x.Type} | {x.Amount:C} | {x.Description}").ToList();
         ApplyTranslations();
