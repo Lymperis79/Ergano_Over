@@ -71,6 +71,7 @@ public partial class MainWindow : Window
     private readonly Dictionary<DateTime, Border> calendarDateCells = new();
     private bool showingExpiryCalendar;
     private bool suppressCustomerSelectionChanged;
+    private bool suppressCustomerFilterChanged;
     private const string MenuDashboard = "Dashboard";
     private const string MenuCalendar = "ExpiryCalendar";
     private const string MenuCustomers = "Customers";
@@ -1649,7 +1650,11 @@ public partial class MainWindow : Window
             Content = Tr.Loc.TranslateText("Show inactive customers"),
             Margin = new Thickness(0, 0, 0, 8)
         };
-        showInactiveCustomersCheckBox.IsCheckedChanged += async (_, _) => await SearchCustomersAsync();
+        showInactiveCustomersCheckBox.IsCheckedChanged += async (_, _) =>
+        {
+            if (!suppressCustomerFilterChanged)
+                await SearchCustomersAsync();
+        };
         customerList = new ListBox { MinWidth = 300 };
         customerStatus = new TextBlock
         {
@@ -3554,17 +3559,49 @@ public partial class MainWindow : Window
     private async Task OpenCustomerFromSubscriptionAsync(int customerId, Subscription? editSubscription)
     {
         if (!CanAccessMenu(MenuCustomers)) return;
+
         skipNextCustomerSearch = true;
         ShowCustomers();
+        activeNavigationKey = MenuCustomers;
+        UpdateActiveNavigationVisual();
+
+        // Subscription navigation must also find inactive customers. Suppress the
+        // checkbox event so the customer list is refreshed only once below.
+        suppressCustomerFilterChanged = true;
+        showInactiveCustomersCheckBox.IsChecked = true;
+        suppressCustomerFilterChanged = false;
         await SearchCustomersAsync();
-        var customerItem = customerList.Items.OfType<CustomerListItem>().FirstOrDefault(item => item.Id == customerId);
-        if (customerItem is null) return;
+
+        var customerItem = customerList.Items.OfType<CustomerListItem>()
+            .FirstOrDefault(item => item.Id == customerId);
+
+        // SearchCustomersAsync intentionally limits normal search results to 250.
+        // A direct navigation by customer ID must not fail because of that limit.
+        if (customerItem is null)
+        {
+            await using var db = new PharmacyDbContext(PharmacyDb.Options());
+            var customer = await db.Customers.AsNoTracking()
+                .FirstOrDefaultAsync(item => item.Id == customerId);
+            if (customer is null) return;
+
+            var displayName = string.IsNullOrWhiteSpace(customer.FullName)
+                ? $"{customer.FirstName} {customer.Surname}".Trim()
+                : customer.FullName;
+            customerItem = new CustomerListItem(customer.Id,
+                $"{(string.IsNullOrWhiteSpace(customer.Amka) ? "—" : customer.Amka)} | {displayName}");
+
+            customerList.ItemsSource = customerList.Items.OfType<CustomerListItem>()
+                .Append(customerItem)
+                .ToList();
+        }
 
         suppressCustomerSelectionChanged = true;
         customerList.SelectedItem = customerItem;
         suppressCustomerSelectionChanged = false;
+
         await LoadCustomerAsync(customerId);
         await RefreshCustomerWorkspaceAsync();
+
         if (editSubscription is not null && CanAccessMenu(MenuSubscriptions))
         {
             var subscriptionTabIndex = customerTabs.Items.OfType<TabItem>()
