@@ -12,37 +12,78 @@ public sealed class AddMedicineStockControl : Migration
 {
     protected override void Up(MigrationBuilder migrationBuilder)
     {
-        migrationBuilder.CreateTable(
-            name: "MedicineStockMovements",
-            columns: table => new
-            {
-                Id = table.Column<int>(nullable: false).Annotation("Sqlite:Autoincrement", true),
-                MedicineId = table.Column<int>(nullable: false),
-                Type = table.Column<int>(nullable: false),
-                Quantity = table.Column<decimal>(nullable: false),
-                CountedQuantity = table.Column<decimal>(nullable: true),
-                MovementDate = table.Column<DateTime>(nullable: false),
-                ExpiryDate = table.Column<DateTime>(nullable: true),
-                BarcodeScanned = table.Column<string>(maxLength: 64, nullable: true),
-                BatchLot = table.Column<string>(maxLength: 64, nullable: true),
-                PerformedBy = table.Column<string>(maxLength: 255, nullable: false),
-                Notes = table.Column<string>(nullable: true)
-            },
-            constraints: table =>
-            {
-                table.PrimaryKey("PK_MedicineStockMovements", x => x.Id);
-                table.ForeignKey(
-                    name: "FK_MedicineStockMovements_Medicines_MedicineId",
-                    column: x => x.MedicineId,
-                    principalTable: "Medicines",
-                    principalColumn: "Id",
-                    onDelete: ReferentialAction.Restrict);
-            });
+        if (ActiveProvider.Contains("Sqlite", StringComparison.OrdinalIgnoreCase))
+        {
+            migrationBuilder.Sql("""
+                CREATE TABLE MedicineStockMovements (
+                    Id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+                    MedicineId INTEGER NOT NULL,
+                    Type INTEGER NOT NULL,
+                    Quantity TEXT NOT NULL,
+                    CountedQuantity TEXT NULL,
+                    MovementDate TEXT NOT NULL,
+                    ExpiryDate TEXT NULL,
+                    BarcodeScanned TEXT NULL,
+                    BatchLot TEXT NULL,
+                    PerformedBy TEXT NOT NULL,
+                    Notes TEXT NULL,
+                    CONSTRAINT FK_MedicineStockMovements_Medicines_MedicineId
+                        FOREIGN KEY (MedicineId) REFERENCES Medicines (Id) ON DELETE RESTRICT
+                );
+                CREATE INDEX IX_MedicineStockMovements_MedicineId_ExpiryDate_MovementDate
+                    ON MedicineStockMovements (MedicineId, ExpiryDate, MovementDate);
+                """);
+            return;
+        }
 
-        migrationBuilder.CreateIndex(
-            name: "IX_MedicineStockMovements_MedicineId_ExpiryDate_MovementDate",
-            table: "MedicineStockMovements",
-            columns: new[] { "MedicineId", "ExpiryDate", "MovementDate" });
+        if (ActiveProvider.Contains("SqlServer", StringComparison.OrdinalIgnoreCase))
+        {
+            migrationBuilder.Sql("""
+                CREATE TABLE [MedicineStockMovements] (
+                    [Id] int IDENTITY(1,1) NOT NULL CONSTRAINT [PK_MedicineStockMovements] PRIMARY KEY,
+                    [MedicineId] int NOT NULL,
+                    [Type] int NOT NULL,
+                    [Quantity] decimal(18,2) NOT NULL,
+                    [CountedQuantity] decimal(18,2) NULL,
+                    [MovementDate] datetime2 NOT NULL,
+                    [ExpiryDate] datetime2 NULL,
+                    [BarcodeScanned] nvarchar(64) NULL,
+                    [BatchLot] nvarchar(64) NULL,
+                    [PerformedBy] nvarchar(255) NOT NULL,
+                    [Notes] nvarchar(max) NULL,
+                    CONSTRAINT [FK_MedicineStockMovements_Medicines_MedicineId]
+                        FOREIGN KEY ([MedicineId]) REFERENCES [Medicines] ([Id]) ON DELETE NO ACTION
+                );
+                CREATE INDEX [IX_MedicineStockMovements_MedicineId_ExpiryDate_MovementDate]
+                    ON [MedicineStockMovements] ([MedicineId], [ExpiryDate], [MovementDate]);
+                """);
+            return;
+        }
+
+        if (ActiveProvider.Contains("MySql", StringComparison.OrdinalIgnoreCase))
+        {
+            migrationBuilder.Sql("""
+                CREATE TABLE MedicineStockMovements (
+                    Id int NOT NULL AUTO_INCREMENT PRIMARY KEY,
+                    MedicineId int NOT NULL,
+                    Type int NOT NULL,
+                    Quantity decimal(18,2) NOT NULL,
+                    CountedQuantity decimal(18,2) NULL,
+                    MovementDate datetime(6) NOT NULL,
+                    ExpiryDate datetime(6) NULL,
+                    BarcodeScanned varchar(64) NULL,
+                    BatchLot varchar(64) NULL,
+                    PerformedBy varchar(255) NOT NULL,
+                    Notes text NULL,
+                    CONSTRAINT FK_MedicineStockMovements_Medicines_MedicineId
+                        FOREIGN KEY (MedicineId) REFERENCES Medicines (Id) ON DELETE RESTRICT,
+                    INDEX IX_MedicineStockMovements_MedicineId_ExpiryDate_MovementDate (MedicineId, ExpiryDate, MovementDate)
+                );
+                """);
+            return;
+        }
+
+        throw new NotSupportedException($"The stock migration does not support provider '{ActiveProvider}'.");
     }
 
     protected override void Down(MigrationBuilder migrationBuilder)
