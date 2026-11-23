@@ -203,7 +203,6 @@ public sealed class MedicineStockWindow : Window
                     && normalized.All(ch => ch is >= '0' and <= '9'))
                     barcodeIndex[normalized.PadLeft(14, '0')] = medicineId;
             }
-            }
         }
 
         visibleMedicines = allMedicines.ToList();
