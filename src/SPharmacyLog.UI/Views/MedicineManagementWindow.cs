@@ -41,7 +41,7 @@ public sealed class MedicineManagementWindow : Window
         var import = new Button { Content = Tr.Loc.TranslateText("Import from Excel"), MinHeight = 36 };
         import.Click += async (_, _) => await ImportAsync();
         var searchButton = new Button { Content = Tr.Loc.TranslateText("Search") };
-        searchButton.Click += async (_, _) => await LoadAsync();
+        searchButton.Click += async (_, _) => { searchDebounce?.Cancel(); await LoadAsync(resetPage: true); };
         search.KeyDown += async (_, e) => { if (e.Key == Avalonia.Input.Key.Enter) { e.Handled = true; searchDebounce?.Cancel(); await LoadAsync(resetPage: true); } };
         search.TextChanged += (_, _) => ScheduleSearch();
         previousPage.Click += async (_, _) => { if (currentPage > 1) { currentPage--; await LoadAsync(); } };
@@ -66,24 +66,19 @@ public sealed class MedicineManagementWindow : Window
 
     private int TotalPages => Math.Max(1, (int)Math.Ceiling(totalCount / (double)PageSize));
 
-    private void ScheduleSearch()
+    private async void ScheduleSearch()
     {
         searchDebounce?.Cancel();
         searchDebounce?.Dispose();
         var cts = new CancellationTokenSource();
         searchDebounce = cts;
-        _ = Task.Run(async () =>
+        try
         {
-            try
-            {
-                await Task.Delay(300, cts.Token);
-                await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(async () =>
-                {
-                    if (!cts.IsCancellationRequested) await LoadAsync(resetPage: true);
-                });
-            }
-            catch (OperationCanceledException) { }
-        });
+            await Task.Delay(300, cts.Token);
+            if (!cts.IsCancellationRequested)
+                await LoadAsync(resetPage: true);
+        }
+        catch (OperationCanceledException) { }
     }
 
     private async Task LoadAsync(bool resetPage = false)
