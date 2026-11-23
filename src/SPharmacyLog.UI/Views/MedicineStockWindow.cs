@@ -95,8 +95,7 @@ public sealed class MedicineStockWindow : Window
             }
             if (!string.IsNullOrWhiteSpace(term))
                 stock = stock.Where(s => s.Name.Contains(term, StringComparison.CurrentCultureIgnoreCase)
-                    || s.Barcode.Contains(term, StringComparison.CurrentCultureIgnoreCase)
-                    || s.Lot.Contains(term, StringComparison.CurrentCultureIgnoreCase)).ToList();
+                    || s.Barcode.Contains(term, StringComparison.CurrentCultureIgnoreCase)).ToList();
             currentStock = stock.OrderBy(s => s.Name).ToList();
             stockRows.Children.Clear();
             foreach (var row in currentStock)
