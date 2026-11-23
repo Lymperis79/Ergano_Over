@@ -173,9 +173,12 @@ public sealed class MedicineStockWindow : Window
         await using (var db = new PharmacyDbContext(PharmacyDb.Options()))
         {
             allMedicines = await db.Medicines.AsNoTracking().OrderBy(m => m.Name).ToListAsync();
-            var alternateGroups = await db.MedicineBarcodes.AsNoTracking()
+            var alternateBarcodes = await db.MedicineBarcodes.AsNoTracking()
+                .Select(b => new { b.MedicineId, b.BarcodeValue })
+                .ToListAsync();
+            var alternateGroups = alternateBarcodes
                 .GroupBy(b => b.MedicineId)
-                .ToDictionaryAsync(g => g.Key, g => g.Select(b => b.BarcodeValue).ToList());
+                .ToDictionary(g => g.Key, g => g.Select(b => b.BarcodeValue).ToList());
 
             searchIndex = allMedicines.ToDictionary(
                 m => m.Id,
