@@ -23,7 +23,7 @@
 
   <ItemGroup>
     <PackageReference Include="ZXing.Net" />
-    <PackageReference Include="ClosedXML" Version="0.104.2" />
+    <PackageReference Include="ClosedXML" />
     <PackageReference Include="System.Security.Cryptography.ProtectedData" />
   </ItemGroup>
 
