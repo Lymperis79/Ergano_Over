@@ -1942,9 +1942,6 @@ public partial class MainWindow : Window
         var scanPanel = new StackPanel { Spacing = 7 };
         scanPanel.Children.Add(new TextBlock { Text = "GS1 DATAMATRIX SCAN", FontWeight = FontWeight.SemiBold });
         scanPanel.Children.Add(scanInput);
-        scanPanel.Children.Add(new TextBlock { Text = "Raw barcode (GS separator shown as <GS>):", FontSize = 12, Foreground = Brushes.LightGray });
-        scanPanel.Children.Add(scanEcho);
-
         scanPanel.Children.Add(new TextBlock { Text = "Parsed fields — verify or correct before saving:", FontWeight = FontWeight.SemiBold, Margin = new Thickness(0, 5, 0, 0) });
         void AddScanField(string label, TextBox box)
         {
@@ -1956,6 +1953,8 @@ public partial class MainWindow : Window
         AddScanField("Expiry date (AI 17)", expiryInput);
         AddScanField("Batch / Lot (AI 10)", lotInput);
         AddScanField("EOF / EAN-13", eofInput);
+        scanPanel.Children.Add(new TextBlock { Text = "Raw barcode (GS separator shown as <GS>):", FontSize = 12, Foreground = Brushes.LightGray, Margin = new Thickness(0, 5, 0, 0) });
+        scanPanel.Children.Add(scanEcho);
         scanPanel.Children.Add(scanStatus);
         scanInput.GotFocus += (_, _) => ActivateEnglishBarcodeKeyboard();
         scanInput.LostFocus += (_, _) => RestoreBarcodeKeyboard();
@@ -2022,7 +2021,12 @@ public partial class MainWindow : Window
             Text = isEdit ? "EDIT BORROWING" : "ADD MEDICINE / BORROWING",
             FontSize = 19, FontWeight = FontWeight.Bold
         });
-        // Main borrowing details are placed first for faster data entry.
+        if (!isEdit)
+        {
+            // Scanner input and parsed GS1 data appear first in the form.
+            form.Children.Add(scanPanel);
+        }
+
         var medicineNameGroup = new StackPanel { Spacing = 4, Margin = new Thickness(0, 3) };
         medicineNameGroup.Children.Add(new TextBlock { Text = "Medicine name", Foreground = Brushes.LightGray, FontSize = 12 });
         medicineNameGroup.Children.Add(medicineNameInput);
@@ -2055,10 +2059,6 @@ public partial class MainWindow : Window
         primaryFields.Children.Add(noteGroup);
         form.Children.Add(primaryFields);
 
-        if (!isEdit)
-        {
-            form.Children.Add(scanPanel);
-        }
         else
         {
             var scanInfo = new TextBlock
