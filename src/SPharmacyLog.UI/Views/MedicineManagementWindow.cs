@@ -170,14 +170,60 @@ public sealed class MedicineManagementWindow : Window
 
     private async Task ImportAsync()
     {
-        var file=await StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions{Title=Tr.Loc.TranslateText("Import medicines"),AllowMultiple=false,FileTypeFilter=new[]{new FilePickerFileType("Excel-compatible CSV"){Patterns=new[]{"*.csv"}}}});
+        var file=await StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions{Title=Tr.Loc.TranslateText("Import medicines"),AllowMultiple=false,FileTypeFilter=new[]{new FilePickerFileType("Excel workbook or CSV"){Patterns=new[]{"*.xlsx","*.csv"}}}});
         if(file.Count==0)return;
         try
         {
-            await using var stream=await file[0].OpenReadAsync();using var reader=new StreamReader(stream,Encoding.UTF8,true);
-            var rows=new List<string[]>();string? line=await reader.ReadLineAsync();if(line is null){status.Text=Tr.Loc.TranslateText("Import file has no medicine rows.");return;}var delimiter=DetectCsvDelimiter(line);rows.Add(ParseCsv(line,delimiter));while((line=await reader.ReadLineAsync())!=null)rows.Add(ParseCsv(line,delimiter));
+            var rows = new List<string[]>();
+            var extension = Path.GetExtension(file[0].Name);
+            if (extension.Equals(".xlsx", StringComparison.OrdinalIgnoreCase))
+            {
+                await using var excelStream = await file[0].OpenReadAsync();
+                using var workbook = new ClosedXML.Excel.XLWorkbook(excelStream);
+                var worksheet = workbook.Worksheets.FirstOrDefault();
+                var lastRow = worksheet?.LastRowUsed()?.RowNumber() ?? 0;
+                var lastColumn = worksheet?.LastColumnUsed()?.ColumnNumber() ?? 0;
+                if (worksheet is null || lastRow < 2 || lastColumn < 1)
+                {
+                    status.Text = Tr.Loc.TranslateText("Import file has no medicine rows.");
+                    return;
+                }
+
+                string CellText(int row, int column)
+                {
+                    var cell = worksheet.Cell(row, column);
+                    if (cell.IsEmpty()) return "";
+                    if (cell.DataType == ClosedXML.Excel.XLDataType.Number)
+                    {
+                        var number = cell.GetDouble();
+                        return number == Math.Truncate(number)
+                            ? number.ToString("0", System.Globalization.CultureInfo.InvariantCulture)
+                            : number.ToString(System.Globalization.CultureInfo.InvariantCulture);
+                    }
+                    return cell.GetString().Trim();
+                }
+
+                rows.Add(Enumerable.Range(1, lastColumn).Select(column => CellText(1, column)).ToArray());
+                for (int row = 2; row <= lastRow; row++)
+                    rows.Add(Enumerable.Range(1, lastColumn).Select(column => CellText(row, column)).ToArray());
+            }
+            else
+            {
+                await using var csvStream = await file[0].OpenReadAsync();
+                using var reader = new StreamReader(csvStream, Encoding.UTF8, true);
+                string? line = await reader.ReadLineAsync();
+                if (line is null)
+                {
+                    status.Text = Tr.Loc.TranslateText("Import file has no medicine rows.");
+                    return;
+                }
+                var delimiter = DetectCsvDelimiter(line);
+                rows.Add(ParseCsv(line, delimiter));
+                while ((line = await reader.ReadLineAsync()) != null) rows.Add(ParseCsv(line, delimiter));
+            }
+
             if(rows.Count<2){status.Text=Tr.Loc.TranslateText("Import file has no medicine rows.");return;}
-            var headers=rows[0].Select(h=>h.Trim()).ToArray();int ix(string name)=>Array.FindIndex(headers,h=>h.Equals(name,StringComparison.OrdinalIgnoreCase));
+            var headers=rows[0].Select(h=>h.Trim().TrimStart('\uFEFF')).ToArray();int ix(string name)=>Array.FindIndex(headers,h=>h.Equals(name,StringComparison.OrdinalIgnoreCase));
             int nameIx=ix("Name"),barcodeIx=ix("Barcode"),notesIx=ix("Notes"),activeIx=ix("IsActive");
             if(nameIx<0){status.Text=Tr.Loc.TranslateText("CSV requires a Name column.");return;}
             await using var db=new PharmacyDbContext(PharmacyDb.Options());var existing=await db.Medicines.ToListAsync();int added=0,updated=0;
