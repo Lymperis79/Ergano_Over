@@ -165,7 +165,7 @@ public sealed class MedicineManagementWindow : Window
         }catch(Exception ex){status.Text=Tr.Loc.TranslateText("Import failed")+": "+ex.Message;}
     }
 
-    private static string CsvEscape(string value)=>"\""+value.Replace("\"","\\"")+" \"".Trim();
+    private static string CsvEscape(string value) => "\"" + value.Replace("\"", "\"\"") + "\"";
     private static string[] ParseCsv(string line)
     {
         var result=new List<string>();var current=new StringBuilder();bool quoted=false;
