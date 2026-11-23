@@ -143,8 +143,9 @@ public sealed class MedicineStockWindow : Window
         var formTitle = type switch { MedicineStockMovementType.Count => "Stock count", MedicineStockMovementType.Add => "Add stock", _ => "Remove stock" };
         var isRemove = type == MedicineStockMovementType.Remove;
         var isCount = type == MedicineStockMovementType.Count;
-        var barcode = new TextBox { MinWidth = 320, PlaceholderText = Tr.Loc.TranslateText("Scan medicine barcode") };
-        var medicineSearch = new TextBox { MinWidth = 320, PlaceholderText = Tr.Loc.TranslateText("Type medicine name or barcode") };
+        // One input handles both typed searches and barcode scanner input.
+        var medicineSearch = new TextBox { MinWidth = 320, PlaceholderText = Tr.Loc.TranslateText("Search or scan medicine name / barcode") };
+        string? lastScannedBarcode = null;
         var medicine = new ComboBox { MinWidth = 320 };
         var scanFeedback = new TextBlock { TextWrapping = TextWrapping.Wrap, Foreground = Brushes.LightGray };
         var quantity = new TextBox { MinWidth = 320, Text = "1" };
@@ -265,11 +266,11 @@ public sealed class MedicineStockWindow : Window
 
         medicine.SelectionChanged += async (_, _) => await UpdateAvailableStockAsync();
 
-        barcode.KeyDown += (_, e) =>
+        medicineSearch.KeyDown += async (_, e) =>
         {
             if (e.Key != Key.Enter) return;
             e.Handled = true;
-            var scanned = barcode.Text?.Trim();
+            var scanned = medicineSearch.Text?.Trim();
             if (string.IsNullOrWhiteSpace(scanned)) return;
 
             Gs1DataMatrixParser.ParsedPack? parsedPack = null;
@@ -296,6 +297,7 @@ public sealed class MedicineStockWindow : Window
 
             if (matchedMedicineId.HasValue)
             {
+                lastScannedBarcode = scanned;
                 medicineSearch.Text = "";
                 searchVersion++;
                 visibleMedicines = allMedicines;
@@ -317,20 +319,27 @@ public sealed class MedicineStockWindow : Window
             }
             else
             {
-                if (!string.IsNullOrWhiteSpace(gtin))
-                    medicineSearch.Text = gtin;
-                else
-                    medicineSearch.Text = scanned;
-                scanFeedback.Text = isGs1
-                    ? $"{Tr.Loc.TranslateText("QR decoded, but no medicine matches GTIN")}: {gtin}"
-                    : $"{Tr.Loc.TranslateText("Barcode / QR not recognized")}: {parseError}";
+                var looksLikeBarcode = !string.IsNullOrWhiteSpace(gtin)
+                    || scanned.StartsWith("]d2", StringComparison.Ordinal)
+                    || scanned.Contains("(01)", StringComparison.Ordinal)
+                    || scanned.Contains((char)29);
+                if (looksLikeBarcode)
+                {
+                    if (!string.IsNullOrWhiteSpace(gtin)) medicineSearch.Text = gtin;
+                    scanFeedback.Text = isGs1
+                        ? $"{Tr.Loc.TranslateText("QR decoded, but no medicine matches GTIN")}: {gtin}"
+                        : $"{Tr.Loc.TranslateText("Barcode / QR not recognized")}: {parseError}";
+                    return;
+                }
+                lastScannedBarcode = null;
+                await ApplyMedicineFilterAsync(++searchVersion);
+                if (visibleMedicines.Count == 1) medicine.SelectedIndex = 0;
             }
         };
 
         var fields = new StackPanel { Spacing = 9, Margin = new Thickness(16) };
-        fields.Children.Add(new TextBlock { Text = Tr.Loc.TranslateText("Scan or select a medicine"), FontSize = 17, FontWeight = FontWeight.Bold });
-        AddField(fields, "Barcode scan", barcode);
-        AddField(fields, "Search medicine", medicineSearch);
+        fields.Children.Add(new TextBlock { Text = Tr.Loc.TranslateText("Search or scan a medicine"), FontSize = 17, FontWeight = FontWeight.Bold });
+        AddField(fields, "Medicine / barcode", medicineSearch);
         AddField(fields, "Medicine", medicine);
         fields.Children.Add(scanFeedback);
         if (isRemove)
@@ -390,7 +399,7 @@ public sealed class MedicineStockWindow : Window
         };
         Grid.SetRow(footer, 1);
         dialog.Content = root;
-        dialog.Opened += (_, _) => barcode.Focus();
+        dialog.Opened += (_, _) => medicineSearch.Focus();
         cancel.Click += (_, _) => dialog.Close();
 
         save.Click += async (_, _) =>
@@ -416,7 +425,7 @@ public sealed class MedicineStockWindow : Window
             var movedAt = DateTime.Now;
             var actor = currentUser;
             var noteValue = string.IsNullOrWhiteSpace(notes.Text) ? null : notes.Text.Trim();
-            var scannedValue = string.IsNullOrWhiteSpace(barcode.Text) ? selected.Barcode : barcode.Text.Trim();
+            var scannedValue = lastScannedBarcode ?? selected.Barcode;
 
             if (isRemove)
             {
