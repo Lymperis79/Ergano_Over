@@ -189,6 +189,11 @@ public sealed class MedicineStockWindow : Window
         AddField(fields, "Movement date", movementDate);
         AddField(fields, "Performed by", performed);
         AddField(fields, "Notes (optional)", notes);
+        fields.Children.Add(new TextBlock { Text = Tr.Loc.TranslateText(type == MedicineStockMovementType.Count
+            ? "A count without expiry and batch resets total medicine stock; with either field, it counts that batch only."
+            : type == MedicineStockMovementType.Remove
+                ? "When expiry and batch are left blank, stock is removed from the earliest-expiring batches first."
+                : "You may record expiry and batch details to track stock by batch."), TextWrapping = TextWrapping.Wrap, Foreground = Brushes.LightGray });
         var save = new Button { Content = Tr.Loc.TranslateText("Save"), MinWidth = 100, Classes = { "accent" } };
         var cancel = new Button { Content = Tr.Loc.TranslateText("Cancel"), MinWidth = 100 };
         var footer = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, HorizontalAlignment = HorizontalAlignment.Right, Children = { save, cancel } };
