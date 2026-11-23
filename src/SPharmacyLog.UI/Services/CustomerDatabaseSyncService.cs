@@ -21,6 +21,7 @@ public sealed class CustomerDatabaseSyncSettings
     public string FilterColumn { get; set; } = "KPP_KATHGOR";
     public string FilterValue { get; set; } = "ΠΕΛ";
     public List<CustomerImportFilter> Filters { get; set; } = new();
+    public bool DeactivateWhenAmkaMissing { get; set; }
     public Dictionary<string, string> FieldMappings { get; set; } = new(StringComparer.OrdinalIgnoreCase)
     {
         ["CustomerNumber"] = "PEL_PRO_CODE",
@@ -41,7 +42,7 @@ public sealed class CustomerImportFilter
     public string Value { get; set; } = string.Empty;
 }
 
-public sealed record CustomerImportResult(int Added, int Updated, int InactiveSkipped, int InvalidSkipped);
+public sealed record CustomerImportResult(int Added, int Updated, int InactiveSkipped, int InvalidSkipped, int MarkedInactive);
 
 /// <summary>
 /// One-way SQL Server customer import. The source database is read-only from this service.
@@ -189,6 +190,7 @@ public static class CustomerDatabaseSyncService
         var updated = 0;
         var inactiveSkipped = 0;
         var invalidSkipped = 0;
+        var markedInactive = 0;
         // Load destination customers once. This also lets repeated source rows
         // resolve to the same tracked entity without issuing one query per row.
         var customerByNumber = (await destination.Customers.ToListAsync(cancellationToken))
@@ -239,6 +241,11 @@ public static class CustomerDatabaseSyncService
                     CreatedAt = DateTime.UtcNow
                 };
                 ApplyMappedValues(existing, values, isNew: true);
+                if (ShouldDeactivateForMissingAmka(settings, mappings, values))
+                {
+                    existing.IsActive = false;
+                    markedInactive++;
+                }
                 destination.Customers.Add(existing);
                 customerByNumber[customerNumber] = existing;
                 added++;
@@ -246,6 +253,11 @@ public static class CustomerDatabaseSyncService
             else
             {
                 ApplyMappedValues(existing, values, isNew: false);
+                if (ShouldDeactivateForMissingAmka(settings, mappings, values))
+                {
+                    existing.IsActive = false;
+                    markedInactive++;
+                }
                 updated++;
             }
         }
@@ -253,9 +265,20 @@ public static class CustomerDatabaseSyncService
         await reader.CloseAsync();
         await destination.SaveChangesAsync(cancellationToken);
         await transaction.CommitAsync(cancellationToken);
-        return new CustomerImportResult(added, updated, inactiveSkipped, invalidSkipped);
+        return new CustomerImportResult(added, updated, inactiveSkipped, invalidSkipped, markedInactive);
     }
 
+
+
+    private static bool ShouldDeactivateForMissingAmka(
+        CustomerDatabaseSyncSettings settings,
+        IReadOnlyDictionary<string, string> mappings,
+        IReadOnlyDictionary<string, string?> values)
+    {
+        return settings.DeactivateWhenAmkaMissing
+            && mappings.ContainsKey(nameof(Customer.Amka))
+            && (!values.TryGetValue(nameof(Customer.Amka), out var amka) || string.IsNullOrWhiteSpace(amka));
+    }
 
     private static (string Where, List<(string Name, object Value)> Parameters) BuildFilterClause(
         CustomerDatabaseSyncSettings settings, IReadOnlyList<string> availableColumns)
