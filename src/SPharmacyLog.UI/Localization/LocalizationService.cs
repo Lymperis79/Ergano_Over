@@ -157,6 +157,7 @@ public sealed class LocalizationService : ILocalizationService
         ["Notes"] = "Σημειώσεις",
         ["Barcode scan"] = "Σάρωση barcode",
         ["Scan medicine barcode"] = "Σαρώστε barcode φαρμάκου",
+        ["Type to filter medicines"] = "Πληκτρολογήστε για φιλτράρισμα φαρμάκων",
         ["Select medicine"] = "Επιλογή φαρμάκου",
         ["Counted quantity"] = "Καταμετρημένη ποσότητα",
         ["Expiry date (optional)"] = "Ημερομηνία λήξης (προαιρετικά)",
