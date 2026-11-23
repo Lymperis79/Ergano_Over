@@ -1688,7 +1688,7 @@ public partial class MainWindow : Window
         };
         var left = new Grid
         {
-            RowDefinitions = CreateRows(GridLength.Auto, GridLength.Auto, GridLength.Auto, GridLength.Auto, GridLength.Star),
+            RowDefinitions = CreateRows(GridLength.Auto, GridLength.Auto, GridLength.Auto, GridLength.Auto, GridLength.Auto, GridLength.Star),
             Margin = new Thickness(0, 0, 8, 0)
         };
         left.Children.Add(new TextBlock { Text = Tr.Loc["Navigation.Customers"], FontSize = 18, FontWeight = FontWeight.Bold });
@@ -1701,13 +1701,26 @@ public partial class MainWindow : Window
         };
         Grid.SetRow(newButton, 1);
         left.Children.Add(newButton);
-        Grid.SetRow(customerSearch, 2);
+        if (viewModel.User.Role == PharmacyRole.Admin)
+        {
+            var syncCustomersButton = new Button
+            {
+                Content = "⇄  Synchronize customers now",
+                HorizontalAlignment = HorizontalAlignment.Stretch,
+                MinHeight = 38,
+                Margin = new Thickness(0, 6, 0, 4)
+            };
+            syncCustomersButton.Click += async (_, _) => await RunCustomerDatabaseSyncAsync(syncCustomersButton);
+            Grid.SetRow(syncCustomersButton, 2);
+            left.Children.Add(syncCustomersButton);
+        }
+        Grid.SetRow(customerSearch, 3);
         left.Children.Add(customerSearch);
-        Grid.SetRow(showInactiveCustomersCheckBox, 3);
+        Grid.SetRow(showInactiveCustomersCheckBox, 4);
         left.Children.Add(showInactiveCustomersCheckBox);
         // Give the customer list a finite remaining height so its internal
         // vertical scrollbar becomes available when the list contains many rows.
-        Grid.SetRow(customerList, 4);
+        Grid.SetRow(customerList, 5);
         customerList.VerticalAlignment = VerticalAlignment.Stretch;
         left.Children.Add(customerList);
 
@@ -2575,6 +2588,73 @@ public partial class MainWindow : Window
             "LedgerType" when value == "Αντιστροφή" => "Reversal",
             _ => value
         };
+    }
+
+    private async Task RunCustomerDatabaseSyncAsync(Button button)
+    {
+        if (viewModel.User.Role != PharmacyRole.Admin) return;
+        button.IsEnabled = false;
+        customerStatus.Text = "Preparing customer synchronization…";
+        try
+        {
+            var settings = CustomerDatabaseSyncService.LoadSettings();
+            if (string.IsNullOrWhiteSpace(settings.Server) || string.IsNullOrWhiteSpace(settings.Database) ||
+                string.IsNullOrWhiteSpace(settings.Table) || !settings.FieldMappings.ContainsKey("CustomerNumber"))
+                throw new InvalidOperationException("The saved customer synchronization settings are incomplete. An administrator must configure the source connection, table and Customer number mapping once.");
+
+            var confirmation = new Window
+            {
+                Title = "Confirm customer synchronization",
+                Width = 520,
+                Height = 250,
+                WindowStartupLocation = WindowStartupLocation.CenterOwner
+            };
+            var cancel = new Button { Content = "Cancel", MinWidth = 90 };
+            var confirm = new Button { Content = "Synchronize", MinWidth = 110, IsDefault = true };
+            cancel.Click += (_, _) => confirmation.Close(false);
+            confirm.Click += (_, _) => confirmation.Close(true);
+            confirmation.Content = new StackPanel
+            {
+                Margin = new Thickness(20),
+                Spacing = 14,
+                Children =
+                {
+                    new TextBlock
+                    {
+                        Text = settings.DeactivateWhenAmkaMissing
+                            ? "Run the complete synchronization using the saved table, filters and field mappings? Customers with a NULL or empty source AMKA will be marked inactive. Existing inactive customers will remain unchanged."
+                            : "Run the complete synchronization using the saved table, filters and field mappings? Existing inactive customers will remain unchanged.",
+                        TextWrapping = TextWrapping.Wrap
+                    },
+                    new StackPanel
+                    {
+                        Orientation = Orientation.Horizontal,
+                        HorizontalAlignment = HorizontalAlignment.Right,
+                        Spacing = 8,
+                        Children = { cancel, confirm }
+                    }
+                }
+            };
+            if (!await confirmation.ShowDialog<bool>(this))
+            {
+                customerStatus.Text = "Customer synchronization cancelled.";
+                return;
+            }
+
+            customerStatus.Text = "Connecting to the source database and synchronizing customers…";
+            await CustomerDatabaseSyncService.TestConnectionAsync(settings);
+            await using var db = new PharmacyDbContext(PharmacyDb.Options());
+            var result = await CustomerDatabaseSyncService.ImportAsync(settings, db);
+            customerStatus.Text = $"Synchronization completed. Added: {result.Added}. Updated: {result.Updated}. Marked inactive (missing AMKA): {result.MarkedInactive}. Previously inactive skipped: {result.InactiveSkipped}. Invalid rows skipped: {result.InvalidSkipped}.";
+            await SearchCustomersAsync();
+            if (selectedCustomerId.HasValue)
+                await RefreshCustomerWorkspaceAsync();
+        }
+        catch (Exception ex)
+        {
+            customerStatus.Text = "Customer synchronization failed: " + ex.GetBaseException().Message;
+        }
+        finally { button.IsEnabled = true; }
     }
 
     private async Task RefreshCustomerWorkspaceAsync()
