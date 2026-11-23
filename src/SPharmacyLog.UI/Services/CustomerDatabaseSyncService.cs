@@ -20,6 +20,7 @@ public sealed class CustomerDatabaseSyncSettings
     public string Table { get; set; } = string.Empty;
     public string FilterColumn { get; set; } = "KPP_KATHGOR";
     public string FilterValue { get; set; } = "ΠΕΛ";
+    public List<CustomerImportFilter> Filters { get; set; } = new();
     public Dictionary<string, string> FieldMappings { get; set; } = new(StringComparer.OrdinalIgnoreCase)
     {
         ["CustomerNumber"] = "PEL_PRO_CODE",
@@ -31,6 +32,13 @@ public sealed class CustomerDatabaseSyncSettings
         ["Amka"] = "PEL_PRO_AMKA",
         ["Insurance"] = "PEL_PRO_CODE_AT"
     };
+}
+
+public sealed class CustomerImportFilter
+{
+    public string Column { get; set; } = string.Empty;
+    public string Operator { get; set; } = "Equals";
+    public string Value { get; set; } = string.Empty;
 }
 
 public sealed record CustomerImportResult(int Added, int Updated, int InactiveSkipped, int InvalidSkipped);
@@ -141,17 +149,14 @@ public static class CustomerDatabaseSyncService
     public static async Task<int> PreviewCountAsync(CustomerDatabaseSyncSettings settings, CancellationToken cancellationToken = default)
     {
         var (schema, table) = ParseTable(settings.Table);
-        var filterColumn = string.IsNullOrWhiteSpace(settings.FilterValue)
-            ? string.Empty
-            : ResolveColumn(settings.FilterColumn, await GetColumnsAsync(settings, settings.Table, cancellationToken));
-        var sql = $"SELECT COUNT_BIG(1) FROM {Quote(schema)}.{Quote(table)}" +
-                  (string.IsNullOrWhiteSpace(settings.FilterValue) || string.IsNullOrWhiteSpace(filterColumn)
-                      ? ";" : $" WHERE {Quote(filterColumn)} = @filter;");
+        var columns = await GetColumnsAsync(settings, settings.Table, cancellationToken);
+        var (where, parameters) = BuildFilterClause(settings, columns);
+        var sql = $"SELECT COUNT_BIG(1) FROM {Quote(schema)}.{Quote(table)}{where};";
         await using var connection = new SqlConnection(BuildConnectionString(settings));
         await connection.OpenAsync(cancellationToken);
         await using var command = new SqlCommand(sql, connection);
-        if (sql.Contains("@filter", StringComparison.Ordinal))
-            command.Parameters.AddWithValue("@filter", settings.FilterValue);
+        foreach (var parameter in parameters)
+            command.Parameters.AddWithValue(parameter.Name, parameter.Value);
         var count = await command.ExecuteScalarAsync(cancellationToken);
         return Convert.ToInt32(count);
     }
@@ -171,18 +176,14 @@ public static class CustomerDatabaseSyncService
 
         var selectedColumns = mappings.Values.Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
         var (schema, table) = ParseTable(settings.Table);
-        var filterColumn = string.IsNullOrWhiteSpace(settings.FilterValue)
-            ? string.Empty
-            : ResolveColumn(settings.FilterColumn, columns);
-        var sql = $"SELECT {string.Join(", ", selectedColumns.Select(Quote))} FROM {Quote(schema)}.{Quote(table)}";
-        if (!string.IsNullOrWhiteSpace(settings.FilterValue) && !string.IsNullOrWhiteSpace(filterColumn))
-            sql += $" WHERE {Quote(filterColumn)} = @filter";
+        var (where, parameters) = BuildFilterClause(settings, columns);
+        var sql = $"SELECT {string.Join(", ", selectedColumns.Select(Quote))} FROM {Quote(schema)}.{Quote(table)}{where}";
 
         await using var source = new SqlConnection(BuildConnectionString(settings));
         await source.OpenAsync(cancellationToken);
         await using var command = new SqlCommand(sql, source);
-        if (!string.IsNullOrWhiteSpace(settings.FilterValue) && !string.IsNullOrWhiteSpace(filterColumn))
-            command.Parameters.AddWithValue("@filter", settings.FilterValue);
+        foreach (var parameter in parameters)
+            command.Parameters.AddWithValue(parameter.Name, parameter.Value);
 
         var added = 0;
         var updated = 0;
@@ -254,6 +255,70 @@ public static class CustomerDatabaseSyncService
         await transaction.CommitAsync(cancellationToken);
         return new CustomerImportResult(added, updated, inactiveSkipped, invalidSkipped);
     }
+
+
+    private static (string Where, List<(string Name, object Value)> Parameters) BuildFilterClause(
+        CustomerDatabaseSyncSettings settings, IReadOnlyList<string> availableColumns)
+    {
+        // Older saved configurations used one exact-match filter. Keep them working.
+        var filters = settings.Filters?.Where(filter =>
+            !string.IsNullOrWhiteSpace(filter.Column) &&
+            (filter.Operator is "IsEmpty" or "IsNotEmpty" || !string.IsNullOrWhiteSpace(filter.Value))).ToList()
+            ?? new List<CustomerImportFilter>();
+        if (filters.Count == 0 && !string.IsNullOrWhiteSpace(settings.FilterValue))
+            filters.Add(new CustomerImportFilter { Column = settings.FilterColumn, Operator = "Equals", Value = settings.FilterValue });
+
+        var clauses = new List<string>();
+        var parameters = new List<(string Name, object Value)>();
+        foreach (var filter in filters)
+        {
+            var column = ResolveColumn(filter.Column, availableColumns);
+            var quoted = Quote(column);
+            var parameter = "@filter" + parameters.Count;
+            switch (filter.Operator)
+            {
+                case "Equals":
+                    clauses.Add($"{quoted} = {parameter}");
+                    parameters.Add((parameter, filter.Value));
+                    break;
+                case "NotEquals":
+                    clauses.Add($"{quoted} <> {parameter}");
+                    parameters.Add((parameter, filter.Value));
+                    break;
+                case "Contains":
+                    clauses.Add($"{quoted} LIKE {parameter} ESCAPE '\\'");
+                    parameters.Add((parameter, "%" + EscapeLike(filter.Value) + "%"));
+                    break;
+                case "StartsWith":
+                    clauses.Add($"{quoted} LIKE {parameter} ESCAPE '\\'");
+                    parameters.Add((parameter, EscapeLike(filter.Value) + "%"));
+                    break;
+                case "GreaterThan":
+                    clauses.Add($"{quoted} > {parameter}");
+                    parameters.Add((parameter, filter.Value));
+                    break;
+                case "LessThan":
+                    clauses.Add($"{quoted} < {parameter}");
+                    parameters.Add((parameter, filter.Value));
+                    break;
+                case "IsEmpty":
+                    clauses.Add($"({quoted} IS NULL OR LTRIM(RTRIM(CONVERT(nvarchar(max), {quoted}))) = '')");
+                    break;
+                case "IsNotEmpty":
+                    clauses.Add($"({quoted} IS NOT NULL AND LTRIM(RTRIM(CONVERT(nvarchar(max), {quoted}))) <> '')");
+                    break;
+                default:
+                    throw new InvalidOperationException($"Unsupported filter operator: {filter.Operator}");
+            }
+        }
+        return (clauses.Count == 0 ? string.Empty : " WHERE " + string.Join(" AND ", clauses), parameters);
+    }
+
+    private static string EscapeLike(string value) => value
+        .Replace("\\", "\\\\", StringComparison.Ordinal)
+        .Replace("%", "\\%", StringComparison.Ordinal)
+        .Replace("_", "\\_", StringComparison.Ordinal)
+        .Replace("[", "\\[", StringComparison.Ordinal);
 
     private static void ApplyMappedValues(Customer customer, IReadOnlyDictionary<string, string?> values, bool isNew)
     {
