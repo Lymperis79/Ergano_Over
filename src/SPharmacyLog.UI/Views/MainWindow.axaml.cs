@@ -3985,7 +3985,7 @@ public partial class MainWindow : Window
             .ToList();
 
         customerList.ItemsSource = rows.Select(c => new CustomerListItem(c.Id,
-            $"{c.CustomerNumber} | {(string.IsNullOrWhiteSpace(c.FullName) ? $"{c.FirstName} {c.Surname}" : c.FullName)}")).ToList();
+            $"{(string.IsNullOrWhiteSpace(c.Amka) ? "—" : c.Amka)} | {(string.IsNullOrWhiteSpace(c.FullName) ? $"{c.FirstName} {c.Surname}" : c.FullName)}")).ToList();
     }
 
     private async Task LoadCustomerAsync(int id)
