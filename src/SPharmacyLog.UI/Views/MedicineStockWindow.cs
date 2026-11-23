@@ -83,20 +83,16 @@ public sealed class MedicineStockWindow : Window
                 .OrderBy(x => x.MovementDate).ThenBy(x => x.Id).ToListAsync();
             var term = search.Text?.Trim();
             var stock = new List<StockRow>();
-            var keys = movements.GroupBy(m => new { m.MedicineId, Expiry = m.ExpiryDate?.Date, Lot = m.BatchLot ?? "" });
-            foreach (var bucket in keys)
+            foreach (var medicineGroup in movements.GroupBy(m => m.MedicineId))
             {
-                decimal balance = 0;
-                foreach (var movement in bucket.OrderBy(m => m.MovementDate).ThenBy(m => m.Id))
+                var med = medicines.FirstOrDefault(m => m.Id == medicineGroup.Key);
+                if (med == null) continue;
+                foreach (var bucket in CalculateBalances(medicineGroup))
                 {
-                    if (movement.Type == MedicineStockMovementType.Count) balance = movement.CountedQuantity ?? 0;
-                    else if (movement.Type == MedicineStockMovementType.Add) balance += movement.Quantity;
-                    else balance -= movement.Quantity;
+                    if (bucket.Value <= 0) continue;
+                    var last = medicineGroup.OrderByDescending(m => m.MovementDate).ThenByDescending(m => m.Id).First();
+                    stock.Add(new StockRow(med.Name, med.Barcode ?? "", bucket.Key.Expiry, bucket.Key.Lot, bucket.Value, last.MovementDate, last.PerformedBy, med.Id));
                 }
-                var last = bucket.OrderByDescending(m => m.MovementDate).ThenByDescending(m => m.Id).First();
-                var med = medicines.FirstOrDefault(m => m.Id == bucket.Key.MedicineId);
-                if (med == null || balance == 0) continue;
-                stock.Add(new StockRow(med.Name, med.Barcode ?? "", bucket.Key.Expiry, bucket.Key.Lot, balance, last.MovementDate, last.PerformedBy, med.Id));
             }
             if (!string.IsNullOrWhiteSpace(term))
                 stock = stock.Where(s => s.Name.Contains(term, StringComparison.CurrentCultureIgnoreCase)
@@ -205,17 +201,9 @@ public sealed class MedicineStockWindow : Window
             if (type == MedicineStockMovementType.Remove)
             {
                 var allMovements = await db.MedicineStockMovements.Where(m => m.MedicineId == selected.Id).OrderBy(m => m.MovementDate).ThenBy(m => m.Id).ToListAsync();
-                var buckets = allMovements.GroupBy(m => new { Expiry = m.ExpiryDate?.Date, Lot = m.BatchLot ?? "" })
-                    .Select(group =>
-                    {
-                        decimal balance = 0;
-                        foreach (var prior in group)
-                            if (prior.Type == MedicineStockMovementType.Count) balance = prior.CountedQuantity ?? 0;
-                            else if (prior.Type == MedicineStockMovementType.Add) balance += prior.Quantity;
-                            else balance -= prior.Quantity;
-                        return new { group.Key.Expiry, group.Key.Lot, Balance = balance };
-                    })
-                    .Where(b => b.Balance > 0 && (!expiryDate.HasValue || b.Expiry == expiryDate) && (string.IsNullOrWhiteSpace(lotValue) || b.Lot.Equals(lotValue, StringComparison.OrdinalIgnoreCase)))
+                var balances = CalculateBalances(allMovements);
+                var buckets = balances.Where(b => b.Value > 0 && (!expiryDate.HasValue || b.Key.Expiry == expiryDate) && (string.IsNullOrWhiteSpace(lotValue) || b.Key.Lot.Equals(lotValue, StringComparison.OrdinalIgnoreCase)))
+                    .Select(b => new { b.Key.Expiry, b.Key.Lot, Balance = b.Value })
                     .OrderBy(b => b.Expiry ?? DateTime.MaxValue).ThenBy(b => b.Lot).ToList();
                 var available = buckets.Sum(b => b.Balance);
                 if (qty > available) { status.Text = Tr.Loc.TranslateText("Insufficient stock") + ". " + Tr.Loc.TranslateText("Available") + ": " + available.ToString("0.##"); return; }
@@ -241,6 +229,23 @@ public sealed class MedicineStockWindow : Window
         await dialog.ShowDialog(this);
     }
 
+    private static Dictionary<(DateTime? Expiry, string Lot), decimal> CalculateBalances(IEnumerable<MedicineStockMovement> movements)
+    {
+        var balances = new Dictionary<(DateTime? Expiry, string Lot), decimal>();
+        foreach (var movement in movements.OrderBy(m => m.MovementDate).ThenBy(m => m.Id))
+        {
+            var key = (movement.ExpiryDate?.Date, movement.BatchLot ?? "");
+            if (movement.Type == MedicineStockMovementType.Count)
+            {
+                // A count with no expiry and no lot is a full medicine count and resets all batches.
+                if (!movement.ExpiryDate.HasValue && string.IsNullOrWhiteSpace(movement.BatchLot)) balances.Clear();
+                balances[key] = movement.CountedQuantity ?? 0;
+            }
+            else if (movement.Type == MedicineStockMovementType.Add) balances[key] = balances.GetValueOrDefault(key) + movement.Quantity;
+            else balances[key] = balances.GetValueOrDefault(key) - movement.Quantity;
+        }
+        return balances;
+    }
     private static void AddField(Panel panel, string label, Control control)
     {
         panel.Children.Add(new TextBlock { Text = Tr.Loc.TranslateText(label), FontWeight = FontWeight.SemiBold });
