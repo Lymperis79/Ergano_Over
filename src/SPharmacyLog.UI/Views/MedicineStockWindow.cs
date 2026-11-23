@@ -192,6 +192,7 @@ public sealed class MedicineStockWindow : Window
         var footer = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, HorizontalAlignment = HorizontalAlignment.Right, Children = { save, cancel } };
         var root = new Grid { RowDefinitions = new RowDefinitions("*,Auto"), Children = { new ScrollViewer { Content = fields }, footer }, Margin = new Thickness(10) };
         Grid.SetRow(footer, 1); dialog.Content = root;
+        dialog.Opened += (_, _) => barcode.Focus();
         cancel.Click += (_, _) => dialog.Close();
         save.Click += async (_, _) =>
         {
