@@ -14,7 +14,7 @@ namespace SPharmacyLog.UI.Views;
 public sealed class MedicineStockWindow : Window
 {
     private readonly string currentUser;
-    private readonly TextBox search = new() { MinWidth = 260, PlaceholderText = Tr.Loc.TranslateText("Medicine / barcode / lot") };
+    private readonly TextBox search = new() { MinWidth = 260, PlaceholderText = Tr.Loc.TranslateText("Medicine / barcode") };
     private readonly StackPanel stockRows = new() { Spacing = 2 };
     private readonly StackPanel historyRows = new() { Spacing = 2 };
     private readonly TextBlock status = new() { TextWrapping = TextWrapping.Wrap };
@@ -38,8 +38,8 @@ public sealed class MedicineStockWindow : Window
         search.KeyDown += async (_, e) => { if (e.Key == Key.Enter) { e.Handled = true; await LoadAsync(); } };
         var toolbar = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, Children = { search, find, count, add, remove, refresh } };
 
-        var stockHeader = HeaderGrid(new[] { "Medicine", "Expiry", "Batch / Lot", "Quantity", "Last movement", "Counted / moved by" }, "2*,*,*,*,*,*");
-        var historyHeader = HeaderGrid(new[] { "Date", "Medicine", "Action", "Qty / Count", "Expiry", "Batch", "User", "Notes" }, "*,2*,*,*,*,*,*,2*");
+        var stockHeader = HeaderGrid(new[] { "Medicine", "Stock quantity", "Last movement", "Counted / moved by" }, "3*,*,*,*");
+        var historyHeader = HeaderGrid(new[] { "Date", "Medicine", "Action", "Qty / Count", "User", "Notes" }, "*,2*,*,*,*,2*");
         var stockSection = new StackPanel { Spacing = 5, Children = {
             new TextBlock { Text = Tr.Loc.TranslateText("CURRENT STOCK"), FontWeight = FontWeight.Bold, FontSize = 15 },
             stockHeader,
@@ -88,27 +88,25 @@ public sealed class MedicineStockWindow : Window
             {
                 var med = medicines.FirstOrDefault(m => m.Id == medicineGroup.Key);
                 if (med == null) continue;
-                foreach (var bucket in CalculateBalances(medicineGroup))
-                {
-                    if (bucket.Value <= 0) continue;
-                    var last = medicineGroup.Where(m => m.ExpiryDate?.Date == bucket.Key.Expiry && (m.BatchLot ?? "") == bucket.Key.Lot).OrderByDescending(m => m.MovementDate).ThenByDescending(m => m.Id).First();
-                    stock.Add(new StockRow(med.Name, med.Barcode ?? "", bucket.Key.Expiry, bucket.Key.Lot, bucket.Value, last.MovementDate, last.PerformedBy, med.Id));
-                }
+                var totalQuantity = CalculateBalances(medicineGroup).Values.Sum();
+                if (totalQuantity <= 0) continue;
+                var last = medicineGroup.OrderByDescending(m => m.MovementDate).ThenByDescending(m => m.Id).First();
+                stock.Add(new StockRow(med.Name, med.Barcode ?? "", totalQuantity, last.MovementDate, last.PerformedBy, med.Id));
             }
             if (!string.IsNullOrWhiteSpace(term))
                 stock = stock.Where(s => s.Name.Contains(term, StringComparison.CurrentCultureIgnoreCase)
                     || s.Barcode.Contains(term, StringComparison.CurrentCultureIgnoreCase)
                     || s.Lot.Contains(term, StringComparison.CurrentCultureIgnoreCase)).ToList();
-            currentStock = stock.OrderBy(s => s.Name).ThenBy(s => s.Expiry).ToList();
+            currentStock = stock.OrderBy(s => s.Name).ToList();
             stockRows.Children.Clear();
             foreach (var row in currentStock)
             {
-                var values = new[] { row.Name, row.Expiry?.ToString("yyyy-MM-dd") ?? "—", row.Lot, row.Quantity.ToString("0.##"), row.LastMovement.ToString("yyyy-MM-dd HH:mm"), row.LastUser };
-                var grid = new Grid { ColumnDefinitions = new ColumnDefinitions("2*,*,*,*,*,*"), MinWidth = 900 };
+                var values = new[] { row.Name, row.Quantity.ToString("0.##"), row.LastMovement.ToString("yyyy-MM-dd HH:mm"), row.LastUser };
+                var grid = new Grid { ColumnDefinitions = new ColumnDefinitions("3*,*,*,*"), MinWidth = 760 };
                 for (var i = 0; i < values.Length; i++)
                 {
                     var cell = new TextBlock { Text = values[i], Margin = new Thickness(7, 6), TextWrapping = TextWrapping.Wrap, VerticalAlignment = VerticalAlignment.Center };
-                    if (i == 3) cell.FontWeight = FontWeight.Bold;
+                    if (i == 1) cell.FontWeight = FontWeight.Bold;
                     Grid.SetColumn(cell, i); grid.Children.Add(cell);
                 }
                 stockRows.Children.Add(new Border { BorderBrush = new SolidColorBrush(Color.Parse("#354152")), BorderThickness = new Thickness(0, 0, 0, 1), Child = grid });
@@ -124,8 +122,8 @@ public sealed class MedicineStockWindow : Window
             {
                 var action = m.Type switch { MedicineStockMovementType.Count => Tr.Loc.TranslateText("Stock count"), MedicineStockMovementType.Add => Tr.Loc.TranslateText("Stock added"), _ => Tr.Loc.TranslateText("Stock removed") };
                 var amount = m.Type == MedicineStockMovementType.Count ? $"= {m.CountedQuantity:0.##}" : $"{(m.Type == MedicineStockMovementType.Remove ? "-" : "+")}{m.Quantity:0.##}";
-                var values = new[] { m.MovementDate.ToString("yyyy-MM-dd HH:mm"), m.Medicine?.Name ?? "", action, amount, m.ExpiryDate?.ToString("yyyy-MM-dd") ?? "—", m.BatchLot ?? "", m.PerformedBy, m.Notes ?? "" };
-                var grid = new Grid { ColumnDefinitions = new ColumnDefinitions("*,2*,*,*,*,*,*,2*"), MinWidth = 1050 };
+                var values = new[] { m.MovementDate.ToString("yyyy-MM-dd HH:mm"), m.Medicine?.Name ?? "", action, amount, m.PerformedBy, m.Notes ?? "" };
+                var grid = new Grid { ColumnDefinitions = new ColumnDefinitions("*,2*,*,*,*,2*"), MinWidth = 900 };
                 for (var i = 0; i < values.Length; i++)
                 {
                     var cell = new TextBlock { Text = values[i], Margin = new Thickness(6, 5), TextWrapping = TextWrapping.Wrap, VerticalAlignment = VerticalAlignment.Center };
@@ -149,8 +147,6 @@ public sealed class MedicineStockWindow : Window
         var medicine = new ComboBox { MinWidth = 320 };
         var scanFeedback = new TextBlock { TextWrapping = TextWrapping.Wrap, Foreground = Brushes.LightGray };
         var quantity = new TextBox { MinWidth = 320, Text = "1" };
-        var expiry = new DatePicker { SelectedDate = null };
-        var batch = new TextBox { MinWidth = 320, PlaceholderText = Tr.Loc.TranslateText("Optional batch / lot") };
         var notes = new TextBox { MinWidth = 320, AcceptsReturn = true, Height = 65, TextWrapping = TextWrapping.Wrap };
         var availableText = new TextBlock
         {
@@ -306,10 +302,7 @@ public sealed class MedicineStockWindow : Window
 
                 if (parsedPack is not null)
                 {
-                    // Reuse the GS1 batch details so incoming stock is recorded against
-                    // the correct expiry/lot; removal can optionally target that same batch.
-                    expiry.SelectedDate = parsedPack.ExpiryDate;
-                    batch.Text = parsedPack.BatchLot;
+                    // GS1 data identifies the medicine only; stock is tracked as a total.
                     scanFeedback.Text = $"{Tr.Loc.TranslateText("GS1 QR decoded")}: {parsedPack.Gtin14} | {parsedPack.BatchLot} | {parsedPack.ExpiryDate:yyyy-MM-dd} — {Tr.Loc.TranslateText("Medicine matched")}: {allMedicines.First(m => m.Id == matchedMedicineId.Value).Name}";
                 }
                 else
@@ -355,8 +348,6 @@ public sealed class MedicineStockWindow : Window
         AddField(fields, isCount ? "Counted quantity" : "Quantity", quantity);
 
         var advancedFields = new StackPanel { Spacing = 8, Margin = new Thickness(4, 8) };
-        AddField(advancedFields, isRemove ? "Expiry filter (optional)" : "Expiry date (optional)", expiry);
-        AddField(advancedFields, "Batch / Lot (optional)", batch);
         AddField(advancedFields, "Notes (optional)", notes);
         fields.Children.Add(new Expander
         {
@@ -368,10 +359,10 @@ public sealed class MedicineStockWindow : Window
         fields.Children.Add(new TextBlock
         {
             Text = Tr.Loc.TranslateText(isCount
-                ? "A count without expiry and batch resets total medicine stock. With expiry or batch details, the count replaces stock for that matching group."
+                ? "The counted quantity replaces the total stock quantity for this medicine."
                 : isRemove
-                    ? "Stock is removed from the earliest-expiring batches first. Use optional details only to restrict removal to a particular expiry or batch."
-                    : "Expiry and batch details help track stock by batch."),
+                    ? "The quantity is deducted from the total available stock."
+                    : "The quantity is added to the total stock for this medicine."),
             TextWrapping = TextWrapping.Wrap,
             Foreground = Brushes.LightGray,
             FontSize = 12
@@ -421,8 +412,6 @@ public sealed class MedicineStockWindow : Window
             }
 
             await using var db = new PharmacyDbContext(PharmacyDb.Options());
-            var expiryDate = expiry.SelectedDate?.Date;
-            var lotValue = string.IsNullOrWhiteSpace(batch.Text) ? null : batch.Text.Trim();
             var movedAt = DateTime.Now;
             var actor = currentUser;
             var noteValue = string.IsNullOrWhiteSpace(notes.Text) ? null : notes.Text.Trim();
@@ -436,9 +425,7 @@ public sealed class MedicineStockWindow : Window
                     .ToListAsync();
                 var balances = CalculateBalances(allMovements);
                 var buckets = balances
-                    .Where(b => b.Value > 0
-                        && (!expiryDate.HasValue || b.Key.Expiry == expiryDate)
-                        && (string.IsNullOrWhiteSpace(lotValue) || b.Key.Lot.Equals(lotValue, StringComparison.OrdinalIgnoreCase)))
+                    .Where(b => b.Value > 0)
                     .Select(b => new { b.Key.Expiry, b.Key.Lot, Balance = b.Value })
                     .OrderBy(b => b.Expiry ?? DateTime.MaxValue)
                     .ThenBy(b => b.Lot)
@@ -479,9 +466,7 @@ public sealed class MedicineStockWindow : Window
                     Quantity = isCount ? 0 : qty,
                     CountedQuantity = isCount ? qty : null,
                     MovementDate = movedAt,
-                    ExpiryDate = expiryDate,
                     BarcodeScanned = scannedValue,
-                    BatchLot = lotValue,
                     PerformedBy = actor,
                     Notes = noteValue
                 });
@@ -532,5 +517,5 @@ public sealed class MedicineStockWindow : Window
         panel.Children.Add(control);
     }
 
-    private sealed record StockRow(string Name, string Barcode, DateTime? Expiry, string Lot, decimal Quantity, DateTime LastMovement, string LastUser, int MedicineId);
+    private sealed record StockRow(string Name, string Barcode, decimal Quantity, DateTime LastMovement, string LastUser, int MedicineId);
 }
