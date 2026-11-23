@@ -521,7 +521,20 @@ public partial class MainWindow : Window
         };
         var notesStack = (StackPanel)notesPanel.Child!;
         notesStack.Children.Add(new TextBlock { Text = Tr.Loc.TranslateText("Today's notes"), FontSize = 17, FontWeight = FontWeight.SemiBold });
+        var notesLoading = new TextBlock
+        {
+            Text = Tr.Loc.TranslateText("Loading today's notes…"),
+            Foreground = Brushes.LightGray
+        };
+        notesStack.Children.Add(notesLoading);
+        root.Children.Add(notesPanel);
+
+        // Display the dashboard shell before waiting for database-backed notes.
+        // This keeps startup responsive even when the database is slow.
+        pageHost.Content = new ScrollViewer { Content = root, VerticalScrollBarVisibility = ScrollBarVisibility.Auto };
+
         var todayNotes = await LoadDashboardNotesAsync();
+        notesStack.Children.Remove(notesLoading);
         if (todayNotes.Count == 0)
             notesStack.Children.Add(new TextBlock { Text = Tr.Loc.TranslateText("No notes for today."), Foreground = Brushes.LightGray });
         foreach (var note in todayNotes)
@@ -575,15 +588,12 @@ public partial class MainWindow : Window
                 Child = noteRow
             });
         }
-        root.Children.Add(notesPanel);
-
         var todayPanel = new Border { Background = new SolidColorBrush(Color.Parse("#202733")), BorderBrush = new SolidColorBrush(Color.Parse("#354152")), BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(10), Padding = new Thickness(16), Child = new StackPanel { Spacing = 7 } };
         var todayStack = (StackPanel)todayPanel.Child!;
         todayStack.Children.Add(new TextBlock { Text = Tr.Loc.TranslateText("Today's status"), FontSize = 17, FontWeight = FontWeight.SemiBold });
         var todaySummary = new TextBlock { Text = "Loading today's activity…", TextWrapping = TextWrapping.Wrap, Foreground = Brushes.LightGray };
         todayStack.Children.Add(todaySummary);
         root.Children.Add(todayPanel);
-        pageHost.Content = new ScrollViewer { Content = root, VerticalScrollBarVisibility = ScrollBarVisibility.Auto };
 
         async Task RefreshWeatherAsync()
         {
