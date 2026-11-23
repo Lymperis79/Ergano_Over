@@ -77,6 +77,7 @@ public partial class MainWindow : Window
     private const string MenuSubscriptions = "Subscriptions";
     private const string MenuPayments = "Payments";
     private const string MenuReports = "Reports";
+    private const string MenuMedicine = "Medicine";
     private static readonly (string Key, string LabelKey)[] ConfigurableMenus =
     {
         (MenuDashboard, "Dashboard"),
@@ -85,6 +86,7 @@ public partial class MainWindow : Window
         (MenuBorrowing, "Navigation.Borrowing"),
         (MenuSubscriptions, "Navigation.Subscriptions"),
         (MenuPayments, "Navigation.Payments"),
+        (MenuMedicine, "Medicine"),
         (MenuReports, "Navigation.Reports")
     };
     private bool skipNextCustomerSearch;
@@ -160,6 +162,7 @@ public partial class MainWindow : Window
                 MenuBorrowing => () => ShowPlaceholder(Tr.Loc[item.LabelKey]),
                 MenuSubscriptions => () => ShowPlaceholder(Tr.Loc[item.LabelKey]),
                 MenuPayments => () => ShowPlaceholder(Tr.Loc[item.LabelKey]),
+                MenuMedicine => OpenMedicineManagement,
                 _ => () => ShowPlaceholder(Tr.Loc[item.LabelKey])
             };
             var icon = item.Key switch
@@ -170,6 +173,7 @@ public partial class MainWindow : Window
                 MenuBorrowing => "▣",
                 MenuSubscriptions => "◷",
                 MenuPayments => "€",
+                MenuMedicine => "💊",
                 _ => "•"
             };
             AddNavigationButton(item.LabelKey, action, icon);
@@ -4554,6 +4558,14 @@ public partial class MainWindow : Window
     {
         if (viewModel.User.Role != PharmacyRole.Admin) return;
         var window = new MedicineCatalogWindow();
+        await window.ShowDialog(this);
+    }
+
+    private async void OpenMedicineManagement()
+    {
+        if (!CanAccessMenu(MenuMedicine)) { ShowNoMenuAccess(); return; }
+        showingExpiryCalendar = false;
+        var window = new MedicineManagementWindow();
         await window.ShowDialog(this);
     }
 
