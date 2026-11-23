@@ -29,6 +29,7 @@ public sealed class CustomerDatabaseSyncWindow : Window
     private List<CustomerImportFilter> savedFilters = new();
     private Dictionary<string, string> savedMappings = new(StringComparer.OrdinalIgnoreCase);
     private bool suppressTableSelectionChanged;
+    private bool filtersInitialized;
 
     private static readonly (string Target, string Label, string SuggestedSource)[] MappingDefinitions =
     {
@@ -298,13 +299,17 @@ public sealed class CustomerDatabaseSyncWindow : Window
             if (availableColumns.Contains(source, StringComparer.OrdinalIgnoreCase))
                 mappingBoxes[definition.Target].SelectedItem = availableColumns.First(column => column.Equals(source, StringComparison.OrdinalIgnoreCase));
         }
-        filtersPanel.Children.Clear();
-        filterRows.Clear();
-        if (savedFilters.Count == 0)
-            AddFilterRow();
-        else
-            foreach (var filter in savedFilters)
-                AddFilterRow(filter);
+        if (!filtersInitialized)
+        {
+            filtersPanel.Children.Clear();
+            filterRows.Clear();
+            if (savedFilters.Count == 0)
+                AddFilterRow();
+            else
+                foreach (var filter in savedFilters)
+                    AddFilterRow(filter);
+            filtersInitialized = true;
+        }
     }
 
 
