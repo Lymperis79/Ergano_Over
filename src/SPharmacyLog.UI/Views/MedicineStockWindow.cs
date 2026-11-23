@@ -329,6 +329,7 @@ public sealed class MedicineStockWindow : Window
                     scanFeedback.Text = isGs1
                         ? $"{Tr.Loc.TranslateText("QR decoded, but no medicine matches GTIN")}: {gtin}"
                         : $"{Tr.Loc.TranslateText("Barcode / QR not recognized")}: {parseError}";
+                    searchVersion++; // Ignore the pending debounce for the raw scanner payload.
                     return;
                 }
                 lastScannedBarcode = null;
