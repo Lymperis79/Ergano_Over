@@ -7,6 +7,7 @@ using Microsoft.EntityFrameworkCore;
 using SPharmacyLog.Data;
 using SPharmacyLog.Data.Entities;
 using SPharmacyLog.UI.Localization;
+using SPharmacyLog.UI.Services;
 
 namespace SPharmacyLog.UI.Views;
 
@@ -262,19 +263,58 @@ public sealed class MedicineStockWindow : Window
             var scanned = barcode.Text?.Trim();
             if (string.IsNullOrWhiteSpace(scanned)) return;
 
-            if (barcodeIndex.TryGetValue(scanned, out var medicineId))
+            Gs1DataMatrixParser.ParsedPack? parsedPack = null;
+            var isGs1 = Gs1DataMatrixParser.TryParse(scanned, out parsedPack, out var parseError);
+            string? gtin = isGs1 ? parsedPack?.Gtin14 : null;
+            string? eofBarcode = isGs1 ? parsedPack?.ResolvedEofBarcode : null;
+
+            // Also accept ordinary EAN/UPC/GTIN scans and normalize them to GTIN-14.
+            if (gtin is null)
+            {
+                var digits = scanned.StartsWith("]d2", StringComparison.Ordinal) ? scanned[3..] : scanned;
+                if (digits.Length is 8 or 12 or 13 or 14 && digits.All(ch => ch is >= '0' and <= '9'))
+                    gtin = digits.PadLeft(14, '0');
+            }
+
+            int? matchedMedicineId = null;
+            if (!string.IsNullOrWhiteSpace(gtin) && barcodeIndex.TryGetValue(gtin, out var gtinId))
+                matchedMedicineId = gtinId;
+            if (!matchedMedicineId.HasValue && !string.IsNullOrWhiteSpace(eofBarcode)
+                && barcodeIndex.TryGetValue(eofBarcode, out var eofId))
+                matchedMedicineId = eofId;
+            if (!matchedMedicineId.HasValue && barcodeIndex.TryGetValue(scanned, out var exactId))
+                matchedMedicineId = exactId;
+
+            if (matchedMedicineId.HasValue)
             {
                 medicineSearch.Text = "";
                 searchVersion++;
                 visibleMedicines = allMedicines;
                 medicine.ItemsSource = visibleMedicines.Select(m => m.Name).ToList();
-                medicine.SelectedIndex = visibleMedicines.FindIndex(m => m.Id == medicineId);
-                scanFeedback.Text = Tr.Loc.TranslateText("Barcode matched") + ": " + allMedicines.First(m => m.Id == medicineId).Name;
+                medicine.SelectedIndex = visibleMedicines.FindIndex(m => m.Id == matchedMedicineId.Value);
+
+                if (parsedPack is not null)
+                {
+                    // Reuse the GS1 batch details so incoming stock is recorded against
+                    // the correct expiry/lot; removal can optionally target that same batch.
+                    expiry.SelectedDate = parsedPack.ExpiryDate;
+                    batch.Text = parsedPack.BatchLot;
+                    scanFeedback.Text = $"{Tr.Loc.TranslateText("GS1 QR decoded")}: {parsedPack.Gtin14} | {parsedPack.BatchLot} | {parsedPack.ExpiryDate:yyyy-MM-dd} — {Tr.Loc.TranslateText("Medicine matched")}: {allMedicines.First(m => m.Id == matchedMedicineId.Value).Name}";
+                }
+                else
+                {
+                    scanFeedback.Text = Tr.Loc.TranslateText("Barcode matched") + ": " + allMedicines.First(m => m.Id == matchedMedicineId.Value).Name;
+                }
             }
             else
             {
-                medicineSearch.Text = scanned;
-                scanFeedback.Text = Tr.Loc.TranslateText("Barcode not found in medicine catalogue.");
+                if (!string.IsNullOrWhiteSpace(gtin))
+                    medicineSearch.Text = gtin;
+                else
+                    medicineSearch.Text = scanned;
+                scanFeedback.Text = isGs1
+                    ? $"{Tr.Loc.TranslateText("QR decoded, but no medicine matches GTIN")}: {gtin}"
+                    : $"{Tr.Loc.TranslateText("Barcode / QR not recognized")}: {parseError}";
             }
         };
 
