@@ -767,8 +767,7 @@ public sealed class LocalizationService : ILocalizationService
     {
         if (string.IsNullOrEmpty(text)) return text;
 
-        // Include both keyed application resources and literal UI phrases. This
-        // lets controls created in one language switch back without rebuilding.
+        string Finish(string value) => ReplaceSubscriptionTerminology(value);
         var translations = English.Keys
             .Where(Greek.ContainsKey)
             .Select(key => new KeyValuePair<string, string>(English[key], Greek[key]))
@@ -781,29 +780,45 @@ public sealed class LocalizationService : ILocalizationService
         {
             var exactGreek = translations.FirstOrDefault(pair => pair.Key == text);
             if (!string.IsNullOrEmpty(exactGreek.Key))
-                return exactGreek.Value;
+                return Finish(exactGreek.Value);
         }
         else
         {
             var exactEnglish = translations.FirstOrDefault(pair => pair.Value == text);
             if (!string.IsNullOrEmpty(exactEnglish.Key))
-                return exactEnglish.Key;
+                return Finish(exactEnglish.Key);
         }
 
-        // For composite text, translate phrases and labelled values only. This
-        // avoids changing a customer's actual name, address or other entered data.
         var safePhrases = translations.Where(pair => IsSafePhrase(pair.Key));
         var normalized = text;
         foreach (var pair in safePhrases.OrderByDescending(pair => pair.Value.Length))
             normalized = normalized.Replace(pair.Value, pair.Key, StringComparison.Ordinal);
 
         if (CurrentLanguage == AppLanguage.English)
-            return normalized;
+            return Finish(normalized);
 
         foreach (var pair in safePhrases.OrderByDescending(pair => pair.Key.Length))
             normalized = normalized.Replace(pair.Key, pair.Value, StringComparison.Ordinal);
 
-        return normalized;
+        return Finish(normalized);
+    }
+
+    private static string ReplaceSubscriptionTerminology(string value)
+    {
+        value = value.Replace("Subscriptions", "Prescriptions", StringComparison.Ordinal)
+            .Replace("subscriptions", "prescriptions", StringComparison.Ordinal)
+            .Replace("Subscription", "Prescription", StringComparison.Ordinal)
+            .Replace("subscription", "prescription", StringComparison.Ordinal)
+            .Replace("Συνδρομές", "Συνταγές", StringComparison.Ordinal)
+            .Replace("συνδρομές", "συνταγές", StringComparison.Ordinal)
+            .Replace("Συνδρομών", "Συνταγών", StringComparison.Ordinal)
+            .Replace("συνδρομών", "συνταγών", StringComparison.Ordinal)
+            .Replace("Συνδρομής", "Συνταγής", StringComparison.Ordinal)
+            .Replace("συνδρομής", "συνταγής", StringComparison.Ordinal)
+            .Replace("Συνδρομή", "Συνταγή", StringComparison.Ordinal)
+            .Replace("συνδρομή", "συνταγή", StringComparison.Ordinal);
+
+        return value;
     }
 
     private static bool IsSafePhrase(string key) =>
@@ -832,9 +847,7 @@ public sealed class LocalizationService : ILocalizationService
         catch { Apply(AppLanguage.English); }
     }
 
-    public string this[string key] => current.TryGetValue(key, out var value)
-        ? value
-        : English.TryGetValue(key, out var fallback) ? fallback : $"[{key}]";
+    public string this[string key] => ReplaceSubscriptionTerminology(current.TryGetValue(key, out var value)\n        ? value\n        : English.TryGetValue(key, out var fallback) ? fallback : $"[{key}]");
 
     public void SetLanguage(AppLanguage language)
     {
