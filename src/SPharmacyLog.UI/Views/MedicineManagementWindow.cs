@@ -116,7 +116,7 @@ public sealed class MedicineManagementWindow : Window
     {
         var file=await StorageProvider.SaveFilePickerAsync(new FilePickerSaveOptions{Title=Tr.Loc.TranslateText("Export medicines"),SuggestedFileName="medicines.csv",DefaultExtension="csv",FileTypeChoices=new[]{new FilePickerFileType("Excel-compatible CSV"){Patterns=new[]{"*.csv"}}}});
         if(file is null)return;
-        await using var stream=await file.OpenWrite();await using var writer=new StreamWriter(stream,new UTF8Encoding(true));
+        await using var stream=await file.OpenWriteAsync();await using var writer=new StreamWriter(stream,new UTF8Encoding(true));
         await writer.WriteLineAsync("Name,Barcode,Notes,IsActive");
         foreach(var m in loaded)await writer.WriteLineAsync(string.Join(",",new[]{m.Name,m.Barcode??"",m.Notes??"",m.IsActive.ToString()}.Select(CsvEscape)));
         status.Text=Tr.Loc.TranslateText("Medicine list exported.");
