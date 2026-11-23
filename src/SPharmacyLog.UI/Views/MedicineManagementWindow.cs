@@ -226,19 +226,45 @@ public sealed class MedicineManagementWindow : Window
             var headers=rows[0].Select(h=>h.Trim().TrimStart('\uFEFF')).ToArray();int ix(string name)=>Array.FindIndex(headers,h=>h.Equals(name,StringComparison.OrdinalIgnoreCase));
             int nameIx=ix("Name"),barcodeIx=ix("Barcode"),notesIx=ix("Notes"),activeIx=ix("IsActive");
             if(nameIx<0){status.Text=Tr.Loc.TranslateText("CSV requires a Name column.");return;}
-            await using var db=new PharmacyDbContext(PharmacyDb.Options());var existing=await db.Medicines.ToListAsync();int added=0,updated=0;
+            await using var db=new PharmacyDbContext(PharmacyDb.Options());
+            var existing=await db.Medicines.Include(m=>m.Barcodes).ToListAsync();
+            int added=0,updated=0,duplicateRows=0;
+            var importedBarcodes=new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             foreach(var row in rows.Skip(1))
             {
                 string val(int idx)=>idx>=0&&idx<row.Length?row[idx].Trim():"";
                 var nm=val(nameIx);if(string.IsNullOrWhiteSpace(nm))continue;
                 var bc=val(barcodeIx);
-                var match=existing.FirstOrDefault(m=>!string.IsNullOrWhiteSpace(bc)&&string.Equals(m.Barcode,bc,StringComparison.OrdinalIgnoreCase))
-                    ??existing.FirstOrDefault(m=>string.Equals(m.Name,nm,StringComparison.CurrentCultureIgnoreCase));
-                if(match is null){match=new MedicineCatalogItem();db.Medicines.Add(match);existing.Add(match);added++;}
+                if(!string.IsNullOrWhiteSpace(bc)&&!importedBarcodes.Add(bc))
+                {
+                    duplicateRows++;
+                    continue;
+                }
+
+                // Match against both the primary barcode and every registered alternate barcode.
+                var barcodeMatch=string.IsNullOrWhiteSpace(bc)?null:existing.FirstOrDefault(m=>
+                    string.Equals(m.Barcode?.Trim(),bc,StringComparison.OrdinalIgnoreCase)||
+                    m.Barcodes.Any(b=>string.Equals(b.BarcodeValue.Trim(),bc,StringComparison.OrdinalIgnoreCase)));
+                var nameMatch=existing.FirstOrDefault(m=>string.Equals(m.Name.Trim(),nm,StringComparison.CurrentCultureIgnoreCase));
+                var match=barcodeMatch??nameMatch;
+                if(match is null)
+                {
+                    match=new MedicineCatalogItem();
+                    db.Medicines.Add(match);
+                    existing.Add(match);
+                    added++;
+                }
                 else updated++;
-                match.Name=nm;match.Barcode=string.IsNullOrWhiteSpace(bc)?null:bc;match.Notes=val(notesIx);match.IsActive=activeIx<0||!bool.TryParse(val(activeIx),out var isActive)||isActive;
+
+                match.Name=nm;
+                // Do not replace an existing primary barcode with a different barcode.
+                if(!string.IsNullOrWhiteSpace(bc)&&
+                   (string.IsNullOrWhiteSpace(match.Barcode)||string.Equals(match.Barcode.Trim(),bc,StringComparison.OrdinalIgnoreCase)))
+                    match.Barcode=bc;
+                match.Notes=val(notesIx);
+                match.IsActive=activeIx<0||!bool.TryParse(val(activeIx),out var isActive)||isActive;
             }
-            await db.SaveChangesAsync();status.Text=$"{Tr.Loc.TranslateText("Import completed")}: {added} added, {updated} updated.";await LoadAsync();
+            await db.SaveChangesAsync();status.Text=$"{Tr.Loc.TranslateText("Import completed")}: {added} added, {updated} updated, {duplicateRows} duplicate barcode rows skipped.";await LoadAsync();
         }catch(Exception ex){status.Text=Tr.Loc.TranslateText("Import failed")+": "+ex.Message;}
     }
 
