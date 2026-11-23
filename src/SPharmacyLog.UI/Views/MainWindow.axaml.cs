@@ -485,11 +485,9 @@ public partial class MainWindow : Window
         }
 
         var customersValue = new TextBlock { Text = "—", FontSize = 30, FontWeight = FontWeight.Bold };
-        var medicineCountValue = new TextBlock { Text = "—", FontSize = 30, FontWeight = FontWeight.Bold };
         AddGroupHeader("General", "👥", "#397DA5");
-        var generalCards = new Grid { ColumnDefinitions = CreateColumns(GridLength.Star, GridLength.Star) };
+        var generalCards = new Grid { ColumnDefinitions = CreateColumns(GridLength.Star) };
         AddCard(generalCards, "Total customers", customersValue, 0, "#397DA5");
-        AddCard(generalCards, "Total medicines", medicineCountValue, 1, "#4A9B72");
         root.Children.Add(generalCards);
 
         var activeValue = new TextBlock { Text = "—", FontSize = 30, FontWeight = FontWeight.Bold };
@@ -609,13 +607,18 @@ public partial class MainWindow : Window
                 if (settings.ShowFeelsLike) parts.Add($"Feels like {snapshot.FeelsLike:0.#} °C");
                 if (settings.ShowHumidity) parts.Add($"Humidity {snapshot.Humidity}%");
                 if (settings.ShowWind) parts.Add($"Wind {snapshot.WindSpeed:0.#} km/h");
+                if (snapshot.IsCached) parts.Add("cached data");
                 weatherText.Text = string.Join("   ·   ", parts);
             }
-            catch (Exception ex) { weatherText.Text = ex.Message; }
+            catch (Exception)
+            {
+                weatherText.Text = "Weather unavailable. Check the internet connection or weather location, then try again.";
+            }
             finally { weatherRefresh.IsEnabled = true; }
         }
         weatherRefresh.Click += async (_, _) => await RefreshWeatherAsync();
-        await RefreshWeatherAsync();
+        // Weather is optional: never wait for the remote service before loading dashboard data.
+        _ = RefreshWeatherAsync();
 
         try
         {
@@ -623,7 +626,6 @@ public partial class MainWindow : Window
             var today = DateTime.Today;
             var tomorrow = today.AddDays(1);
             var customerCount = await db.Customers.CountAsync();
-            var medicineCount = await db.Medicines.CountAsync(item => item.IsActive);
             var activeCount = await db.Subscriptions.CountAsync(item => item.Status == SubscriptionStatus.Active);
             var dueToday = await db.Subscriptions.CountAsync(item => item.Status == SubscriptionStatus.Active && item.NextDueDate >= today && item.NextDueDate < tomorrow);
             var overdue = await db.Subscriptions.CountAsync(item => item.Status == SubscriptionStatus.Active && item.NextDueDate < today);
@@ -634,7 +636,6 @@ public partial class MainWindow : Window
                 .Where(item => item.Status == BorrowingStatus.Returned && item.ReturnedAt.HasValue && item.ReturnedAt.Value >= today && item.ReturnedAt.Value < tomorrow)
                 .SumAsync(item => (int?)item.Quantity) ?? 0;
             customersValue.Text = customerCount.ToString();
-            medicineCountValue.Text = medicineCount.ToString();
             activeValue.Text = activeCount.ToString();
             dueValue.Text = dueToday.ToString();
             overdueValue.Text = overdue.ToString();
