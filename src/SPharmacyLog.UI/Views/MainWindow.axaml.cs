@@ -1685,7 +1685,11 @@ public partial class MainWindow : Window
                 await RefreshCustomerWorkspaceAsync();
             }
         };
-        var left = new StackPanel { Spacing = 8 };
+        var left = new Grid
+        {
+            RowDefinitions = CreateRows(GridLength.Auto, GridLength.Auto, GridLength.Auto, GridLength.Auto, GridLength.Star),
+            Margin = new Thickness(0, 0, 8, 0)
+        };
         left.Children.Add(new TextBlock { Text = Tr.Loc["Navigation.Customers"], FontSize = 18, FontWeight = FontWeight.Bold });
         var newButton = new Button { Content = Tr.Loc["Customers.New"], Classes = { "accent" }, HorizontalAlignment = HorizontalAlignment.Stretch, MinHeight = 40 };
         newButton.Click += (_, _) =>
@@ -1694,9 +1698,16 @@ public partial class MainWindow : Window
             customerTabs.SelectedItem = customerDetailsTab;
             customerFields["CustomerNumber"].Focus();
         };
+        Grid.SetRow(newButton, 1);
         left.Children.Add(newButton);
+        Grid.SetRow(customerSearch, 2);
         left.Children.Add(customerSearch);
+        Grid.SetRow(showInactiveCustomersCheckBox, 3);
         left.Children.Add(showInactiveCustomersCheckBox);
+        // Give the customer list a finite remaining height so its internal
+        // vertical scrollbar becomes available when the list contains many rows.
+        Grid.SetRow(customerList, 4);
+        customerList.VerticalAlignment = VerticalAlignment.Stretch;
         left.Children.Add(customerList);
 
         var details = BuildCustomerDetailsTab();
