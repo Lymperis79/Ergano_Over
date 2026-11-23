@@ -13,7 +13,7 @@ namespace SPharmacyLog.UI.Views;
 public sealed class MedicineStockWindow : Window
 {
     private readonly string currentUser;
-    private readonly TextBox search = new() { MinWidth = 260, PlaceholderText = "Medicine / barcode / lot" };
+    private readonly TextBox search = new() { MinWidth = 260, PlaceholderText = Tr.Loc.TranslateText("Medicine / barcode / lot") };
     private readonly StackPanel stockRows = new() { Spacing = 2 };
     private readonly StackPanel historyRows = new() { Spacing = 2 };
     private readonly TextBlock status = new() { TextWrapping = TextWrapping.Wrap };
