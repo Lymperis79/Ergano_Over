@@ -193,6 +193,28 @@ public sealed class PharmacyDbContextModelSnapshot : ModelSnapshot
                 .OnDelete(DeleteBehavior.Restrict);
         });
 
+        modelBuilder.Entity<MedicineStockMovement>(entity =>
+        {
+            entity.ToTable("MedicineStockMovements");
+            entity.HasKey(movement => movement.Id);
+            entity.Property(movement => movement.Id).ValueGeneratedOnAdd();
+            entity.Property(movement => movement.MedicineId);
+            entity.Property(movement => movement.Type).HasConversion<int>();
+            entity.Property(movement => movement.Quantity);
+            entity.Property(movement => movement.CountedQuantity);
+            entity.Property(movement => movement.MovementDate);
+            entity.Property(movement => movement.ExpiryDate);
+            entity.Property(movement => movement.BarcodeScanned).HasMaxLength(64);
+            entity.Property(movement => movement.BatchLot).HasMaxLength(64);
+            entity.Property(movement => movement.PerformedBy).IsRequired().HasMaxLength(255);
+            entity.Property(movement => movement.Notes);
+            entity.HasIndex(movement => new { movement.MedicineId, movement.ExpiryDate, movement.MovementDate });
+            entity.HasOne(movement => movement.Medicine)
+                .WithMany()
+                .HasForeignKey(movement => movement.MedicineId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
         modelBuilder.Entity<CalendarNote>(entity =>
         {
             entity.ToTable("CalendarNotes");
