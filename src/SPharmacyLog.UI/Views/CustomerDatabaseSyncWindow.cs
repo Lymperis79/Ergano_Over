@@ -180,7 +180,47 @@ public sealed class CustomerDatabaseSyncWindow : Window
         LoadSavedSettings();
         UpdateAuthenticationFields();
         BuildMappingRows();
-        Opened += (_, _) => { };
+        Opened += async (_, _) => await InitializeSavedConfigurationAsync();
+    }
+
+    private async Task InitializeSavedConfigurationAsync()
+    {
+        if (string.IsNullOrWhiteSpace(server.Text) || string.IsNullOrWhiteSpace(database.Text) ||
+            string.IsNullOrWhiteSpace(savedTable))
+        {
+            status.Text = "Enter and save the SQL Server connection and source table once. The saved configuration will load automatically next time.";
+            return;
+        }
+
+        try
+        {
+            IsEnabled = false;
+            status.Text = "Loading saved table and field mappings…";
+            await CustomerDatabaseSyncService.TestConnectionAsync(ReadSettings());
+            var tables = await CustomerDatabaseSyncService.GetTablesAsync(ReadSettings());
+            suppressTableSelectionChanged = true;
+            table.ItemsSource = tables;
+            table.SelectedItem = tables.FirstOrDefault(item =>
+                string.Equals(item, savedTable, StringComparison.OrdinalIgnoreCase));
+            suppressTableSelectionChanged = false;
+
+            if (table.SelectedItem is string selected)
+            {
+                await LoadColumnsAsync(selected);
+                ApplySavedMappings();
+                status.Text = "Saved source table, filters and field mappings loaded automatically.";
+            }
+            else
+            {
+                status.Text = "The saved source table was not found. Use Load tables to choose a replacement.";
+            }
+        }
+        catch (Exception ex)
+        {
+            suppressTableSelectionChanged = false;
+            status.Text = "Could not load saved table/mappings: " + ex.GetBaseException().Message;
+        }
+        finally { IsEnabled = true; }
     }
 
     private static Border Card(Control content) => new()
