@@ -1755,7 +1755,7 @@ public partial class MainWindow : Window
         historyTab.IsVisible = CanAccessMenu(MenuBorrowing);
         subscriptionsTab.IsVisible = CanAccessMenu(MenuSubscriptions);
         ledgerTab.IsVisible = CanAccessMenu(MenuPayments);
-        customerTabs = new TabControl { Items = { overviewTab, details, borrowingTab, historyTab, subscriptionsTab, ledgerTab }, Margin = new Thickness(12) };
+        customerTabs = new TabControl { Items = { overviewTab, details, borrowingTab, subscriptionsTab, ledgerTab, historyTab }, Margin = new Thickness(12) };
         // Avalonia may attach the newly selected TabItem content only after the
         // SelectionChanged event has completed. Defer translation until the visual
         // tree has materialized, otherwise the previous tab is translated again and
