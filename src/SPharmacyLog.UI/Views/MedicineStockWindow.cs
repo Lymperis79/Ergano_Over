@@ -132,7 +132,7 @@ public sealed class MedicineStockWindow : Window
                 }
                 historyRows.Children.Add(new Border { BorderBrush = new SolidColorBrush(Color.Parse("#354152")), BorderThickness = new Thickness(0, 0, 0, 1), Child = grid });
             }
-            status.Text = $"{Tr.Loc.TranslateText("Stock lines")}: {currentStock.Count}  |  {Tr.Loc.TranslateText("Movement records")}: {movements.Count}";
+            status.Text = $"{Tr.Loc.TranslateText("Stock lines")}: {currentStock.Count}  |  {Tr.Loc.TranslateText("Total quantity")}: {currentStock.Sum(s => s.Quantity):0.##}  |  {Tr.Loc.TranslateText("Movement records")}: {movements.Count}";
         }
         catch (Exception ex) { status.Text = Tr.Loc.TranslateText("Could not load stock") + ": " + ex.Message; }
     }
@@ -233,7 +233,8 @@ public sealed class MedicineStockWindow : Window
                 var item = new MedicineStockMovement { MedicineId = selected.Id, Type = type, Quantity = type == MedicineStockMovementType.Count ? 0 : qty, CountedQuantity = type == MedicineStockMovementType.Count ? qty : null, MovementDate = movedAt, ExpiryDate = expiryDate, BarcodeScanned = scannedValue, BatchLot = lotValue, PerformedBy = actor, Notes = noteValue };
                 db.MedicineStockMovements.Add(item);
             }
-            await db.SaveChangesAsync();
+            try { await db.SaveChangesAsync(); }
+            catch (Exception ex) { status.Text = Tr.Loc.TranslateText("Stock save failed") + ": " + ex.Message; return; }
             dialog.Close();
             status.Text = Tr.Loc.TranslateText("Stock movement saved.");
             await LoadAsync();
