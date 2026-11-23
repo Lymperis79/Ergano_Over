@@ -198,18 +198,41 @@ public sealed class MedicineStockWindow : Window
             await using var db = new PharmacyDbContext(PharmacyDb.Options());
             var expiryDate = expiry.SelectedDate?.Date;
             var lotValue = string.IsNullOrWhiteSpace(batch.Text) ? null : batch.Text.Trim();
+            var movedAt = movementDate.SelectedDate.Value.Date + DateTime.Now.TimeOfDay;
+            var actor = string.IsNullOrWhiteSpace(performed.Text) ? currentUser : performed.Text.Trim();
+            var noteValue = string.IsNullOrWhiteSpace(notes.Text) ? null : notes.Text.Trim();
+            var scannedValue = string.IsNullOrWhiteSpace(barcode.Text) ? selected.Barcode : barcode.Text.Trim();
             if (type == MedicineStockMovementType.Remove)
             {
-                var movements = await db.MedicineStockMovements.Where(m => m.MedicineId == selected.Id && m.ExpiryDate == expiryDate && m.BatchLot == lotValue).OrderBy(m => m.MovementDate).ThenBy(m => m.Id).ToListAsync();
-                decimal available = 0;
-                foreach (var prior in movements)
-                    if (prior.Type == MedicineStockMovementType.Count) available = prior.CountedQuantity ?? 0;
-                    else if (prior.Type == MedicineStockMovementType.Add) available += prior.Quantity;
-                    else available -= prior.Quantity;
-                if (qty > available) { status.Text = $"{Tr.Loc.TranslateText("Insufficient stock")}. {Tr.Loc.TranslateText("Available")}: {available:0.##}"; return; }
+                var allMovements = await db.MedicineStockMovements.Where(m => m.MedicineId == selected.Id).OrderBy(m => m.MovementDate).ThenBy(m => m.Id).ToListAsync();
+                var buckets = allMovements.GroupBy(m => new { Expiry = m.ExpiryDate?.Date, Lot = m.BatchLot ?? "" })
+                    .Select(group =>
+                    {
+                        decimal balance = 0;
+                        foreach (var prior in group)
+                            if (prior.Type == MedicineStockMovementType.Count) balance = prior.CountedQuantity ?? 0;
+                            else if (prior.Type == MedicineStockMovementType.Add) balance += prior.Quantity;
+                            else balance -= prior.Quantity;
+                        return new { group.Key.Expiry, group.Key.Lot, Balance = balance };
+                    })
+                    .Where(b => b.Balance > 0 && (!expiryDate.HasValue || b.Expiry == expiryDate) && (string.IsNullOrWhiteSpace(lotValue) || b.Lot.Equals(lotValue, StringComparison.OrdinalIgnoreCase)))
+                    .OrderBy(b => b.Expiry ?? DateTime.MaxValue).ThenBy(b => b.Lot).ToList();
+                var available = buckets.Sum(b => b.Balance);
+                if (qty > available) { status.Text = Tr.Loc.TranslateText("Insufficient stock") + ". " + Tr.Loc.TranslateText("Available") + ": " + available.ToString("0.##"); return; }
+                var remaining = qty;
+                foreach (var bucket in buckets)
+                {
+                    if (remaining <= 0) break;
+                    var take = Math.Min(remaining, bucket.Balance);
+                    db.MedicineStockMovements.Add(new MedicineStockMovement { MedicineId = selected.Id, Type = type, Quantity = take, MovementDate = movedAt, ExpiryDate = bucket.Expiry, BatchLot = string.IsNullOrEmpty(bucket.Lot) ? null : bucket.Lot, BarcodeScanned = scannedValue, PerformedBy = actor, Notes = noteValue });
+                    remaining -= take;
+                }
             }
-            var item = new MedicineStockMovement { MedicineId = selected.Id, Type = type, Quantity = type == MedicineStockMovementType.Count ? 0 : qty, CountedQuantity = type == MedicineStockMovementType.Count ? qty : null, MovementDate = movementDate.SelectedDate.Value.Date + DateTime.Now.TimeOfDay, ExpiryDate = expiryDate, BarcodeScanned = string.IsNullOrWhiteSpace(barcode.Text) ? selected.Barcode : barcode.Text.Trim(), BatchLot = lotValue, PerformedBy = performed.Text?.Trim() ?? currentUser, Notes = string.IsNullOrWhiteSpace(notes.Text) ? null : notes.Text.Trim() };
-            db.MedicineStockMovements.Add(item);
+            else
+            {
+                var item = new MedicineStockMovement { MedicineId = selected.Id, Type = type, Quantity = type == MedicineStockMovementType.Count ? 0 : qty, CountedQuantity = type == MedicineStockMovementType.Count ? qty : null, MovementDate = movedAt, ExpiryDate = expiryDate, BarcodeScanned = scannedValue, BatchLot = lotValue, PerformedBy = actor, Notes = noteValue };
+                db.MedicineStockMovements.Add(item);
+            }
             await db.SaveChangesAsync();
             dialog.Close();
             status.Text = Tr.Loc.TranslateText("Stock movement saved.");
