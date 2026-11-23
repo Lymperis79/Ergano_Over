@@ -141,7 +141,8 @@ public sealed class MedicineStockWindow : Window
     {
         var formTitle = type switch { MedicineStockMovementType.Count => "Stock count", MedicineStockMovementType.Add => "Add stock", _ => "Remove stock" };
         var barcode = new TextBox { MinWidth = 320, Watermark = Tr.Loc.TranslateText("Scan medicine barcode") };
-        var medicine = new ComboBox { MinWidth = 320, IsEditable = true };
+        var medicineSearch = new TextBox { MinWidth = 320, Watermark = Tr.Loc.TranslateText("Type to filter medicines") };
+        var medicine = new ComboBox { MinWidth = 320 };
         var quantity = new TextBox { MinWidth = 320, Text = "1" };
         var expiry = new DatePicker { SelectedDate = null };
         var batch = new TextBox { MinWidth = 320, Watermark = Tr.Loc.TranslateText("Optional batch / lot") };
@@ -150,11 +151,20 @@ public sealed class MedicineStockWindow : Window
         var notes = new TextBox { MinWidth = 320, AcceptsReturn = true, Height = 70, TextWrapping = TextWrapping.Wrap };
         var dialog = new Window { Title = Tr.Loc.TranslateText(formTitle), Width = 540, Height = 700, MinWidth = 460, WindowStartupLocation = WindowStartupLocation.CenterOwner };
         var allMedicines = new List<MedicineCatalogItem>();
+        var visibleMedicines = new List<MedicineCatalogItem>();
         await using (var db = new PharmacyDbContext(PharmacyDb.Options()))
         {
             allMedicines = await db.Medicines.AsNoTracking().Where(m => m.IsActive).OrderBy(m => m.Name).ToListAsync();
             var alternates = await db.MedicineBarcodes.AsNoTracking().ToListAsync();
-            medicine.ItemsSource = allMedicines.Select(m => m.Name).ToList();
+            visibleMedicines = allMedicines.ToList();
+            medicine.ItemsSource = visibleMedicines.Select(m => m.Name).ToList();
+            medicineSearch.TextChanged += (_, _) =>
+            {
+                var filter = medicineSearch.Text?.Trim();
+                visibleMedicines = string.IsNullOrWhiteSpace(filter) ? allMedicines.ToList() : allMedicines.Where(m => m.Name.Contains(filter, StringComparison.CurrentCultureIgnoreCase) || (m.Barcode?.Contains(filter, StringComparison.OrdinalIgnoreCase) ?? false)).ToList();
+                medicine.ItemsSource = visibleMedicines.Select(m => m.Name).ToList();
+                medicine.SelectedIndex = -1;
+            };
             barcode.KeyDown += (_, e) =>
             {
                 if (e.Key != Key.Enter) return;
@@ -163,7 +173,7 @@ public sealed class MedicineStockWindow : Window
                 if (string.IsNullOrWhiteSpace(scanned)) return;
                 var match = allMedicines.FirstOrDefault(m => string.Equals(m.Barcode, scanned, StringComparison.OrdinalIgnoreCase))
                     ?? allMedicines.FirstOrDefault(m => alternates.Any(b => b.MedicineId == m.Id && string.Equals(b.BarcodeValue, scanned, StringComparison.OrdinalIgnoreCase)));
-                if (match != null) medicine.SelectedIndex = allMedicines.FindIndex(m => m.Id == match.Id);
+                if (match != null) { medicineSearch.Text = ""; medicine.SelectedIndex = visibleMedicines.FindIndex(m => m.Id == match.Id); }
                 else status.Text = Tr.Loc.TranslateText("No medicine matches this barcode. Select or create the medicine in the Medicine workspace.");
             };
         }
