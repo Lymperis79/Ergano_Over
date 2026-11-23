@@ -76,7 +76,6 @@ public sealed class MedicineManagementWindow : Window
                     new Button { Content=Tr.Loc.TranslateText("Edit"), MinWidth=64 },
                     new Button { Content=Tr.Loc.TranslateText("Delete"), MinWidth=64 }
                 }};
-                buttons.Children[0].GetType();
                 ((Button)buttons.Children[0]).Click += async (_,_)=>await EditMedicineAsync(medicine);
                 ((Button)buttons.Children[1]).Click += async (_,_)=>await DeleteAsync(medicine);
                 Grid.SetColumn(buttons,3);grid.Children.Add(buttons);
