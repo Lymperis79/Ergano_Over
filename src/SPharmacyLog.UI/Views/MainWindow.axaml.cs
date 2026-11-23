@@ -1656,6 +1656,8 @@ public partial class MainWindow : Window
             Foreground = new SolidColorBrush(Color.Parse("#9BE2B0")),
             VerticalAlignment = VerticalAlignment.Center,
             TextWrapping = TextWrapping.Wrap,
+            TextTrimming = TextTrimming.CharacterEllipsis,
+            MaxLines = 2,
             FontSize = 13,
             FontWeight = FontWeight.SemiBold
         };
@@ -1665,12 +1667,12 @@ public partial class MainWindow : Window
             BorderBrush = new SolidColorBrush(Color.Parse("#397B59")),
             BorderThickness = new Thickness(1),
             CornerRadius = new CornerRadius(10),
-            Padding = new Thickness(12, 9),
-            Margin = new Thickness(12, 8, 12, 0),
+            Padding = new Thickness(10, 6),
+            Margin = new Thickness(12, 6, 12, 0),
             Child = new StackPanel
             {
                 Orientation = Orientation.Horizontal,
-                Spacing = 9,
+                Spacing = 8,
                 Children =
                 {
                     new TextBlock { Text = "●", Foreground = new SolidColorBrush(Color.Parse("#75D99A")), FontSize = 12, VerticalAlignment = VerticalAlignment.Center },
@@ -1690,41 +1692,53 @@ public partial class MainWindow : Window
         };
         var left = new Grid
         {
-            RowDefinitions = CreateRows(GridLength.Auto, GridLength.Auto, GridLength.Auto, GridLength.Auto, GridLength.Auto, GridLength.Star),
+            RowDefinitions = CreateRows(GridLength.Auto, GridLength.Auto, GridLength.Auto, GridLength.Auto, GridLength.Star),
             Margin = new Thickness(0, 0, 8, 0)
         };
         left.Children.Add(new TextBlock { Text = Tr.Loc["Navigation.Customers"], FontSize = 18, FontWeight = FontWeight.Bold });
-        var newButton = new Button { Content = Tr.Loc["Customers.New"], Classes = { "accent" }, HorizontalAlignment = HorizontalAlignment.Stretch, MinHeight = 40 };
+        var newButton = new Button { Content = Tr.Loc["Customers.New"], Classes = { "accent" }, HorizontalAlignment = HorizontalAlignment.Stretch, MinHeight = 34, MinWidth = 0 };
         newButton.Click += (_, _) =>
         {
             ClearCustomerForm(showNewCustomerForm: true);
             customerTabs.SelectedItem = customerDetailsTab;
             customerFields["CustomerNumber"].Focus();
         };
-        Grid.SetRow(newButton, 1);
-        left.Children.Add(newButton);
         customerSyncButton = null;
+        var customerActions = new Grid
+        {
+            ColumnDefinitions = CreateColumns(GridLength.Star, GridLength.Auto),
+            ColumnSpacing = 6,
+            Margin = new Thickness(0, 0, 0, 6)
+        };
+        Grid.SetColumn(newButton, 0);
+        customerActions.Children.Add(newButton);
         if (viewModel.User.Role == PharmacyRole.Admin)
         {
             customerSyncButton = new Button
             {
-                Content = "⇄  Synchronize customers now",
-                HorizontalAlignment = HorizontalAlignment.Stretch,
-                MinHeight = 38,
-                Margin = new Thickness(0, 6, 0, 4),
+                Content = "↻",
+                ToolTip = Tr.Loc.TranslateText("Synchronize customers now"),
+                HorizontalAlignment = HorizontalAlignment.Right,
+                VerticalAlignment = VerticalAlignment.Stretch,
+                Width = 40,
+                MinHeight = 34,
+                Padding = new Thickness(0),
+                FontSize = 20,
                 IsVisible = HasUsableCustomerSyncSettings()
             };
             customerSyncButton.Click += async (_, _) => await RunCustomerDatabaseSyncAsync(customerSyncButton);
-            Grid.SetRow(customerSyncButton, 2);
-            left.Children.Add(customerSyncButton);
+            Grid.SetColumn(customerSyncButton, 1);
+            customerActions.Children.Add(customerSyncButton);
         }
-        Grid.SetRow(customerSearch, 3);
+        Grid.SetRow(customerActions, 1);
+        left.Children.Add(customerActions);
+        Grid.SetRow(customerSearch, 2);
         left.Children.Add(customerSearch);
-        Grid.SetRow(showInactiveCustomersCheckBox, 4);
+        Grid.SetRow(showInactiveCustomersCheckBox, 3);
         left.Children.Add(showInactiveCustomersCheckBox);
         // Give the customer list a finite remaining height so its internal
         // vertical scrollbar becomes available when the list contains many rows.
-        Grid.SetRow(customerList, 5);
+        Grid.SetRow(customerList, 4);
         customerList.VerticalAlignment = VerticalAlignment.Stretch;
         left.Children.Add(customerList);
 
