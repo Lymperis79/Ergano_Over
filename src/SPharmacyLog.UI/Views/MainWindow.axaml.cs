@@ -25,6 +25,7 @@ namespace SPharmacyLog.UI.Views;
 public partial class MainWindow : Window
 {
     private const uint KlfActivate = 0x00000001;
+    private const uint KlfSetForProcess = 0x00000100;
     private static IntPtr? previousBarcodeKeyboardLayout;
 
     [DllImport("user32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
@@ -42,9 +43,9 @@ public partial class MainWindow : Window
 
         // Preserve the layout that was active before the first barcode focus.
         previousBarcodeKeyboardLayout ??= GetKeyboardLayout(0);
-        var englishLayout = LoadKeyboardLayout("00000409", KlfActivate);
+        var englishLayout = LoadKeyboardLayout("00000409", KlfActivate | KlfSetForProcess);
         if (englishLayout != IntPtr.Zero)
-            ActivateKeyboardLayout(englishLayout, 0);
+            ActivateKeyboardLayout(englishLayout, KlfSetForProcess);
     }
 
     private static void RestoreBarcodeKeyboard()
@@ -1960,7 +1961,6 @@ public partial class MainWindow : Window
         parsedPanel.Children.Add(scanEcho);
         parsedPanel.Children.Add(scanStatus);
         scanInput.GotFocus += (_, _) => ActivateEnglishBarcodeKeyboard();
-        scanInput.LostFocus += (_, _) => RestoreBarcodeKeyboard();
         scanInput.TextChanged += (_, _) => scanEcho.Text = (scanInput.Text ?? string.Empty)
             .Replace(Gs1DataMatrixParser.GroupSeparator.ToString(), "<GS>", StringComparison.Ordinal);
         scanInput.KeyDown += async (_, e) =>
@@ -2116,12 +2116,13 @@ public partial class MainWindow : Window
             }
         };
         Grid.SetRow(((Grid)dialog.Content).Children[1], 1);
-        scanInput.GotFocus += (_, _) => ActivateEnglishBarcodeKeyboard();
-        scanInput.LostFocus += (_, _) => RestoreBarcodeKeyboard();
         dialog.Opened += (_, _) =>
         {
             if (!isEdit)
+            {
+                ActivateEnglishBarcodeKeyboard();
                 scanInput.Focus();
+            }
         };
         dialog.Closed += (_, _) => RestoreBarcodeKeyboard();
         cancel.Click += (_, _) => dialog.Close();
