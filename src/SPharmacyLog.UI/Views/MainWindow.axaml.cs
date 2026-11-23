@@ -1726,7 +1726,6 @@ public partial class MainWindow : Window
             customerSyncButton = new Button
             {
                 Content = "↻",
-                ToolTip = Tr.Loc.TranslateText("Synchronize customers now"),
                 HorizontalAlignment = HorizontalAlignment.Right,
                 VerticalAlignment = VerticalAlignment.Stretch,
                 Width = 40,
@@ -1735,6 +1734,7 @@ public partial class MainWindow : Window
                 FontSize = 20,
                 IsVisible = HasUsableCustomerSyncSettings()
             };
+            ToolTip.SetTip(customerSyncButton, Tr.Loc.TranslateText("Synchronize customers now"));
             customerSyncButton.Click += async (_, _) => await RunCustomerDatabaseSyncAsync(customerSyncButton);
             Grid.SetColumn(customerSyncButton, 1);
             customerActions.Children.Add(customerSyncButton);
