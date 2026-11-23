@@ -155,7 +155,7 @@ public sealed class MedicineStockWindow : Window
         var visibleMedicines = new List<MedicineCatalogItem>();
         await using (var db = new PharmacyDbContext(PharmacyDb.Options()))
         {
-            allMedicines = await db.Medicines.AsNoTracking().Where(m => m.IsActive).OrderBy(m => m.Name).ToListAsync();
+            allMedicines = await db.Medicines.AsNoTracking().OrderBy(m => m.Name).ToListAsync();
             var alternates = await db.MedicineBarcodes.AsNoTracking().ToListAsync();
             visibleMedicines = allMedicines.ToList();
             medicine.ItemsSource = visibleMedicines.Select(m => m.Name).ToList();
