@@ -247,7 +247,7 @@ public sealed class MedicineManagementWindow : Window
     {
         // Excel commonly uses semicolons instead of commas in locales where comma is the decimal separator.
         // Count separators only outside quoted fields.
-        var counts = new Dictionary<char, int> { [','] = 0, [';'] = 0, ['\\t'] = 0 };
+        var counts = new Dictionary<char, int> { [','] = 0, [';'] = 0, ['\t'] = 0 };
         bool quoted = false;
         for (int i = 0; i < header.Length; i++)
         {
