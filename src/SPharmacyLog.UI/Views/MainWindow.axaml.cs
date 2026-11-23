@@ -1957,7 +1957,7 @@ public partial class MainWindow : Window
                 // Also accept a simple GTIN/EAN barcode. Normalize valid numeric
                 // identifiers to GTIN-14 so future scans resolve consistently.
                 var digits = raw.Trim();
-                if (digits.Length is 8 or 12 or 13 or 14 && digits.All(char.IsDigit))
+                if ((digits.Length is 8 or 12 or 13 or 14) && digits.All(char.IsDigit))
                 {
                     gtinOnlyValue = digits.PadLeft(14, '0');
                     scanCapturedAtUtc = DateTime.UtcNow;
