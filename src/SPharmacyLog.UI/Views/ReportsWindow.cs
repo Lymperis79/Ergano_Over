@@ -25,6 +25,7 @@ public sealed class ReportsWindow : Window
     private List<CustomerFilterOption> visibleCustomerMatches = new();
     private int? selectedCustomerId;
     private bool isUpdatingCustomerSearch;
+    private CancellationTokenSource? customerReportDebounce;
     private readonly TextBox reportDate = new() { MinWidth = 150, Text = DateTime.Today.ToString("yyyy-MM-dd") };
     private readonly TextBlock summary = new() { FontSize = 15, FontWeight = FontWeight.SemiBold, TextWrapping = TextWrapping.Wrap };
     private readonly StackPanel resultsContent = new() { Spacing = 6 };
@@ -93,8 +94,10 @@ public sealed class ReportsWindow : Window
             if (!isUpdatingCustomerSearch)
             {
                 selectedCustomerId = null;
-                FilterCustomers(customerSearch.Text ?? string.Empty);
+                var searchText = customerSearch.Text ?? string.Empty;
+                FilterCustomers(searchText);
                 exportButton.IsEnabled = false;
+                ScheduleCustomerReportRefresh();
             }
         };
         customerSuggestions.SelectionChanged += (_, _) =>
@@ -250,6 +253,25 @@ public sealed class ReportsWindow : Window
         visibleCustomerMatches.Clear();
         customerSuggestions.ItemsSource = Array.Empty<string>();
         customerSuggestions.IsVisible = false;
+    }
+
+    private async void ScheduleCustomerReportRefresh()
+    {
+        customerReportDebounce?.Cancel();
+        customerReportDebounce?.Dispose();
+        var cancellation = new CancellationTokenSource();
+        customerReportDebounce = cancellation;
+        try
+        {
+            await Task.Delay(350, cancellation.Token);
+            if (!cancellation.IsCancellationRequested &&
+                (reportType.SelectedItem as ComboBoxItem)?.Tag?.ToString() == "customers")
+            {
+                await GenerateCustomerReportAsync();
+                exportButton.IsEnabled = true;
+            }
+        }
+        catch (OperationCanceledException) { }
     }
 
     private void FilterCustomers(string searchText)
