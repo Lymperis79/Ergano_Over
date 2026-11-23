@@ -38,7 +38,7 @@ public sealed class MedicineManagementWindow : Window
         search.KeyDown += async (_, e) => { if (e.Key == Avalonia.Input.Key.Enter) { e.Handled = true; await LoadAsync(); } };
 
         var header = new Grid { ColumnDefinitions = new ColumnDefinitions("2*,2*,*,Auto"), Background = new SolidColorBrush(Color.Parse("#263447")) };
-        string[] labels = { "Name", "Barcode", "Notes", "Actions" };
+        string[] labels = { "Name", "Barcode", "Notes", "Edit" };
         for (int col=0;col<labels.Length;col++)
         {
             var tb = new TextBlock { Text = Tr.Loc.TranslateText(labels[col]), FontWeight = FontWeight.Bold, Margin = new Thickness(9,8), VerticalAlignment = VerticalAlignment.Center };
@@ -72,12 +72,9 @@ public sealed class MedicineManagementWindow : Window
                     var tb=new TextBlock { Text=values[col], TextWrapping=TextWrapping.Wrap, Margin=new Thickness(9,7), VerticalAlignment=VerticalAlignment.Center };
                     Grid.SetColumn(tb,col);grid.Children.Add(tb);
                 }
-                var buttons=new StackPanel { Orientation=Orientation.Horizontal, Spacing=5, Children={
-                    new Button { Content=Tr.Loc.TranslateText("Edit"), MinWidth=64 },
-                    new Button { Content=Tr.Loc.TranslateText("Delete"), MinWidth=64 }
-                }};
-                ((Button)buttons.Children[0]).Click += async (_,_)=>await EditMedicineAsync(medicine);
-                ((Button)buttons.Children[1]).Click += async (_,_)=>await DeleteAsync(medicine);
+                var editButton=new Button { Content=Tr.Loc.TranslateText("Edit"), MinWidth=72 };
+                editButton.Click += async (_,_)=>await EditMedicineAsync(medicine);
+                var buttons=new StackPanel { Orientation=Orientation.Horizontal, Spacing=5, Children={editButton} };
                 Grid.SetColumn(buttons,3);grid.Children.Add(buttons);
                 rows.Children.Add(new Border { BorderBrush=new SolidColorBrush(Color.Parse("#354152")), BorderThickness=new Thickness(0,0,0,1), Child=grid });
             }
@@ -112,17 +109,6 @@ public sealed class MedicineManagementWindow : Window
             item.Name=name.Text.Trim();item.Barcode=string.IsNullOrWhiteSpace(barcode.Text)?null:barcode.Text.Trim();item.Notes=string.IsNullOrWhiteSpace(notes.Text)?null:notes.Text.Trim();item.IsActive=active.IsChecked==true;
             await db.SaveChangesAsync();dialog.Close();await LoadAsync();
         };
-        await dialog.ShowDialog(this);
-    }
-
-    private async Task DeleteAsync(MedicineCatalogItem medicine)
-    {
-        var dialog=new Window { Title=Tr.Loc.TranslateText("Delete medicine"),Width=420,Height=220,WindowStartupLocation=WindowStartupLocation.CenterOwner };
-        var confirm=new Button { Content=Tr.Loc.TranslateText("Delete"),MinWidth=90,Classes={"accent"} };
-        var cancel=new Button { Content=Tr.Loc.TranslateText("Cancel"),MinWidth=90 };
-        var root=new StackPanel { Margin=new Thickness(18),Spacing=12,Children={new TextBlock{Text=Tr.Loc.TranslateText("Delete this medicine?")+"\n"+medicine.Name,TextWrapping=TextWrapping.Wrap},new StackPanel{Orientation=Orientation.Horizontal,Spacing=8,HorizontalAlignment=HorizontalAlignment.Right,Children={confirm,cancel}}}};
-        dialog.Content=root;cancel.Click+=(_,_)=>dialog.Close();
-        confirm.Click+=async (_,_)=>{await using var db=new PharmacyDbContext(PharmacyDb.Options());var item=await db.Medicines.FirstOrDefaultAsync(x=>x.Id==medicine.Id);if(item!=null){db.Medicines.Remove(item);await db.SaveChangesAsync();}dialog.Close();await LoadAsync();};
         await dialog.ShowDialog(this);
     }
 
