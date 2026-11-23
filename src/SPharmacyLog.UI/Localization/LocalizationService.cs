@@ -183,7 +183,6 @@ public sealed class LocalizationService : ILocalizationService
         ["Search"] = "Αναζήτηση",
         ["Update catalogue from drugbase-gr"] = "Ενημέρωση καταλόγου από drugbase-gr",
         ["Refresh"] = "Ανανέωση",
-        ["Medicine"] = "Φάρμακο",
         ["Barcode(s)"] = "Barcode",
         ["Loading catalogue…"] = "Φόρτωση καταλόγου…",
         ["Total medicines"] = "Σύνολο φαρμάκων",
@@ -230,12 +229,6 @@ public sealed class LocalizationService : ILocalizationService
         ["Database synchronization"] = "Συγχρονισμός βάσης δεδομένων",
         ["Add note to selected date"] = "Προσθήκη σημείωσης στην επιλεγμένη ημερομηνία",
         ["Calendar notes"] = "Σημειώσεις ημερολογίου",
-        ["Today's notes"] = "Σημερινές σημειώσεις",
-        ["No notes for today."] = "Δεν υπάρχουν σημειώσεις για σήμερα.",
-        ["Completed"] = "Ολοκληρώθηκε",
-        ["Not completed"] = "Δεν ολοκληρώθηκε",
-        ["Mark as completed"] = "Σήμανση ως ολοκληρωμένη",
-        ["Mark as not completed"] = "Σήμανση ως μη ολοκληρωμένη",
         ["Edit"] = "Επεξεργασία",
         ["Delete calendar note"] = "Διαγραφή σημείωσης ημερολογίου",
         ["Delete this calendar note?"] = "Θέλετε να διαγράψετε αυτή τη σημείωση ημερολογίου;",
@@ -312,7 +305,6 @@ public sealed class LocalizationService : ILocalizationService
         ["Mobile"] = "Κινητό",
         ["Email"] = "Email",
         ["Insurance"] = "Ασφάλιση",
-        ["Notes"] = "Σημειώσεις",
         ["Overview"] = "Επισκόπηση",
         ["Details"] = "Στοιχεία",
         ["Borrowings"] = "Δανεισμοί",
@@ -364,7 +356,6 @@ public sealed class LocalizationService : ILocalizationService
         ["＋ Add ledger entry"] = "＋ Προσθήκη εγγραφής καρτέλας",
         ["Save or select a customer first."] = "Αποθηκεύστε ή επιλέξτε πρώτα έναν πελάτη.",
         ["Medicine name and internal borrowing reference are required."] = "Το όνομα φαρμάκου και η εσωτερική αναφορά δανεισμού είναι υποχρεωτικά.",
-        ["Enter a valid quantity."] = "Εισαγάγετε έγκυρη ποσότητα.",
         ["A serialized DataMatrix identifies one physical pack. Create one borrowing record per scanned pack (quantity 1)."] = "Ένα σειριοποιημένο DataMatrix αντιστοιχεί σε μία φυσική συσκευασία. Δημιουργήστε μία εγγραφή δανεισμού ανά σάρωση (ποσότητα 1).",
         ["This internal barcode is already in use."] = "Αυτό το εσωτερικό barcode χρησιμοποιείται ήδη.",
         ["The EOF / NTIN barcode must contain exactly 13 digits."] = "Το barcode EOF / NTIN πρέπει να περιέχει ακριβώς 13 ψηφία.",
@@ -535,7 +526,6 @@ public sealed class LocalizationService : ILocalizationService
         ["Load licence file…"] = "Φόρτωση αρχείου άδειας…",
         ["Activate"] = "Ενεργοποίηση",
         ["Exit"] = "Έξοδος",
-        ["Close"] = "Κλείσιμο",
         ["Permanent"] = "Μόνιμη",
         ["Valid until"] = "Ισχύει έως",
         ["All modules"] = "Όλες οι ενότητες",
@@ -569,7 +559,6 @@ public sealed class LocalizationService : ILocalizationService
 
 
 
-        ["Expiry date (optional)"] = "Ημερομηνία λήξης (προαιρετικά)",
 
 
 
@@ -586,8 +575,6 @@ public sealed class LocalizationService : ILocalizationService
 
 
         ["Entry date (yyyy-MM-dd HH:mm)"] = "Ημερομηνία εγγραφής (yyyy-MM-dd HH:mm)",
-        ["Save"] = "Αποθήκευση",
-        ["Cancel"] = "Ακύρωση",
         ["Edit selected"] = "Επεξεργασία επιλεγμένου",
         ["Add subscription"] = "Προσθήκη συνδρομής",
         ["Edit subscription"] = "Επεξεργασία συνδρομής",
@@ -622,7 +609,6 @@ public sealed class LocalizationService : ILocalizationService
         ["EOF / EAN-13"] = "EOF / EAN-13",
         ["This is a legacy borrowing. Its original barcode information is preserved."] = "Πρόκειται για παλαιότερο δανεισμό. Τα αρχικά στοιχεία barcode διατηρούνται.",
         ["Raw barcode"] = "Αρχικό barcode",
-        ["Quantity"] = "Ποσότητα",
         ["Scan / borrowing date"] = "Ημερομηνία σάρωσης / δανεισμού",
         ["Medicine name is required."] = "Το όνομα του φαρμάκου είναι υποχρεωτικό.",
         ["GTIN must contain exactly 14 digits."] = "Το GTIN πρέπει να περιέχει ακριβώς 14 ψηφία.",
@@ -651,7 +637,6 @@ public sealed class LocalizationService : ILocalizationService
         ["Open customer"] = "Άνοιγμα πελάτη",
         ["Subscription details"] = "Στοιχεία συνδρομής",
         ["Executed"] = "Εκτελεσμένη",
-        ["Created by"] = "Δημιουργήθηκε από",
         ["Last changed by"] = "Τελευταία αλλαγή από",
         ["Audit history"] = "Ιστορικό ενεργειών",
         ["EXECUTED SUBSCRIPTIONS HISTORY"] = "ΙΣΤΟΡΙΚΟ ΕΚΤΕΛΕΣΜΕΝΩΝ ΣΥΝΔΡΟΜΩΝ",
@@ -710,7 +695,6 @@ public sealed class LocalizationService : ILocalizationService
         ["Customer balances and payments"] = "Υπόλοιπα πελατών και πληρωμές",
         ["Upcoming subscriptions - next 7 days"] = "Επερχόμενες συνδρομές - επόμενες 7 ημέρες",
         ["Daily subscriptions and borrowing status"] = "Ημερήσια κατάσταση συνδρομών και δανεισμών",
-        ["Customer"] = "Πελάτης",
         ["All customers"] = "Όλοι οι πελάτες",
         ["Activity date (yyyy-MM-dd)"] = "Ημερομηνία δραστηριότητας (εεεε-μμ-ηη)",
         ["Report"] = "Αναφορά",
@@ -745,12 +729,9 @@ public sealed class LocalizationService : ILocalizationService
         ["Select a report."] = "Επιλέξτε αναφορά.",
         ["None"] = "Καμία",
         ["Borrowed and returned"] = "Δανείστηκε και επιστράφηκε",
-        ["Borrowed"] = "Δανείστηκε",
-        ["Returned"] = "Επιστράφηκε",
         ["Current open subscriptions"] = "Τρέχουσες ανοιχτές συνδρομές",
         ["Current closed / executed subscriptions"] = "Τρέχουσες κλειστές / εκτελεσμένες συνδρομές",
         ["Next due"] = "Επόμενη προθεσμία",
-        ["Last changed"] = "Τελευταία αλλαγή",
 
         ["History"] = "Ιστορικό",
         ["Select a payment to edit."] = "Επιλέξτε μια πληρωμή για επεξεργασία.",
