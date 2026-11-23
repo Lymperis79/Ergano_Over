@@ -49,7 +49,7 @@ public sealed class MedicineStockWindow : Window
             historyHeader,
             new ScrollViewer { Content = historyRows, VerticalScrollBarVisibility = Avalonia.Controls.Primitives.ScrollBarVisibility.Auto, HorizontalScrollBarVisibility = Avalonia.Controls.Primitives.ScrollBarVisibility.Auto }
         }};
-        var root = new Grid { Margin = new Thickness(18), RowDefinitions = new RowDefinitions("Auto,Auto,Auto,2*,2*,Auto"), RowSpacing = 10, Children = { heading, toolbar, stockSection, historySection, status } };
+        var root = new Grid { Margin = new Thickness(18), RowDefinitions = new RowDefinitions("Auto,Auto,2*,2*,Auto"), RowSpacing = 10, Children = { heading, toolbar, stockSection, historySection, status } };
         Grid.SetRow(toolbar, 1); Grid.SetRow(stockSection, 2); Grid.SetRow(historySection, 3); Grid.SetRow(status, 4);
         Content = root;
         _ = LoadAsync();
