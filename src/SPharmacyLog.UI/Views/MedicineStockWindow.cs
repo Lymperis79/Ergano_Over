@@ -90,7 +90,7 @@ public sealed class MedicineStockWindow : Window
                 foreach (var bucket in CalculateBalances(medicineGroup))
                 {
                     if (bucket.Value <= 0) continue;
-                    var last = medicineGroup.OrderByDescending(m => m.MovementDate).ThenByDescending(m => m.Id).First();
+                    var last = medicineGroup.Where(m => m.ExpiryDate?.Date == bucket.Key.Expiry && (m.BatchLot ?? "") == bucket.Key.Lot).OrderByDescending(m => m.MovementDate).ThenByDescending(m => m.Id).First();
                     stock.Add(new StockRow(med.Name, med.Barcode ?? "", bucket.Key.Expiry, bucket.Key.Lot, bucket.Value, last.MovementDate, last.PerformedBy, med.Id));
                 }
             }
