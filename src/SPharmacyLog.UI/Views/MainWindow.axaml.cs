@@ -101,6 +101,7 @@ public partial class MainWindow : Window
     private CheckBox customerActiveCheckBox = null!;
     private CheckBox showInactiveCustomersCheckBox = null!;
     private int? selectedCustomerId;
+    private Button? customerSyncButton;
 
     public MainWindow(PharmacyUser user)
     {
@@ -722,6 +723,7 @@ public partial class MainWindow : Window
         var dialog = new CustomerDatabaseSyncWindow();
         AttachDialogLocalization(dialog);
         await dialog.ShowDialog(this);
+        UpdateCustomerSyncButtonVisibility();
     }
 
     private async void ShowReports()
@@ -1701,18 +1703,20 @@ public partial class MainWindow : Window
         };
         Grid.SetRow(newButton, 1);
         left.Children.Add(newButton);
+        customerSyncButton = null;
         if (viewModel.User.Role == PharmacyRole.Admin)
         {
-            var syncCustomersButton = new Button
+            customerSyncButton = new Button
             {
                 Content = "⇄  Synchronize customers now",
                 HorizontalAlignment = HorizontalAlignment.Stretch,
                 MinHeight = 38,
-                Margin = new Thickness(0, 6, 0, 4)
+                Margin = new Thickness(0, 6, 0, 4),
+                IsVisible = HasUsableCustomerSyncSettings()
             };
-            syncCustomersButton.Click += async (_, _) => await RunCustomerDatabaseSyncAsync(syncCustomersButton);
-            Grid.SetRow(syncCustomersButton, 2);
-            left.Children.Add(syncCustomersButton);
+            customerSyncButton.Click += async (_, _) => await RunCustomerDatabaseSyncAsync(customerSyncButton);
+            Grid.SetRow(customerSyncButton, 2);
+            left.Children.Add(customerSyncButton);
         }
         Grid.SetRow(customerSearch, 3);
         left.Children.Add(customerSearch);
@@ -2588,6 +2592,24 @@ public partial class MainWindow : Window
             "LedgerType" when value == "Αντιστροφή" => "Reversal",
             _ => value
         };
+    }
+
+    private static bool HasUsableCustomerSyncSettings()
+    {
+        var settings = CustomerDatabaseSyncService.LoadSettings();
+        return !string.IsNullOrWhiteSpace(settings.Server) &&
+               !string.IsNullOrWhiteSpace(settings.Database) &&
+               !string.IsNullOrWhiteSpace(settings.Table) &&
+               settings.FieldMappings is not null &&
+               settings.FieldMappings.TryGetValue("CustomerNumber", out var customerNumberColumn) &&
+               !string.IsNullOrWhiteSpace(customerNumberColumn);
+    }
+
+    private void UpdateCustomerSyncButtonVisibility()
+    {
+        if (customerSyncButton is not null)
+            customerSyncButton.IsVisible = viewModel.User.Role == PharmacyRole.Admin &&
+                                           HasUsableCustomerSyncSettings();
     }
 
     private async Task RunCustomerDatabaseSyncAsync(Button button)
