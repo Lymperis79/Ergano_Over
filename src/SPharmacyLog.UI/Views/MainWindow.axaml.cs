@@ -610,9 +610,12 @@ public partial class MainWindow : Window
                 if (snapshot.IsCached) parts.Add("cached data");
                 weatherText.Text = string.Join("   ·   ", parts);
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                weatherText.Text = "Weather unavailable. Check the internet connection or weather location, then try again.";
+                // Keep the dashboard usable, but show the actual reason so an
+                // invalid location, blocked endpoint, or network timeout can be diagnosed.
+                var reason = ex.GetBaseException().Message;
+                weatherText.Text = "Weather unavailable: " + reason;
             }
             finally { weatherRefresh.IsEnabled = true; }
         }
