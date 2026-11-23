@@ -162,7 +162,7 @@ public sealed class MedicineStockWindow : Window
             medicineSearch.TextChanged += (_, _) =>
             {
                 var filter = medicineSearch.Text?.Trim();
-                visibleMedicines = string.IsNullOrWhiteSpace(filter) ? allMedicines.ToList() : allMedicines.Where(m => m.Name.Contains(filter, StringComparison.CurrentCultureIgnoreCase) || (m.Barcode?.Contains(filter, StringComparison.OrdinalIgnoreCase) ?? false)).ToList();
+                visibleMedicines = string.IsNullOrWhiteSpace(filter) ? allMedicines.ToList() : allMedicines.Where(m => m.Name.Contains(filter, StringComparison.CurrentCultureIgnoreCase) || (m.Barcode?.Contains(filter, StringComparison.OrdinalIgnoreCase) ?? false) || alternates.Any(b => b.MedicineId == m.Id && b.BarcodeValue.Contains(filter, StringComparison.OrdinalIgnoreCase))).ToList();
                 medicine.ItemsSource = visibleMedicines.Select(m => m.Name).ToList();
                 medicine.SelectedIndex = -1;
             };
