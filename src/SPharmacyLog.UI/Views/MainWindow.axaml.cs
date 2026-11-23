@@ -1693,6 +1693,10 @@ public partial class MainWindow : Window
             {
                 await LoadCustomerAsync(item.Id);
                 await RefreshCustomerWorkspaceAsync();
+
+                // Always start on the Overview tab when the user selects a customer.
+                if (selectedCustomerId == item.Id && customerTabs is not null)
+                    customerTabs.SelectedIndex = 0;
             }
         };
         var left = new Grid
