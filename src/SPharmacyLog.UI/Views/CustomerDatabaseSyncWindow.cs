@@ -20,6 +20,7 @@ public sealed class CustomerDatabaseSyncWindow : Window
     private readonly StackPanel filtersPanel = new() { Spacing = 6 };
     private readonly List<(ComboBox Column, ComboBox Operator, TextBox Value)> filterRows = new();
     private readonly Button addFilterButton = new() { Content = "+ Add filter", MinWidth = 105 };
+    private readonly CheckBox deactivateMissingAmka = new() { Content = "Set customer inactive when the source AMKA is NULL or empty" };
     private readonly TextBlock status = new() { TextWrapping = TextWrapping.Wrap };
     private readonly StackPanel mappingsPanel = new() { Spacing = 7 };
     private readonly Dictionary<string, ComboBox> mappingBoxes = new(StringComparer.OrdinalIgnoreCase);
@@ -86,6 +87,7 @@ public sealed class CustomerDatabaseSyncWindow : Window
         sourcePanel.Children.Add(new TextBlock { Text = "Filters (all conditions must match):", Foreground = Brushes.LightGray });
         sourcePanel.Children.Add(filtersPanel);
         sourcePanel.Children.Add(addFilterButton);
+        sourcePanel.Children.Add(deactivateMissingAmka);
         sourcePanel.Children.Add(new TextBlock { Text = "Add as many filters as needed. Leave a filter value empty or remove the row to ignore it.", Foreground = Brushes.LightGray, TextWrapping = TextWrapping.Wrap });
         root.Children.Add(Card(sourcePanel));
 
@@ -100,8 +102,9 @@ public sealed class CustomerDatabaseSyncWindow : Window
 
         var bottom = new StackPanel { Spacing = 8 };
         var previewButton = new Button { Content = "Count matching source rows", MinWidth = 210 };
-        var importButton = new Button { Content = "Import customers", MinWidth = 150 };
-        bottom.Children.Add(new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, Children = { previewButton, importButton } });
+        var saveAndSyncButton = new Button { Content = "Save & Sync now", MinWidth = 150 };
+        var syncSavedButton = new Button { Content = "Sync saved settings", MinWidth = 170 };
+        bottom.Children.Add(new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, Children = { previewButton, saveAndSyncButton, syncSavedButton } });
         bottom.Children.Add(status);
         root.Children.Add(bottom);
 
@@ -158,40 +161,20 @@ public sealed class CustomerDatabaseSyncWindow : Window
             var count = await CustomerDatabaseSyncService.PreviewCountAsync(settings);
             status.Text = $"Preview: {count:N0} source customer row(s) match the selected filter. Inactive matching customers will be skipped without any changes.";
         });
-        importButton.Click += async (_, _) => await RunAsync(async settings =>
+        saveAndSyncButton.Click += async (_, _) => await RunAsync(async settings =>
         {
-            var confirmation = new Window
-            {
-                Title = "Confirm customer import",
-                Width = 480,
-                Height = 220,
-                WindowStartupLocation = WindowStartupLocation.CenterOwner
-            };
-            var cancel = new Button { Content = "Cancel", MinWidth = 90 };
-            var confirmImport = new Button { Content = "Import", MinWidth = 90, IsDefault = true };
-            cancel.Click += (_, _) => confirmation.Close(false);
-            confirmImport.Click += (_, _) => confirmation.Close(true);
-            confirmation.Content = new StackPanel
-            {
-                Margin = new Thickness(20),
-                Spacing = 14,
-                Children =
-                {
-                    new TextBlock { Text = "Import the selected customers into S Pharmacy Log? Existing active customers will be updated. Existing inactive customers will be left completely unchanged.", TextWrapping = TextWrapping.Wrap },
-                    new StackPanel
-                    {
-                        Orientation = Orientation.Horizontal,
-                        HorizontalAlignment = HorizontalAlignment.Right,
-                        Spacing = 8,
-                        Children = { cancel, confirmImport }
-                    }
-                }
-            };
-            var confirm = await confirmation.ShowDialog<bool>(this);
-            if (!confirm) return;
-            await using var db = new PharmacyDbContext(PharmacyDb.Options());
-            var result = await CustomerDatabaseSyncService.ImportAsync(settings, db);
-            status.Text = $"Import completed. Added: {result.Added}. Updated: {result.Updated}. Inactive skipped (unchanged): {result.InactiveSkipped}. Invalid rows skipped: {result.InvalidSkipped}.";
+            ValidateSettingsForSync(settings);
+            CustomerDatabaseSyncService.SaveSettings(settings);
+            savedTable = settings.Table;
+            savedFilters = settings.Filters.ToList();
+            savedMappings = new Dictionary<string, string>(settings.FieldMappings, StringComparer.OrdinalIgnoreCase);
+            await ExecuteImportAsync(settings, requireConfirmation: true);
+        });
+        syncSavedButton.Click += async (_, _) => await RunAsync(async _ =>
+        {
+            var saved = CustomerDatabaseSyncService.LoadSettings();
+            ValidateSettingsForSync(saved);
+            await ExecuteImportAsync(saved, requireConfirmation: false);
         });
 
         LoadSavedSettings();
@@ -282,6 +265,7 @@ public sealed class CustomerDatabaseSyncWindow : Window
         trustServerCertificate.IsChecked = settings.TrustServerCertificate;
         username.Text = settings.Username;
         password.Text = settings.Password;
+        deactivateMissingAmka.IsChecked = settings.DeactivateWhenAmkaMissing;
         savedTable = settings.Table;
         savedFilterColumn = settings.FilterColumn;
         savedFilters = settings.Filters ?? new List<CustomerImportFilter>();
@@ -361,6 +345,7 @@ public sealed class CustomerDatabaseSyncWindow : Window
             TrustServerCertificate = trustServerCertificate.IsChecked == true,
             Username = username.Text ?? string.Empty,
             Password = password.Text ?? string.Empty,
+            DeactivateWhenAmkaMissing = deactivateMissingAmka.IsChecked == true,
             Table = table.SelectedItem?.ToString() ?? string.Empty,
             FilterColumn = string.Empty,
             FilterValue = string.Empty,
@@ -386,6 +371,65 @@ public sealed class CustomerDatabaseSyncWindow : Window
                 settings.FieldMappings[pair.Key] = value;
         }
         return settings;
+    }
+
+
+    private static void ValidateSettingsForSync(CustomerDatabaseSyncSettings settings)
+    {
+        if (string.IsNullOrWhiteSpace(settings.Server) || string.IsNullOrWhiteSpace(settings.Database))
+            throw new InvalidOperationException("Complete and save the SQL Server connection settings first.");
+        if (string.IsNullOrWhiteSpace(settings.Table))
+            throw new InvalidOperationException("Select and save a source table first.");
+        if (!settings.FieldMappings.ContainsKey("CustomerNumber"))
+            throw new InvalidOperationException("Map and save the Customer number field first.");
+        if (settings.DeactivateWhenAmkaMissing && !settings.FieldMappings.ContainsKey("Amka"))
+            throw new InvalidOperationException("The inactive-on-missing-AMKA option requires an AMKA source column mapping.");
+    }
+
+    private async Task ExecuteImportAsync(CustomerDatabaseSyncSettings settings, bool requireConfirmation)
+    {
+        if (requireConfirmation)
+        {
+            var confirmation = new Window
+            {
+                Title = "Confirm customer synchronization",
+                Width = 500,
+                Height = 250,
+                WindowStartupLocation = WindowStartupLocation.CenterOwner
+            };
+            var cancel = new Button { Content = "Cancel", MinWidth = 90 };
+            var confirm = new Button { Content = "Sync", MinWidth = 90, IsDefault = true };
+            cancel.Click += (_, _) => confirmation.Close(false);
+            confirm.Click += (_, _) => confirmation.Close(true);
+            confirmation.Content = new StackPanel
+            {
+                Margin = new Thickness(20),
+                Spacing = 14,
+                Children =
+                {
+                    new TextBlock
+                    {
+                        Text = settings.DeactivateWhenAmkaMissing
+                            ? "Synchronize customers using the saved selection? Customers whose source AMKA is NULL or empty will be marked inactive. Existing inactive customers remain unchanged."
+                            : "Synchronize customers using the selected source and filters? Existing active customers will be updated; existing inactive customers remain unchanged.",
+                        TextWrapping = TextWrapping.Wrap
+                    },
+                    new StackPanel
+                    {
+                        Orientation = Orientation.Horizontal,
+                        HorizontalAlignment = HorizontalAlignment.Right,
+                        Spacing = 8,
+                        Children = { cancel, confirm }
+                    }
+                }
+            };
+            if (!await confirmation.ShowDialog<bool>(this))
+                return;
+        }
+
+        await using var db = new PharmacyDbContext(PharmacyDb.Options());
+        var result = await CustomerDatabaseSyncService.ImportAsync(settings, db);
+        status.Text = $"Synchronization completed. Added: {result.Added}. Updated: {result.Updated}. Marked inactive (missing AMKA): {result.MarkedInactive}. Previously inactive skipped: {result.InactiveSkipped}. Invalid rows skipped: {result.InvalidSkipped}.";
     }
 
     private async Task RunAsync(Func<CustomerDatabaseSyncSettings, Task> action)
