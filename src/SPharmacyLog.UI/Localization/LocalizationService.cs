@@ -139,6 +139,7 @@ public sealed class LocalizationService : ILocalizationService
     private static readonly IReadOnlyDictionary<string, string> UiGreek = new Dictionary<string, string>
     {
         ["Medicine stock control"] = "Έλεγχος αποθέματος φαρμάκων",
+        ["Medicine / barcode / lot"] = "Φάρμακο / barcode / παρτίδα",
         ["Stock count"] = "Απογραφή",
         ["Add stock"] = "Προσθήκη αποθέματος",
         ["Remove stock"] = "Αφαίρεση αποθέματος",
