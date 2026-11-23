@@ -327,11 +327,7 @@ public sealed class CustomerDatabaseSyncWindow : Window
             column.SelectedItem = availableColumns.First(c => c.Equals(saved.Column, StringComparison.OrdinalIgnoreCase));
         else if (availableColumns.Contains("KPP_KATHGOR", StringComparer.OrdinalIgnoreCase))
             column.SelectedItem = availableColumns.First(c => c.Equals("KPP_KATHGOR", StringComparison.OrdinalIgnoreCase));
-        remove.Click += (_, _) =>
-        {
-            filterRows.Remove(row);
-            filtersPanel.Children.Remove(row.Column.Parent as Control ?? new StackPanel());
-        };
+        remove.Click += (_, _) => filterRows.Remove(row);
         var line = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 6 };
         line.Children.Add(column);
         line.Children.Add(op);
