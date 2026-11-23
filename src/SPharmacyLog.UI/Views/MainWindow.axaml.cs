@@ -3632,7 +3632,7 @@ public partial class MainWindow : Window
         {
             var subscriptionTabIndex = customerTabs.Items.OfType<TabItem>()
                 .Select((tab, index) => new { tab, index })
-                .FirstOrDefault(item => item.tab.Header?.ToString() == "Subscriptions")?.index ?? -1;
+                .FirstOrDefault(item => item.tab.Header?.ToString() is "Subscriptions" or "Prescriptions" or "Συνδρομές" or "Συνταγές")?.index ?? -1;
             if (subscriptionTabIndex >= 0)
                 customerTabs.SelectedIndex = subscriptionTabIndex;
             await OpenSubscriptionEditorAsync(editSubscription);
@@ -4227,7 +4227,7 @@ public partial class MainWindow : Window
                 || header is "Overview" or "Επισκόπηση"
                 || (header is "Borrowings" or "Δανεισμοί" && CanAccessMenu(MenuBorrowing))
                 || (header is "History" or "Ιστορικό" && CanAccessMenu(MenuBorrowing))
-                || (header is "Subscriptions" or "Συνδρομές" && CanAccessMenu(MenuSubscriptions))
+                || (header is "Subscriptions" or "Prescriptions" or "Συνδρομές" or "Συνταγές" && CanAccessMenu(MenuSubscriptions))
                 || (header is "Ledger" or "Καρτέλα" && CanAccessMenu(MenuPayments));
         }
     }
