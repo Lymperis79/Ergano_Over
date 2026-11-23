@@ -347,7 +347,7 @@ public sealed class CustomerDatabaseSyncWindow : Window
             ItemsSource = new[] { "Equals", "NotEquals", "Contains", "StartsWith", "GreaterThan", "LessThan", "IsEmpty", "IsNotEmpty" },
             SelectedItem = saved?.Operator ?? "Equals"
         };
-        var value = new TextBox { Width = 150, Watermark = "Value", Text = saved?.Value ?? string.Empty };
+        var value = new TextBox { Width = 150, PlaceholderText = "Value", Text = saved?.Value ?? string.Empty };
         var remove = new Button { Content = "Remove", MinWidth = 70 };
         var row = (column, op, value);
         filterRows.Add(row);
