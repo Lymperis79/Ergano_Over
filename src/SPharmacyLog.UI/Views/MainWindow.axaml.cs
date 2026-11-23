@@ -1932,20 +1932,22 @@ public partial class MainWindow : Window
         var scanPanel = new StackPanel { Spacing = 7 };
         scanPanel.Children.Add(new TextBlock { Text = "GS1 DATAMATRIX SCAN", FontWeight = FontWeight.SemiBold });
         scanPanel.Children.Add(scanInput);
-        scanPanel.Children.Add(new TextBlock { Text = "Parsed fields — verify or correct before saving:", FontWeight = FontWeight.SemiBold, Margin = new Thickness(0, 5, 0, 0) });
+
+        var parsedPanel = new StackPanel { Spacing = 7 };
+        parsedPanel.Children.Add(new TextBlock { Text = "Parsed fields — verify or correct before saving:", FontWeight = FontWeight.SemiBold, Margin = new Thickness(0, 5, 0, 0) });
         void AddScanField(string label, TextBox box)
         {
-            scanPanel.Children.Add(new TextBlock { Text = label, FontSize = 12, Foreground = Brushes.LightGray });
-            scanPanel.Children.Add(box);
+            parsedPanel.Children.Add(new TextBlock { Text = label, FontSize = 12, Foreground = Brushes.LightGray });
+            parsedPanel.Children.Add(box);
         }
         AddScanField("GTIN (AI 01)", gtinInput);
         AddScanField("Serial number (AI 21)", serialInput);
         AddScanField("Expiry date (AI 17)", expiryInput);
         AddScanField("Batch / Lot (AI 10)", lotInput);
         AddScanField("EOF / EAN-13", eofInput);
-        scanPanel.Children.Add(new TextBlock { Text = "Raw barcode (GS separator shown as <GS>):", FontSize = 12, Foreground = Brushes.LightGray, Margin = new Thickness(0, 5, 0, 0) });
-        scanPanel.Children.Add(scanEcho);
-        scanPanel.Children.Add(scanStatus);
+        parsedPanel.Children.Add(new TextBlock { Text = "Raw barcode (GS separator shown as <GS>):", FontSize = 12, Foreground = Brushes.LightGray, Margin = new Thickness(0, 5, 0, 0) });
+        parsedPanel.Children.Add(scanEcho);
+        parsedPanel.Children.Add(scanStatus);
         scanInput.GotFocus += (_, _) => ActivateEnglishBarcodeKeyboard();
         scanInput.LostFocus += (_, _) => RestoreBarcodeKeyboard();
         scanInput.TextChanged += (_, _) => scanEcho.Text = (scanInput.Text ?? string.Empty)
@@ -2013,7 +2015,7 @@ public partial class MainWindow : Window
         });
         if (!isEdit)
         {
-            // Scanner input and parsed GS1 data appear first in the form.
+            // Keep the scan control at the top, with the entry fields immediately beneath it.
             form.Children.Add(scanPanel);
         }
 
@@ -2024,12 +2026,12 @@ public partial class MainWindow : Window
 
         var primaryFields = new Grid
         {
-            ColumnDefinitions = new ColumnDefinitions("*,*,*"),
+            ColumnDefinitions = new ColumnDefinitions("*,*"),
             ColumnSpacing = 10
         };
         var quantityGroup = new StackPanel { Spacing = 4, Margin = new Thickness(0, 3) };
         quantityGroup.Children.Add(new TextBlock { Text = Tr.Loc.TranslateText("Quantity"), Foreground = Brushes.LightGray, FontSize = 12 });
-        var quantityInput = new TextBox { Text = (existing?.Quantity ?? 1).ToString(), MinHeight = 34 };
+        var quantityInput = new TextBox { Text = (existing?.Quantity ?? 1).ToString(), MinHeight = 36 };
         fields["Quantity"] = quantityInput;
         quantityGroup.Children.Add(quantityInput);
         primaryFields.Children.Add(quantityGroup);
@@ -2039,15 +2041,17 @@ public partial class MainWindow : Window
         scanDateGroup.Children.Add(scanDateText);
         Grid.SetColumn(scanDateGroup, 1);
         primaryFields.Children.Add(scanDateGroup);
+        form.Children.Add(primaryFields);
 
         var noteGroup = new StackPanel { Spacing = 4, Margin = new Thickness(0, 3) };
         noteGroup.Children.Add(new TextBlock { Text = Tr.Loc.TranslateText("Notes"), Foreground = Brushes.LightGray, FontSize = 12 });
-        var noteInput = new TextBox { Text = existing?.Notes ?? string.Empty, MinHeight = 34, PlaceholderText = Tr.Loc.TranslateText("Notes") };
+        var noteInput = new TextBox { Text = existing?.Notes ?? string.Empty, MinHeight = 36, Height = 36, AcceptsReturn = false, TextWrapping = TextWrapping.NoWrap, PlaceholderText = Tr.Loc.TranslateText("Notes") };
         fields["Notes"] = noteInput;
         noteGroup.Children.Add(noteInput);
-        Grid.SetColumn(noteGroup, 2);
-        primaryFields.Children.Add(noteGroup);
-        form.Children.Add(primaryFields);
+        form.Children.Add(noteGroup);
+
+        if (!isEdit)
+            form.Children.Add(parsedPanel);
 
         if (isEdit)
         {
