@@ -690,51 +690,50 @@ public partial class MainWindow : Window
         }
     }
 
-    private async void OpenCompanySettings()
+    private void OpenCompanySettings()
     {
         if (viewModel.User.Role != PharmacyRole.Admin) return;
-        var dialog = new CompanySettingsWindow();
-        AttachDialogLocalization(dialog);
-        var saved = await dialog.ShowDialog<bool>(this);
-        if (saved) ApplyCompanyBranding();
+        var page = new CompanySettingsWindow();
+        page.SettingsSaved += ApplyCompanyBranding;
+        showingExpiryCalendar = false;
+        pageHost.Content = page;
     }
 
-    private async void OpenWeatherSettings()
+    private void OpenWeatherSettings()
     {
         if (viewModel.User.Role != PharmacyRole.Admin) return;
-        var dialog = new WeatherSettingsWindow();
-        AttachDialogLocalization(dialog);
-        var saved = await dialog.ShowDialog<bool>(this);
-        if (saved)
-            ShowDashboard();
+        var page = new WeatherSettingsWindow();
+        page.SettingsSaved += ShowDashboard;
+        showingExpiryCalendar = false;
+        pageHost.Content = page;
     }
 
-    private async void OpenApplicationSettings()
+    private void OpenApplicationSettings()
     {
         if (viewModel.User.Role != PharmacyRole.Admin) return;
-        var dialog = new ApplicationSettingsWindow();
-        AttachDialogLocalization(dialog);
-        var saved = await dialog.ShowDialog<bool>(this);
-        if (saved && showingExpiryCalendar && calendarMonthTitle is not null)
-            await RenderCalendarAsync(calendarMonthTitle);
+        var page = new ApplicationSettingsWindow();
+        page.SettingsSaved += () =>
+        {
+            if (showingExpiryCalendar && calendarMonthTitle is not null)
+                _ = RenderCalendarAsync(calendarMonthTitle);
+        };
+        showingExpiryCalendar = false;
+        pageHost.Content = page;
     }
 
-    private async void OpenCustomerDatabaseSync()
+    private void OpenCustomerDatabaseSync()
     {
         if (viewModel.User.Role != PharmacyRole.Admin) return;
-        var dialog = new CustomerDatabaseSyncWindow();
-        AttachDialogLocalization(dialog);
-        await dialog.ShowDialog(this);
+        showingExpiryCalendar = false;
+        pageHost.Content = new CustomerDatabaseSyncWindow();
         UpdateCustomerSyncButtonVisibility();
     }
 
-    private async void ShowReports()
+    private void ShowReports()
     {
         if (!CanAccessMenu(MenuReports)) { ShowNoMenuAccess(); return; }
         showingExpiryCalendar = false;
-        var dialog = new ReportsWindow();
-        AttachDialogLocalization(dialog);
-        await dialog.ShowDialog(this);
+        pageHost.Content = new ReportsWindow();
     }
 
     private void ShowNoMenuAccess()
@@ -4861,11 +4860,11 @@ public partial class MainWindow : Window
         await dialog.ShowDialog(this);
     }
 
-    private async void OpenMedicineCatalogue()
+    private void OpenMedicineCatalogue()
     {
         if (viewModel.User.Role != PharmacyRole.Admin) return;
-        var window = new MedicineCatalogWindow();
-        await window.ShowDialog(this);
+        showingExpiryCalendar = false;
+        pageHost.Content = new MedicineCatalogWindow();
     }
 
     private void OpenMedicineManagement()
