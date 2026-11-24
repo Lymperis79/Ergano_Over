@@ -63,7 +63,6 @@ public partial class MainWindow : Window
     private string? activeNavigationKey;
     private readonly ContentControl pageHost;
     private TextBlock dailySummary = new();
-    private ListBox dayRecords = new();
     private StackPanel calendarPanel = new();
     private DateTime displayedMonth = new(DateTime.Today.Year, DateTime.Today.Month, 1);
     private TextBlock? calendarMonthTitle;
@@ -938,7 +937,6 @@ public partial class MainWindow : Window
         showingExpiryCalendar = true;
         calendarPanel = new StackPanel();
         dailySummary = new TextBlock();
-        dayRecords = new ListBox();
         var content = new StackPanel { Margin = new Thickness(22), Spacing = 12 };
         content.Children.Add(new TextBlock { Text = Tr.Loc["Calendar.Title"], FontSize = 24, FontWeight = FontWeight.Bold });
         content.Children.Add(new TextBlock { Text = Tr.Loc["Calendar.Description"] });
@@ -969,7 +967,6 @@ public partial class MainWindow : Window
         content.Children.Add(addCalendarNoteButton);
         calendarNotesPanel = new StackPanel { Spacing = 6 };
         content.Children.Add(calendarNotesPanel);
-        content.Children.Add(dayRecords);
         pageHost.Content = new ScrollViewer
         {
             Content = content,
@@ -1284,19 +1281,6 @@ public partial class MainWindow : Window
             .Where(subscription => subscription.Status == SubscriptionStatus.Active &&
                 subscription.ExpiryDate >= dayStart && subscription.ExpiryDate < dayEnd)
             .OrderBy(subscription => subscription.Customer!.FullName).ToListAsync();
-        var dayItems = records.Select(p =>
-                $"{p.Customer?.CustomerNumber} | {p.Customer?.FullName} | {p.MedicineName} | Rx {p.PrescriptionNumber ?? "—"} | expires {p.ExpiryDate:dd/MM/yyyy}")
-            .Concat(subscriptions.Select(subscription =>
-                $"{subscription.Customer?.CustomerNumber} | {subscription.Customer?.FullName} | {subscription.Title} | due {subscription.ExpiryDate:dd/MM/yyyy}"))
-            .ToList();
-        if (ApplicationSettingsService.Load().ShowOfficialHolidays)
-        {
-            var holidays = GetGreekPublicHolidays(SelectedCalendarDate.Year);
-            if (holidays.TryGetValue(SelectedCalendarDate.Date, out var holidayName))
-                dayItems.Insert(0, "★ " + Tr.Loc.TranslateText(holidayName));
-        }
-        dayRecords.ItemsSource = dayItems;
-
         var username = viewModel.User.Username?.Trim() ?? string.Empty;
         // Load notes for the selected day first, then apply ownership filtering in memory.
         // This avoids provider-specific case-sensitivity differences in username comparisons.
