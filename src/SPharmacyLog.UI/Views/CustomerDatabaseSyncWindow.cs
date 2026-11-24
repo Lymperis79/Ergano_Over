@@ -31,6 +31,7 @@ public sealed class CustomerDatabaseSyncWindow : UserControl
     private Dictionary<string, string> savedMappings = new(StringComparer.OrdinalIgnoreCase);
     private bool suppressTableSelectionChanged;
     private bool filtersInitialized;
+    private bool savedConfigurationInitializationStarted;
 
     private Window GetOwnerWindow() => TopLevel.GetTopLevel(this) as Window ?? throw new InvalidOperationException("The database synchronization page is not attached to a window.");
 
@@ -176,7 +177,14 @@ public sealed class CustomerDatabaseSyncWindow : UserControl
         LoadSavedSettings();
         UpdateAuthenticationFields();
         BuildMappingRows();
-        Opened += async (_, _) => await InitializeSavedConfigurationAsync();
+    }
+
+    protected override async void OnAttachedToVisualTree(Avalonia.VisualTreeAttachmentEventArgs e)
+    {
+        base.OnAttachedToVisualTree(e);
+        if (savedConfigurationInitializationStarted) return;
+        savedConfigurationInitializationStarted = true;
+        await InitializeSavedConfigurationAsync();
     }
 
     private async Task InitializeSavedConfigurationAsync()
