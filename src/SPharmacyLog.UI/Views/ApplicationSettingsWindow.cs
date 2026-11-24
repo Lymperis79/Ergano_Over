@@ -6,18 +6,14 @@ using SPharmacyLog.UI.Services;
 
 namespace SPharmacyLog.UI.Views;
 
-public sealed class ApplicationSettingsWindow : Window
+public sealed class ApplicationSettingsWindow : UserControl
 {
+    public event Action? SettingsSaved;
     private readonly CheckBox showOfficialHolidays;
 
     public ApplicationSettingsWindow()
     {
         var settings = ApplicationSettingsService.Load();
-        Title = "Application settings";
-        Width = 460;
-        Height = 260;
-        MinWidth = 420;
-        WindowStartupLocation = WindowStartupLocation.CenterOwner;
         Background = new SolidColorBrush(Color.Parse("#202733"));
 
         showOfficialHolidays = new CheckBox
@@ -27,14 +23,13 @@ public sealed class ApplicationSettingsWindow : Window
         };
 
         var save = new Button { Content = "Save", Classes = { "accent" }, MinWidth = 100 };
-        var cancel = new Button { Content = "Cancel", MinWidth = 100 };
         save.Click += (_, _) =>
         {
             ApplicationSettingsService.Save(new ApplicationSettings
             {
                 ShowOfficialHolidays = showOfficialHolidays.IsChecked == true
             });
-            Close(true);
+            SettingsSaved?.Invoke();
         };
         cancel.Click += (_, _) => Close(false);
 
@@ -43,7 +38,7 @@ public sealed class ApplicationSettingsWindow : Window
             Orientation = Orientation.Horizontal,
             HorizontalAlignment = HorizontalAlignment.Right,
             Spacing = 8,
-            Children = { cancel, save }
+            Children = { save }
         };
         Content = new StackPanel
         {
