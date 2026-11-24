@@ -1978,7 +1978,7 @@ public partial class MainWindow : Window
         string? gtinOnlyValue = null;
         var gtinInput = new TextBox { MaxLength = 14, PlaceholderText = "14-digit GTIN", IsEnabled = !isEdit };
         var serialInput = new TextBox { PlaceholderText = "Serial number (AI 21)", IsEnabled = !isEdit };
-        var expiryInput = new TextBox { PlaceholderText = "Expiry date (yyyy-MM-dd)", IsEnabled = !isEdit };
+        var expiryInput = new DatePicker { SelectedDate = null, IsEnabled = !isEdit, MinWidth = 220 };
         var lotInput = new TextBox { PlaceholderText = "Batch / Lot (AI 10)", IsEnabled = !isEdit };
         var eofInput = new TextBox { MaxLength = 13, PlaceholderText = "Optional 13-digit Greek EOF / NTIN barcode", IsEnabled = !isEdit };
         var medicineNameInput = new TextBox { Text = existing?.MedicineName ?? string.Empty, MinHeight = 36, FontSize = 15, PlaceholderText = "Type or confirm the medicine name" };
@@ -2191,9 +2191,9 @@ public partial class MainWindow : Window
                 { status.Text = "GTIN must contain exactly 14 digits."; return; }
                 if (string.IsNullOrWhiteSpace(correctedSerial) || correctedSerial.Length > 20)
                 { status.Text = "Enter a serial number of up to 20 characters."; return; }
-                if (!DateTime.TryParse(expiryInput.Text, out var parsedExpiry))
-                { status.Text = "Enter a valid expiry date (yyyy-MM-dd)."; return; }
-                correctedExpiry = parsedExpiry.Date;
+                if (expiryInput.SelectedDate is not DateTimeOffset selectedExpiry)
+                { status.Text = "Select a valid expiry date."; return; }
+                correctedExpiry = selectedExpiry.Date;
                 if (correctedLot.Length > 20)
                 { status.Text = "Batch / Lot must not exceed 20 characters."; return; }
                 if (quantity != 1)
@@ -3678,9 +3678,9 @@ public partial class MainWindow : Window
         if (!selectedCustomerId.HasValue) { SetActivityStatus("Save or select a customer first."); return; }
         var isEdit = existing is not null;
         var title = new TextBox { Text = existing?.Title ?? "", PlaceholderText = "Subscription title", MinHeight = 34 };
-        var start = new TextBox { Text = (existing?.StartDate ?? DateTime.Today).ToString("yyyy-MM-dd"), PlaceholderText = "Start date (yyyy-MM-dd)", MinHeight = 34 };
-        var due = new TextBox { Text = existing?.NextDueDate.ToString("yyyy-MM-dd") ?? "", PlaceholderText = "Next due date (yyyy-MM-dd)", MinHeight = 34 };
-        var expiry = new TextBox { Text = existing?.ExpiryDate?.ToString("yyyy-MM-dd") ?? "", PlaceholderText = "Expiry date (optional)", MinHeight = 34 };
+        var start = new DatePicker { SelectedDate = new DateTimeOffset(existing?.StartDate ?? DateTime.Today), MinWidth = 220 };
+        var due = new DatePicker { SelectedDate = existing is null ? new DateTimeOffset(DateTime.Today) : new DateTimeOffset(existing.NextDueDate), MinWidth = 220 };
+        var expiry = new DatePicker { SelectedDate = existing?.ExpiryDate is DateTime expiryDate ? new DateTimeOffset(expiryDate) : null, MinWidth = 220 };
         var frequency = new TextBox { Text = existing?.Frequency ?? "Monthly", PlaceholderText = "Frequency", MinHeight = 34 };
         var notes = new TextBox { Text = existing?.Notes ?? "", PlaceholderText = "Notes", MinHeight = 70, AcceptsReturn = true, TextWrapping = TextWrapping.Wrap };
         var subscriptionStatus = CreateSubscriptionStatusSelector(existing?.Status ?? SubscriptionStatus.Active);
@@ -3688,9 +3688,9 @@ public partial class MainWindow : Window
         {
             new TextBlock { Text = isEdit ? "EDIT SUBSCRIPTION" : "ADD SUBSCRIPTION", FontSize = 19, FontWeight = FontWeight.Bold },
             new TextBlock { Text = "Subscription title" }, title,
-            new TextBlock { Text = "Start date (yyyy-MM-dd)" }, start,
-            new TextBlock { Text = "Next due date (yyyy-MM-dd)" }, due,
-            new TextBlock { Text = "Expiry date (yyyy-MM-dd, optional)" }, expiry,
+            new TextBlock { Text = "Start date" }, start,
+            new TextBlock { Text = "Next due date" }, due,
+            new TextBlock { Text = "Expiry date (optional)" }, expiry,
             new TextBlock { Text = "Frequency" }, frequency,
             new TextBlock { Text = "Status" }, subscriptionStatus,
             new TextBlock { Text = "Notes" }, notes
@@ -3702,14 +3702,11 @@ public partial class MainWindow : Window
         cancel.Click += (_, _) => dialog.Close();
         save.Click += async (_, _) =>
         {
-            if (string.IsNullOrWhiteSpace(title.Text) || !DateTime.TryParse(start.Text, out var startDate) || !DateTime.TryParse(due.Text, out var dueDate))
-            { status.Text = "Enter a title and valid start and next due dates."; return; }
-            DateTime? expiryDate = null;
-            if (!string.IsNullOrWhiteSpace(expiry.Text))
-            {
-                if (!DateTime.TryParse(expiry.Text, out var parsedExpiry)) { status.Text = "Enter a valid expiry date."; return; }
-                expiryDate = parsedExpiry.Date;
-            }
+            if (string.IsNullOrWhiteSpace(title.Text) || start.SelectedDate is not DateTimeOffset selectedStart || due.SelectedDate is not DateTimeOffset selectedDue)
+            { status.Text = "Enter a title and select valid start and next due dates."; return; }
+            var startDate = selectedStart.Date;
+            var dueDate = selectedDue.Date;
+            DateTime? expiryDate = expiry.SelectedDate?.Date;
             await using var db = new PharmacyDbContext(PharmacyDb.Options());
             if (!TryReadSubscriptionStatus(subscriptionStatus, out var selectedStatus))
             { status.Text = "Choose Active or Executed status."; return; }
