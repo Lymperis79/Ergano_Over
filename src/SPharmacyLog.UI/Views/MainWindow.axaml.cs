@@ -704,7 +704,6 @@ public partial class MainWindow : Window
     {
         if (viewModel.User.Role != PharmacyRole.Admin) return;
         var page = new WeatherSettingsWindow();
-        page.SettingsSaved += ShowDashboard;
         showingExpiryCalendar = false;
         pageHost.Content = page;
         AttachPageLocalization(page);
@@ -714,11 +713,6 @@ public partial class MainWindow : Window
     {
         if (viewModel.User.Role != PharmacyRole.Admin) return;
         var page = new ApplicationSettingsWindow();
-        page.SettingsSaved += () =>
-        {
-            if (showingExpiryCalendar && calendarMonthTitle is not null)
-                _ = RenderCalendarAsync(calendarMonthTitle);
-        };
         showingExpiryCalendar = false;
         pageHost.Content = page;
         AttachPageLocalization(page);
