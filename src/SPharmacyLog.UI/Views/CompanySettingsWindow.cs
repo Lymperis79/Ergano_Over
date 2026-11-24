@@ -11,6 +11,7 @@ namespace SPharmacyLog.UI.Views;
 public sealed class CompanySettingsWindow : UserControl
 {
     public event Action? SettingsSaved;
+    private readonly TextBlock saveStatus = new() { Foreground = Brushes.LightGray };
     private readonly TextBox companyName;
     private readonly Image logoPreview;
     private byte[]? selectedLogo;
@@ -62,6 +63,8 @@ public sealed class CompanySettingsWindow : UserControl
         save.Click += (_, _) =>
         {
             CompanySettingsService.Save(companyName.Text ?? "", selectedLogo, selectedExtension, removeLogo);
+            saveStatus.Text = SPharmacyLog.UI.Localization.Tr.Loc.TranslateText("Settings saved.");
+            saveStatus.Text = SPharmacyLog.UI.Localization.Tr.Loc.TranslateText("Settings saved.");
             SettingsSaved?.Invoke();
         };
 
@@ -89,7 +92,8 @@ public sealed class CompanySettingsWindow : UserControl
                 companyName,
                 new TextBlock { Text = "Company logo (optional)", FontWeight = FontWeight.SemiBold },
                 new StackPanel { Orientation = Orientation.Horizontal, Spacing = 14, Children = { logoPreview, new StackPanel { VerticalAlignment = VerticalAlignment.Center, Spacing = 8, Children = { logoActions, new TextBlock { Text = "PNG, JPG or BMP image", Foreground = Brushes.LightGray, FontSize = 12 } } } } },
-                buttons
+                buttons,
+                saveStatus
             }
         };
     }
