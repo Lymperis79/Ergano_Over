@@ -449,7 +449,7 @@ public partial class MainWindow : Window
                     // Preserve the original dashboard workflow: Edit opens the
                     // prescription details popup first. Editing remains available
                     // from the dedicated action inside that popup.
-                    await OpenSubscriptionDetailsAsync(subscription.Id);
+                    await OpenSubscriptionDetailsSafelyAsync(subscription.Id);
                 };
                 Grid.SetColumn(edit, 1);
                 row.Children.Add(edit);
@@ -3285,6 +3285,46 @@ public partial class MainWindow : Window
 
         status = SubscriptionStatus.Active;
         return false;
+    }
+
+    private async Task OpenSubscriptionDetailsSafelyAsync(int subscriptionId)
+    {
+        try
+        {
+            await OpenSubscriptionDetailsAsync(subscriptionId);
+        }
+        catch (Exception ex)
+        {
+            // Details are opened from several async UI handlers. Never allow an
+            // unexpected data/UI exception to escape onto Avalonia's dispatcher.
+            var message = ex.GetBaseException().Message;
+            var close = new Button { Content = Tr.Loc.TranslateText("Close"), MinWidth = 90 };
+            var errorDialog = new Window
+            {
+                Title = Tr.Loc.TranslateText("Unable to open prescription details"),
+                Width = 540,
+                Height = 250,
+                MinWidth = 440,
+                WindowStartupLocation = WindowStartupLocation.CenterOwner,
+                Content = new StackPanel
+                {
+                    Margin = new Thickness(18),
+                    Spacing = 14,
+                    Children =
+                    {
+                        new TextBlock
+                        {
+                            Text = Tr.Loc.TranslateText("The prescription details could not be opened. The application is still running. Please report this error."),
+                            TextWrapping = TextWrapping.Wrap
+                        },
+                        new TextBlock { Text = message, TextWrapping = TextWrapping.Wrap },
+                        close
+                    }
+                }
+            };
+            close.Click += (_, _) => errorDialog.Close();
+            errorDialog.Show(this);
+        }
     }
 
     private async Task OpenSubscriptionDetailsAsync(int subscriptionId)
