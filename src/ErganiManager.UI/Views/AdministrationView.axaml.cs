@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls;
@@ -95,7 +96,7 @@ public partial class AdministrationView : UserControl
         var cancel = new Button { Content = "Cancel", IsCancel = true };
         apply.Click += (_, _) => dialog.Close(true);
         cancel.Click += (_, _) => dialog.Close(false);
-        dialog.Content = new StackPanel { Margin = new Thickness(20), Spacing = 14, Children = { new TextBlock { Text = "This will replace this PC's local configuration, including database connection and portal settings. Local database files and user accounts are not imported. Continue?", TextWrapping = TextWrapping.Wrap }, new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right, Spacing = 8, Children = { cancel, apply } } } };
+        dialog.Content = new StackPanel { Margin = new Thickness(20), Spacing = 14, Children = { new TextBlock { Text = "This will replace this PC's local configuration, including database connection and portal settings. Local database files and user accounts are not imported. Continue?", TextWrapping = TextWrapping.Wrap }, new StackPanel { Orientation = Avalonia.Layout.Orientation.Horizontal, HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Right, Spacing = 8, Children = { cancel, apply } } } };
         return await dialog.ShowDialog<bool>(owner);
     }
 
