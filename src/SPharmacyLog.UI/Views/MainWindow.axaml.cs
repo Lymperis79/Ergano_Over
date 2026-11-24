@@ -446,7 +446,10 @@ public partial class MainWindow : Window
                 edit.Click += async (_, _) =>
                 {
                     dialog.Close();
-                    await OpenSubscriptionForEditingSafelyAsync(subscription);
+                    // Preserve the original dashboard workflow: Edit opens the
+                    // prescription details popup first. Editing remains available
+                    // from the dedicated action inside that popup.
+                    await OpenSubscriptionDetailsAsync(subscription.Id);
                 };
                 Grid.SetColumn(edit, 1);
                 row.Children.Add(edit);
