@@ -4079,9 +4079,9 @@ public partial class MainWindow : Window
     private async Task AddSubscriptionAsync()
     {
         if (!selectedCustomerId.HasValue) { SetActivityStatus("Save or select a customer first."); return; }
-        if (string.IsNullOrWhiteSpace(ActivityValue("SubscriptionTitle")) || !DateTime.TryParse(ActivityValue("SubscriptionExpiry"), out var expiry)) { SetActivityStatus("Enter a prescription number and valid expiry date."); return; }
-        DateTime.TryParse(ActivityValue("SubscriptionStart"), out var start);
+        if (string.IsNullOrWhiteSpace(ActivityValue("SubscriptionTitle"))) { SetActivityStatus("Enter a prescription number."); return; }
         if (!DateTime.TryParse(ActivityValue("SubscriptionExpiry"), out var expiry)) { SetActivityStatus("Enter a valid expiry date."); return; }
+        DateTime.TryParse(ActivityValue("SubscriptionStart"), out var start);
         await using var db = new PharmacyDbContext(PharmacyDb.Options());
         db.Subscriptions.Add(new Subscription { CustomerId = selectedCustomerId.Value, Title = ActivityValue("SubscriptionTitle"), StartDate = start == default ? DateTime.Today : start, ExpiryDate = expiry, Frequency = string.IsNullOrWhiteSpace(ActivityValue("SubscriptionFrequency")) ? "None" : ActivityValue("SubscriptionFrequency"), Notes = ActivityValue("SubscriptionNotes") });
         await db.SaveChangesAsync(); SetActivityStatus("Subscription added."); await RefreshCustomerWorkspaceAsync();
