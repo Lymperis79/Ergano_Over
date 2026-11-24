@@ -2044,7 +2044,7 @@ public partial class MainWindow : Window
             await using var lookupDb = new PharmacyDbContext(PharmacyDb.Options());
             gtinInput.Text = parsedPack.Gtin14;
             serialInput.Text = parsedPack.SerialNumber;
-            expiryInput.Text = parsedPack.ExpiryDate.ToString("yyyy-MM-dd");
+            expiryInput.SelectedDate = new DateTimeOffset(parsedPack.ExpiryDate);
             lotInput.Text = parsedPack.BatchLot;
             var match = await lookupDb.MedicineBarcodes.Include(x => x.Medicine)
                 .FirstOrDefaultAsync(x => x.BarcodeValue == parsedPack.Gtin14 ||
