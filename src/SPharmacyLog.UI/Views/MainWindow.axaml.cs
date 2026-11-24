@@ -742,7 +742,7 @@ public partial class MainWindow : Window
     private void OpenApplicationSettings()
     {
         if (!CanAccessMenu(MenuApplicationSettings)) { ShowNoMenuAccess(); return; }
-        var page = new ApplicationSettingsWindow();
+        var page = new ApplicationSettingsWindow(viewModel.User.Role == PharmacyRole.Admin);
         showingExpiryCalendar = false;
         pageHost.Content = page;
         AttachPageLocalization(page);
