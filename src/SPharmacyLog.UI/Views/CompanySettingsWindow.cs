@@ -8,8 +8,9 @@ using SPharmacyLog.UI.Services;
 
 namespace SPharmacyLog.UI.Views;
 
-public sealed class CompanySettingsWindow : Window
+public sealed class CompanySettingsWindow : UserControl
 {
+    public event Action? SettingsSaved;
     private readonly TextBox companyName;
     private readonly Image logoPreview;
     private byte[]? selectedLogo;
@@ -19,11 +20,6 @@ public sealed class CompanySettingsWindow : Window
     public CompanySettingsWindow()
     {
         var settings = CompanySettingsService.Load();
-        Title = "Company settings";
-        Width = 520;
-        Height = 390;
-        MinWidth = 460;
-        WindowStartupLocation = WindowStartupLocation.CenterOwner;
         Background = new SolidColorBrush(Color.Parse("#202733"));
 
         companyName = new TextBox
@@ -63,11 +59,10 @@ public sealed class CompanySettingsWindow : Window
         };
 
         var save = new Button { Content = "Save", Classes = { "accent" }, MinWidth = 100 };
-        var cancel = new Button { Content = "Cancel", MinWidth = 100 };
         save.Click += (_, _) =>
         {
             CompanySettingsService.Save(companyName.Text ?? "", selectedLogo, selectedExtension, removeLogo);
-            Close(true);
+            SettingsSaved?.Invoke();
         };
         cancel.Click += (_, _) => Close(false);
 
@@ -82,7 +77,7 @@ public sealed class CompanySettingsWindow : Window
             Orientation = Orientation.Horizontal,
             HorizontalAlignment = HorizontalAlignment.Right,
             Spacing = 8,
-            Children = { cancel, save }
+            Children = { save }
         };
         Content = new StackPanel
         {
