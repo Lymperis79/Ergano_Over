@@ -97,8 +97,7 @@ public partial class MainWindow : Window
         (MenuMedicine, "Medicine"),
         (MenuStock, "Medicine stock control"),
         (MenuReports, "Navigation.Reports"),
-        // Administrative shortcuts can be granted individually to Limited users.
-        // User Management remains administrator-only and is intentionally excluded.
+        // Administrative shortcuts, including User Management, can be granted individually to Limited users.
         (MenuCompanySettings, "Company settings"),
         (MenuWeatherSettings, "Weather settings"),
         (MenuApplicationSettings, "Navigation.ApplicationSettings"),
@@ -181,7 +180,8 @@ public partial class MainWindow : Window
                      item.Key != MenuCompanySettings &&
                      item.Key != MenuWeatherSettings &&
                      item.Key != MenuApplicationSettings &&
-                     item.Key != MenuDatabaseSynchronization))
+                     item.Key != MenuDatabaseSynchronization &&
+                     item.Key != MenuUsers))
         {
             if (!CanAccessMenu(item.Key)) continue;
             Action action = item.Key switch
