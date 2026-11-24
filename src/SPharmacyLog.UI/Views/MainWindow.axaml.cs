@@ -792,7 +792,6 @@ public partial class MainWindow : Window
             }
         }
 
-        TranslateListItems(dayRecords);
         TranslateListItems(customerList);
         TranslateListItems(borrowingList);
         TranslateListItems(customerHistoryList);
