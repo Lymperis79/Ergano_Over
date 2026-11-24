@@ -382,9 +382,9 @@ public partial class MainWindow : Window
                 .Where(item => item.Status == SubscriptionStatus.Active &&
                     (!dueTodayOnly.HasValue ||
                         (dueTodayOnly.Value
-                            ? item.NextDueDate >= today && item.NextDueDate < tomorrow
-                            : item.NextDueDate < today)))
-                .OrderBy(item => item.NextDueDate)
+                            ? item.ExpiryDate >= today && item.ExpiryDate < tomorrow
+                            : item.ExpiryDate < today)))
+                .OrderBy(item => item.ExpiryDate)
                 .ThenBy(item => item.Customer!.Surname)
                 .ThenBy(item => item.Customer!.FirstName)
                 .ToListAsync();
@@ -429,7 +429,7 @@ public partial class MainWindow : Window
                         new TextBlock { Text = customerName, Foreground = Brushes.LightGray },
                         new TextBlock
                         {
-                            Text = $"{Tr.Loc.TranslateText("Next due")}: {subscription.NextDueDate:dd/MM/yyyy}",
+                            Text = $"{Tr.Loc.TranslateText("Expiry date")}: {subscription.ExpiryDate:dd/MM/yyyy}",
                             Foreground = new SolidColorBrush(Color.Parse(dueTodayOnly.HasValue
                                 ? (dueTodayOnly.Value ? "#D39A35" : "#E07878")
                                 : "#397DA5")),
@@ -633,8 +633,8 @@ public partial class MainWindow : Window
             var tomorrow = today.AddDays(1);
             var customerCount = await db.Customers.CountAsync();
             var activeCount = await db.Subscriptions.CountAsync(item => item.Status == SubscriptionStatus.Active);
-            var dueToday = await db.Subscriptions.CountAsync(item => item.Status == SubscriptionStatus.Active && item.NextDueDate >= today && item.NextDueDate < tomorrow);
-            var overdue = await db.Subscriptions.CountAsync(item => item.Status == SubscriptionStatus.Active && item.NextDueDate < today);
+            var dueToday = await db.Subscriptions.CountAsync(item => item.Status == SubscriptionStatus.Active && item.ExpiryDate >= today && item.ExpiryDate < tomorrow);
+            var overdue = await db.Subscriptions.CountAsync(item => item.Status == SubscriptionStatus.Active && item.ExpiryDate < today);
             var currentlyBorrowed = await db.Borrowings
                 .Where(item => item.Status == BorrowingStatus.Borrowed)
                 .SumAsync(item => (int?)item.Quantity) ?? 0;
@@ -953,12 +953,12 @@ public partial class MainWindow : Window
         var dueSubscriptions = await db.Subscriptions.AsNoTracking()
             .Include(subscription => subscription.Customer)
             .Where(subscription => subscription.Status == SubscriptionStatus.Active &&
-                subscription.NextDueDate >= start && subscription.NextDueDate < end)
+                subscription.ExpiryDate >= start && subscription.ExpiryDate < end)
             .OrderBy(subscription => subscription.Customer!.Surname)
             .ThenBy(subscription => subscription.Customer!.FirstName)
             .ToListAsync();
         var subscriptionsByDate = dueSubscriptions
-            .GroupBy(subscription => subscription.NextDueDate.Date)
+            .GroupBy(subscription => subscription.ExpiryDate.Date)
             .ToDictionary(group => group.Key, group => group.ToList());
         var currentUsername = viewModel.User.Username?.Trim() ?? string.Empty;
         var notesForMonth = await db.CalendarNotes.AsNoTracking()
@@ -1241,12 +1241,12 @@ public partial class MainWindow : Window
             .OrderBy(p => p.Customer!.FullName).ToListAsync();
         var subscriptions = await db.Subscriptions.AsNoTracking().Include(subscription => subscription.Customer)
             .Where(subscription => subscription.Status == SubscriptionStatus.Active &&
-                subscription.NextDueDate >= dayStart && subscription.NextDueDate < dayEnd)
+                subscription.ExpiryDate >= dayStart && subscription.ExpiryDate < dayEnd)
             .OrderBy(subscription => subscription.Customer!.FullName).ToListAsync();
         var dayItems = records.Select(p =>
                 $"{p.Customer?.CustomerNumber} | {p.Customer?.FullName} | {p.MedicineName} | Rx {p.PrescriptionNumber ?? "—"} | expires {p.ExpiryDate:dd/MM/yyyy}")
             .Concat(subscriptions.Select(subscription =>
-                $"{subscription.Customer?.CustomerNumber} | {subscription.Customer?.FullName} | {subscription.Title} | due {subscription.NextDueDate:dd/MM/yyyy}"))
+                $"{subscription.Customer?.CustomerNumber} | {subscription.Customer?.FullName} | {subscription.Title} | due {subscription.ExpiryDate:dd/MM/yyyy}"))
             .ToList();
         if (ApplicationSettingsService.Load().ShowOfficialHolidays)
         {
@@ -2757,7 +2757,7 @@ public partial class MainWindow : Window
                 Margin = new Thickness(2),
                 Child = new TextBlock
                 {
-                    Text = $"{subscription.Title} | {Tr.Loc.TranslateText(subscription.Status.ToString())} | Next: {subscription.NextDueDate:dd/MM/yyyy} | Expires: {subscription.ExpiryDate?.ToString("dd/MM/yyyy") ?? "—"} | {subscription.Frequency}",
+                    Text = $"{subscription.Title} | {Tr.Loc.TranslateText(subscription.Status.ToString())} | Expires: {subscription.ExpiryDate:dd/MM/yyyy} | {subscription.Frequency}",
                     TextWrapping = TextWrapping.Wrap,
                     VerticalAlignment = VerticalAlignment.Center
                 }
@@ -3031,15 +3031,15 @@ public partial class MainWindow : Window
             if (activeSubscriptions.Count == 0)
                 AddEmptyState("No active subscriptions.");
             else
-                foreach (var item in activeSubscriptions.OrderBy(x => x.NextDueDate))
+                foreach (var item in activeSubscriptions.OrderBy(x => x.ExpiryDate))
                     customerOverview.Children.Add(CreateRecordCard(
                         "▣",
                         item.Title,
                         new[]
                         {
                             $"{Tr.Loc.TranslateText("Frequency")}: {Tr.Loc.TranslateText(item.Frequency)}",
-                            $"{Tr.Loc.TranslateText("Next due")}: {item.NextDueDate:dd/MM/yyyy}",
-                            item.ExpiryDate.HasValue ? $"{Tr.Loc.TranslateText("Expiry date")}: {item.ExpiryDate.Value:dd/MM/yyyy}" : string.Empty
+                            $"{Tr.Loc.TranslateText("Expiry date")}: {item.ExpiryDate:dd/MM/yyyy}",
+                            $"{Tr.Loc.TranslateText("Expiry date")}: {item.ExpiryDate:dd/MM/yyyy}"
                         },
                         Tr.Loc.TranslateText(item.Status.ToString()),
                         "#4B9B83"));
@@ -3393,9 +3393,9 @@ public partial class MainWindow : Window
         };
         var metricItems = new[]
         {
-            Metric("NEXT DUE", subscription.NextDueDate.ToString("dd MMM yyyy"), Tr.Loc.TranslateText("Scheduled date")),
+            Metric("EXPIRY", subscription.ExpiryDate.ToString("dd MMM yyyy"), Tr.Loc.TranslateText("Scheduled date")),
             Metric("FREQUENCY", subscription.Frequency, Tr.Loc.TranslateText("Recurring interval")),
-            Metric("EXPIRY", subscription.ExpiryDate?.ToString("dd MMM yyyy") ?? "—", Tr.Loc.TranslateText("Subscription end date"))
+            Metric("EXPIRY", subscription.ExpiryDate.ToString("dd MMM yyyy"), Tr.Loc.TranslateText("Subscription end date"))
         };
         for (var i = 0; i < metricItems.Length; i++)
         {
@@ -3763,7 +3763,7 @@ public partial class MainWindow : Window
             record.LastModifiedAt = now;
             record.LastModifiedBy = actor;
             record.StartDate = startDate.Date;
-            record.NextDueDate = dueDate.Date;
+            
             record.ExpiryDate = expiryDate;
             record.Frequency = selectedFrequencyValue;
             record.Notes = notes.Text?.Trim();
@@ -4081,11 +4081,11 @@ public partial class MainWindow : Window
     private async Task AddSubscriptionAsync()
     {
         if (!selectedCustomerId.HasValue) { SetActivityStatus("Save or select a customer first."); return; }
-        if (string.IsNullOrWhiteSpace(ActivityValue("SubscriptionTitle")) || !DateTime.TryParse(ActivityValue("SubscriptionDue"), out var due)) { SetActivityStatus("Enter a title and valid next due date."); return; }
+        if (string.IsNullOrWhiteSpace(ActivityValue("SubscriptionTitle")) || !DateTime.TryParse(ActivityValue("SubscriptionExpiry"), out var expiry)) { SetActivityStatus("Enter a prescription number and valid expiry date."); return; }
         DateTime.TryParse(ActivityValue("SubscriptionStart"), out var start);
-        DateTime? expiry = DateTime.TryParse(ActivityValue("SubscriptionExpiry"), out var exp) ? exp : null;
+        if (!DateTime.TryParse(ActivityValue("SubscriptionExpiry"), out var expiry)) { SetActivityStatus("Enter a valid expiry date."); return; }
         await using var db = new PharmacyDbContext(PharmacyDb.Options());
-        db.Subscriptions.Add(new Subscription { CustomerId = selectedCustomerId.Value, Title = ActivityValue("SubscriptionTitle"), StartDate = start == default ? DateTime.Today : start, NextDueDate = due, ExpiryDate = expiry, Frequency = string.IsNullOrWhiteSpace(ActivityValue("SubscriptionFrequency")) ? "Monthly" : ActivityValue("SubscriptionFrequency"), Notes = ActivityValue("SubscriptionNotes") });
+        db.Subscriptions.Add(new Subscription { CustomerId = selectedCustomerId.Value, Title = ActivityValue("SubscriptionTitle"), StartDate = start == default ? DateTime.Today : start, ExpiryDate = expiry, Frequency = string.IsNullOrWhiteSpace(ActivityValue("SubscriptionFrequency")) ? "Monthly" : ActivityValue("SubscriptionFrequency"), Notes = ActivityValue("SubscriptionNotes") });
         await db.SaveChangesAsync(); SetActivityStatus("Subscription added."); await RefreshCustomerWorkspaceAsync();
     }
 
