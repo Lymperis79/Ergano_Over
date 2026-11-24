@@ -208,6 +208,8 @@ public sealed class CustomerDatabaseSyncWindow : UserControl
             savedTable = settings.Table;
             savedFilters = settings.Filters.ToList();
             savedMappings = new Dictionary<string, string>(settings.FieldMappings, StringComparer.OrdinalIgnoreCase);
+            hasSavedSettings = true;
+            RefreshSavedConfigurationSummary();
             await ExecuteImportAsync(settings, requireConfirmation: true);
         });
         syncSavedButton.Click += async (_, _) => await RunAsync(async _ =>
