@@ -1,11 +1,11 @@
-<Window xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" x:Class="SPharmacyLog.UI.Views.LoginWindow" Icon="avares://SPharmacyLog.UI/Assets/spharmacy.ico" Title="S Pharmacy Log" Width="480" Height="600" CanResize="False" WindowStartupLocation="CenterScreen" Background="{DynamicResource WindowBrush}">
+<Window xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" x:Class="SPharmacyLog.UI.Views.LoginWindow" Icon="avares://SPharmacyLog.UI/Assets/spharmacy.ico" Title="My Pharmacy Companion" Width="480" Height="600" CanResize="False" WindowStartupLocation="CenterScreen" Background="{DynamicResource WindowBrush}">
   <Grid Margin="28">
     <Border Classes="card" VerticalAlignment="Center" Padding="30">
       <StackPanel Spacing="15">
         <Border Width="74" Height="74" CornerRadius="18" Background="{DynamicResource AccentSoftBrush}" HorizontalAlignment="Center">
           <TextBlock Text="✚" FontSize="38" Foreground="{DynamicResource AccentLightBrush}" VerticalAlignment="Center" HorizontalAlignment="Center"/>
         </Border>
-        <TextBlock Text="S Pharmacy Log" FontSize="29" FontWeight="Bold" HorizontalAlignment="Center"/>
+        <TextBlock Text="My Pharmacy Companion" FontSize="29" FontWeight="Bold" HorizontalAlignment="Center"/>
         <TextBlock x:Name="SubtitleText" Text="Prescription, customer and medicine tracking" Foreground="#91A1B5" HorizontalAlignment="Center" TextWrapping="Wrap" TextAlignment="Center" Margin="0,-5,0,8"/>
         <TextBlock Text="Username" FontWeight="SemiBold"/>
         <TextBox x:Name="UsernameBox" PlaceholderText="Enter your username"/>
