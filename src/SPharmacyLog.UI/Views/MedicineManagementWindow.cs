@@ -7,6 +7,7 @@ using Microsoft.EntityFrameworkCore;
 using SPharmacyLog.Data;
 using SPharmacyLog.Data.Entities;
 using SPharmacyLog.UI.Localization;
+using SPharmacyLog.UI.Services;
 using System.Text;
 
 namespace SPharmacyLog.UI.Views;
@@ -31,6 +32,8 @@ public sealed class MedicineManagementWindow : UserControl
         var newButton = new Button { Content = Tr.Loc.TranslateText("＋ Add medicine"), MinHeight = 36, Classes = { "accent" } };
         newButton.Click += async (_, _) => await EditMedicineAsync(null);
         var refresh = new Button { Content = Tr.Loc.TranslateText("Refresh"), MinHeight = 36 };
+        var updateCatalogue = new Button { Content = Tr.Loc.TranslateText("Update catalogue from drugbase-gr"), MinHeight = 36 };
+        updateCatalogue.Click += async (_, _) => await UpdateCatalogueAsync(updateCatalogue);
         refresh.Click += async (_, _) => await LoadAsync();
         var export = new Button { Content = Tr.Loc.TranslateText("Export to Excel"), MinHeight = 36 };
         export.Click += async (_, _) => await ExportAsync();
@@ -50,7 +53,7 @@ public sealed class MedicineManagementWindow : UserControl
             var tb = new TextBlock { Text = Tr.Loc.TranslateText(labels[col]), FontWeight = FontWeight.Bold, Margin = new Thickness(9,8), VerticalAlignment = VerticalAlignment.Center };
             Grid.SetColumn(tb,col); header.Children.Add(tb);
         }
-        var toolbar = new StackPanel { Orientation=Orientation.Horizontal, Spacing=8, Children={search,searchButton,newButton,import,export,refresh} };
+        var toolbar = new StackPanel { Orientation=Orientation.Horizontal, Spacing=8, Children={search,searchButton,newButton,import,export,refresh,updateCatalogue} };
         var pager = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Right, Children = { previousPage, pageInfo, nextPage } };
         var listArea = new Grid { RowDefinitions = new RowDefinitions("Auto,*,Auto"), RowSpacing = 8, Children = { header, new ScrollViewer { Content=rows, VerticalScrollBarVisibility=Avalonia.Controls.Primitives.ScrollBarVisibility.Auto, HorizontalScrollBarVisibility=Avalonia.Controls.Primitives.ScrollBarVisibility.Auto }, pager } };
         Grid.SetRow(listArea.Children[1], 1); Grid.SetRow(listArea.Children[2], 2);
@@ -78,6 +81,27 @@ public sealed class MedicineManagementWindow : UserControl
                 await LoadAsync(resetPage: true);
         }
         catch (OperationCanceledException) { }
+    }
+
+    private async Task UpdateCatalogueAsync(Button updateButton)
+    {
+        updateButton.IsEnabled = false;
+        try
+        {
+            status.Text = Tr.Loc.TranslateText("Downloading and importing the public medicine registry…");
+            var result = await MedicineCatalogImportService.UpdateFromPublicRegistryAsync(
+                message => status.Text = message);
+            status.Text = $"{Tr.Loc.TranslateText("Catalogue update completed")}: {result.RowsRead:N0} rows; {result.MedicinesAdded:N0} new medicines; {result.BarcodesAdded:N0} barcode mappings; {result.RowsWithoutBarcode:N0} rows without a usable barcode.";
+            await LoadAsync(resetPage: true);
+        }
+        catch (Exception ex)
+        {
+            status.Text = $"{Tr.Loc.TranslateText("Catalogue update failed")}: {ex.Message}";
+        }
+        finally
+        {
+            updateButton.IsEnabled = true;
+        }
     }
 
     private async Task LoadAsync(bool resetPage = false)
