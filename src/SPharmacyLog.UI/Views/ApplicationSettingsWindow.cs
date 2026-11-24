@@ -1,7 +1,9 @@
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Layout;
-using Avalonia.Media;\nusing Avalonia.Platform.Storage;\nusing Avalonia.Controls.Primitives;
+using Avalonia.Media;
+using Avalonia.Platform.Storage;
+using Avalonia.Controls.Primitives;
 using SPharmacyLog.UI.Services;
 
 namespace SPharmacyLog.UI.Views;
