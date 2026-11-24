@@ -26,7 +26,7 @@ public sealed class ReportsWindow : Window
     private int? selectedCustomerId;
     private bool isUpdatingCustomerSearch;
     private CancellationTokenSource? customerReportDebounce;
-    private readonly DatePicker reportDate = new() { MinWidth = 190, SelectedDate = new DateTimeOffset(DateTime.Today) };
+    private readonly DatePicker reportDate = new() { MinWidth = 190, MinHeight = 36, SelectedDate = new DateTimeOffset(DateTime.Today) };
     private readonly TextBlock summary = new() { FontSize = 15, FontWeight = FontWeight.SemiBold, TextWrapping = TextWrapping.Wrap };
     private readonly StackPanel resultsContent = new() { Spacing = 6 };
     private List<string> currentReportLines = new();
