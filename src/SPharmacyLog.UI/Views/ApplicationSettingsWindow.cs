@@ -31,7 +31,6 @@ public sealed class ApplicationSettingsWindow : UserControl
                 ShowOfficialHolidays = showOfficialHolidays.IsChecked == true
             });
             saveStatus.Text = SPharmacyLog.UI.Localization.Tr.Loc.TranslateText("Settings saved.");
-            saveStatus.Text = SPharmacyLog.UI.Localization.Tr.Loc.TranslateText("Settings saved.");
             SettingsSaved?.Invoke();
         };
 
