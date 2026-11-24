@@ -102,7 +102,8 @@ public partial class MainWindow : Window
         (MenuCompanySettings, "Company settings"),
         (MenuWeatherSettings, "Weather settings"),
         (MenuApplicationSettings, "Navigation.ApplicationSettings"),
-        (MenuDatabaseSynchronization, "Database synchronization")
+        (MenuDatabaseSynchronization, "Database synchronization"),
+        (MenuUsers, "Navigation.Users")
     };
     private static readonly string[] WorkspaceMenuKeys =
     {
@@ -154,8 +155,6 @@ public partial class MainWindow : Window
     private bool CanAccessMenu(string key)
     {
         if (viewModel.User.Role == PharmacyRole.Admin) return true;
-        // User Management is never delegated through the per-user menu list.
-        if (key == MenuUsers) return false;
         var allowed = string.IsNullOrWhiteSpace(viewModel.User.AllowedMenus)
             ? WorkspaceMenuKeys
             : viewModel.User.AllowedMenus.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
@@ -227,7 +226,8 @@ public partial class MainWindow : Window
 
         var hasAdministrativeAccess = viewModel.User.Role == PharmacyRole.Admin ||
             CanAccessMenu(MenuCompanySettings) || CanAccessMenu(MenuWeatherSettings) ||
-            CanAccessMenu(MenuApplicationSettings) || CanAccessMenu(MenuDatabaseSynchronization);
+            CanAccessMenu(MenuApplicationSettings) || CanAccessMenu(MenuDatabaseSynchronization) ||
+            CanAccessMenu(MenuUsers);
         if (hasAdministrativeAccess)
         {
             NavigationPanel.Children.Add(new TextBlock
@@ -238,7 +238,7 @@ public partial class MainWindow : Window
                 Foreground = new SolidColorBrush(Color.Parse("#8293A8")),
                 Margin = new Thickness(4, 12, 0, 0)
             });
-            if (viewModel.User.Role == PharmacyRole.Admin)
+            if (CanAccessMenu(MenuUsers))
                 AddNavigationButton("Navigation.Users", () => _ = ShowUsersAsync(), "♟");
             if (CanAccessMenu(MenuCompanySettings)) AddNavigationButton("Company settings", OpenCompanySettings, "▣");
             if (CanAccessMenu(MenuWeatherSettings)) AddNavigationButton("Weather settings", OpenWeatherSettings, "☼");
@@ -4572,7 +4572,7 @@ public partial class MainWindow : Window
 
     private async Task ShowUsersAsync()
     {
-        if (viewModel.User.Role != PharmacyRole.Admin)
+        if (!CanAccessMenu(MenuUsers))
         {
             ShowNoMenuAccess();
             return;
@@ -4625,6 +4625,7 @@ public partial class MainWindow : Window
 
         foreach (var user in users)
         {
+            var canManageUser = viewModel.User.Role == PharmacyRole.Admin || user.Role == PharmacyRole.Limited;
             var card = new Border
             {
                 Background = new SolidColorBrush(Color.Parse("#1D2B3B")),
@@ -4661,11 +4662,11 @@ public partial class MainWindow : Window
             });
             row.Children.Add(info);
 
-            var edit = new Button { Content = Tr.Loc.TranslateText("Edit user"), MinWidth = 85 };
+            var edit = new Button { Content = Tr.Loc.TranslateText("Edit user"), MinWidth = 85, IsEnabled = canManageUser };
             edit.Click += async (_, _) => await OpenUserEditorAsync(user);
             row.Children.Add(edit);
 
-            var reset = new Button { Content = Tr.Loc.TranslateText("Reset password"), MinWidth = 105 };
+            var reset = new Button { Content = Tr.Loc.TranslateText("Reset password"), MinWidth = 105, IsEnabled = canManageUser };
             reset.Click += async (_, _) => await OpenUserPasswordResetAsync(user);
             row.Children.Add(reset);
 
@@ -4673,7 +4674,7 @@ public partial class MainWindow : Window
             {
                 Content = Tr.Loc.TranslateText(user.IsActive ? "Deactivate" : "Activate"),
                 MinWidth = 85,
-                IsEnabled = user.Id != viewModel.User.Id
+                IsEnabled = canManageUser && user.Id != viewModel.User.Id
             };
             toggle.Click += async (_, _) => await ToggleUserActiveAsync(user);
             row.Children.Add(toggle);
@@ -4682,7 +4683,7 @@ public partial class MainWindow : Window
             {
                 Content = Tr.Loc.TranslateText("Delete"),
                 MinWidth = 70,
-                IsEnabled = user.Id != viewModel.User.Id
+                IsEnabled = canManageUser && user.Id != viewModel.User.Id
             };
             delete.Click += async (_, _) => await DeleteUserAsync(user);
             row.Children.Add(delete);
@@ -4694,7 +4695,8 @@ public partial class MainWindow : Window
 
     private async Task OpenUserEditorAsync(PharmacyUser? existing)
     {
-        if (viewModel.User.Role != PharmacyRole.Admin) return;
+        if (!CanAccessMenu(MenuUsers)) return;
+        if (viewModel.User.Role != PharmacyRole.Admin && existing?.Role == PharmacyRole.Admin) return;
         var isEdit = existing is not null;
         var username = new TextBox
         {
@@ -4710,7 +4712,8 @@ public partial class MainWindow : Window
             IsVisible = !isEdit
         };
         var role = new ComboBox { MinHeight = 36 };
-        foreach (var roleOption in Enum.GetValues<PharmacyRole>())
+        foreach (var roleOption in Enum.GetValues<PharmacyRole>().Where(option =>
+                     viewModel.User.Role == PharmacyRole.Admin || option == PharmacyRole.Limited))
         {
             role.Items.Add(new ComboBoxItem
             {
@@ -4733,7 +4736,7 @@ public partial class MainWindow : Window
         });
         menuPicker.Children.Add(new TextBlock
         {
-            Text = Tr.Loc.TranslateText("Select the workspace and administrative shortcuts this user may access. User Management is always reserved for administrators."),
+            Text = Tr.Loc.TranslateText("Select the workspace and administrative shortcuts this user may access, including User Management."),
             Foreground = Brushes.LightGray,
             FontSize = 12,
             TextWrapping = TextWrapping.Wrap
@@ -4978,7 +4981,8 @@ public partial class MainWindow : Window
 
     private async Task OpenUserPasswordResetAsync(PharmacyUser user)
     {
-        if (viewModel.User.Role != PharmacyRole.Admin) return;
+        if (!CanAccessMenu(MenuUsers)) return;
+        if (viewModel.User.Role != PharmacyRole.Admin && user.Role == PharmacyRole.Admin) return;
         var password = new TextBox
         {
             PasswordChar = '•',
@@ -5051,7 +5055,8 @@ public partial class MainWindow : Window
 
     private async Task ToggleUserActiveAsync(PharmacyUser user)
     {
-        if (viewModel.User.Role != PharmacyRole.Admin || user.Id == viewModel.User.Id) return;
+        if (!CanAccessMenu(MenuUsers) || user.Id == viewModel.User.Id) return;
+        if (viewModel.User.Role != PharmacyRole.Admin && user.Role == PharmacyRole.Admin) return;
         await using var db = new PharmacyDbContext(PharmacyDb.Options());
         var record = await db.Users.FirstOrDefaultAsync(item => item.Id == user.Id);
         if (record is null) return;
@@ -5068,7 +5073,8 @@ public partial class MainWindow : Window
 
     private async Task DeleteUserAsync(PharmacyUser user)
     {
-        if (viewModel.User.Role != PharmacyRole.Admin || user.Id == viewModel.User.Id) return;
+        if (!CanAccessMenu(MenuUsers) || user.Id == viewModel.User.Id) return;
+        if (viewModel.User.Role != PharmacyRole.Admin && user.Role == PharmacyRole.Admin) return;
         if (!await ConfirmUserDeleteAsync(user.Username)) return;
         await using var db = new PharmacyDbContext(PharmacyDb.Options());
         var record = await db.Users.FirstOrDefaultAsync(item => item.Id == user.Id);
