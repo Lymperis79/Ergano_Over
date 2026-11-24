@@ -2744,8 +2744,7 @@ public partial class MainWindow : Window
         currentLedgerEntries = ledger;
         subscriptionList.ItemsSource = subscriptions.Select(subscription =>
         {
-            var expiredButStillActive = subscription.ExpiryDate.HasValue &&
-                                        subscription.ExpiryDate.Value.Date < DateTime.Today;
+            var expiredButStillActive = subscription.ExpiryDate.Date < DateTime.Today;
             return (Control)new Border
             {
                 BorderBrush = expiredButStillActive
@@ -3038,7 +3037,6 @@ public partial class MainWindow : Window
                         new[]
                         {
                             $"{Tr.Loc.TranslateText("Frequency")}: {Tr.Loc.TranslateText(item.Frequency)}",
-                            $"{Tr.Loc.TranslateText("Expiry date")}: {item.ExpiryDate:dd/MM/yyyy}",
                             $"{Tr.Loc.TranslateText("Expiry date")}: {item.ExpiryDate:dd/MM/yyyy}"
                         },
                         Tr.Loc.TranslateText(item.Status.ToString()),
@@ -3393,7 +3391,7 @@ public partial class MainWindow : Window
         };
         var metricItems = new[]
         {
-            Metric("EXPIRY", subscription.ExpiryDate.ToString("dd MMM yyyy"), Tr.Loc.TranslateText("Scheduled date")),
+            Metric("START", subscription.StartDate.ToString("dd MMM yyyy"), Tr.Loc.TranslateText("Start date")),
             Metric("FREQUENCY", subscription.Frequency, Tr.Loc.TranslateText("Recurring interval")),
             Metric("EXPIRY", subscription.ExpiryDate.ToString("dd MMM yyyy"), Tr.Loc.TranslateText("Subscription end date"))
         };
@@ -4085,7 +4083,7 @@ public partial class MainWindow : Window
         DateTime.TryParse(ActivityValue("SubscriptionStart"), out var start);
         if (!DateTime.TryParse(ActivityValue("SubscriptionExpiry"), out var expiry)) { SetActivityStatus("Enter a valid expiry date."); return; }
         await using var db = new PharmacyDbContext(PharmacyDb.Options());
-        db.Subscriptions.Add(new Subscription { CustomerId = selectedCustomerId.Value, Title = ActivityValue("SubscriptionTitle"), StartDate = start == default ? DateTime.Today : start, ExpiryDate = expiry, Frequency = string.IsNullOrWhiteSpace(ActivityValue("SubscriptionFrequency")) ? "Monthly" : ActivityValue("SubscriptionFrequency"), Notes = ActivityValue("SubscriptionNotes") });
+        db.Subscriptions.Add(new Subscription { CustomerId = selectedCustomerId.Value, Title = ActivityValue("SubscriptionTitle"), StartDate = start == default ? DateTime.Today : start, ExpiryDate = expiry, Frequency = string.IsNullOrWhiteSpace(ActivityValue("SubscriptionFrequency")) ? "None" : ActivityValue("SubscriptionFrequency"), Notes = ActivityValue("SubscriptionNotes") });
         await db.SaveChangesAsync(); SetActivityStatus("Subscription added."); await RefreshCustomerWorkspaceAsync();
     }
 
