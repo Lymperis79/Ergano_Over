@@ -1175,7 +1175,7 @@ public partial class MainWindow : Window
                                 }
                             }
                         };
-                        subscriptionBox.Click += async (_, _) => await OpenSubscriptionDetailsAsync(subscription.Id);
+                        subscriptionBox.Click += async (_, _) => await OpenSubscriptionDetailsSafelyAsync(subscription.Id);
                         dayContent.Children.Add(subscriptionBox);
                     }
                 }
@@ -2562,7 +2562,7 @@ public partial class MainWindow : Window
         {
             if (subscriptionList.SelectedIndex < 0 || subscriptionList.SelectedIndex >= currentSubscriptions.Count)
             { SetActivityStatus("Select a prescription first."); return; }
-            await OpenSubscriptionDetailsAsync(currentSubscriptions[subscriptionList.SelectedIndex].Id);
+            await OpenSubscriptionDetailsSafelyAsync(currentSubscriptions[subscriptionList.SelectedIndex].Id);
         };
         var edit = new Button { Content = "Edit selected", MinWidth = 125, MinHeight = 38 };
         edit.Click += async (_, _) =>
@@ -3631,7 +3631,7 @@ public partial class MainWindow : Window
                 await RefreshCustomerWorkspaceAsync();
             if (showingExpiryCalendar && calendarMonthTitle is not null)
                 await RenderCalendarAsync(calendarMonthTitle);
-            await OpenSubscriptionDetailsAsync(subscriptionId);
+            await OpenSubscriptionDetailsSafelyAsync(subscriptionId);
         };
         openCustomer.Click += async (_, _) =>
         {
