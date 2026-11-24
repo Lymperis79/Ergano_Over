@@ -17,7 +17,7 @@ public sealed class ApplicationSettingsWindow : UserControl
 
     public ApplicationSettingsWindow(bool allowInstallationSettingsTransfer = true)
     {
-        allowTransfer = allowInstallationSettingsTransfer;
+        allowTransfer = allowInstallationSettingsTransfer;\n        transferStatus.IsVisible = allowTransfer;
         var settings = ApplicationSettingsService.Load();
         Background = new SolidColorBrush(Color.Parse("#202733"));
         showOfficialHolidays = new CheckBox { Content = "Show official Greek public holidays in the calendar", IsChecked = settings.ShowOfficialHolidays };
@@ -44,7 +44,7 @@ public sealed class ApplicationSettingsWindow : UserControl
                 new TextBlock { Text = "Transfer installation settings to another client PC", FontSize = 16, FontWeight = FontWeight.SemiBold, IsVisible = allowTransfer },
                 new TextBlock { Text = "Encrypted package includes database connection, customer database synchronization, weather, company branding/logo and application preferences. It does not contain database records or user accounts. Restart PharmaPoint after import.", TextWrapping = TextWrapping.Wrap, Foreground = Brushes.LightGray, IsVisible = allowTransfer },
                 new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, Children = { export, import }, IsVisible = allowTransfer },
-                new TextBlock { Text = transferStatus.Text, Foreground = transferStatus.Foreground, TextWrapping = TextWrapping.Wrap, IsVisible = allowTransfer }, saveStatus
+                transferStatus, saveStatus
             }
         };
     }
