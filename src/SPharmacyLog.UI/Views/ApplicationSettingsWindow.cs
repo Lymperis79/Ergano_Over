@@ -12,10 +12,12 @@ public sealed class ApplicationSettingsWindow : UserControl
     public event Action? SettingsSaved;
     private readonly TextBlock saveStatus = new() { Foreground = Brushes.LightGray };
     private readonly TextBlock transferStatus = new() { Foreground = Brushes.LightGray, TextWrapping = TextWrapping.Wrap };
-    private readonly CheckBox showOfficialHolidays;\n    private readonly bool allowTransfer;
+    private readonly CheckBox showOfficialHolidays;
+    private readonly bool allowTransfer;
 
-    public ApplicationSettingsWindow()
+    public ApplicationSettingsWindow(bool allowInstallationSettingsTransfer = true)
     {
+        allowTransfer = allowInstallationSettingsTransfer;
         var settings = ApplicationSettingsService.Load();
         Background = new SolidColorBrush(Color.Parse("#202733"));
         showOfficialHolidays = new CheckBox { Content = "Show official Greek public holidays in the calendar", IsChecked = settings.ShowOfficialHolidays };
@@ -42,13 +44,14 @@ public sealed class ApplicationSettingsWindow : UserControl
                 new TextBlock { Text = "Transfer installation settings to another client PC", FontSize = 16, FontWeight = FontWeight.SemiBold, IsVisible = allowTransfer },
                 new TextBlock { Text = "Encrypted package includes database connection, customer database synchronization, weather, company branding/logo and application preferences. It does not contain database records or user accounts. Restart PharmaPoint after import.", TextWrapping = TextWrapping.Wrap, Foreground = Brushes.LightGray, IsVisible = allowTransfer },
                 new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, Children = { export, import }, IsVisible = allowTransfer },
-                transferStatus, saveStatus
+                new TextBlock { Text = transferStatus.Text, Foreground = transferStatus.Foreground, TextWrapping = TextWrapping.Wrap, IsVisible = allowTransfer }, saveStatus
             }
         };
     }
 
     private async Task ExportSettingsAsync()
     {
+        if (!allowTransfer) return;
         var top = TopLevel.GetTopLevel(this);
         if (top?.StorageProvider is not { } storage) return;
         var file = await storage.SaveFilePickerAsync(new FilePickerSaveOptions
@@ -69,6 +72,7 @@ public sealed class ApplicationSettingsWindow : UserControl
 
     private async Task ImportSettingsAsync()
     {
+        if (!allowTransfer) return;
         var top = TopLevel.GetTopLevel(this);
         if (top?.StorageProvider is not { } storage) return;
         var files = await storage.OpenFilePickerAsync(new FilePickerOpenOptions
