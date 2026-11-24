@@ -1989,10 +1989,10 @@ public partial class MainWindow : Window
 
         var parsedPanel = new StackPanel { Spacing = 7 };
         parsedPanel.Children.Add(new TextBlock { Text = "Parsed fields — verify or correct before saving:", FontWeight = FontWeight.SemiBold, Margin = new Thickness(0, 5, 0, 0) });
-        void AddScanField(string label, TextBox box)
+        void AddScanField(string label, Control control)
         {
             parsedPanel.Children.Add(new TextBlock { Text = label, FontSize = 12, Foreground = Brushes.LightGray });
-            parsedPanel.Children.Add(box);
+            parsedPanel.Children.Add(control);
         }
         AddScanField("GTIN (AI 01)", gtinInput);
         AddScanField("Serial number (AI 21)", serialInput);
@@ -2021,7 +2021,7 @@ public partial class MainWindow : Window
                     scanCapturedAtUtc = DateTime.UtcNow;
                     scanDateText.Text = scanCapturedAtUtc.Value.ToLocalTime().ToString("dd/MM/yyyy HH:mm:ss");
                     gtinInput.Text = gtinOnlyValue;
-                    serialInput.Text = string.Empty; expiryInput.Text = string.Empty; lotInput.Text = string.Empty;
+                    serialInput.Text = string.Empty; expiryInput.SelectedDate = null; lotInput.Text = string.Empty;
                     await using var gtinDb = new PharmacyDbContext(PharmacyDb.Options());
                     var gtinMatch = await gtinDb.MedicineBarcodes.Include(x => x.Medicine)
                         .FirstOrDefaultAsync(x => x.BarcodeValue == gtinOnlyValue || x.BarcodeValue == digits)
