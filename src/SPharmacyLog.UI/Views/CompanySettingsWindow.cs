@@ -64,7 +64,6 @@ public sealed class CompanySettingsWindow : UserControl
         {
             CompanySettingsService.Save(companyName.Text ?? "", selectedLogo, selectedExtension, removeLogo);
             saveStatus.Text = SPharmacyLog.UI.Localization.Tr.Loc.TranslateText("Settings saved.");
-            saveStatus.Text = SPharmacyLog.UI.Localization.Tr.Loc.TranslateText("Settings saved.");
             SettingsSaved?.Invoke();
         };
 
