@@ -9,7 +9,7 @@ using SPharmacyLog.UI.Services;
 
 namespace SPharmacyLog.UI.Views;
 
-public sealed class MedicineCatalogWindow : Window
+public sealed class MedicineCatalogWindow : UserControl
 {
     private readonly TextBox searchBox;
     private readonly StackPanel rowsPanel;
@@ -18,13 +18,6 @@ public sealed class MedicineCatalogWindow : Window
 
     public MedicineCatalogWindow()
     {
-        Title = Tr.Loc.TranslateText("Medicine catalogue");
-        Width = 1050;
-        Height = 720;
-        MinWidth = 760;
-        MinHeight = 500;
-        WindowStartupLocation = WindowStartupLocation.CenterOwner;
-
         var title = new TextBlock
         {
             Text = Tr.Loc.TranslateText("Medicine catalogue"),
