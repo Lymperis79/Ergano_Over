@@ -31,7 +31,7 @@ public static class InstallationSettingsTransfer
             if (!Files.Contains(entry.Name, StringComparer.Ordinal) || Path.GetFileName(entry.Name) != entry.Name)
                 throw new InvalidDataException("The package contains an unsupported configuration file.");
         Directory.CreateDirectory(Folder);
-        foreach (var entry in bundle.Entries)\n        {\n            var content = entry.Content;\n            if (entry.Name == "connection.json")\n            {\n                var config = JsonSerializer.Deserialize<DbConfig>(content);\n                if (config?.DatabaseProvider == DatabaseProvider.Sqlite) config.SqlitePath = AppPaths.GetLocalCacheDbPath().Replace("local_cache.db", "erganimanager.db");\n                content = JsonSerializer.Serialize(config, new JsonSerializerOptions { WriteIndented = true });\n            }\n            await File.WriteAllTextAsync(Path.Combine(Folder, entry.Name), content);\n        }
+        foreach (var entry in bundle.Entries)\n        {\n            var content = entry.Content;\n            if (entry.Name == "connection.json")\n            {\n                var config = JsonSerializer.Deserialize<DbConfig>(content);\n                if (config?.DatabaseProvider == DatabaseProvider.Sqlite) config.SqlitePath = Path.Combine(AppPaths.GetAppDataFolder(), "erganimanager.db");\n                content = JsonSerializer.Serialize(config, new JsonSerializerOptions { WriteIndented = true });\n            }\n            await File.WriteAllTextAsync(Path.Combine(Folder, entry.Name), content);\n        }
         return bundle.Entries.Select(e => e.Name).ToArray();
     }
     private static async Task EncryptFileAsync(string path, byte[] payload, string password)
