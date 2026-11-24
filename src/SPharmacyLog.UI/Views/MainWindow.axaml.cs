@@ -81,6 +81,11 @@ public partial class MainWindow : Window
     private const string MenuReports = "Reports";
     private const string MenuMedicine = "Medicine";
     private const string MenuStock = "MedicineStock";
+    private const string MenuCompanySettings = "CompanySettings";
+    private const string MenuWeatherSettings = "WeatherSettings";
+    private const string MenuApplicationSettings = "ApplicationSettings";
+    private const string MenuDatabaseSynchronization = "DatabaseSynchronization";
+    private const string MenuUsers = "Users";
     private static readonly (string Key, string LabelKey)[] ConfigurableMenus =
     {
         (MenuDashboard, "Dashboard"),
@@ -91,7 +96,18 @@ public partial class MainWindow : Window
         (MenuPayments, "Navigation.Payments"),
         (MenuMedicine, "Medicine"),
         (MenuStock, "Medicine stock control"),
-        (MenuReports, "Navigation.Reports")
+        (MenuReports, "Navigation.Reports"),
+        // Administrative shortcuts can be granted individually to Limited users.
+        // User Management remains administrator-only and is intentionally excluded.
+        (MenuCompanySettings, "Company settings"),
+        (MenuWeatherSettings, "Weather settings"),
+        (MenuApplicationSettings, "Navigation.ApplicationSettings"),
+        (MenuDatabaseSynchronization, "Database synchronization")
+    };
+    private static readonly string[] WorkspaceMenuKeys =
+    {
+        MenuDashboard, MenuCalendar, MenuCustomers, MenuBorrowing, MenuSubscriptions,
+        MenuPayments, MenuMedicine, MenuStock, MenuReports
     };
     private bool skipNextCustomerSearch;
     private readonly Dictionary<string, TextBox> customerFields = new();
@@ -138,9 +154,12 @@ public partial class MainWindow : Window
     private bool CanAccessMenu(string key)
     {
         if (viewModel.User.Role == PharmacyRole.Admin) return true;
-        if (string.IsNullOrWhiteSpace(viewModel.User.AllowedMenus)) return true;
-        return viewModel.User.AllowedMenus.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-            .Contains(key, StringComparer.Ordinal);
+        // User Management is never delegated through the per-user menu list.
+        if (key == MenuUsers) return false;
+        var allowed = string.IsNullOrWhiteSpace(viewModel.User.AllowedMenus)
+            ? WorkspaceMenuKeys
+            : viewModel.User.AllowedMenus.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        return allowed.Contains(key, StringComparer.Ordinal);
     }
 
     private void BuildNavigation()
@@ -202,7 +221,10 @@ public partial class MainWindow : Window
             AddNavigationButton("Navigation.Reports", ShowReports, "▤");
         }
 
-        if (viewModel.User.Role == PharmacyRole.Admin)
+        var hasAdministrativeAccess = viewModel.User.Role == PharmacyRole.Admin ||
+            CanAccessMenu(MenuCompanySettings) || CanAccessMenu(MenuWeatherSettings) ||
+            CanAccessMenu(MenuApplicationSettings) || CanAccessMenu(MenuDatabaseSynchronization);
+        if (hasAdministrativeAccess)
         {
             NavigationPanel.Children.Add(new TextBlock
             {
@@ -212,11 +234,12 @@ public partial class MainWindow : Window
                 Foreground = new SolidColorBrush(Color.Parse("#8293A8")),
                 Margin = new Thickness(4, 12, 0, 0)
             });
-            AddNavigationButton("Navigation.Users", () => _ = ShowUsersAsync(), "♟");
-            AddNavigationButton("Company settings", OpenCompanySettings, "▣");
-            AddNavigationButton("Weather settings", OpenWeatherSettings, "☼");
-            AddNavigationButton("Navigation.ApplicationSettings", OpenApplicationSettings, "⚙");
-            AddNavigationButton("Database synchronization", OpenCustomerDatabaseSync, "⇄");
+            if (viewModel.User.Role == PharmacyRole.Admin)
+                AddNavigationButton("Navigation.Users", () => _ = ShowUsersAsync(), "♟");
+            if (CanAccessMenu(MenuCompanySettings)) AddNavigationButton("Company settings", OpenCompanySettings, "▣");
+            if (CanAccessMenu(MenuWeatherSettings)) AddNavigationButton("Weather settings", OpenWeatherSettings, "☼");
+            if (CanAccessMenu(MenuApplicationSettings)) AddNavigationButton("Navigation.ApplicationSettings", OpenApplicationSettings, "⚙");
+            if (CanAccessMenu(MenuDatabaseSynchronization)) AddNavigationButton("Database synchronization", OpenCustomerDatabaseSync, "⇄");
         }
 
         // Keep the selected item highlighted when the menu is rebuilt (for example,
@@ -695,7 +718,7 @@ public partial class MainWindow : Window
 
     private void OpenCompanySettings()
     {
-        if (viewModel.User.Role != PharmacyRole.Admin) return;
+        if (!CanAccessMenu(MenuCompanySettings)) { ShowNoMenuAccess(); return; }
         var page = new CompanySettingsWindow();
         page.SettingsSaved += ApplyCompanyBranding;
         showingExpiryCalendar = false;
@@ -705,7 +728,7 @@ public partial class MainWindow : Window
 
     private void OpenWeatherSettings()
     {
-        if (viewModel.User.Role != PharmacyRole.Admin) return;
+        if (!CanAccessMenu(MenuWeatherSettings)) { ShowNoMenuAccess(); return; }
         var page = new WeatherSettingsWindow();
         showingExpiryCalendar = false;
         pageHost.Content = page;
@@ -714,7 +737,7 @@ public partial class MainWindow : Window
 
     private void OpenApplicationSettings()
     {
-        if (viewModel.User.Role != PharmacyRole.Admin) return;
+        if (!CanAccessMenu(MenuApplicationSettings)) { ShowNoMenuAccess(); return; }
         var page = new ApplicationSettingsWindow();
         showingExpiryCalendar = false;
         pageHost.Content = page;
@@ -723,7 +746,7 @@ public partial class MainWindow : Window
 
     private void OpenCustomerDatabaseSync()
     {
-        if (viewModel.User.Role != PharmacyRole.Admin) return;
+        if (!CanAccessMenu(MenuDatabaseSynchronization)) { ShowNoMenuAccess(); return; }
         showingExpiryCalendar = false;
         var page = new CustomerDatabaseSyncWindow();
         pageHost.Content = page;
@@ -4706,15 +4729,17 @@ public partial class MainWindow : Window
         });
         menuPicker.Children.Add(new TextBlock
         {
-            Text = Tr.Loc.TranslateText("Select at least one menu. Users and Administrative are reserved for administrators."),
+            Text = Tr.Loc.TranslateText("Select the workspace and administrative shortcuts this user may access. User Management is always reserved for administrators."),
             Foreground = Brushes.LightGray,
             FontSize = 12,
             TextWrapping = TextWrapping.Wrap
         });
         var menuChecks = new List<(string Key, CheckBox Check)>();
         var storedMenus = existing?.AllowedMenus;
+        // Older accounts with an empty AllowedMenus value retain access to all
+        // workspace menus, but do not gain the newly configurable admin shortcuts.
         var existingMenus = string.IsNullOrWhiteSpace(storedMenus)
-            ? ConfigurableMenus.Select(item => item.Key).ToHashSet(StringComparer.Ordinal)
+            ? WorkspaceMenuKeys.ToHashSet(StringComparer.Ordinal)
             : storedMenus.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
                 .ToHashSet(StringComparer.Ordinal);
         foreach (var menu in ConfigurableMenus)
