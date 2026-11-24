@@ -26,7 +26,7 @@ public sealed class ReportsWindow : Window
     private int? selectedCustomerId;
     private bool isUpdatingCustomerSearch;
     private CancellationTokenSource? customerReportDebounce;
-    private readonly TextBox reportDate = new() { MinWidth = 150, Text = DateTime.Today.ToString("yyyy-MM-dd") };
+    private readonly DatePicker reportDate = new() { MinWidth = 190, SelectedDate = new DateTimeOffset(DateTime.Today) };
     private readonly TextBlock summary = new() { FontSize = 15, FontWeight = FontWeight.SemiBold, TextWrapping = TextWrapping.Wrap };
     private readonly StackPanel resultsContent = new() { Spacing = 6 };
     private List<string> currentReportLines = new();
@@ -60,7 +60,7 @@ public sealed class ReportsWindow : Window
         customerFilterPanel.Children.Add(new TextBlock { Text = Tr.Loc.TranslateText("Customer") });
         customerFilterPanel.Children.Add(customerSearch);
         customerFilterPanel.Children.Add(customerSuggestions);
-        dateFilterPanel.Children.Add(new TextBlock { Text = Tr.Loc.TranslateText("Activity date (yyyy-MM-dd)") });
+        dateFilterPanel.Children.Add(new TextBlock { Text = Tr.Loc.TranslateText("Activity date") });
         dateFilterPanel.Children.Add(reportDate);
 
         var filters = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 14 };
@@ -114,7 +114,7 @@ public sealed class ReportsWindow : Window
             customerSuggestions.IsVisible = false;
             exportButton.IsEnabled = false;
         };
-        reportDate.TextChanged += (_, _) => exportButton.IsEnabled = false;
+        reportDate.SelectedDateChanged += (_, _) => exportButton.IsEnabled = false;
 
         var reportHeader = new StackPanel
         {
@@ -502,9 +502,9 @@ public sealed class ReportsWindow : Window
 
     private async Task GenerateDailyStatusAsync()
     {
-        if (!DateTime.TryParse(reportDate.Text, out var selectedDate))
+        if (reportDate.SelectedDate is not DateTimeOffset selectedDate)
         {
-            summary.Text = Tr.Loc.TranslateText("Enter a valid date using yyyy-MM-dd.");
+            summary.Text = Tr.Loc.TranslateText("Select a report date.");
             RenderResults(Array.Empty<string>());
             return;
         }
