@@ -12,7 +12,7 @@ public sealed class ApplicationSettingsWindow : UserControl
     public event Action? SettingsSaved;
     private readonly TextBlock saveStatus = new() { Foreground = Brushes.LightGray };
     private readonly TextBlock transferStatus = new() { Foreground = Brushes.LightGray, TextWrapping = TextWrapping.Wrap };
-    private readonly CheckBox showOfficialHolidays;
+    private readonly CheckBox showOfficialHolidays;\n    private readonly bool allowTransfer;
 
     public ApplicationSettingsWindow()
     {
@@ -39,9 +39,9 @@ public sealed class ApplicationSettingsWindow : UserControl
                 new TextBlock { Text = "Control which built-in information is displayed in the application calendar.", TextWrapping = TextWrapping.Wrap, Foreground = Brushes.LightGray },
                 showOfficialHolidays,
                 new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right, Spacing = 8, Children = { save } },
-                new TextBlock { Text = "Transfer installation settings to another client PC", FontSize = 16, FontWeight = FontWeight.SemiBold },
-                new TextBlock { Text = "Encrypted package includes database connection, customer database synchronization, weather, company branding/logo and application preferences. It does not contain database records or user accounts. Restart PharmaPoint after import.", TextWrapping = TextWrapping.Wrap, Foreground = Brushes.LightGray },
-                new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, Children = { export, import } },
+                new TextBlock { Text = "Transfer installation settings to another client PC", FontSize = 16, FontWeight = FontWeight.SemiBold, IsVisible = allowTransfer },
+                new TextBlock { Text = "Encrypted package includes database connection, customer database synchronization, weather, company branding/logo and application preferences. It does not contain database records or user accounts. Restart PharmaPoint after import.", TextWrapping = TextWrapping.Wrap, Foreground = Brushes.LightGray, IsVisible = allowTransfer },
+                new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, Children = { export, import }, IsVisible = allowTransfer },
                 transferStatus, saveStatus
             }
         };
