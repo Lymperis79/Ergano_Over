@@ -16,7 +16,7 @@ namespace SPharmacyLog.UI.Views;
 /// <summary>
 /// Interactive reports backed by the pharmacy customer, ledger, subscription and borrowing records.
 /// </summary>
-public sealed class ReportsWindow : Window
+public sealed class ReportsWindow : UserControl
 {
     private readonly ComboBox reportType = new() { MinWidth = 250 };
     private readonly TextBox customerSearch = new() { MinWidth = 300, PlaceholderText = "Search customer..." };
@@ -44,14 +44,6 @@ public sealed class ReportsWindow : Window
 
     public ReportsWindow()
     {
-        Title = Tr.Loc.TranslateText("Reports");
-        Width = 980;
-        Height = 760;
-        MinWidth = 760;
-        MinHeight = 560;
-        CanResize = true;
-        WindowStartupLocation = WindowStartupLocation.CenterOwner;
-
         reportType.Items.Add(new ComboBoxItem { Content = Tr.Loc.TranslateText("Customer balances and payments"), Tag = "customers" });
         reportType.Items.Add(new ComboBoxItem { Content = Tr.Loc.TranslateText("Upcoming subscriptions - next 7 days"), Tag = "upcoming" });
         reportType.Items.Add(new ComboBoxItem { Content = Tr.Loc.TranslateText("Daily subscriptions and borrowing status"), Tag = "daily" });
@@ -208,7 +200,7 @@ public sealed class ReportsWindow : Window
         var reportName = selectedItem?.Content?.ToString() ?? "Report";
         var safeName = string.Concat(reportName.Select(character =>
             Path.GetInvalidFileNameChars().Contains(character) ? '_' : character));
-        var file = await StorageProvider.SaveFilePickerAsync(new FilePickerSaveOptions
+        var file = await (TopLevel.GetTopLevel(this)?.StorageProvider ?? throw new InvalidOperationException("File storage is unavailable.")).SaveFilePickerAsync(new FilePickerSaveOptions
         {
             Title = Tr.Loc.TranslateText("Export report to Excel"),
             SuggestedFileName = $"{safeName}_{DateTime.Now:yyyyMMdd_HHmm}.xlsx",
