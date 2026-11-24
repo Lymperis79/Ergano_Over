@@ -44,6 +44,18 @@
 
                             <Border Background="{DynamicResource CardBrush}" CornerRadius="8" Padding="20">
                                 <StackPanel Spacing="10">
+                                    <TextBlock Text="Transfer installation settings" FontSize="16" FontWeight="SemiBold" />
+                                    <TextBlock Text="Export an encrypted package to configure other client PCs. Includes database connection, portal, rounding and appearance settings. Database records and user accounts are not included. Restart Ergani Manager after import." Foreground="Gray" TextWrapping="Wrap" FontSize="12" />
+                                    <StackPanel Orientation="Horizontal" Spacing="8">
+                                        <Button Content="Export settings" Click="OnExportSettingsClick" />
+                                        <Button Content="Import settings" Click="OnImportSettingsClick" />
+                                    </StackPanel>
+                                    <TextBlock x:Name="SettingsTransferStatus" TextWrapping="Wrap" Foreground="Gray" />
+                                </StackPanel>
+                            </Border>
+
+                            <Border Background="{DynamicResource CardBrush}" CornerRadius="8" Padding="20">
+                                <StackPanel Spacing="10">
                                     <TextBlock Text="{Binding Loc[AdminLocalCache]}" FontSize="16" FontWeight="SemiBold" />
                                     <TextBlock Text="{Binding CacheInfo}" Foreground="Gray" TextWrapping="Wrap" />
                                     <Button Content="{Binding Loc[AdminDeleteCache]}" Command="{Binding AskDeleteCacheCommand}" IsEnabled="{Binding !IsBusy}" />
