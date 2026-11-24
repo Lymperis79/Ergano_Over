@@ -64,7 +64,6 @@ public sealed class CompanySettingsWindow : UserControl
             CompanySettingsService.Save(companyName.Text ?? "", selectedLogo, selectedExtension, removeLogo);
             SettingsSaved?.Invoke();
         };
-        cancel.Click += (_, _) => Close(false);
 
         var logoActions = new StackPanel
         {
