@@ -31,7 +31,6 @@ public sealed class ApplicationSettingsWindow : UserControl
             });
             SettingsSaved?.Invoke();
         };
-        cancel.Click += (_, _) => Close(false);
 
         var buttons = new StackPanel
         {
