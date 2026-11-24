@@ -487,16 +487,16 @@ public sealed class ReportsWindow : Window
         var subscriptions = await db.Subscriptions.AsNoTracking()
             .Include(subscription => subscription.Customer)
             .Where(subscription => subscription.Status == SubscriptionStatus.Active &&
-                subscription.NextDueDate >= start && subscription.NextDueDate < end)
-            .OrderBy(subscription => subscription.NextDueDate)
+                subscription.ExpiryDate >= start && subscription.ExpiryDate < end)
+            .OrderBy(subscription => subscription.ExpiryDate)
             .ThenBy(subscription => subscription.Customer!.FullName)
             .ToListAsync();
 
         var lines = subscriptions.Select(subscription =>
-            $"{subscription.NextDueDate:dd/MM/yyyy} | {subscription.Customer?.CustomerNumber} | {subscription.Customer?.FullName} | {subscription.Title} | {subscription.Frequency}").ToList();
+            $"{subscription.ExpiryDate:dd/MM/yyyy} | {subscription.Customer?.CustomerNumber} | {subscription.Customer?.FullName} | {subscription.Title} | {subscription.Frequency}").ToList();
         if (lines.Count == 0)
-            lines.Add(Tr.Loc.TranslateText("No open subscriptions are due in the next 7 days."));
-        summary.Text = $"{Tr.Loc.TranslateText("Period")}: {start:dd/MM/yyyy} - {end.AddDays(-1):dd/MM/yyyy}    |    {Tr.Loc.TranslateText("Open subscriptions due")}: {subscriptions.Count}";
+            lines.Add(Tr.Loc.TranslateText("No active prescriptions expire in the next 7 days."));
+        summary.Text = $"{Tr.Loc.TranslateText("Period")}: {start:dd/MM/yyyy} - {end.AddDays(-1):dd/MM/yyyy}    |    {Tr.Loc.TranslateText("Active prescriptions expiring")}: {subscriptions.Count}";
         RenderResults(lines);
     }
 
@@ -549,8 +549,8 @@ public sealed class ReportsWindow : Window
             Tr.Loc.TranslateText("Current open subscriptions") + ":"
         };
         lines.AddRange(subscriptions.Where(item => item.Status == SubscriptionStatus.Active)
-            .OrderBy(item => item.NextDueDate)
-            .Select(item => $"  {item.Customer?.CustomerNumber} | {item.Customer?.FullName} | {item.Title} | {Tr.Loc.TranslateText("Next due")}: {item.NextDueDate:dd/MM/yyyy}"));
+            .OrderBy(item => item.StartDate)
+            .Select(item => $"  {item.Customer?.CustomerNumber} | {item.Customer?.FullName} | {item.Title} | {Tr.Loc.TranslateText("Start date")}: {item.StartDate:dd/MM/yyyy}"));
         if (!subscriptions.Any(item => item.Status == SubscriptionStatus.Active)) lines.Add("  " + Tr.Loc.TranslateText("None"));
         lines.Add("");
         lines.Add(Tr.Loc.TranslateText("Current closed / executed subscriptions") + ":");
