@@ -955,8 +955,9 @@ public partial class MainWindow : Window
         string[] weekdays = { "Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun" };
         for (var i = 0; i < weekdays.Length; i++) { var label = new TextBlock { Text = weekdays[i], HorizontalAlignment = HorizontalAlignment.Center }; Grid.SetColumn(label, i); weekdayGrid.Children.Add(label); }
         content.Children.Add(weekdayGrid);
-        content.Children.Add(new ScrollViewer { Content = calendarPanel, MaxHeight = 520, VerticalScrollBarVisibility = ScrollBarVisibility.Auto });
-        dayRecords.MaxHeight = 260;
+        // Keep the calendar, daily summary, notes and records in one page-level scroll area.
+        // This prevents the notes section from being pushed below the viewport on smaller windows.
+        content.Children.Add(calendarPanel);
         content.Children.Add(dailySummary);
         var addCalendarNoteButton = new Button
         {
@@ -969,7 +970,12 @@ public partial class MainWindow : Window
         calendarNotesPanel = new StackPanel { Spacing = 6 };
         content.Children.Add(calendarNotesPanel);
         content.Children.Add(dayRecords);
-        pageHost.Content = content;
+        pageHost.Content = new ScrollViewer
+        {
+            Content = content,
+            VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
+            HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled
+        };
         ApplyTranslations();
         _ = RenderCalendarAsync(monthTitle);
     }
