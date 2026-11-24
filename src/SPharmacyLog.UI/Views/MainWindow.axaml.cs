@@ -3677,20 +3677,32 @@ public partial class MainWindow : Window
         if (!CanAccessMenu(MenuSubscriptions)) return;
         if (!selectedCustomerId.HasValue) { SetActivityStatus("Save or select a customer first."); return; }
         var isEdit = existing is not null;
-        var title = new TextBox { Text = existing?.Title ?? "", PlaceholderText = "Subscription title", MinHeight = 34 };
-        var start = new DatePicker { SelectedDate = new DateTimeOffset(existing?.StartDate ?? DateTime.Today), MinWidth = 220 };
-        var due = new DatePicker { SelectedDate = existing is null ? new DateTimeOffset(DateTime.Today) : new DateTimeOffset(existing.NextDueDate), MinWidth = 220 };
+        var title = new TextBox { Text = existing?.Title ?? "", PlaceholderText = "Prescription No", MinHeight = 34 };
+        var start = new DatePicker
+        {
+            SelectedDate = new DateTimeOffset(existing?.StartDate ?? DateTime.Today),
+            MinWidth = 220,
+            IsEnabled = false
+        };
         var expiry = new DatePicker { SelectedDate = existing?.ExpiryDate is DateTime expiryDate ? new DateTimeOffset(expiryDate) : null, MinWidth = 220 };
-        var frequency = new TextBox { Text = existing?.Frequency ?? "Monthly", PlaceholderText = "Frequency", MinHeight = 34 };
+        var frequencyOptions = new[] { "None", "Two months", "Three months" };
+        var selectedFrequency = frequencyOptions.Contains(existing?.Frequency, StringComparer.OrdinalIgnoreCase)
+            ? frequencyOptions.First(value => string.Equals(value, existing!.Frequency, StringComparison.OrdinalIgnoreCase))
+            : "None";
+        var frequency = new ComboBox
+        {
+            ItemsSource = frequencyOptions,
+            SelectedItem = selectedFrequency,
+            MinHeight = 34
+        };
         var notes = new TextBox { Text = existing?.Notes ?? "", PlaceholderText = "Notes", MinHeight = 70, AcceptsReturn = true, TextWrapping = TextWrapping.Wrap };
         var subscriptionStatus = CreateSubscriptionStatusSelector(existing?.Status ?? SubscriptionStatus.Active);
         var form = new StackPanel { Spacing = 7, Margin = new Thickness(16), Children =
         {
-            new TextBlock { Text = isEdit ? "EDIT SUBSCRIPTION" : "ADD SUBSCRIPTION", FontSize = 19, FontWeight = FontWeight.Bold },
-            new TextBlock { Text = "Subscription title" }, title,
+            new TextBlock { Text = isEdit ? "EDIT PRESCRIPTION" : "ADD PRESCRIPTION", FontSize = 19, FontWeight = FontWeight.Bold },
+            new TextBlock { Text = "Prescription No" }, title,
             new TextBlock { Text = "Start date" }, start,
-            new TextBlock { Text = "Next due date" }, due,
-            new TextBlock { Text = "Expiry date (optional)" }, expiry,
+            new TextBlock { Text = "Expiry date" }, expiry,
             new TextBlock { Text = "Frequency" }, frequency,
             new TextBlock { Text = "Status" }, subscriptionStatus,
             new TextBlock { Text = "Notes" }, notes
@@ -3698,15 +3710,26 @@ public partial class MainWindow : Window
         var status = new TextBlock { TextWrapping = TextWrapping.Wrap, Foreground = Brushes.Orange };
         var save = new Button { Content = "Save", Classes = { "accent" }, MinWidth = 110 };
         var cancel = new Button { Content = "Cancel", MinWidth = 100 };
-        var dialog = CreateActivityEditorWindow(isEdit ? "Edit subscription" : "Add subscription", form, status, save, cancel, 540, 650);
+        var dialog = CreateActivityEditorWindow(isEdit ? "Edit prescription" : "Add prescription", form, status, save, cancel, 540, 620);
         cancel.Click += (_, _) => dialog.Close();
         save.Click += async (_, _) =>
         {
-            if (string.IsNullOrWhiteSpace(title.Text) || start.SelectedDate is not DateTimeOffset selectedStart || due.SelectedDate is not DateTimeOffset selectedDue)
-            { status.Text = "Enter a title and select valid start and next due dates."; return; }
+            if (string.IsNullOrWhiteSpace(title.Text))
+            { status.Text = "Enter the prescription number."; return; }
+            if (start.SelectedDate is not DateTimeOffset selectedStart)
+            { status.Text = "A valid start date is required."; return; }
+            if (expiry.SelectedDate is not DateTimeOffset selectedExpiry)
+            { status.Text = "Expiry date is required."; return; }
+            if (frequency.SelectedItem is not string selectedFrequencyValue)
+            { status.Text = "Choose a frequency."; return; }
             var startDate = selectedStart.Date;
-            var dueDate = selectedDue.Date;
-            DateTime? expiryDate = expiry.SelectedDate?.Date;
+            var expiryDate = selectedExpiry.Date;
+            var dueDate = selectedFrequencyValue switch
+            {
+                "Two months" => startDate.AddMonths(2),
+                "Three months" => startDate.AddMonths(3),
+                _ => expiryDate
+            };
             await using var db = new PharmacyDbContext(PharmacyDb.Options());
             if (!TryReadSubscriptionStatus(subscriptionStatus, out var selectedStatus))
             { status.Text = "Choose Active or Executed status."; return; }
@@ -3742,7 +3765,7 @@ public partial class MainWindow : Window
             record.StartDate = startDate.Date;
             record.NextDueDate = dueDate.Date;
             record.ExpiryDate = expiryDate;
-            record.Frequency = string.IsNullOrWhiteSpace(frequency.Text) ? "Monthly" : frequency.Text.Trim();
+            record.Frequency = selectedFrequencyValue;
             record.Notes = notes.Text?.Trim();
             await db.SaveChangesAsync();
             db.SubscriptionAuditEntries.Add(new SubscriptionAuditEntry
