@@ -73,7 +73,7 @@ public partial class AdministrationView : UserControl
         });
         var path = files.FirstOrDefault()?.TryGetLocalPath();
         if (string.IsNullOrWhiteSpace(path)) return;
-        var password = await PasswordPromptAsync("Import settings", "Enter the package password:");
+        if (!await ConfirmImportAsync()) return;\n        var password = await PasswordPromptAsync("Import settings", "Enter the package password:");
         if (string.IsNullOrWhiteSpace(password)) return;
         try
         {
@@ -81,6 +81,19 @@ public partial class AdministrationView : UserControl
             SettingsTransferStatus.Text = "Imported: " + string.Join(", ", imported) + ". Restart Ergani Manager to apply the configuration.";
         }
         catch (Exception ex) { SettingsTransferStatus.Text = "Import failed: " + ex.Message; }
+    }
+
+    private async Task<bool> ConfirmImportAsync()
+    {
+        var owner = TopLevel.GetTopLevel(this) as Window;
+        if (owner == null) return false;
+        var dialog = new Window { Title = "Confirm settings import", Width = 470, Height = 230, WindowStartupLocation = WindowStartupLocation.CenterOwner, CanResize = false };
+        var apply = new Button { Content = "Import and replace local settings", IsDefault = true };
+        var cancel = new Button { Content = "Cancel", IsCancel = true };
+        apply.Click += (_, _) => dialog.Close(true);
+        cancel.Click += (_, _) => dialog.Close(false);
+        dialog.Content = new StackPanel { Margin = new Thickness(20), Spacing = 14, Children = { new TextBlock { Text = "This will replace this PC's local configuration, including database connection and portal settings. Local database files and user accounts are not imported. Continue?", TextWrapping = TextWrapping.Wrap }, new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right, Spacing = 8, Children = { cancel, apply } } } };
+        return await dialog.ShowDialog<bool>(owner);
     }
 
     private async Task<string?> PasswordPromptAsync(string title, string label)
