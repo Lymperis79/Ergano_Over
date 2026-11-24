@@ -293,9 +293,8 @@ public class Subscription
 
     public DateTime StartDate { get; set; } = DateTime.Today;
 
-    public DateTime NextDueDate { get; set; }
 
-    public DateTime? ExpiryDate { get; set; }
+    public DateTime ExpiryDate { get; set; }
 
     public string Frequency { get; set; } = "Monthly";
 
