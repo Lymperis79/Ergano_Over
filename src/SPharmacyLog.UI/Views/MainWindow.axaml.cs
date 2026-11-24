@@ -62,6 +62,7 @@ public partial class MainWindow : Window
     private bool isApplyingTranslations;
     private string? activeNavigationKey;
     private readonly ContentControl pageHost;
+    private Control? dashboardView;
     private TextBlock dailySummary = new();
     private StackPanel calendarPanel = new();
     private DateTime displayedMonth = new(DateTime.Today.Year, DateTime.Today.Month, 1);
@@ -534,7 +535,8 @@ public partial class MainWindow : Window
 
         // Display the dashboard shell before waiting for database-backed notes.
         // This keeps startup responsive even when the database is slow.
-        pageHost.Content = new ScrollViewer { Content = root, VerticalScrollBarVisibility = ScrollBarVisibility.Auto };
+        dashboardView = new ScrollViewer { Content = root, VerticalScrollBarVisibility = ScrollBarVisibility.Auto };
+        pageHost.Content = dashboardView;
 
         var todayNotes = await LoadDashboardNotesAsync();
         notesStack.Children.Remove(notesLoading);
@@ -3721,6 +3723,16 @@ public partial class MainWindow : Window
             Content = content
         };
         AttachDialogLocalization(popup);
+        // Refresh the dashboard counters after the details popup closes, but only
+        // if the dashboard is still the active page.
+        var refreshDashboardOnClose = true;
+        popup.Closed += (_, _) =>
+        {
+            if (refreshDashboardOnClose &&
+                dashboardView is not null &&
+                ReferenceEquals(pageHost.Content, dashboardView))
+                ShowDashboard();
+        };
         close.Click += (_, _) => popup.Close();
         saveStatus.Click += async (_, _) =>
         {
@@ -3757,11 +3769,13 @@ public partial class MainWindow : Window
         };
         openCustomer.Click += async (_, _) =>
         {
+            refreshDashboardOnClose = false;
             popup.Close();
             await OpenCustomerFromSubscriptionAsync(customer.Id, null);
         };
         editSubscription.Click += async (_, _) =>
         {
+            refreshDashboardOnClose = false;
             popup.Close();
             await OpenSubscriptionForEditingSafelyAsync(subscription);
         };
