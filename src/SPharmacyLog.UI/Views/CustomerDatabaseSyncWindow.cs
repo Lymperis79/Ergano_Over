@@ -242,9 +242,14 @@ public sealed class CustomerDatabaseSyncWindow : UserControl
         }
         if (string.IsNullOrWhiteSpace(savedTable))
         {
+            ApplySavedMappings();
             status.Text = "Connection settings are saved, but no source table has been saved yet. Load tables, choose one and save the settings.";
             return;
         }
+
+        // Restore saved values immediately so they remain reviewable even if the source
+        // SQL Server is temporarily unavailable. Live schema validation follows below.
+        ApplySavedMappings();
 
         try
         {
@@ -396,8 +401,13 @@ public sealed class CustomerDatabaseSyncWindow : UserControl
         {
             if (!savedMappings.TryGetValue(definition.Target, out var source) || string.IsNullOrWhiteSpace(source))
                 continue;
-            if (availableColumns.Contains(source, StringComparer.OrdinalIgnoreCase))
-                mappingBoxes[definition.Target].SelectedItem = availableColumns.First(column => column.Equals(source, StringComparison.OrdinalIgnoreCase));
+            var options = new[] { "— Do not import —" }.Concat(availableColumns)
+                .Concat(new[] { source })
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToArray();
+            mappingBoxes[definition.Target].ItemsSource = options;
+            mappingBoxes[definition.Target].SelectedItem = options.First(option =>
+                string.Equals(option, source, StringComparison.OrdinalIgnoreCase));
         }
         if (!filtersInitialized)
         {
@@ -416,7 +426,10 @@ public sealed class CustomerDatabaseSyncWindow : UserControl
     private void AddFilterRow(CustomerImportFilter? saved = null)
     {
         var column = new ComboBox { Width = 190, MinWidth = 150, PlaceholderText = "Select column" };
-        column.ItemsSource = availableColumns;
+        column.ItemsSource = availableColumns
+            .Concat(string.IsNullOrWhiteSpace(saved?.Column) ? Array.Empty<string>() : new[] { saved.Column })
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToArray();
         var op = new ComboBox
         {
             Width = 135,
@@ -427,9 +440,10 @@ public sealed class CustomerDatabaseSyncWindow : UserControl
         var remove = new Button { Content = "Remove", MinWidth = 70 };
         var row = (column, op, value);
         filterRows.Add(row);
-        if (!string.IsNullOrWhiteSpace(saved?.Column) &&
-            availableColumns.Contains(saved.Column, StringComparer.OrdinalIgnoreCase))
-            column.SelectedItem = availableColumns.First(c => c.Equals(saved.Column, StringComparison.OrdinalIgnoreCase));
+        if (!string.IsNullOrWhiteSpace(saved?.Column))
+            column.SelectedItem = column.ItemsSource is IEnumerable<string> options
+                ? options.FirstOrDefault(c => c.Equals(saved.Column, StringComparison.OrdinalIgnoreCase))
+                : saved.Column;
         else if (availableColumns.Contains("KPP_KATHGOR", StringComparer.OrdinalIgnoreCase))
             column.SelectedItem = availableColumns.First(c => c.Equals("KPP_KATHGOR", StringComparison.OrdinalIgnoreCase));
         remove.Click += (_, _) => filterRows.Remove(row);
