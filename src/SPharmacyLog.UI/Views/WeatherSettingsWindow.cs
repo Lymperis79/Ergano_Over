@@ -40,7 +40,6 @@ public sealed class WeatherSettingsWindow : UserControl
                 ShowWind = wind.IsChecked == true
             });
             saveStatus.Text = SPharmacyLog.UI.Localization.Tr.Loc.TranslateText("Settings saved.");
-            saveStatus.Text = SPharmacyLog.UI.Localization.Tr.Loc.TranslateText("Settings saved.");
             SettingsSaved?.Invoke();
         };
 
