@@ -178,7 +178,11 @@ public partial class MainWindow : Window
                      item.Key != MenuReports &&
                      item.Key != MenuBorrowing &&
                      item.Key != MenuSubscriptions &&
-                     item.Key != MenuPayments))
+                     item.Key != MenuPayments &&
+                     item.Key != MenuCompanySettings &&
+                     item.Key != MenuWeatherSettings &&
+                     item.Key != MenuApplicationSettings &&
+                     item.Key != MenuDatabaseSynchronization))
         {
             if (!CanAccessMenu(item.Key)) continue;
             Action action = item.Key switch
@@ -4639,7 +4643,7 @@ public partial class MainWindow : Window
                 FontSize = 12
             });
             var allowedMenuCount = string.IsNullOrWhiteSpace(user.AllowedMenus)
-                ? ConfigurableMenus.Length
+                ? WorkspaceMenuKeys.Length
                 : user.AllowedMenus.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).Distinct(StringComparer.Ordinal).Count();
             info.Children.Add(new TextBlock
             {
