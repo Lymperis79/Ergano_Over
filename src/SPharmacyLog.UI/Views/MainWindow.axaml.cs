@@ -216,7 +216,6 @@ public partial class MainWindow : Window
             AddNavigationButton("Weather settings", OpenWeatherSettings, "☼");
             AddNavigationButton("Navigation.ApplicationSettings", OpenApplicationSettings, "⚙");
             AddNavigationButton("Database synchronization", OpenCustomerDatabaseSync, "⇄");
-            AddNavigationButton("Medicine catalogue", OpenMedicineCatalogue, "▤");
         }
 
         // Keep the selected item highlighted when the menu is rebuilt (for example,
@@ -4883,15 +4882,6 @@ public partial class MainWindow : Window
         };
         AttachDialogLocalization(dialog);
         await dialog.ShowDialog(this);
-    }
-
-    private void OpenMedicineCatalogue()
-    {
-        if (viewModel.User.Role != PharmacyRole.Admin) return;
-        showingExpiryCalendar = false;
-        var page = new MedicineCatalogWindow();
-        pageHost.Content = page;
-        AttachPageLocalization(page);
     }
 
     private void OpenMedicineManagement()
