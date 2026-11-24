@@ -12,7 +12,7 @@ public sealed class LocalizationService : ILocalizationService
 
     private static readonly IReadOnlyDictionary<string, string> English = new Dictionary<string, string>
     {
-        ["App.Title"] = "S Pharmacy Log",
+        ["App.Title"] = "My Pharmacy Companion",
         ["Login.Title"] = "Sign in",
         ["Login.Username"] = "Username",
         ["Login.Password"] = "Password",
@@ -51,7 +51,7 @@ public sealed class LocalizationService : ILocalizationService
 
     private static readonly IReadOnlyDictionary<string, string> Greek = new Dictionary<string, string>
     {
-        ["App.Title"] = "S Pharmacy Log",
+        ["App.Title"] = "My Pharmacy Companion",
         ["Login.Title"] = "Σύνδεση",
         ["Login.Username"] = "Όνομα χρήστη",
         ["Login.Password"] = "Κωδικός πρόσβασης",
