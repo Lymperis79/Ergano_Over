@@ -1776,7 +1776,7 @@ public partial class MainWindow : Window
         };
         Grid.SetColumn(newButton, 0);
         customerActions.Children.Add(newButton);
-        if (CanAccessMenu(MenuDatabaseSynchronization))
+        if (HasUsableCustomerSyncSettings())
         {
             customerSyncButton = new Button
             {
@@ -2688,13 +2688,11 @@ public partial class MainWindow : Window
     private void UpdateCustomerSyncButtonVisibility()
     {
         if (customerSyncButton is not null)
-            customerSyncButton.IsVisible = CanAccessMenu(MenuDatabaseSynchronization) &&
-                                           HasUsableCustomerSyncSettings();
+            customerSyncButton.IsVisible = HasUsableCustomerSyncSettings();
     }
 
     private async Task RunCustomerDatabaseSyncAsync(Button button)
     {
-        if (!CanAccessMenu(MenuDatabaseSynchronization)) { ShowNoMenuAccess(); return; }
         button.IsEnabled = false;
         customerStatus.Text = "Preparing customer synchronization…";
         try
