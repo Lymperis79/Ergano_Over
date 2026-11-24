@@ -22,7 +22,7 @@ public partial class App : Application
         {
             var startupWindow = new Window
             {
-                Title = "Starting My Pharmacy Companion",
+                Title =  $"Starting {ApplicationBranding.Name}",
                 Width = 440,
                 Height = 220,
                 MinWidth = 440,
@@ -44,7 +44,7 @@ public partial class App : Application
                         {
                             new TextBlock
                             {
-                                Text = "My Pharmacy Companion",
+                                Text = ApplicationBranding.Name,
                                 FontSize = 24,
                                 FontWeight = FontWeight.Bold,
                                 HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Center
@@ -137,7 +137,7 @@ public partial class App : Application
             {
                 var errorWindow = new Window
                 {
-                    Title = "My Pharmacy Companion startup error",
+                    Title =  $"{ApplicationBranding.Name} startup error",
                     Width = 620,
                     SizeToContent = SizeToContent.Height,
                     Content = new StackPanel
@@ -148,7 +148,7 @@ public partial class App : Application
                         {
                             new TextBlock
                             {
-                                Text = "My Pharmacy Companion could not complete startup. Your existing database has not been deleted.",
+                                Text =  $"{ApplicationBranding.Name} could not complete startup. Your existing database has not been deleted.",
                                 FontWeight = FontWeight.SemiBold,
                                 TextWrapping = TextWrapping.Wrap
                             },
