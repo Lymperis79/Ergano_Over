@@ -22,6 +22,9 @@ public sealed class CustomerDatabaseSyncWindow : UserControl
     private readonly Button addFilterButton = new() { Content = "+ Add filter", MinWidth = 105 };
     private readonly CheckBox deactivateMissingAmka = new() { Content = "Set customer inactive when the source AMKA is NULL or empty" };
     private readonly TextBlock status = new() { TextWrapping = TextWrapping.Wrap };
+    private readonly TextBlock savedConfigurationInfo = new() { TextWrapping = TextWrapping.Wrap };
+    private readonly Button loadSavedSettingsButton = new() { Content = "Load saved settings", MinWidth = 150 };
+    private bool hasSavedSettings;
     private readonly StackPanel mappingsPanel = new() { Spacing = 7 };
     private readonly Dictionary<string, ComboBox> mappingBoxes = new(StringComparer.OrdinalIgnoreCase);
     private IReadOnlyList<string> availableColumns = Array.Empty<string>();
@@ -65,6 +68,26 @@ public sealed class CustomerDatabaseSyncWindow : UserControl
             Foreground = Brushes.LightGray
         });
 
+        var savedConfigurationPanel = new StackPanel { Spacing = 8 };
+        savedConfigurationPanel.Children.Add(new TextBlock { Text = "SAVED CONFIGURATION", FontWeight = FontWeight.SemiBold });
+        savedConfigurationPanel.Children.Add(savedConfigurationInfo);
+        savedConfigurationPanel.Children.Add(new StackPanel
+        {
+            Orientation = Orientation.Horizontal,
+            Spacing = 8,
+            Children =
+            {
+                loadSavedSettingsButton,
+                new TextBlock
+                {
+                    Text = "Load the previously saved connection, table, filters and field mappings to review or edit them.",
+                    TextWrapping = TextWrapping.Wrap,
+                    VerticalAlignment = VerticalAlignment.Center
+                }
+            }
+        });
+        root.Children.Add(Card(savedConfigurationPanel));
+
         var connectionPanel = new StackPanel { Spacing = 8 };
         connectionPanel.Children.Add(new TextBlock { Text = "SQL SERVER CONNECTION", FontWeight = FontWeight.SemiBold });
         connectionPanel.Children.Add(Row("Server / instance", server, "Database", database));
@@ -106,6 +129,24 @@ public sealed class CustomerDatabaseSyncWindow : UserControl
         root.Children.Add(bottom);
 
         Content = new ScrollViewer { Content = root, VerticalScrollBarVisibility = Avalonia.Controls.Primitives.ScrollBarVisibility.Auto };
+
+        loadSavedSettingsButton.Click += async (_, _) =>
+        {
+            LoadSavedSettings();
+            UpdateAuthenticationFields();
+            filtersInitialized = false;
+            filtersPanel.Children.Clear();
+            filterRows.Clear();
+            availableColumns = Array.Empty<string>();
+            table.ItemsSource = null;
+            foreach (var combo in mappingBoxes.Values)
+            {
+                combo.ItemsSource = new[] { "— Do not import —" };
+                combo.SelectedIndex = 0;
+            }
+            RefreshSavedConfigurationSummary();
+            await InitializeSavedConfigurationAsync();
+        };
 
         integrated.IsCheckedChanged += (_, _) => UpdateAuthenticationFields();
         addFilterButton.Click += (_, _) => AddFilterRow();
@@ -150,6 +191,8 @@ public sealed class CustomerDatabaseSyncWindow : UserControl
             savedFilterColumn = settings.FilterColumn;
             savedFilters = settings.Filters.ToList();
             savedMappings = new Dictionary<string, string>(settings.FieldMappings, StringComparer.OrdinalIgnoreCase);
+            hasSavedSettings = true;
+            RefreshSavedConfigurationSummary();
             status.Text = "All connection, table, mapping and filter settings saved securely for this Windows user.";
             return Task.CompletedTask;
         });
@@ -177,6 +220,7 @@ public sealed class CustomerDatabaseSyncWindow : UserControl
         LoadSavedSettings();
         UpdateAuthenticationFields();
         BuildMappingRows();
+        RefreshSavedConfigurationSummary();
     }
 
     protected override async void OnAttachedToVisualTree(Avalonia.VisualTreeAttachmentEventArgs e)
@@ -189,10 +233,14 @@ public sealed class CustomerDatabaseSyncWindow : UserControl
 
     private async Task InitializeSavedConfigurationAsync()
     {
-        if (string.IsNullOrWhiteSpace(server.Text) || string.IsNullOrWhiteSpace(database.Text) ||
-            string.IsNullOrWhiteSpace(savedTable))
+        if (!hasSavedSettings || string.IsNullOrWhiteSpace(server.Text) || string.IsNullOrWhiteSpace(database.Text))
         {
-            status.Text = "Enter and save the SQL Server connection and source table once. The saved configuration will load automatically next time.";
+            status.Text = "No saved database synchronization configuration was found. Enter the connection details, choose a source table and save the settings.";
+            return;
+        }
+        if (string.IsNullOrWhiteSpace(savedTable))
+        {
+            status.Text = "Connection settings are saved, but no source table has been saved yet. Load tables, choose one and save the settings.";
             return;
         }
 
@@ -316,6 +364,28 @@ public sealed class CustomerDatabaseSyncWindow : UserControl
         if (savedFilters.Count == 0 && !string.IsNullOrWhiteSpace(settings.FilterValue))
             savedFilters.Add(new CustomerImportFilter { Column = settings.FilterColumn, Operator = "Equals", Value = settings.FilterValue });
         savedMappings = settings.FieldMappings ?? new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        hasSavedSettings = !string.IsNullOrWhiteSpace(settings.Server) && !string.IsNullOrWhiteSpace(settings.Database);
+        loadSavedSettingsButton.IsEnabled = hasSavedSettings;
+        RefreshSavedConfigurationSummary();
+    }
+
+    private void RefreshSavedConfigurationSummary()
+    {
+        if (!hasSavedSettings)
+        {
+            savedConfigurationInfo.Text = "No saved configuration found on this Windows user account. Once saved, its details will be shown here.";
+            savedConfigurationInfo.Foreground = Brushes.LightGray;
+            loadSavedSettingsButton.IsEnabled = false;
+            return;
+        }
+
+        var authentication = integrated.IsChecked == true ? "Windows authentication" : "SQL authentication";
+        var tableSummary = string.IsNullOrWhiteSpace(savedTable) ? "table not selected" : savedTable;
+        var mappingCount = savedMappings.Count(pair => !string.IsNullOrWhiteSpace(pair.Value));
+        var filterCount = savedFilters.Count(filter => !string.IsNullOrWhiteSpace(filter.Column));
+        savedConfigurationInfo.Text = $"Saved configuration found  •  {server.Text} / {database.Text}  •  {authentication}  •  Source: {tableSummary}  •  {mappingCount} field mappings  •  {filterCount} filter(s). Passwords are kept encrypted and are never displayed.";
+        savedConfigurationInfo.Foreground = Brushes.LightGreen;
+        loadSavedSettingsButton.IsEnabled = true;
     }
 
     private void ApplySavedMappings()
