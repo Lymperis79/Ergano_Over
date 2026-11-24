@@ -3,7 +3,8 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Interactivity;
-using Avalonia.Platform.Storage;\nusing Avalonia.Media;
+using Avalonia.Platform.Storage;
+using Avalonia.Media;
 using ErganiManager.UI.ViewModels;
 
 namespace ErganiManager.UI.Views;
@@ -73,7 +74,8 @@ public partial class AdministrationView : UserControl
         });
         var path = files.FirstOrDefault()?.TryGetLocalPath();
         if (string.IsNullOrWhiteSpace(path)) return;
-        if (!await ConfirmImportAsync()) return;\n        var password = await PasswordPromptAsync("Import settings", "Enter the package password:");
+        if (!await ConfirmImportAsync()) return;
+        var password = await PasswordPromptAsync("Import settings", "Enter the package password:");
         if (string.IsNullOrWhiteSpace(password)) return;
         try
         {
