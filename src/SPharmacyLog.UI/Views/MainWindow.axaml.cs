@@ -3910,14 +3910,25 @@ public partial class MainWindow : Window
         UpdateLedgerTypeDescription();
         var amount = new TextBox { Text = existing?.Amount.ToString("0.00", CultureInfo.InvariantCulture) ?? "", PlaceholderText = "Amount", MinHeight = 34 };
         var description = new TextBox { Text = existing?.Description ?? "", PlaceholderText = "Description", MinHeight = 34 };
-        var entryDate = new TextBox { Text = (existing?.EntryDate ?? DateTime.Now).ToString("yyyy-MM-dd HH:mm"), PlaceholderText = "Entry date (yyyy-MM-dd HH:mm)", MinHeight = 34 };
+        var entryDate = new DatePicker
+        {
+            SelectedDate = new DateTimeOffset((existing?.EntryDate ?? DateTime.Now).Date),
+            MinWidth = 220
+        };
+        var entryTime = new TextBox
+        {
+            Text = (existing?.EntryDate ?? DateTime.Now).ToString("HH:mm"),
+            PlaceholderText = "Time (HH:mm)",
+            MinHeight = 34
+        };
         var form = new StackPanel { Spacing = 7, Margin = new Thickness(16), Children =
         {
             new TextBlock { Text = isEdit ? "EDIT LEDGER ENTRY" : "ADD LEDGER ENTRY", FontSize = 19, FontWeight = FontWeight.Bold },
             new TextBlock { Text = "Entry type" }, type, typeDescription,
             new TextBlock { Text = "Amount (positive number)" }, amount,
             new TextBlock { Text = "Description" }, description,
-            new TextBlock { Text = "Entry date (yyyy-MM-dd HH:mm)" }, entryDate
+            new TextBlock { Text = "Entry date" }, entryDate,
+            new TextBlock { Text = "Entry time (HH:mm)" }, entryTime
         } };
         var status = new TextBlock { TextWrapping = TextWrapping.Wrap, Foreground = Brushes.Orange };
         var save = new Button { Content = "Save", Classes = { "accent" }, MinWidth = 110 };
@@ -3938,8 +3949,10 @@ public partial class MainWindow : Window
             if (!Enum.TryParse<LedgerEntryType>(normalizedType, true, out var parsedType) ||
                 !TryParseLocalizedAmount(amount.Text, out var parsedAmount) || parsedAmount <= 0 ||
                 string.IsNullOrWhiteSpace(description.Text) ||
-                !TryParseUserDate(entryDate.Text, out var parsedDate))
-            { status.Text = "Choose a valid entry type, positive amount, description and date."; return; }
+                entryDate.SelectedDate is not DateTimeOffset selectedEntryDate ||
+                !TimeSpan.TryParseExact(entryTime.Text?.Trim(), @"hh\\:mm", CultureInfo.InvariantCulture, out var parsedEntryTime))
+            { status.Text = "Choose a valid entry type, positive amount, description, date and time (HH:mm)."; return; }
+            var parsedDate = selectedEntryDate.Date.Add(parsedEntryTime);
             await using var db = new PharmacyDbContext(PharmacyDb.Options());
             LedgerEntry? record;
             if (isEdit)
