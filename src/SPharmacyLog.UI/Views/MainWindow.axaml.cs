@@ -707,6 +707,7 @@ public partial class MainWindow : Window
         page.SettingsSaved += ShowDashboard;
         showingExpiryCalendar = false;
         pageHost.Content = page;
+        AttachPageLocalization(page);
     }
 
     private void OpenApplicationSettings()
@@ -720,6 +721,7 @@ public partial class MainWindow : Window
         };
         showingExpiryCalendar = false;
         pageHost.Content = page;
+        AttachPageLocalization(page);
     }
 
     private void OpenCustomerDatabaseSync()
