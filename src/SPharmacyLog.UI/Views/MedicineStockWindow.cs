@@ -11,7 +11,7 @@ using SPharmacyLog.UI.Services;
 
 namespace SPharmacyLog.UI.Views;
 
-public sealed class MedicineStockWindow : Window
+public sealed class MedicineStockWindow : UserControl
 {
     private readonly string currentUser;
     private readonly TextBox search = new() { MinWidth = 260, PlaceholderText = Tr.Loc.TranslateText("Medicine / barcode") };
@@ -23,10 +23,6 @@ public sealed class MedicineStockWindow : Window
     public MedicineStockWindow(string username)
     {
         currentUser = string.IsNullOrWhiteSpace(username) ? "Unknown user" : username;
-        Title = Tr.Loc.TranslateText("Medicine stock control");
-        Width = 1180; Height = 820; MinWidth = 900; MinHeight = 600;
-        WindowStartupLocation = WindowStartupLocation.CenterOwner;
-
         var heading = new TextBlock { Text = Tr.Loc.TranslateText("Medicine stock control"), FontSize = 25, FontWeight = FontWeight.Bold };
         var count = ActionButton("Stock count", "▦", async () => await OpenMovementFormAsync(MedicineStockMovementType.Count));
         var add = ActionButton("Add stock", "＋", async () => await OpenMovementFormAsync(MedicineStockMovementType.Add));
@@ -486,8 +482,10 @@ public sealed class MedicineStockWindow : Window
             await LoadAsync();
         };
 
-        await dialog.ShowDialog(this);
+        await dialog.ShowDialog(GetOwnerWindow());
     }
+
+    private Window GetOwnerWindow() => TopLevel.GetTopLevel(this) as Window ?? throw new InvalidOperationException("The stock page is not attached to a window.");
 
     private static Dictionary<(DateTime? Expiry, string Lot), decimal> CalculateBalances(IEnumerable<MedicineStockMovement> movements)
     {
