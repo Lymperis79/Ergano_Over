@@ -12,6 +12,7 @@
 
   <ItemGroup>
     <AvaloniaResource Include="Assets\spharmacy.ico" />
+    <None Update="application-settings.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
   <ItemGroup>
