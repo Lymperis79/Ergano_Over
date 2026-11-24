@@ -17,7 +17,8 @@ public sealed class ApplicationSettingsWindow : UserControl
 
     public ApplicationSettingsWindow(bool allowInstallationSettingsTransfer = true)
     {
-        allowTransfer = allowInstallationSettingsTransfer;\n        transferStatus.IsVisible = allowTransfer;
+        allowTransfer = allowInstallationSettingsTransfer;
+        transferStatus.IsVisible = allowTransfer;
         var settings = ApplicationSettingsService.Load();
         Background = new SolidColorBrush(Color.Parse("#202733"));
         showOfficialHolidays = new CheckBox { Content = "Show official Greek public holidays in the calendar", IsChecked = settings.ShowOfficialHolidays };
