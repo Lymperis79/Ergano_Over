@@ -1776,7 +1776,7 @@ public partial class MainWindow : Window
         };
         Grid.SetColumn(newButton, 0);
         customerActions.Children.Add(newButton);
-        if (viewModel.User.Role == PharmacyRole.Admin)
+        if (CanAccessMenu(MenuDatabaseSynchronization))
         {
             customerSyncButton = new Button
             {
@@ -2688,13 +2688,13 @@ public partial class MainWindow : Window
     private void UpdateCustomerSyncButtonVisibility()
     {
         if (customerSyncButton is not null)
-            customerSyncButton.IsVisible = viewModel.User.Role == PharmacyRole.Admin &&
+            customerSyncButton.IsVisible = CanAccessMenu(MenuDatabaseSynchronization) &&
                                            HasUsableCustomerSyncSettings();
     }
 
     private async Task RunCustomerDatabaseSyncAsync(Button button)
     {
-        if (viewModel.User.Role != PharmacyRole.Admin) return;
+        if (!CanAccessMenu(MenuDatabaseSynchronization)) { ShowNoMenuAccess(); return; }
         button.IsEnabled = false;
         customerStatus.Text = "Preparing customer synchronization…";
         try
