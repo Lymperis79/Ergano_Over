@@ -22,11 +22,44 @@ public partial class App : Application
         {
             var startupWindow = new Window
             {
-                Title = "S Pharmacy Log",
-                Width = 1,
-                Height = 1,
-                Opacity = 0,
-                ShowInTaskbar = false
+                Title = "Starting S Pharmacy Log",
+                Width = 440,
+                Height = 220,
+                MinWidth = 440,
+                MinHeight = 220,
+                MaxWidth = 440,
+                MaxHeight = 220,
+                WindowStartupLocation = WindowStartupLocation.CenterScreen,
+                ShowInTaskbar = false,
+                CanResize = false,
+                Content = new Border
+                {
+                    Padding = new Thickness(28),
+                    Background = new SolidColorBrush(Color.Parse("#202733")),
+                    Child = new StackPanel
+                    {
+                        VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center,
+                        Spacing = 14,
+                        Children =
+                        {
+                            new TextBlock
+                            {
+                                Text = "S Pharmacy Log",
+                                FontSize = 24,
+                                FontWeight = FontWeight.Bold,
+                                HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Center
+                            },
+                            new TextBlock
+                            {
+                                Text = "Starting application...\\nPlease wait.",
+                                FontSize = 16,
+                                TextAlignment = TextAlignment.Center,
+                                TextWrapping = TextWrapping.Wrap,
+                                HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Center
+                            }
+                        }
+                    }
+                }
             };
 
             desktop.MainWindow = startupWindow;
