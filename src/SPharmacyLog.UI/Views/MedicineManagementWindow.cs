@@ -11,7 +11,7 @@ using System.Text;
 
 namespace SPharmacyLog.UI.Views;
 
-public sealed class MedicineManagementWindow : Window
+public sealed class MedicineManagementWindow : UserControl
 {
     private readonly TextBox search = new() { MinWidth = 260, PlaceholderText = "Search medicine..." };
     private readonly StackPanel rows = new() { Spacing = 4 };
@@ -27,10 +27,6 @@ public sealed class MedicineManagementWindow : Window
 
     public MedicineManagementWindow()
     {
-        Title = Tr.Loc.TranslateText("Medicine");
-        Width = 980; Height = 720; MinWidth = 720; MinHeight = 500;
-        WindowStartupLocation = WindowStartupLocation.CenterOwner;
-
         var title = new TextBlock { Text = Tr.Loc.TranslateText("Medicine"), FontSize = 25, FontWeight = FontWeight.Bold };
         var newButton = new Button { Content = Tr.Loc.TranslateText("＋ Add medicine"), MinHeight = 36, Classes = { "accent" } };
         newButton.Click += async (_, _) => await EditMedicineAsync(null);
@@ -63,6 +59,9 @@ public sealed class MedicineManagementWindow : Window
         Content=content;
         _=LoadAsync();
     }
+
+    private Window GetOwnerWindow() => TopLevel.GetTopLevel(this) as Window ?? throw new InvalidOperationException("The medicine page is not attached to a window.");
+    private IStorageProvider GetStorageProvider() => TopLevel.GetTopLevel(this)?.StorageProvider ?? throw new InvalidOperationException("File storage is unavailable.");
 
     private int TotalPages => Math.Max(1, (int)Math.Ceiling(totalCount / (double)PageSize));
 
@@ -151,12 +150,12 @@ public sealed class MedicineManagementWindow : Window
             item.Name=name.Text.Trim();item.Barcode=string.IsNullOrWhiteSpace(barcode.Text)?null:barcode.Text.Trim();item.Notes=string.IsNullOrWhiteSpace(notes.Text)?null:notes.Text.Trim();item.IsActive=active.IsChecked==true;
             await db.SaveChangesAsync();dialog.Close();await LoadAsync(resetPage: existing is null);
         };
-        await dialog.ShowDialog(this);
+        await dialog.ShowDialog(GetOwnerWindow());
     }
 
     private async Task ExportAsync()
     {
-        var file=await StorageProvider.SaveFilePickerAsync(new FilePickerSaveOptions{Title=Tr.Loc.TranslateText("Export medicines"),SuggestedFileName="medicines.csv",DefaultExtension="csv",FileTypeChoices=new[]{new FilePickerFileType("Excel-compatible CSV"){Patterns=new[]{"*.csv"}}}});
+        var file=await GetStorageProvider().SaveFilePickerAsync(new FilePickerSaveOptions{Title=Tr.Loc.TranslateText("Export medicines"),SuggestedFileName="medicines.csv",DefaultExtension="csv",FileTypeChoices=new[]{new FilePickerFileType("Excel-compatible CSV"){Patterns=new[]{"*.csv"}}}});
         if(file is null)return;
         await using var stream=await file.OpenWriteAsync();await using var writer=new StreamWriter(stream,new UTF8Encoding(true));
         await writer.WriteLineAsync("Name,Barcode,Notes,IsActive");
@@ -170,7 +169,7 @@ public sealed class MedicineManagementWindow : Window
 
     private async Task ImportAsync()
     {
-        var file=await StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions{Title=Tr.Loc.TranslateText("Import medicines"),AllowMultiple=false,FileTypeFilter=new[]{new FilePickerFileType("Excel workbook or CSV"){Patterns=new[]{"*.xlsx","*.csv"}}}});
+        var file=await GetStorageProvider().OpenFilePickerAsync(new FilePickerOpenOptions{Title=Tr.Loc.TranslateText("Import medicines"),AllowMultiple=false,FileTypeFilter=new[]{new FilePickerFileType("Excel workbook or CSV"){Patterns=new[]{"*.xlsx","*.csv"}}}});
         if(file.Count==0)return;
         try
         {
