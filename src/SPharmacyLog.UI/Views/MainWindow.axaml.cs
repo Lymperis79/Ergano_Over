@@ -697,6 +697,7 @@ public partial class MainWindow : Window
         page.SettingsSaved += ApplyCompanyBranding;
         showingExpiryCalendar = false;
         pageHost.Content = page;
+        AttachPageLocalization(page);
     }
 
     private void OpenWeatherSettings()
@@ -725,7 +726,9 @@ public partial class MainWindow : Window
     {
         if (viewModel.User.Role != PharmacyRole.Admin) return;
         showingExpiryCalendar = false;
-        pageHost.Content = new CustomerDatabaseSyncWindow();
+        var page = new CustomerDatabaseSyncWindow();
+        pageHost.Content = page;
+        AttachPageLocalization(page);
         UpdateCustomerSyncButtonVisibility();
     }
 
@@ -733,7 +736,9 @@ public partial class MainWindow : Window
     {
         if (!CanAccessMenu(MenuReports)) { ShowNoMenuAccess(); return; }
         showingExpiryCalendar = false;
-        pageHost.Content = new ReportsWindow();
+        var page = new ReportsWindow();
+        pageHost.Content = page;
+        AttachPageLocalization(page);
     }
 
     private void ShowNoMenuAccess()
@@ -833,6 +838,40 @@ public partial class MainWindow : Window
     }
 
 
+
+    private static void AttachPageLocalization(Control page)
+    {
+        void TranslatePage()
+        {
+            foreach (var control in page.GetVisualDescendants().OfType<Control>())
+            {
+                switch (control)
+                {
+                    case TextBlock textBlock when !string.IsNullOrEmpty(textBlock.Text):
+                        textBlock.Text = Tr.Loc.TranslateText(textBlock.Text);
+                        break;
+                    case Button button when button.Content is string content:
+                        button.Content = Tr.Loc.TranslateText(content);
+                        break;
+                    case CheckBox checkBox when checkBox.Content is string checkText:
+                        checkBox.Content = Tr.Loc.TranslateText(checkText);
+                        break;
+                    case TextBox textBox when !string.IsNullOrEmpty(textBox.PlaceholderText):
+                        textBox.PlaceholderText = Tr.Loc.TranslateText(textBox.PlaceholderText);
+                        break;
+                    case ComboBoxItem item when item.Content is string itemText:
+                        item.Content = Tr.Loc.TranslateText(itemText);
+                        break;
+                }
+            }
+        }
+
+        EventHandler languageChanged = (_, _) => TranslatePage();
+        Tr.Loc.LanguageChanged += languageChanged;
+        page.AttachedToVisualTree += (_, _) => TranslatePage();
+        page.DetachedFromVisualTree += (_, _) => Tr.Loc.LanguageChanged -= languageChanged;
+        TranslatePage();
+    }
 
     private static void AttachDialogLocalization(Window dialog)
     {
@@ -4864,21 +4903,27 @@ public partial class MainWindow : Window
     {
         if (viewModel.User.Role != PharmacyRole.Admin) return;
         showingExpiryCalendar = false;
-        pageHost.Content = new MedicineCatalogWindow();
+        var page = new MedicineCatalogWindow();
+        pageHost.Content = page;
+        AttachPageLocalization(page);
     }
 
     private void OpenMedicineManagement()
     {
         if (!CanAccessMenu(MenuMedicine)) { ShowNoMenuAccess(); return; }
         showingExpiryCalendar = false;
-        pageHost.Content = new MedicineManagementWindow();
+        var page = new MedicineManagementWindow();
+        pageHost.Content = page;
+        AttachPageLocalization(page);
     }
 
     private void OpenMedicineStock()
     {
         if (!CanAccessMenu(MenuStock)) { ShowNoMenuAccess(); return; }
         showingExpiryCalendar = false;
-        pageHost.Content = new MedicineStockWindow(viewModel.User.Username);
+        var page = new MedicineStockWindow(viewModel.User.Username);
+        pageHost.Content = page;
+        AttachPageLocalization(page);
     }
 
     private void ShowPlaceholder(string title)
