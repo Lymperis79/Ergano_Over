@@ -52,7 +52,9 @@ public static class InstallationSettingsTransfer
         var names = new List<string>();
         foreach (var entry in bundle.Entries)
         {
-            if (entry.Name == "application-settings.json")\n            {\n                await File.WriteAllTextAsync(Path.Combine(AppContext.BaseDirectory, entry.Name), entry.Content);\n                names.Add("application branding");\n                continue;\n            }\n            if (entry.Name == "customer-sync-settings.json")
+            if (entry.Name == "application-settings.json")
+            {\n                await File.WriteAllTextAsync(Path.Combine(AppContext.BaseDirectory, entry.Name), entry.Content);\n                names.Add("application branding");\n                continue;
+            }\n            if (entry.Name == "customer-sync-settings.json")
             {
                 CustomerDatabaseSyncService.SaveSettings(JsonSerializer.Deserialize<CustomerDatabaseSyncSettings>(entry.Content) ?? new());
                 names.Add("customer database synchronization settings");
