@@ -2763,7 +2763,7 @@ public partial class MainWindow : Window
             };
         }).ToList();
         subscriptionHistoryList.ItemsSource = executedSubscriptions.Select(x => $"{x.Title} | Last changed {ToLocalSubscriptionTime(x.LastModifiedAt):dd/MM/yyyy HH:mm}").ToList();
-        ledgerList.ItemsSource = ledger.Select(x => $"{x.EntryDate:dd/MM/yyyy HH:mm} | {x.Type} | {x.Amount:C} | {x.Description}").ToList();
+        ledgerList.ItemsSource = ledger.Select(x => $"{x.EntryDate:dd/MM/yyyy} | {x.Type} | {x.Amount:C} | {x.Description}").ToList();
         ApplyTranslations();
     }
 
@@ -3915,20 +3915,13 @@ public partial class MainWindow : Window
             SelectedDate = new DateTimeOffset((existing?.EntryDate ?? DateTime.Now).Date),
             MinWidth = 220
         };
-        var entryTime = new TextBox
-        {
-            Text = (existing?.EntryDate ?? DateTime.Now).ToString("HH:mm"),
-            PlaceholderText = "Time (HH:mm)",
-            MinHeight = 34
-        };
         var form = new StackPanel { Spacing = 7, Margin = new Thickness(16), Children =
         {
             new TextBlock { Text = isEdit ? "EDIT LEDGER ENTRY" : "ADD LEDGER ENTRY", FontSize = 19, FontWeight = FontWeight.Bold },
             new TextBlock { Text = "Entry type" }, type, typeDescription,
             new TextBlock { Text = "Amount (positive number)" }, amount,
             new TextBlock { Text = "Description" }, description,
-            new TextBlock { Text = "Entry date" }, entryDate,
-            new TextBlock { Text = "Entry time (HH:mm)" }, entryTime
+            new TextBlock { Text = "Entry date" }, entryDate
         } };
         var status = new TextBlock { TextWrapping = TextWrapping.Wrap, Foreground = Brushes.Orange };
         var save = new Button { Content = "Save", Classes = { "accent" }, MinWidth = 110 };
@@ -3949,10 +3942,9 @@ public partial class MainWindow : Window
             if (!Enum.TryParse<LedgerEntryType>(normalizedType, true, out var parsedType) ||
                 !TryParseLocalizedAmount(amount.Text, out var parsedAmount) || parsedAmount <= 0 ||
                 string.IsNullOrWhiteSpace(description.Text) ||
-                entryDate.SelectedDate is not DateTimeOffset selectedEntryDate ||
-                !TimeSpan.TryParseExact(entryTime.Text?.Trim(), @"hh\\:mm", CultureInfo.InvariantCulture, out var parsedEntryTime))
-            { status.Text = "Choose a valid entry type, positive amount, description, date and time (HH:mm)."; return; }
-            var parsedDate = selectedEntryDate.Date.Add(parsedEntryTime);
+                entryDate.SelectedDate is not DateTimeOffset selectedEntryDate)
+            { status.Text = "Choose a valid entry type, positive amount, description and date."; return; }
+            var parsedDate = selectedEntryDate.Date;
             await using var db = new PharmacyDbContext(PharmacyDb.Options());
             LedgerEntry? record;
             if (isEdit)
