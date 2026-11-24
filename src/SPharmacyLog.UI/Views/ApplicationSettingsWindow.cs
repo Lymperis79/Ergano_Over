@@ -9,6 +9,7 @@ namespace SPharmacyLog.UI.Views;
 public sealed class ApplicationSettingsWindow : UserControl
 {
     public event Action? SettingsSaved;
+    private readonly TextBlock saveStatus = new() { Foreground = Brushes.LightGray };
     private readonly CheckBox showOfficialHolidays;
 
     public ApplicationSettingsWindow()
@@ -29,6 +30,8 @@ public sealed class ApplicationSettingsWindow : UserControl
             {
                 ShowOfficialHolidays = showOfficialHolidays.IsChecked == true
             });
+            saveStatus.Text = SPharmacyLog.UI.Localization.Tr.Loc.TranslateText("Settings saved.");
+            saveStatus.Text = SPharmacyLog.UI.Localization.Tr.Loc.TranslateText("Settings saved.");
             SettingsSaved?.Invoke();
         };
 
@@ -53,7 +56,8 @@ public sealed class ApplicationSettingsWindow : UserControl
                     Foreground = Brushes.LightGray
                 },
                 showOfficialHolidays,
-                buttons
+                buttons,
+                saveStatus
             }
         };
     }
