@@ -42,7 +42,8 @@ public partial class LoginWindow : Window
 
     private void ApplyTranslations()
     {
-        Title = Tr.Loc["App.Title"];
+        Title = ApplicationBranding.Name;
+        ProductNameText.Text = ApplicationBranding.Name;
         UsernameBox.PlaceholderText = Tr.Loc["Login.Username"];
         PasswordBox.PlaceholderText = Tr.Loc["Login.Password"];
         SubmitButton.Content = viewModel.SubmitText;
