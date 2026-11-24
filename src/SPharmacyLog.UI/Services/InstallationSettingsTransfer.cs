@@ -84,6 +84,16 @@ public static class InstallationSettingsTransfer
                 names.Add("company logo");
             }
         }
+        else
+        {
+            var companyPath = Path.Combine(Folder, "company.json");
+            if (File.Exists(companyPath))
+            {
+                using var doc = JsonDocument.Parse(File.ReadAllText(companyPath));
+                var name = doc.RootElement.TryGetProperty("Name", out var n) ? n.GetString() : "";
+                await File.WriteAllTextAsync(companyPath, JsonSerializer.Serialize(new { Name = name, LogoFile = (string?)null }, new JsonSerializerOptions { WriteIndented = true }));
+            }
+        }
         return names.ToArray();
     }
 
