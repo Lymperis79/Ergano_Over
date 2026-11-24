@@ -51,7 +51,7 @@ public partial class App : Application
                             },
                             new TextBlock
                             {
-                                Text = "Starting application...\\nPlease wait.",
+                                Text = "Starting application...\nPlease wait.",
                                 FontSize = 16,
                                 TextAlignment = TextAlignment.Center,
                                 TextWrapping = TextWrapping.Wrap,
