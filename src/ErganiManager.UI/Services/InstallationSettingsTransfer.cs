@@ -32,9 +32,16 @@ public static class InstallationSettingsTransfer
             if (!Files.Contains(entry.Name, StringComparer.Ordinal) || Path.GetFileName(entry.Name) != entry.Name)
                 throw new InvalidDataException("The package contains an unsupported configuration file.");
         Directory.CreateDirectory(Folder);
-        foreach (var entry in bundle.Entries)\n        {\n            var content = entry.Content;\n            if (entry.Name == "connection.json")
-            {\n                var config = JsonSerializer.Deserialize<DbConfig>(content);\n                if (config?.DatabaseProvider == DatabaseProvider.Sqlite) config.SqlitePath = Path.Combine(AppPaths.GetAppDataFolder(), "erganimanager.db");\n                content = JsonSerializer.Serialize(config, new JsonSerializerOptions { WriteIndented = true });
-            }\n            await File.WriteAllTextAsync(Path.Combine(Folder, entry.Name), content);
+        foreach (var entry in bundle.Entries)
+        {
+            var content = entry.Content;
+            if (entry.Name == "connection.json")
+            {
+                var config = JsonSerializer.Deserialize<DbConfig>(content);
+                if (config?.DatabaseProvider == DatabaseProvider.Sqlite) config.SqlitePath = Path.Combine(AppPaths.GetAppDataFolder(), "erganimanager.db");
+                content = JsonSerializer.Serialize(config, new JsonSerializerOptions { WriteIndented = true });
+            }
+            await File.WriteAllTextAsync(Path.Combine(Folder, entry.Name), content);
         }
         return bundle.Entries.Select(e => e.Name).ToArray();
     }
