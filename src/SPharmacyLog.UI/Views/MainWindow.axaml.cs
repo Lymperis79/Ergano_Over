@@ -446,7 +446,7 @@ public partial class MainWindow : Window
                 edit.Click += async (_, _) =>
                 {
                     dialog.Close();
-                    await OpenSubscriptionDetailsAsync(subscription.Id);
+                    await OpenSubscriptionForEditingSafelyAsync(subscription);
                 };
                 Grid.SetColumn(edit, 1);
                 row.Children.Add(edit);
@@ -3598,9 +3598,49 @@ public partial class MainWindow : Window
         editSubscription.Click += async (_, _) =>
         {
             popup.Close();
-            await OpenCustomerFromSubscriptionAsync(customer.Id, subscription);
+            await OpenSubscriptionForEditingSafelyAsync(subscription);
         };
         popup.Show(this);
+    }
+
+    private async Task OpenSubscriptionForEditingSafelyAsync(Subscription subscription)
+    {
+        try
+        {
+            await OpenCustomerFromSubscriptionAsync(subscription.CustomerId, subscription);
+        }
+        catch (Exception ex)
+        {
+            // Async event-handler exceptions must not escape to the UI dispatcher,
+            // where they can terminate the entire application.
+            var message = ex.GetBaseException().Message;
+            var close = new Button { Content = Tr.Loc.TranslateText("Close"), MinWidth = 90 };
+            var errorDialog = new Window
+            {
+                Title = Tr.Loc.TranslateText("Unable to edit prescription"),
+                Width = 520,
+                Height = 230,
+                MinWidth = 420,
+                WindowStartupLocation = WindowStartupLocation.CenterOwner,
+                Content = new StackPanel
+                {
+                    Margin = new Thickness(18),
+                    Spacing = 14,
+                    Children =
+                    {
+                        new TextBlock
+                        {
+                            Text = Tr.Loc.TranslateText("The prescription editor could not be opened. The application is still running. Please report this error."),
+                            TextWrapping = TextWrapping.Wrap
+                        },
+                        new TextBlock { Text = message, TextWrapping = TextWrapping.Wrap },
+                        close
+                    }
+                }
+            };
+            close.Click += (_, _) => errorDialog.Close();
+            errorDialog.Show(this);
+        }
     }
 
     private async Task OpenCustomerFromSubscriptionAsync(int customerId, Subscription? editSubscription)
