@@ -8,7 +8,7 @@ using SPharmacyLog.UI.Services;
 
 namespace SPharmacyLog.UI.Views;
 
-public sealed class CustomerDatabaseSyncWindow : Window
+public sealed class CustomerDatabaseSyncWindow : UserControl
 {
     private readonly TextBox server = new() { PlaceholderText = "SQL Server / instance" };
     private readonly TextBox database = new() { PlaceholderText = "Database name" };
@@ -32,6 +32,8 @@ public sealed class CustomerDatabaseSyncWindow : Window
     private bool suppressTableSelectionChanged;
     private bool filtersInitialized;
 
+    private Window GetOwnerWindow() => TopLevel.GetTopLevel(this) as Window ?? throw new InvalidOperationException("The database synchronization page is not attached to a window.");
+
     private static readonly (string Target, string Label, string SuggestedSource)[] MappingDefinitions =
     {
         ("CustomerNumber", "Customer number (match key)", "PEL_PRO_CODE"),
@@ -51,12 +53,6 @@ public sealed class CustomerDatabaseSyncWindow : Window
 
     public CustomerDatabaseSyncWindow()
     {
-        Title = "Database synchronization — Customers";
-        Width = 850;
-        Height = 850;
-        MinWidth = 760;
-        MinHeight = 650;
-        WindowStartupLocation = WindowStartupLocation.CenterOwner;
         Background = new SolidColorBrush(Color.Parse("#17212D"));
 
         var root = new StackPanel { Margin = new Thickness(22), Spacing = 12 };
@@ -463,7 +459,7 @@ public sealed class CustomerDatabaseSyncWindow : Window
                     }
                 }
             };
-            if (!await confirmation.ShowDialog<bool>(this))
+            if (!await confirmation.ShowDialog<bool>(GetOwnerWindow()))
                 return;
         }
 
