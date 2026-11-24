@@ -2519,7 +2519,7 @@ public partial class MainWindow : Window
             if (index < 0 || index >= currentExecutedSubscriptions.Count) return;
             var subscriptionId = currentExecutedSubscriptions[index].Id;
             subscriptionHistoryList.SelectedIndex = -1;
-            await OpenSubscriptionDetailsAsync(subscriptionId);
+            await OpenSubscriptionDetailsSafelyAsync(subscriptionId);
         };
         return new TabItem
         {
