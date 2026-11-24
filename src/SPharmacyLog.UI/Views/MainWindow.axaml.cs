@@ -3298,27 +3298,119 @@ public partial class MainWindow : Window
             // Details are opened from several async UI handlers. Never allow an
             // unexpected data/UI exception to escape onto Avalonia's dispatcher.
             var message = ex.GetBaseException().Message;
-            var close = new Button { Content = Tr.Loc.TranslateText("Close"), MinWidth = 90 };
+            var close = new Button
+            {
+                Content = Tr.Loc.TranslateText("Close"),
+                MinWidth = 110,
+                MinHeight = 38,
+                HorizontalAlignment = HorizontalAlignment.Right
+            };
             var errorDialog = new Window
             {
                 Title = Tr.Loc.TranslateText("Unable to open prescription details"),
-                Width = 540,
-                Height = 250,
-                MinWidth = 440,
+                Width = 560,
+                MinWidth = 460,
+                SizeToContent = SizeToContent.Height,
+                CanResize = false,
                 WindowStartupLocation = WindowStartupLocation.CenterOwner,
-                Content = new StackPanel
+                Background = new SolidColorBrush(Color.Parse("#101923")),
+                Content = new Border
                 {
-                    Margin = new Thickness(18),
-                    Spacing = 14,
-                    Children =
+                    Background = new SolidColorBrush(Color.Parse("#172635")),
+                    BorderBrush = new SolidColorBrush(Color.Parse("#34495E")),
+                    BorderThickness = new Thickness(1),
+                    CornerRadius = new CornerRadius(14),
+                    Padding = new Thickness(22),
+                    Margin = new Thickness(12),
+                    Child = new StackPanel
                     {
-                        new TextBlock
+                        Spacing = 15,
+                        Children =
                         {
-                            Text = Tr.Loc.TranslateText("The prescription details could not be opened. The application is still running. Please report this error."),
-                            TextWrapping = TextWrapping.Wrap
-                        },
-                        new TextBlock { Text = message, TextWrapping = TextWrapping.Wrap },
-                        close
+                            new StackPanel
+                            {
+                                Orientation = Orientation.Horizontal,
+                                Spacing = 12,
+                                Children =
+                                {
+                                    new Border
+                                    {
+                                        Width = 42,
+                                        Height = 42,
+                                        CornerRadius = new CornerRadius(21),
+                                        Background = new SolidColorBrush(Color.Parse("#553B24")),
+                                        Child = new TextBlock
+                                        {
+                                            Text = "!",
+                                            FontSize = 25,
+                                            FontWeight = FontWeight.Bold,
+                                            Foreground = new SolidColorBrush(Color.Parse("#FFCA7A")),
+                                            HorizontalAlignment = HorizontalAlignment.Center,
+                                            VerticalAlignment = VerticalAlignment.Center
+                                        }
+                                    },
+                                    new StackPanel
+                                    {
+                                        VerticalAlignment = VerticalAlignment.Center,
+                                        Spacing = 3,
+                                        Children =
+                                        {
+                                            new TextBlock
+                                            {
+                                                Text = Tr.Loc.TranslateText("Something went wrong"),
+                                                FontSize = 19,
+                                                FontWeight = FontWeight.Bold,
+                                                Foreground = Brushes.White
+                                            },
+                                            new TextBlock
+                                            {
+                                                Text = Tr.Loc.TranslateText("The prescription details could not be opened."),
+                                                FontSize = 13,
+                                                Foreground = new SolidColorBrush(Color.Parse("#B8C7D5")),
+                                                TextWrapping = TextWrapping.Wrap
+                                            }
+                                        }
+                                    }
+                                }
+                            },
+                            new Border
+                            {
+                                Background = new SolidColorBrush(Color.Parse("#101923")),
+                                BorderBrush = new SolidColorBrush(Color.Parse("#34495E")),
+                                BorderThickness = new Thickness(1),
+                                CornerRadius = new CornerRadius(8),
+                                Padding = new Thickness(12),
+                                Child = new StackPanel
+                                {
+                                    Spacing = 5,
+                                    Children =
+                                    {
+                                        new TextBlock
+                                        {
+                                            Text = Tr.Loc.TranslateText("Technical details"),
+                                            FontSize = 11,
+                                            FontWeight = FontWeight.Bold,
+                                            Foreground = new SolidColorBrush(Color.Parse("#8FAFC7"))
+                                        },
+                                        new TextBlock
+                                        {
+                                            Text = message,
+                                            FontSize = 13,
+                                            Foreground = new SolidColorBrush(Color.Parse("#F0F4F8")),
+                                            TextWrapping = TextWrapping.Wrap
+                                        }
+                                    }
+                                }
+                            },
+                            new TextBlock
+                            {
+                                Text = Tr.Loc.TranslateText("The application is still running. You can close this message and continue working."),
+                                FontSize = 12,
+                                Foreground = new SolidColorBrush(Color.Parse("#AFC0D1")),
+                                TextWrapping = TextWrapping.Wrap
+                            },
+                            close
+                        }
                     }
                 }
             };
@@ -3335,7 +3427,13 @@ public partial class MainWindow : Window
         if (subscription?.Customer is null) return;
 
         var customer = subscription.Customer;
-        var barcodeBitmap = CreateSubscriptionBarcodeBitmap(subscription.Title);
+        // A legacy prescription may have an empty title. ZXing rejects empty
+        // DataMatrix content, so keep the details popup usable without a barcode.
+        var hasPrescriptionNumber = !string.IsNullOrWhiteSpace(subscription.Title);
+        var prescriptionNumber = hasPrescriptionNumber ? subscription.Title.Trim() : "—";
+        var barcodeBitmap = hasPrescriptionNumber
+            ? CreateSubscriptionBarcodeBitmap(prescriptionNumber)
+            : null;
         var statusSelector = CreateSubscriptionStatusSelector(subscription.Status);
         var muted = new SolidColorBrush(Color.Parse("#AFC0D1"));
         var panelBrush = new SolidColorBrush(Color.Parse("#1B2836"));
@@ -3403,7 +3501,7 @@ public partial class MainWindow : Window
         });
         heroInfo.Children.Add(new TextBlock
         {
-            Text = subscription.Title,
+            Text = prescriptionNumber,
             FontSize = 30,
             FontWeight = FontWeight.Bold,
             Foreground = Brushes.White,
@@ -3503,17 +3601,41 @@ public partial class MainWindow : Window
 
         var barcodeInfo = new StackPanel { Spacing = 8, HorizontalAlignment = HorizontalAlignment.Center };
         barcodeInfo.Children.Add(SectionTitle("Scan subscription"));
-        barcodeInfo.Children.Add(new Image
+        if (barcodeBitmap is not null)
         {
-            Source = barcodeBitmap,
-            Width = 170,
-            Height = 140,
-            Stretch = Stretch.Uniform,
-            HorizontalAlignment = HorizontalAlignment.Center
-        });
+            barcodeInfo.Children.Add(new Image
+            {
+                Source = barcodeBitmap,
+                Width = 170,
+                Height = 140,
+                Stretch = Stretch.Uniform,
+                HorizontalAlignment = HorizontalAlignment.Center
+            });
+        }
+        else
+        {
+            barcodeInfo.Children.Add(new Border
+            {
+                Width = 170,
+                Height = 140,
+                CornerRadius = new CornerRadius(10),
+                Background = new SolidColorBrush(Color.Parse("#243748")),
+                Child = new TextBlock
+                {
+                    Text = Tr.Loc.TranslateText("No prescription number available"),
+                    FontSize = 12,
+                    Foreground = muted,
+                    TextWrapping = TextWrapping.Wrap,
+                    TextAlignment = TextAlignment.Center,
+                    HorizontalAlignment = HorizontalAlignment.Center,
+                    VerticalAlignment = VerticalAlignment.Center,
+                    Margin = new Thickness(12)
+                }
+            });
+        }
         barcodeInfo.Children.Add(new TextBlock
         {
-            Text = subscription.Title,
+            Text = prescriptionNumber,
             FontSize = 13,
             FontWeight = FontWeight.Bold,
             HorizontalAlignment = HorizontalAlignment.Center
