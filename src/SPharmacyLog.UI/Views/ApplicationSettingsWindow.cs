@@ -12,7 +12,8 @@ public sealed class ApplicationSettingsWindow : UserControl
 {
     public event Action? SettingsSaved;
     private readonly TextBlock saveStatus = new() { Foreground = Brushes.LightGray };
-    private readonly CheckBox showOfficialHolidays;\n    private readonly TextBlock transferStatus = new() { Foreground = Brushes.LightGray, TextWrapping = TextWrapping.Wrap };
+    private readonly CheckBox showOfficialHolidays;
+    private readonly TextBlock transferStatus = new() { Foreground = Brushes.LightGray, TextWrapping = TextWrapping.Wrap };
 
     public ApplicationSettingsWindow()
     {
