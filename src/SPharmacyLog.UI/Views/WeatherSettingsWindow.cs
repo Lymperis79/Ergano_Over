@@ -6,19 +6,15 @@ using SPharmacyLog.UI.Services;
 
 namespace SPharmacyLog.UI.Views;
 
-public sealed class WeatherSettingsWindow : Window
+public sealed class WeatherSettingsWindow : UserControl
 {
+    public event Action? SettingsSaved;
     private readonly TextBox location;
     private readonly CheckBox showLocation, temperature, condition, feelsLike, humidity, wind;
 
     public WeatherSettingsWindow()
     {
         var settings = WeatherSettingsService.Load();
-        Title = "Weather settings";
-        Width = 460;
-        Height = 520;
-        MinWidth = 420;
-        WindowStartupLocation = WindowStartupLocation.CenterOwner;
         Background = new SolidColorBrush(Color.Parse("#202733"));
 
         location = new TextBox { Text = settings.Location, PlaceholderText = "City, country or latitude, longitude", MinHeight = 38 };
@@ -30,7 +26,6 @@ public sealed class WeatherSettingsWindow : Window
         wind = Check("Show wind speed", settings.ShowWind);
 
         var save = new Button { Content = "Save", Classes = { "accent" }, MinWidth = 100 };
-        var cancel = new Button { Content = "Cancel", MinWidth = 100 };
         save.Click += (_, _) =>
         {
             WeatherSettingsService.Save(new WeatherSettings
@@ -43,9 +38,8 @@ public sealed class WeatherSettingsWindow : Window
                 ShowHumidity = humidity.IsChecked == true,
                 ShowWind = wind.IsChecked == true
             });
-            Close(true);
+            SettingsSaved?.Invoke();
         };
-        cancel.Click += (_, _) => Close(false);
 
         var content = new StackPanel { Margin = new Thickness(22), Spacing = 12 };
         content.Children.Add(new TextBlock { Text = "Weather display", FontSize = 21, FontWeight = FontWeight.SemiBold });
@@ -54,7 +48,7 @@ public sealed class WeatherSettingsWindow : Window
         content.Children.Add(new TextBlock { Text = "Fields shown on the dashboard", FontWeight = FontWeight.SemiBold, Margin = new Thickness(0, 8, 0, 0) });
         foreach (var check in new[] { showLocation, temperature, condition, feelsLike, humidity, wind }) content.Children.Add(check);
         var buttons = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right, Spacing = 8, Margin = new Thickness(0, 10, 0, 0) };
-        buttons.Children.Add(cancel); buttons.Children.Add(save);
+        buttons.Children.Add(save);
         content.Children.Add(buttons);
         Content = content;
     }
