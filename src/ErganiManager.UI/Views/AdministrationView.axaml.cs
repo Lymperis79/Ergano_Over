@@ -110,7 +110,7 @@ public partial class AdministrationView : UserControl
         var dialog = new Window { Title = title, Width = 430, Height = 190, WindowStartupLocation = WindowStartupLocation.CenterOwner, CanResize = false };
         ok.Click += (_, _) => dialog.Close(input.Text);
         cancel.Click += (_, _) => dialog.Close(null);
-        dialog.Content = new StackPanel { Margin = new Thickness(20), Spacing = 12, Children = { new TextBlock { Text = label }, input, new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right, Spacing = 8, Children = { cancel, ok } } } };
+        dialog.Content = new StackPanel { Margin = new Thickness(20), Spacing = 12, Children = { new TextBlock { Text = label }, input, new StackPanel { Orientation = Avalonia.Layout.Orientation.Horizontal, HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Right, Spacing = 8, Children = { cancel, ok } } } };
         return await dialog.ShowDialog<string?>(owner);
     }
 
