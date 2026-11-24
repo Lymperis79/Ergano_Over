@@ -18,7 +18,7 @@ public static class InstallationSettingsTransfer
         ValidatePassword(password);
         var entries = Files.Where(f => File.Exists(Path.Combine(Folder, f)))
             .Select(f => new Entry(f, File.ReadAllText(Path.Combine(Folder, f)))).ToList();
-        entries.Add(new Entry("customer-sync-settings.json", JsonSerializer.Serialize(CustomerDatabaseSyncService.LoadSettings())));
+        entries.Add(new Entry("customer-sync-settings.json", JsonSerializer.Serialize(CustomerDatabaseSyncService.LoadSettings())));\n        var brandingPath = Path.Combine(AppContext.BaseDirectory, "application-settings.json");\n        if (File.Exists(brandingPath)) entries.Add(new Entry("application-settings.json", File.ReadAllText(brandingPath)));
         string? logoName = null, logoBase64 = null;
         var companyPath = Path.Combine(Folder, "company.json");
         if (File.Exists(companyPath))
@@ -46,13 +46,13 @@ public static class InstallationSettingsTransfer
         if (bundle.Application != "SPharmacyLog" || bundle.Version != 1)
             throw new InvalidDataException("This is not a compatible PharmaPoint settings package.");
         foreach (var entry in bundle.Entries)
-            if (!(Files.Contains(entry.Name, StringComparer.Ordinal) || entry.Name == "customer-sync-settings.json") || Path.GetFileName(entry.Name) != entry.Name)
+            if (!(Files.Contains(entry.Name, StringComparer.Ordinal) || entry.Name is "customer-sync-settings.json" or "application-settings.json") || Path.GetFileName(entry.Name) != entry.Name)
                 throw new InvalidDataException("Package contains an unsupported configuration file.");
         Directory.CreateDirectory(Folder);
         var names = new List<string>();
         foreach (var entry in bundle.Entries)
         {
-            if (entry.Name == "customer-sync-settings.json")
+            if (entry.Name == "application-settings.json")\n            {\n                await File.WriteAllTextAsync(Path.Combine(AppContext.BaseDirectory, entry.Name), entry.Content);\n                names.Add("application branding");\n                continue;\n            }\n            if (entry.Name == "customer-sync-settings.json")
             {
                 CustomerDatabaseSyncService.SaveSettings(JsonSerializer.Deserialize<CustomerDatabaseSyncSettings>(entry.Content) ?? new());
                 names.Add("customer database synchronization settings");
