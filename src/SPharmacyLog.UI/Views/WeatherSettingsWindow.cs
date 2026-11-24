@@ -9,6 +9,7 @@ namespace SPharmacyLog.UI.Views;
 public sealed class WeatherSettingsWindow : UserControl
 {
     public event Action? SettingsSaved;
+    private readonly TextBlock saveStatus = new() { Foreground = Brushes.LightGray };
     private readonly TextBox location;
     private readonly CheckBox showLocation, temperature, condition, feelsLike, humidity, wind;
 
@@ -38,6 +39,8 @@ public sealed class WeatherSettingsWindow : UserControl
                 ShowHumidity = humidity.IsChecked == true,
                 ShowWind = wind.IsChecked == true
             });
+            saveStatus.Text = SPharmacyLog.UI.Localization.Tr.Loc.TranslateText("Settings saved.");
+            saveStatus.Text = SPharmacyLog.UI.Localization.Tr.Loc.TranslateText("Settings saved.");
             SettingsSaved?.Invoke();
         };
 
@@ -50,6 +53,7 @@ public sealed class WeatherSettingsWindow : UserControl
         var buttons = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right, Spacing = 8, Margin = new Thickness(0, 10, 0, 0) };
         buttons.Children.Add(save);
         content.Children.Add(buttons);
+        content.Children.Add(saveStatus);
         Content = content;
     }
 
