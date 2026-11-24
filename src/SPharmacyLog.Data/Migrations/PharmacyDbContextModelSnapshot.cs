@@ -158,8 +158,7 @@ public sealed class PharmacyDbContextModelSnapshot : ModelSnapshot
             entity.Property(subscription => subscription.Title).IsRequired();
             entity.Property(subscription => subscription.Barcode);
             entity.Property(subscription => subscription.StartDate);
-            entity.Property(subscription => subscription.NextDueDate);
-            entity.Property(subscription => subscription.ExpiryDate);
+            entity.Property(subscription => subscription.ExpiryDate).IsRequired();
             entity.Property(subscription => subscription.Frequency).IsRequired();
             entity.Property(subscription => subscription.Status).HasConversion<int>();
             entity.Property(subscription => subscription.Notes);
