@@ -53,11 +53,18 @@ public sealed class MedicineManagementWindow : UserControl
             var tb = new TextBlock { Text = Tr.Loc.TranslateText(labels[col]), FontWeight = FontWeight.Bold, Margin = new Thickness(9,8), VerticalAlignment = VerticalAlignment.Center };
             Grid.SetColumn(tb,col); header.Children.Add(tb);
         }
-        var toolbar = new StackPanel { Orientation=Orientation.Horizontal, Spacing=8, Children={search,searchButton,newButton,import,export,refresh,updateCatalogue} };
+        var toolbar = new StackPanel { Orientation=Orientation.Horizontal, Spacing=8, Children={search,searchButton,newButton,import,export,refresh} };
         var pager = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Right, Children = { previousPage, pageInfo, nextPage } };
         var listArea = new Grid { RowDefinitions = new RowDefinitions("Auto,*,Auto"), RowSpacing = 8, Children = { header, new ScrollViewer { Content=rows, VerticalScrollBarVisibility=Avalonia.Controls.Primitives.ScrollBarVisibility.Auto, HorizontalScrollBarVisibility=Avalonia.Controls.Primitives.ScrollBarVisibility.Auto }, pager } };
         Grid.SetRow(listArea.Children[1], 1); Grid.SetRow(listArea.Children[2], 2);
-        var content = new Grid { Margin = new Thickness(18), RowDefinitions = new RowDefinitions("Auto,Auto,Auto,*"), RowSpacing=10, Children={title,toolbar,status,listArea} };
+        var pageHeader = new Grid
+        {
+            ColumnDefinitions = new ColumnDefinitions("*,Auto"),
+            ColumnSpacing = 12,
+            Children = { title, updateCatalogue }
+        };
+        Grid.SetColumn(updateCatalogue, 1);
+        var content = new Grid { Margin = new Thickness(18), RowDefinitions = new RowDefinitions("Auto,Auto,Auto,*"), RowSpacing=10, Children={pageHeader,toolbar,status,listArea} };
         for (int n=0;n<content.Children.Count;n++) Grid.SetRow(content.Children[n],n);
         Content=content;
         _=LoadAsync();
@@ -91,8 +98,8 @@ public sealed class MedicineManagementWindow : UserControl
             status.Text = Tr.Loc.TranslateText("Downloading and importing the public medicine registry…");
             var result = await MedicineCatalogImportService.UpdateFromPublicRegistryAsync(
                 message => status.Text = message);
-            status.Text = $"{Tr.Loc.TranslateText("Catalogue update completed")}: {result.RowsRead:N0} rows; {result.MedicinesAdded:N0} new medicines; {result.BarcodesAdded:N0} barcode mappings; {result.RowsWithoutBarcode:N0} rows without a usable barcode.";
             await LoadAsync(resetPage: true);
+            status.Text = $"{Tr.Loc.TranslateText("Catalogue update completed")}: {result.RowsRead:N0} rows; {result.MedicinesAdded:N0} new medicines; {result.BarcodesAdded:N0} barcode mappings; {result.RowsWithoutBarcode:N0} rows without a usable barcode.";
         }
         catch (Exception ex)
         {
