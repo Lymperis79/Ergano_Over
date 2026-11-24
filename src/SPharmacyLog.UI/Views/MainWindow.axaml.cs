@@ -112,6 +112,7 @@ public partial class MainWindow : Window
         DataContext = viewModel;
         UserLabel.Text = viewModel.UserDisplay;
         ApplyCompanyBranding();
+        if (FooterBrandingLabel is not null) FooterBrandingLabel.Text = $"{ApplicationBranding.Name}  •  Local pharmacy operations";
         Tr.Loc.LanguageChanged += (_, _) =>
         {
             BuildNavigation();
@@ -673,7 +674,7 @@ public partial class MainWindow : Window
     private void ApplyCompanyBranding()
     {
         var settings = CompanySettingsService.Load();
-        CompanyNameLabel.Text = string.IsNullOrWhiteSpace(settings.Name) ? "S Pharmacy Log" : settings.Name;
+        CompanyNameLabel.Text = string.IsNullOrWhiteSpace(settings.Name) ? ApplicationBranding.Name : settings.Name;
         CompanyLogo.Source = null;
         CompanyLogo.IsVisible = false;
         CompanyDefaultIcon.IsVisible = true;
@@ -754,7 +755,7 @@ public partial class MainWindow : Window
     private void ApplyTranslations()
     {
         isApplyingTranslations = true;
-        Title = Tr.Loc["App.Title"];
+        Title = ApplicationBranding.Name;
         if (languageBox is not null) languageBox.SelectedIndex = Tr.Loc.CurrentLanguage == AppLanguage.Greek ? 1 : 0;
 
         // Translate the live visual tree in place. This keeps the current page,
