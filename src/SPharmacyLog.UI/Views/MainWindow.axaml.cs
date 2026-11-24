@@ -4868,20 +4868,18 @@ public partial class MainWindow : Window
         await window.ShowDialog(this);
     }
 
-    private async void OpenMedicineManagement()
+    private void OpenMedicineManagement()
     {
         if (!CanAccessMenu(MenuMedicine)) { ShowNoMenuAccess(); return; }
         showingExpiryCalendar = false;
-        var window = new MedicineManagementWindow();
-        await window.ShowDialog(this);
+        pageHost.Content = new MedicineManagementWindow();
     }
 
-    private async void OpenMedicineStock()
+    private void OpenMedicineStock()
     {
         if (!CanAccessMenu(MenuStock)) { ShowNoMenuAccess(); return; }
         showingExpiryCalendar = false;
-        var window = new MedicineStockWindow(viewModel.User.Username);
-        await window.ShowDialog(this);
+        pageHost.Content = new MedicineStockWindow(viewModel.User.Username);
     }
 
     private void ShowPlaceholder(string title)
