@@ -41,6 +41,7 @@ public sealed class ReportsWindow : UserControl
     private readonly StackPanel customerFilterPanel = new() { Spacing = 4 };
     private readonly StackPanel dateFilterPanel = new() { Spacing = 4 };
     private readonly Button exportButton = new() { Content = Tr.Loc.TranslateText("Export to Excel"), MinWidth = 150, MinHeight = 38, IsEnabled = false };
+    private bool initialReportLoadStarted;
 
     public ReportsWindow()
     {
@@ -185,14 +186,18 @@ public sealed class ReportsWindow : UserControl
             Children = { reportHeader, filters, actionRow, summaryCard, resultsCard }
         };
         Content = new ScrollViewer { Content = content };
-        Opened += async (_, _) =>
-        {
-            await LoadCustomersAsync();
-            UpdateFilterVisibility();
-            await GenerateReportAsync();
-        };
     }
 
+
+    protected override async void OnAttachedToVisualTree(Avalonia.VisualTreeAttachmentEventArgs e)
+    {
+        base.OnAttachedToVisualTree(e);
+        if (initialReportLoadStarted) return;
+        initialReportLoadStarted = true;
+        await LoadCustomersAsync();
+        UpdateFilterVisibility();
+        await GenerateReportAsync();
+    }
 
     private async Task ExportReportAsync()
     {
