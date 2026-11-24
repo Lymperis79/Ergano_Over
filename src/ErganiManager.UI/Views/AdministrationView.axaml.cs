@@ -79,7 +79,7 @@ public partial class AdministrationView : UserControl
         if (string.IsNullOrWhiteSpace(password)) return;
         try
         {
-            var imported = await Services.InstallationSettingsTransfer.ImportAsync(path, password);
+            var imported = await ErganiManager.UI.Services.InstallationSettingsTransfer.ImportAsync(path, password);
             SettingsTransferStatus.Text = "Imported: " + string.Join(", ", imported) + ". Restart Ergani Manager to apply the configuration.";
         }
         catch (Exception ex) { SettingsTransferStatus.Text = "Import failed: " + ex.Message; }
