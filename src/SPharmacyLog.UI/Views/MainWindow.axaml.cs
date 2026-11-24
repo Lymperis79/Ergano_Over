@@ -405,7 +405,7 @@ public partial class MainWindow : Window
             {
                 list.Children.Add(new TextBlock
                 {
-                    Text = Tr.Loc.TranslateText("No subscriptions found."),
+                    Text = Tr.Loc.TranslateText("No prescriptions found."),
                     Margin = new Thickness(12),
                     Foreground = Brushes.LightGray
                 });
@@ -496,7 +496,7 @@ public partial class MainWindow : Window
         var activeValue = new TextBlock { Text = "—", FontSize = 30, FontWeight = FontWeight.Bold };
         var dueValue = new TextBlock { Text = "—", FontSize = 30, FontWeight = FontWeight.Bold };
         var overdueValue = new TextBlock { Text = "—", FontSize = 30, FontWeight = FontWeight.Bold };
-        AddGroupHeader("Subscriptions", "📋", "#D39A35");
+        AddGroupHeader("Prescriptions", "📋", "#D39A35");
         var subscriptionCards = new Grid { ColumnDefinitions = CreateColumns(GridLength.Star, GridLength.Star, GridLength.Star) };
         AddCard(subscriptionCards, "Active subscriptions", activeValue, 0, "#397DA5", () => _ = ShowSubscriptionExpiryListAsync(null));
         AddCard(subscriptionCards, "Subscriptions due today", dueValue, 1, "#D39A35", () => _ = ShowSubscriptionExpiryListAsync(true));
@@ -2509,8 +2509,8 @@ public partial class MainWindow : Window
                         new TextBlock { Text = "CUSTOMER MEDICINE & PRESCRIPTION HISTORY", FontSize = 18, FontWeight = FontWeight.Bold },
                         new TextBlock { Text = "All borrowing records (including returned items) and prescriptions, ordered by date.", TextWrapping = TextWrapping.Wrap, Foreground = Brushes.LightGray },
                         customerHistoryList,
-                        new TextBlock { Text = "EXECUTED SUBSCRIPTIONS HISTORY", FontSize = 16, FontWeight = FontWeight.Bold, Margin = new Thickness(0, 8, 0, 0) },
-                        new TextBlock { Text = "Executed subscriptions are kept here and can be opened to review their audit history.", TextWrapping = TextWrapping.Wrap, Foreground = Brushes.LightGray },
+                        new TextBlock { Text = "PRESCRIPTION HISTORY", FontSize = 16, FontWeight = FontWeight.Bold, Margin = new Thickness(0, 8, 0, 0) },
+                        new TextBlock { Text = "Prescription records are kept here and can be opened to review their history.", TextWrapping = TextWrapping.Wrap, Foreground = Brushes.LightGray },
                         subscriptionHistoryList
                     }
                 }
@@ -2529,26 +2529,26 @@ public partial class MainWindow : Window
 
             await OpenSubscriptionEditorAsync(currentSubscriptions[index]);
         };
-        var add = new Button { Content = "＋ Add subscription", Classes = { "accent" }, MinWidth = 145, MinHeight = 38 };
+        var add = new Button { Content = "＋ Add prescription", Classes = { "accent" }, MinWidth = 145, MinHeight = 38 };
         add.Click += async (_, _) => await OpenSubscriptionEditorAsync(null);
         var view = new Button { Content = "View details", MinWidth = 125, MinHeight = 38 };
         view.Click += async (_, _) =>
         {
             if (subscriptionList.SelectedIndex < 0 || subscriptionList.SelectedIndex >= currentSubscriptions.Count)
-            { SetActivityStatus("Select a subscription first."); return; }
+            { SetActivityStatus("Select a prescription first."); return; }
             await OpenSubscriptionDetailsAsync(currentSubscriptions[subscriptionList.SelectedIndex].Id);
         };
         var edit = new Button { Content = "Edit selected", MinWidth = 125, MinHeight = 38 };
         edit.Click += async (_, _) =>
         {
             if (subscriptionList.SelectedIndex < 0 || subscriptionList.SelectedIndex >= currentSubscriptions.Count)
-            { SetActivityStatus("Select a subscription to edit."); return; }
+            { SetActivityStatus("Select a prescription to edit."); return; }
             await OpenSubscriptionEditorAsync(currentSubscriptions[subscriptionList.SelectedIndex]);
         };
         var actions = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, Children = { add, view, edit } };
-        return new TabItem { Header = "Subscriptions", Content = new StackPanel { Spacing = 10, Margin = new Thickness(8), Children =
+        return new TabItem { Header = "Prescriptions", Content = new StackPanel { Spacing = 10, Margin = new Thickness(8), Children =
         {
-            new TextBlock { Text = "CUSTOMER SUBSCRIPTIONS", FontSize = 18, FontWeight = FontWeight.Bold },
+            new TextBlock { Text = "CUSTOMER PRESCRIPTIONS", FontSize = 18, FontWeight = FontWeight.Bold },
             actions, subscriptionList
         } } };
     }
@@ -3330,7 +3330,7 @@ public partial class MainWindow : Window
         var heroInfo = new StackPanel { Spacing = 7, VerticalAlignment = VerticalAlignment.Center };
         heroInfo.Children.Add(new TextBlock
         {
-            Text = Tr.Loc.TranslateText("SUBSCRIPTION"),
+            Text = Tr.Loc.TranslateText("PRESCRIPTION"),
             FontSize = 11,
             FontWeight = FontWeight.Bold,
             Foreground = accent
@@ -3359,7 +3359,7 @@ public partial class MainWindow : Window
         };
         statusControl.Children.Add(new TextBlock
         {
-            Text = Tr.Loc.TranslateText("SUBSCRIPTION STATUS"),
+            Text = Tr.Loc.TranslateText("PRESCRIPTION STATUS"),
             FontSize = 10,
             FontWeight = FontWeight.Bold,
             Foreground = new SolidColorBrush(Color.Parse("#C5D8E8"))
@@ -3489,7 +3489,7 @@ public partial class MainWindow : Window
         };
         var editSubscription = new Button
         {
-            Content = Tr.Loc.TranslateText("Edit subscription"),
+            Content = Tr.Loc.TranslateText("Edit prescription"),
             Classes = { "accent" },
             MinWidth = 150,
             IsVisible = CanAccessMenu(MenuSubscriptions) && CanAccessMenu(MenuCustomers)
@@ -3521,7 +3521,7 @@ public partial class MainWindow : Window
         Grid.SetRow(actions, 1);
         var popup = new Window
         {
-            Title = Tr.Loc.TranslateText("Subscription details"),
+            Title = Tr.Loc.TranslateText("Prescription details"),
             Width = 600,
             Height = 685,
             MinWidth = 580,
@@ -3740,7 +3740,7 @@ public partial class MainWindow : Window
             if (isEdit)
             {
                 record = await db.Subscriptions.FirstOrDefaultAsync(x => x.Id == existing!.Id && x.CustomerId == selectedCustomerId.Value);
-                if (record is null) { status.Text = "The subscription could not be found."; return; }
+                if (record is null) { status.Text = "The prescription could not be found."; return; }
                 previousStatus = record.Status;
             }
             else
@@ -3783,7 +3783,7 @@ public partial class MainWindow : Window
             await db.SaveChangesAsync();
             await transaction.CommitAsync();
             dialog.Close();
-            SetActivityStatus(isEdit ? "Subscription updated." : "Subscription added.");
+            SetActivityStatus(isEdit ? "Prescription updated." : "Prescription added.");
             await RefreshCustomerWorkspaceAsync();
         };
         await dialog.ShowDialog(this);
@@ -4084,7 +4084,7 @@ public partial class MainWindow : Window
         DateTime.TryParse(ActivityValue("SubscriptionStart"), out var start);
         await using var db = new PharmacyDbContext(PharmacyDb.Options());
         db.Subscriptions.Add(new Subscription { CustomerId = selectedCustomerId.Value, Title = ActivityValue("SubscriptionTitle"), StartDate = start == default ? DateTime.Today : start, ExpiryDate = expiry, Frequency = string.IsNullOrWhiteSpace(ActivityValue("SubscriptionFrequency")) ? "None" : ActivityValue("SubscriptionFrequency"), Notes = ActivityValue("SubscriptionNotes") });
-        await db.SaveChangesAsync(); SetActivityStatus("Subscription added."); await RefreshCustomerWorkspaceAsync();
+        await db.SaveChangesAsync(); SetActivityStatus("Prescription added."); await RefreshCustomerWorkspaceAsync();
     }
 
     private async Task AddPaymentAsync()
