@@ -3647,33 +3647,38 @@ public partial class MainWindow : Window
     {
         if (!CanAccessMenu(MenuCustomers)) return;
 
+        // Navigate by the stable internal CustomerId. Do not depend on AMKA (or
+        // any other customer-entered identifier) to locate an existing customer.
+        await using var db = new PharmacyDbContext(PharmacyDb.Options());
+        var customer = await db.Customers.AsNoTracking()
+            .FirstOrDefaultAsync(item => item.Id == customerId);
+        if (customer is null)
+        {
+            SetActivityStatus(Tr.Loc.TranslateText("The customer linked to this prescription could not be found."));
+            return;
+        }
+
         skipNextCustomerSearch = true;
         ShowCustomers();
         activeNavigationKey = MenuCustomers;
         UpdateActiveNavigationVisual();
 
-        // Subscription navigation must also find inactive customers. Suppress the
-        // checkbox event so the customer list is refreshed only once below.
+        // Keep the normal customer list available, including inactive customers.
+        // The selected customer is inserted explicitly if it falls outside the
+        // normal 250-row search result; CustomerId remains an internal value only.
         suppressCustomerFilterChanged = true;
         showInactiveCustomersCheckBox.IsChecked = true;
         suppressCustomerFilterChanged = false;
         await SearchCustomersAsync();
 
         var customerItem = customerList.Items.OfType<CustomerListItem>()
-            .FirstOrDefault(item => item.Id == customerId);
+            .FirstOrDefault(item => item.Id == customer.Id);
 
-        // SearchCustomersAsync intentionally limits normal search results to 250.
-        // A direct navigation by customer ID must not fail because of that limit.
         if (customerItem is null)
         {
-            await using var db = new PharmacyDbContext(PharmacyDb.Options());
-            var customer = await db.Customers.AsNoTracking()
-                .FirstOrDefaultAsync(item => item.Id == customerId);
-            if (customer is null) return;
-
             var displayName = string.IsNullOrWhiteSpace(customer.FullName)
                 ? $"{customer.FirstName} {customer.Surname}".Trim()
-                : customer.FullName;
+                : customer.FullName.Trim();
             customerItem = new CustomerListItem(customer.Id,
                 $"{(string.IsNullOrWhiteSpace(customer.Amka) ? "—" : customer.Amka)} | {displayName}");
 
@@ -3686,16 +3691,16 @@ public partial class MainWindow : Window
         customerList.SelectedItem = customerItem;
         suppressCustomerSelectionChanged = false;
 
-        await LoadCustomerAsync(customerId);
+        await LoadCustomerAsync(customer.Id);
         await RefreshCustomerWorkspaceAsync();
 
         if (editSubscription is not null && CanAccessMenu(MenuSubscriptions))
         {
-            var subscriptionTabIndex = customerTabs.Items.OfType<TabItem>()
+            var prescriptionTabIndex = customerTabs.Items.OfType<TabItem>()
                 .Select((tab, index) => new { tab, index })
                 .FirstOrDefault(item => item.tab.Header?.ToString() is "Subscriptions" or "Prescriptions" or "Συνδρομές" or "Συνταγές")?.index ?? -1;
-            if (subscriptionTabIndex >= 0)
-                customerTabs.SelectedIndex = subscriptionTabIndex;
+            if (prescriptionTabIndex >= 0)
+                customerTabs.SelectedIndex = prescriptionTabIndex;
             await OpenSubscriptionEditorAsync(editSubscription);
         }
         else
