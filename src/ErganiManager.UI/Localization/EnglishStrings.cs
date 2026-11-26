@@ -235,6 +235,10 @@ public static class EnglishStrings
 
         // ── Employees ─────────────────────────────────────────
         [L.Employees] = "Employees",
+        [L.SortEmployeesBy] = "Sort employees by:",
+        [L.SortSurnameAscending] = "Surname (A–Z)",
+        [L.SortFirstNameAscending] = "First name (A–Z)",
+        [L.SortAfmAscending] = "AFM (ascending)",
         [L.FirstName] = "First Name",
         [L.LastName] = "Last Name",
         [L.Amka] = "Social Security Number (AMKA)",
