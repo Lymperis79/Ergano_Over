@@ -22,6 +22,29 @@ public partial class EmployeesViewModel : ViewModelBase, IAdminSectionViewModel
 
     public ObservableCollection<BranchDto> AvailableBranches { get; } = new();
 
+    public IReadOnlyList<string> SortByOptions { get; } = new[] { "Surname", "Name", "AFM" };
+
+    [ObservableProperty]
+    private string _sortBy = "Surname";
+
+    partial void OnSortByChanged(string value) => ApplyEmployeeSort();
+
+    private void ApplyEmployeeSort()
+    {
+        var sorted = SortBy switch
+        {
+            "Name" => Employees.OrderBy(e => e.FirstName, StringComparer.CurrentCultureIgnoreCase)
+                               .ThenBy(e => e.LastName, StringComparer.CurrentCultureIgnoreCase).ToList(),
+            "AFM" => Employees.OrderBy(e => e.TaxId, StringComparer.Ordinal).ToList(),
+            _ => Employees.OrderBy(e => e.LastName, StringComparer.CurrentCultureIgnoreCase)
+                          .ThenBy(e => e.FirstName, StringComparer.CurrentCultureIgnoreCase).ToList()
+        };
+
+        Employees.Clear();
+        foreach (var employee in sorted)
+            Employees.Add(employee);
+    }
+
     [ObservableProperty]
     private bool _isEditing;
 
@@ -226,6 +249,8 @@ public partial class EmployeesViewModel : ViewModelBase, IAdminSectionViewModel
                     {
                         Employees.Add(employee);
                     }
+
+                    ApplyEmployeeSort();
                 });
 
             StatusMessage =
