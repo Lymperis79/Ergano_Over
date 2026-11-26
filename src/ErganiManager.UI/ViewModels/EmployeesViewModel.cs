@@ -22,10 +22,15 @@ public partial class EmployeesViewModel : ViewModelBase, IAdminSectionViewModel
 
     public ObservableCollection<BranchDto> AvailableBranches { get; } = new();
 
-    public IReadOnlyList<string> SortByOptions { get; } = new[] { "Surname", "Name", "AFM" };
+    public IReadOnlyList<string> SortByOptions { get; } = new[]
+    {
+        "Surname (A–Z)",
+        "First name (A–Z)",
+        "AFM (ascending)"
+    };
 
     [ObservableProperty]
-    private string _sortBy = "Surname";
+    private string _sortBy = "Surname (A–Z)";
 
     partial void OnSortByChanged(string value) => ApplyEmployeeSort();
 
@@ -33,9 +38,9 @@ public partial class EmployeesViewModel : ViewModelBase, IAdminSectionViewModel
     {
         var sorted = SortBy switch
         {
-            "Name" => Employees.OrderBy(e => e.FirstName, StringComparer.CurrentCultureIgnoreCase)
-                               .ThenBy(e => e.LastName, StringComparer.CurrentCultureIgnoreCase).ToList(),
-            "AFM" => Employees.OrderBy(e => e.TaxId, StringComparer.Ordinal).ToList(),
+            "First name (A–Z)" => Employees.OrderBy(e => e.FirstName, StringComparer.CurrentCultureIgnoreCase)
+                                           .ThenBy(e => e.LastName, StringComparer.CurrentCultureIgnoreCase).ToList(),
+            "AFM (ascending)" => Employees.OrderBy(e => e.TaxId, StringComparer.Ordinal).ToList(),
             _ => Employees.OrderBy(e => e.LastName, StringComparer.CurrentCultureIgnoreCase)
                           .ThenBy(e => e.FirstName, StringComparer.CurrentCultureIgnoreCase).ToList()
         };
