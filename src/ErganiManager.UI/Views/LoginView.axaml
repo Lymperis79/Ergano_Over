@@ -10,6 +10,7 @@
         CanResize="False"
         Background="{DynamicResource WindowBrush}">
 
+    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
     <Grid Margin="28">
         <Border Background="{DynamicResource CardBrush}"
                 BorderBrush="{DynamicResource LineBrush}"
@@ -63,5 +64,6 @@
             </StackPanel>
         </Border>
     </Grid>
+    </ScrollViewer>
 
 </Window>
