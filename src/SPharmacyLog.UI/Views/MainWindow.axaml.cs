@@ -5373,9 +5373,9 @@ public partial class MainWindow : Window
         var dialog = new Window
         {
             Title = warningTitle,
-            Width = 580,
+            Width = 600,
             Height = 270,
-            MinWidth = 540,
+            MinWidth = 560,
             CanResize = false,
             WindowStartupLocation = WindowStartupLocation.CenterOwner,
             Background = new SolidColorBrush(Color.Parse("#24191B"))
@@ -5387,7 +5387,7 @@ public partial class MainWindow : Window
             FontSize = 16,
             FontWeight = FontWeight.Bold,
             Foreground = new SolidColorBrush(Color.Parse("#FF6B6B")),
-            MaxWidth = 470,
+            MaxWidth = 420,
             TextWrapping = TextWrapping.Wrap
         };
         var explanation = new TextBlock
