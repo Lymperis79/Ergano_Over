@@ -8,14 +8,14 @@
         Width="480" Height="600"
         WindowStartupLocation="CenterScreen"
         CanResize="False"
-        Background="{DynamicResource WindowBrush}">
+        Background="#151922">
 
     <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
     <Grid Margin="28">
-        <Border Background="{DynamicResource CardBrush}"
-                BorderBrush="{DynamicResource LineBrush}"
+        <Border Background="#202733"
+                BorderBrush="#354152"
                 BorderThickness="1"
-                CornerRadius="14"
+                CornerRadius="12"
                 Padding="30"
                 VerticalAlignment="Center">
             <StackPanel VerticalAlignment="Center" HorizontalAlignment="Stretch" Spacing="14">
