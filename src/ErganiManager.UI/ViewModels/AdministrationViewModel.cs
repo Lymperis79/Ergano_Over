@@ -1360,7 +1360,6 @@ public partial class AdministrationViewModel : ViewModelBase, IAdminSectionViewM
     }
 
     [RelayCommand]
-    [RelayCommand]
     private void SelectAllOfficialHolidays()
     {
         foreach (var holiday in OfficialHolidays)
