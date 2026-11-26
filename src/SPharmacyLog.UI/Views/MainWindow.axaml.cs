@@ -1710,6 +1710,8 @@ public partial class MainWindow : Window
     private readonly Dictionary<string, int> customerHistoryBorrowingIds = new();
     private ListBox basketList = null!;
     private List<BorrowingRecord> currentBasket = new();
+    private Image basketBarcodeImage = null!;
+    private TextBlock basketBarcodeDetails = null!;
     private TextBlock borrowingSelectionDetails = null!;
     private Image borrowingBarcodeImage = null!;
     private BarcodeDisplayWindow? barcodePopupWindow;
@@ -1726,6 +1728,26 @@ public partial class MainWindow : Window
         if (!CanAccessMenu(MenuBasket)) { ShowNoMenuAccess(); return; }
         showingExpiryCalendar = false;
         basketList = new ListBox { MinHeight = 260 };
+        basketBarcodeImage = new Image
+        {
+            Width = 200, Height = 200, Stretch = Stretch.Uniform,
+            IsVisible = false, HorizontalAlignment = HorizontalAlignment.Left,
+            Margin = new Thickness(4)
+        };
+        basketBarcodeDetails = new TextBlock
+        {
+            TextWrapping = TextWrapping.Wrap, Margin = new Thickness(4),
+            IsVisible = false
+        };
+        basketList.SelectionChanged += (_, _) => ShowSelectedBasketBarcode();
+        basketBarcodeImage.PointerPressed += (_, e) =>
+        {
+            if (basketBarcodeImage.Source is not WriteableBitmap bitmap ||
+                basketList.SelectedIndex < 0 || basketList.SelectedIndex >= currentBasket.Count)
+                return;
+            e.Handled = true;
+            ShowBarcodePopup(currentBasket[basketList.SelectedIndex].MedicineName, bitmap);
+        };
         var status = new TextBlock { TextWrapping = TextWrapping.Wrap, Foreground = Brushes.LightGreen };
         var assign = new Button { Content = Tr.Loc.TranslateText("Assign selected item to customer"), MinHeight = 38, Classes = { "accent" } };
         assign.Click += async (_, _) =>
@@ -1802,7 +1824,10 @@ public partial class MainWindow : Window
             {
                 new TextBlock { Text = Tr.Loc.TranslateText("Basket"), FontSize = 24, FontWeight = FontWeight.Bold },
                 new TextBlock { Text = Tr.Loc.TranslateText("Items returned from customers and waiting to be assigned again."), TextWrapping = TextWrapping.Wrap, Foreground = Brushes.LightGray },
-                basketList, assign, status
+                basketList,
+                new TextBlock { Text = Tr.Loc.TranslateText("GS1 DataMatrix barcode"), FontWeight = FontWeight.SemiBold, Margin = new Thickness(4, 4, 0, 0) },
+                basketBarcodeImage, basketBarcodeDetails,
+                assign, status
             }
         };
         await RefreshBasketAsync();
@@ -1821,6 +1846,42 @@ public partial class MainWindow : Window
             $"{x.BorrowedAt:dd/MM/yyyy HH:mm} | {x.MedicineName} | Qty {x.Quantity}" +
             (x.SerializedPackScan is null ? string.Empty : $" | SN {x.SerializedPackScan.SerialNumber} | Exp {x.SerializedPackScan.ExpiryDate:dd/MM/yyyy}"))
             .ToList();
+        basketList.SelectedIndex = currentBasket.Count > 0 ? 0 : -1;
+        ShowSelectedBasketBarcode();
+    }
+
+    private void ShowSelectedBasketBarcode()
+    {
+        if (basketBarcodeImage is null || basketBarcodeDetails is null) return;
+        var index = basketList?.SelectedIndex ?? -1;
+        if (index < 0 || index >= currentBasket.Count || currentBasket[index].SerializedPackScan is not { } scan)
+        {
+            basketBarcodeImage.Source = null;
+            basketBarcodeImage.IsVisible = false;
+            basketBarcodeDetails.Text = index >= 0 && index < currentBasket.Count
+                ? Tr.Loc.TranslateText("This item has no saved GS1 barcode scan.")
+                : string.Empty;
+            basketBarcodeDetails.IsVisible = !string.IsNullOrWhiteSpace(basketBarcodeDetails.Text);
+            return;
+        }
+
+        basketBarcodeDetails.Text =
+            $"GTIN-14: {scan.Gtin14}\n" +
+            $"Serial number: {scan.SerialNumber}\n" +
+            $"Expiry date: {scan.ExpiryDate:dd/MM/yyyy}\n" +
+            $"Batch / lot: {scan.BatchLot}\n" +
+            $"EOF / NTIN barcode: {scan.EofEan13 ?? "—"}";
+        basketBarcodeDetails.IsVisible = true;
+        try
+        {
+            basketBarcodeImage.Source = CreateGs1DataMatrixBitmap(scan.RawGs1String);
+            basketBarcodeImage.IsVisible = true;
+        }
+        catch
+        {
+            basketBarcodeImage.Source = null;
+            basketBarcodeImage.IsVisible = false;
+        }
     }
 
     private void ShowCustomers()
