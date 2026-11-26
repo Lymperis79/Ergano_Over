@@ -291,7 +291,22 @@ public partial class MainWindow : Window
             Width = 25,
             FontSize = 17,
             FontWeight = FontWeight.SemiBold,
-            Foreground = new SolidColorBrush(Color.Parse("#91A9C4")),
+            Foreground = new SolidColorBrush(Color.Parse(labelKey switch
+            {
+                "Dashboard" => "#55C6D9",
+                "Navigation.ExpiryCalendar" => "#6EA8FF",
+                "Navigation.Customers" => "#B69CFF",
+                "Navigation.Basket" => "#F2A65A",
+                "Medicine" => "#FFD166",
+                "Medicine stock control" => "#61DDAA",
+                "Navigation.Reports" => "#7CB8FF",
+                "Navigation.Users" => "#C49BFF",
+                "Company settings" => "#67D39B",
+                "Weather settings" => "#FFC857",
+                "Navigation.ApplicationSettings" => "#A8B5C7",
+                "Database synchronization" => "#5BC0BE",
+                _ => "#91A9C4"
+            })),
             VerticalAlignment = VerticalAlignment.Center,
             TextAlignment = TextAlignment.Center
         };
