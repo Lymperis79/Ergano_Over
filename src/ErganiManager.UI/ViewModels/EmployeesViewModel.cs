@@ -22,25 +22,28 @@ public partial class EmployeesViewModel : ViewModelBase, IAdminSectionViewModel
 
     public ObservableCollection<BranchDto> AvailableBranches { get; } = new();
 
-    public IReadOnlyList<string> SortByOptions { get; } = new[]
-    {
-        "Surname (A–Z)",
-        "First name (A–Z)",
-        "AFM (ascending)"
-    };
+    public ObservableCollection<string> SortByOptions { get; } = new();
 
     [ObservableProperty]
-    private string _sortBy = "Surname (A–Z)";
+    private int _sortByIndex;
 
-    partial void OnSortByChanged(string value) => ApplyEmployeeSort();
+    partial void OnSortByIndexChanged(int value) => ApplyEmployeeSort();
+
+    private void RefreshSortByOptions()
+    {
+        SortByOptions.Clear();
+        SortByOptions.Add(Loc[L.SortSurnameAscending]);
+        SortByOptions.Add(Loc[L.SortFirstNameAscending]);
+        SortByOptions.Add(Loc[L.SortAfmAscending]);
+    }
 
     private void ApplyEmployeeSort()
     {
-        var sorted = SortBy switch
+        var sorted = SortByIndex switch
         {
-            "First name (A–Z)" => Employees.OrderBy(e => e.FirstName, StringComparer.CurrentCultureIgnoreCase)
-                                           .ThenBy(e => e.LastName, StringComparer.CurrentCultureIgnoreCase).ToList(),
-            "AFM (ascending)" => Employees.OrderBy(e => e.TaxId, StringComparer.Ordinal).ToList(),
+            1 => Employees.OrderBy(e => e.FirstName, StringComparer.CurrentCultureIgnoreCase)
+                          .ThenBy(e => e.LastName, StringComparer.CurrentCultureIgnoreCase).ToList(),
+            2 => Employees.OrderBy(e => e.TaxId, StringComparer.Ordinal).ToList(),
             _ => Employees.OrderBy(e => e.LastName, StringComparer.CurrentCultureIgnoreCase)
                           .ThenBy(e => e.FirstName, StringComparer.CurrentCultureIgnoreCase).ToList()
         };
@@ -178,6 +181,9 @@ public partial class EmployeesViewModel : ViewModelBase, IAdminSectionViewModel
     {
         _employeeService = employeeService;
         _branchService = branchService;
+
+        RefreshSortByOptions();
+        Loc.LanguageChanged += (_, _) => RefreshSortByOptions();
     }
 
     public void Initialize(UserSession session)
