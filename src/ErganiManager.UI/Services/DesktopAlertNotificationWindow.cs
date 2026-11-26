@@ -119,6 +119,7 @@ public static class DesktopAlertNotificationWindow
                 }
             };
 
+            ResponsiveWindowSizing.Apply(window, 390, 420, 300, 280);
             window.Show();
             _ = CloseAfterDelayAsync(window);
         });
