@@ -7,6 +7,7 @@
         WindowStartupLocation="CenterScreen"
         Background="{DynamicResource WindowBrush}">
 
+    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
     <StackPanel Margin="28" Spacing="14">
 
         <TextBlock x:Name="TitleText" FontSize="22" FontWeight="Bold" />
@@ -35,4 +36,5 @@
             <Button x:Name="ExitButton" Click="OnExitClick" />
         </StackPanel>
     </StackPanel>
+    </ScrollViewer>
 </Window>
