@@ -1,6 +1,7 @@
 using Avalonia.Controls;
 using Avalonia.Input;
 using ErganiManager.UI.ViewModels;
+using ErganiManager.UI.Services;
 
 namespace ErganiManager.UI.Views;
 
@@ -9,6 +10,7 @@ public partial class LoginView : Window
     public LoginView()
     {
         InitializeComponent();
+        ResponsiveWindowSizing.Apply(this, 480, 600, 360, 420);
         KeyDown += OnWindowKeyDown;
         Opened += (_, _) =>
         {
