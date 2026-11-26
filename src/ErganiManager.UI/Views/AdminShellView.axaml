@@ -6,7 +6,7 @@
         Icon="avares://ErganiManager.UI/Assets/icon.png"
         x:DataType="vm:AdminShellViewModel"
         Title="{Binding Loc[ErganiManagerAdmin]}"
-        Width="1200" Height="760"
+        Width="1200" Height="760" MinWidth="820" MinHeight="520"
         Background="{DynamicResource WindowBrush}"
         WindowStartupLocation="CenterScreen">
 
