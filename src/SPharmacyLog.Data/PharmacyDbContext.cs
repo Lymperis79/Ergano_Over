@@ -188,7 +188,8 @@ public sealed class PharmacyDbContext : DbContext
         modelBuilder.Entity<BorrowingRecord>()
             .HasOne(borrowing => borrowing.Customer)
             .WithMany(customer => customer.Borrowings)
-            .HasForeignKey(borrowing => borrowing.CustomerId);
+            .HasForeignKey(borrowing => borrowing.CustomerId)
+            .OnDelete(DeleteBehavior.SetNull);
 
         modelBuilder.Entity<MedicineBarcode>()
             .HasOne(barcode => barcode.Medicine)
