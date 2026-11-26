@@ -138,6 +138,10 @@ public static class L
 
     // Employees
     public const string Employees           = nameof(Employees);
+    public const string SortEmployeesBy = nameof(SortEmployeesBy);
+    public const string SortSurnameAscending = nameof(SortSurnameAscending);
+    public const string SortFirstNameAscending = nameof(SortFirstNameAscending);
+    public const string SortAfmAscending = nameof(SortAfmAscending);
     public const string FirstName           = nameof(FirstName);
     public const string LastName            = nameof(LastName);
     public const string Amka                = nameof(Amka);
