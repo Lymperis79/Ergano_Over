@@ -1710,6 +1710,8 @@ public partial class MainWindow : Window
     private readonly Dictionary<string, int> customerHistoryBorrowingIds = new();
     private ListBox basketList = null!;
     private List<BorrowingRecord> currentBasket = new();
+    private List<BorrowingRecord> filteredBasket = new();
+    private TextBox basketSearchBox = null!;
     private Image basketBarcodeImage = null!;
     private TextBlock basketBarcodeDetails = null!;
     private TextBlock borrowingSelectionDetails = null!;
@@ -1728,6 +1730,12 @@ public partial class MainWindow : Window
         if (!CanAccessMenu(MenuBasket)) { ShowNoMenuAccess(); return; }
         showingExpiryCalendar = false;
         basketList = new ListBox { MinHeight = 260 };
+        basketSearchBox = new TextBox
+        {
+            Watermark = Tr.Loc.TranslateText("Search by medicine name or GTIN…"),
+            MinHeight = 38
+        };
+        basketSearchBox.TextChanged += (_, _) => ApplyBasketFilter();
         basketBarcodeImage = new Image
         {
             Width = 200, Height = 200, Stretch = Stretch.Uniform,
@@ -1743,17 +1751,17 @@ public partial class MainWindow : Window
         basketBarcodeImage.PointerPressed += (_, e) =>
         {
             if (basketBarcodeImage.Source is not WriteableBitmap bitmap ||
-                basketList.SelectedIndex < 0 || basketList.SelectedIndex >= currentBasket.Count)
+                basketList.SelectedIndex < 0 || basketList.SelectedIndex >= filteredBasket.Count)
                 return;
             e.Handled = true;
-            ShowBarcodePopup(currentBasket[basketList.SelectedIndex].MedicineName, bitmap);
+            ShowBarcodePopup(filteredBasket[basketList.SelectedIndex].MedicineName, bitmap);
         };
         var status = new TextBlock { TextWrapping = TextWrapping.Wrap, Foreground = Brushes.LightGreen };
         var assign = new Button { Content = Tr.Loc.TranslateText("Assign selected item to customer"), MinHeight = 38, Classes = { "accent" } };
         assign.Click += async (_, _) =>
         {
             var index = basketList.SelectedIndex;
-            if (index < 0 || index >= currentBasket.Count)
+            if (index < 0 || index >= filteredBasket.Count)
             {
                 status.Text = Tr.Loc.TranslateText("Select an item in the basket first.");
                 return;
@@ -1799,7 +1807,7 @@ public partial class MainWindow : Window
                     dialogStatus.Text = Tr.Loc.TranslateText("Select a customer.");
                     return;
                 }
-                var record = await db.Borrowings.FirstOrDefaultAsync(x => x.Id == currentBasket[index].Id && x.CustomerId == null && x.Status == BorrowingStatus.Borrowed);
+                var record = await db.Borrowings.FirstOrDefaultAsync(x => x.Id == filteredBasket[index].Id && x.CustomerId == null && x.Status == BorrowingStatus.Borrowed);
                 if (record is null)
                 {
                     dialogStatus.Text = Tr.Loc.TranslateText("The basket item could not be found.");
@@ -1824,10 +1832,12 @@ public partial class MainWindow : Window
             {
                 new TextBlock { Text = Tr.Loc.TranslateText("Basket"), FontSize = 24, FontWeight = FontWeight.Bold },
                 new TextBlock { Text = Tr.Loc.TranslateText("Items returned from customers and waiting to be assigned again."), TextWrapping = TextWrapping.Wrap, Foreground = Brushes.LightGray },
+                assign,
+                basketSearchBox,
                 basketList,
                 new TextBlock { Text = Tr.Loc.TranslateText("GS1 DataMatrix barcode"), FontWeight = FontWeight.SemiBold, Margin = new Thickness(4, 4, 0, 0) },
                 basketBarcodeImage, basketBarcodeDetails,
-                assign, status
+                status
             }
         };
         await RefreshBasketAsync();
@@ -1842,11 +1852,23 @@ public partial class MainWindow : Window
             .Where(x => x.CustomerId == null && x.Status == BorrowingStatus.Borrowed)
             .OrderByDescending(x => x.BorrowedAt)
             .ToListAsync();
-        basketList.ItemsSource = currentBasket.Select(x =>
+        ApplyBasketFilter();
+    }
+
+    private void ApplyBasketFilter()
+    {
+        if (basketList is null) return;
+        var search = basketSearchBox?.Text?.Trim() ?? string.Empty;
+        filteredBasket = currentBasket.Where(x =>
+            string.IsNullOrWhiteSpace(search) ||
+            x.MedicineName.Contains(search, StringComparison.OrdinalIgnoreCase) ||
+            (x.SerializedPackScan?.Gtin14?.Contains(search, StringComparison.OrdinalIgnoreCase) ?? false))
+            .ToList();
+        basketList.ItemsSource = filteredBasket.Select(x =>
             $"{x.BorrowedAt:dd/MM/yyyy HH:mm} | {x.MedicineName} | Qty {x.Quantity}" +
             (x.SerializedPackScan is null ? string.Empty : $" | SN {x.SerializedPackScan.SerialNumber} | Exp {x.SerializedPackScan.ExpiryDate:dd/MM/yyyy}"))
             .ToList();
-        basketList.SelectedIndex = currentBasket.Count > 0 ? 0 : -1;
+        basketList.SelectedIndex = filteredBasket.Count > 0 ? 0 : -1;
         ShowSelectedBasketBarcode();
     }
 
@@ -1854,7 +1876,7 @@ public partial class MainWindow : Window
     {
         if (basketBarcodeImage is null || basketBarcodeDetails is null) return;
         var index = basketList?.SelectedIndex ?? -1;
-        if (index < 0 || index >= currentBasket.Count || currentBasket[index].SerializedPackScan is not { } scan)
+        if (index < 0 || index >= filteredBasket.Count || filteredBasket[index].SerializedPackScan is not { } scan)
         {
             basketBarcodeImage.Source = null;
             basketBarcodeImage.IsVisible = false;
