@@ -160,8 +160,8 @@ public partial class MainWindow : Window
         var allowed = string.IsNullOrWhiteSpace(viewModel.User.AllowedMenus)
             ? WorkspaceMenuKeys
             : viewModel.User.AllowedMenus.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-        if (key == MenuBasket)
-            return allowed.Contains(MenuBasket, StringComparer.Ordinal) || allowed.Contains(MenuBorrowing, StringComparer.Ordinal);
+        // Basket is a separate permission: access to customer borrowing must not
+        // automatically expose unassigned stock, and vice versa.
         return allowed.Contains(key, StringComparer.Ordinal);
     }
 
@@ -1767,6 +1767,7 @@ public partial class MainWindow : Window
                     return;
                 }
                 record.CustomerId = customerId;
+                record.PrescriptionNumber = null;
                 record.BorrowedAt = DateTime.Now;
                 record.ReturnedAt = null;
                 await db.SaveChangesAsync();
@@ -1801,7 +1802,6 @@ public partial class MainWindow : Window
             .ToListAsync();
         basketList.ItemsSource = currentBasket.Select(x =>
             $"{x.BorrowedAt:dd/MM/yyyy HH:mm} | {x.MedicineName} | Qty {x.Quantity}" +
-            (string.IsNullOrWhiteSpace(x.PrescriptionNumber) ? string.Empty : $" | Rx {x.PrescriptionNumber}") +
             (x.SerializedPackScan is null ? string.Empty : $" | SN {x.SerializedPackScan.SerialNumber} | Exp {x.SerializedPackScan.ExpiryDate:dd/MM/yyyy}"))
             .ToList();
     }
@@ -2661,7 +2661,12 @@ public partial class MainWindow : Window
     private TabItem BuildCustomerHistoryTab()
     {
         customerHistoryList = new ListBox { MinHeight = 180 };
-        var returnToBasket = new Button { Content = Tr.Loc.TranslateText("Return selected borrowing to basket"), MinHeight = 36 };
+        var returnToBasket = new Button
+        {
+            Content = Tr.Loc.TranslateText("Return selected borrowing to basket"),
+            MinHeight = 36,
+            IsVisible = CanAccessMenu(MenuBasket)
+        };
         returnToBasket.Click += async (_, _) => await ReturnHistoryBorrowingToBasketAsync();
         subscriptionHistoryList = new ListBox { MinHeight = 150 };
         subscriptionHistoryList.SelectionChanged += async (_, _) =>
@@ -3401,6 +3406,7 @@ public partial class MainWindow : Window
         var record = await db.Borrowings.FirstOrDefaultAsync(x => x.Id == borrowingId && x.Status == BorrowingStatus.Borrowed && x.CustomerId == selectedCustomerId);
         if (record is null) { SetActivityStatus("The selected active borrowing could not be found."); return; }
         record.CustomerId = null;
+        record.PrescriptionNumber = null;
         record.BorrowedAt = DateTime.Now;
         record.ReturnedAt = null;
         await db.SaveChangesAsync();
