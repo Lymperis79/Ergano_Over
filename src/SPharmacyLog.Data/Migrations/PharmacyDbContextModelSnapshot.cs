@@ -126,6 +126,7 @@ public sealed class PharmacyDbContextModelSnapshot : ModelSnapshot
             entity.ToTable("Borrowings");
             entity.HasKey(borrowing => borrowing.Id);
             entity.Property(borrowing => borrowing.Id).ValueGeneratedOnAdd();
+            entity.Property(borrowing => borrowing.PrescriptionNumber);
             entity.Property(borrowing => borrowing.MedicineName).IsRequired();
             entity.Property(borrowing => borrowing.OriginalBarcode);
             entity.Property(borrowing => borrowing.SerializedPackScanId);
@@ -143,7 +144,7 @@ public sealed class PharmacyDbContextModelSnapshot : ModelSnapshot
             entity.HasOne(borrowing => borrowing.Customer)
                 .WithMany(customer => customer.Borrowings)
                 .HasForeignKey(borrowing => borrowing.CustomerId)
-                .OnDelete(DeleteBehavior.Cascade);
+                .OnDelete(DeleteBehavior.SetNull);
             entity.HasOne(borrowing => borrowing.SerializedPackScan)
                 .WithMany(pack => pack.Borrowings)
                 .HasForeignKey(borrowing => borrowing.SerializedPackScanId)
