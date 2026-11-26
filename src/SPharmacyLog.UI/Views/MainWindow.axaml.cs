@@ -2512,8 +2512,14 @@ public partial class MainWindow : Window
                 }
                 if (parsedPack is not null)
                 {
-                    if (await db.SerializedPackScans.AnyAsync(x => x.Gtin14 == correctedGtin && x.SerialNumber == correctedSerial))
-                    { status.Text = "This physical pack (GTIN + serial number) has already been scanned."; return; }
+                    var duplicatePackExists = await db.SerializedPackScans.AnyAsync(x =>
+                        x.Gtin14 == correctedGtin && x.SerialNumber == correctedSerial);
+                    if (duplicatePackExists)
+                    {
+                        status.Text = "This physical pack (GTIN + serial number) has already been scanned.";
+                        if (!await ConfirmDuplicatePackImportAsync(correctedGtin, correctedSerial))
+                            return;
+                    }
                     var eof = string.IsNullOrWhiteSpace(eofInput.Text) ? parsedPack.ResolvedEofBarcode : eofInput.Text.Trim();
                     if (!string.IsNullOrWhiteSpace(eof) && (eof.Length != 13 || eof.Any(ch => !char.IsDigit(ch))))
                     { status.Text = "The EOF / NTIN barcode must contain exactly 13 digits."; return; }
@@ -5358,6 +5364,91 @@ public partial class MainWindow : Window
         db.Users.Remove(record);
         await db.SaveChangesAsync();
         await ShowUsersAsync();
+    }
+
+    private async Task<bool> ConfirmDuplicatePackImportAsync(string gtin, string serialNumber)
+    {
+        var confirmed = false;
+        var warningTitle = Tr.Loc.TranslateText("Duplicate medicine warning");
+        var dialog = new Window
+        {
+            Title = warningTitle,
+            Width = 500,
+            Height = 280,
+            MinWidth = 460,
+            CanResize = false,
+            WindowStartupLocation = WindowStartupLocation.CenterOwner,
+            Background = new SolidColorBrush(Color.Parse("#24191B"))
+        };
+
+        var heading = new TextBlock
+        {
+            Text = Tr.Loc.TranslateText("WARNING — This medicine has already been registered!"),
+            FontSize = 17,
+            FontWeight = FontWeight.Bold,
+            Foreground = new SolidColorBrush(Color.Parse("#FF6B6B")),
+            TextWrapping = TextWrapping.Wrap
+        };
+        var explanation = new TextBlock
+        {
+            Text = Tr.Loc.TranslateText("The same GTIN and serial number already exist in the database. You are about to import a medicine package that has already been registered. Are you sure you want to continue?")
+                + $"\n\nGTIN-14: {gtin}\nSerial number: {serialNumber}",
+            TextWrapping = TextWrapping.Wrap,
+            Foreground = Brushes.White
+        };
+        var yes = new Button
+        {
+            Content = Tr.Loc.TranslateText("Yes — Import anyway"),
+            MinWidth = 150,
+            MinHeight = 38,
+            Background = new SolidColorBrush(Color.Parse("#B91C1C")),
+            Foreground = Brushes.White
+        };
+        var no = new Button
+        {
+            Content = Tr.Loc.TranslateText("No — Cancel"),
+            MinWidth = 120,
+            MinHeight = 38
+        };
+        yes.Click += (_, _) => { confirmed = true; dialog.Close(); };
+        no.Click += (_, _) => dialog.Close();
+
+        dialog.Content = new Border
+        {
+            Padding = new Thickness(20),
+            BorderBrush = new SolidColorBrush(Color.Parse("#B91C1C")),
+            BorderThickness = new Thickness(2),
+            CornerRadius = new CornerRadius(10),
+            Child = new StackPanel
+            {
+                Spacing = 16,
+                Children =
+                {
+                    new StackPanel
+                    {
+                        Orientation = Orientation.Horizontal,
+                        Spacing = 10,
+                        Children =
+                        {
+                            new TextBlock { Text = "⚠", FontSize = 28, Foreground = new SolidColorBrush(Color.Parse("#FF4D4F")), VerticalAlignment = VerticalAlignment.Center },
+                            heading
+                        }
+                    },
+                    explanation,
+                    new StackPanel
+                    {
+                        Orientation = Orientation.Horizontal,
+                        HorizontalAlignment = HorizontalAlignment.Right,
+                        Spacing = 10,
+                        Children = { no, yes }
+                    }
+                }
+            }
+        };
+
+        AttachDialogLocalization(dialog);
+        await dialog.ShowDialog(this);
+        return confirmed;
     }
 
     private async Task<bool> ConfirmUserDeleteAsync(string username)
