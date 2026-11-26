@@ -1,6 +1,7 @@
-<Window xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" x:Class="SPharmacyLog.UI.Views.LoginWindow" Icon="avares://SPharmacyLog.UI/Assets/spharmacy.ico" Title="PharmaPoint" Width="480" Height="600" CanResize="False" WindowStartupLocation="CenterScreen" Background="{DynamicResource WindowBrush}">
+<Window xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" x:Class="SPharmacyLog.UI.Views.LoginWindow" Icon="avares://SPharmacyLog.UI/Assets/spharmacy.ico" Title="PharmaPoint" Width="480" Height="600" CanResize="False" WindowStartupLocation="CenterScreen" Background="#151922">
   <Grid Margin="28">
-    <Border Classes="card" VerticalAlignment="Center" Padding="30">
+    <Border Background="#202733" BorderBrush="#354152" BorderThickness="1"
+            CornerRadius="12" VerticalAlignment="Center" Padding="30">
       <StackPanel Spacing="15">
         <Border Width="74" Height="74" CornerRadius="18" Background="{DynamicResource AccentSoftBrush}" HorizontalAlignment="Center">
           <TextBlock Text="✚" FontSize="38" Foreground="{DynamicResource AccentLightBrush}" VerticalAlignment="Center" HorizontalAlignment="Center"/>
