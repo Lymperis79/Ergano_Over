@@ -235,6 +235,10 @@ public static class GreekStrings
 
         // ── Employees ─────────────────────────────────────────
         [L.Employees] = "Εργαζόμενοι",
+        [L.SortEmployeesBy] = "Ταξινόμηση εργαζομένων κατά:",
+        [L.SortSurnameAscending] = "Επώνυμο (Α–Ω)",
+        [L.SortFirstNameAscending] = "Όνομα (Α–Ω)",
+        [L.SortAfmAscending] = "ΑΦΜ (αύξουσα σειρά)",
         [L.FirstName] = "Όνομα",
         [L.LastName] = "Επώνυμο",
         [L.Amka] = "ΑΜΚΑ",
