@@ -246,9 +246,11 @@ public class BorrowingRecord
 {
     public int Id { get; set; }
 
-    public int CustomerId { get; set; }
+    public int? CustomerId { get; set; }
 
     public Customer? Customer { get; set; }
+
+    public string? PrescriptionNumber { get; set; }
 
     public string MedicineName { get; set; } = string.Empty;
 
