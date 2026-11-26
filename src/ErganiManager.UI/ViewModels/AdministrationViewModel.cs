@@ -1373,6 +1373,7 @@ public partial class AdministrationViewModel : ViewModelBase, IAdminSectionViewM
             holiday.IsEnabled = false;
     }
 
+    [RelayCommand]
     private async Task SaveOfficialHolidaysAsync()
     {
         if (_activeCompanyId is not { } companyId)
