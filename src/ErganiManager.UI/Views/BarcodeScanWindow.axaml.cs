@@ -2,6 +2,7 @@ using System;
 using Avalonia.Controls;
 using Avalonia.Threading;
 using ErganiManager.UI.ViewModels;
+using ErganiManager.UI.Services;
 
 namespace ErganiManager.UI.Views;
 
@@ -12,6 +13,7 @@ public partial class BarcodeScanWindow : Window
     public BarcodeScanWindow()
     {
         InitializeComponent();
+        ResponsiveWindowSizing.Apply(this, 520, 680, 400, 500);
         Opened    += (_, _) => { _scanBox = this.FindControl<TextBox>("ScanInputBox"); FocusScanBox(); };
         Activated += (_, _) => FocusScanBox();
         DataContextChanged += (_, _) =>
