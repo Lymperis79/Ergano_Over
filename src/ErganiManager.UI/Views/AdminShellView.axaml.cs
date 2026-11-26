@@ -27,7 +27,30 @@ public partial class AdminShellView : Window
     {
         InitializeComponent();
         DataContextChanged += OnDataContextChanged;
-        Opened += (_, _) => { UpdateNavHighlight(); ShowLicenseButton(); };
+        Opened += (_, _) => { ApplyResponsiveWindowSize(); UpdateNavHighlight(); ShowLicenseButton(); };
+    }
+
+    private void ApplyResponsiveWindowSize()
+    {
+        var screen = Screens.ScreenFromWindow(this) ?? Screens.Primary;
+        if (screen is null) return;
+
+        var scaling = screen.Scaling <= 0 ? 1.0 : screen.Scaling;
+        var workingArea = screen.WorkingArea;
+        var availableWidth = workingArea.Width / scaling;
+        var availableHeight = workingArea.Height / scaling;
+
+        // Keep margins while ensuring the title bar and system controls remain visible.
+        var targetWidth = Math.Min(1200, Math.Max(640, availableWidth - 32));
+        var targetHeight = Math.Min(760, Math.Max(480, availableHeight - 32));
+
+        MinWidth = Math.Min(820, Math.Max(640, availableWidth - 24));
+        MinHeight = Math.Min(520, Math.Max(480, availableHeight - 24));
+        MaxWidth = availableWidth - 8;
+        MaxHeight = availableHeight - 8;
+        Width = Math.Min(targetWidth, MaxWidth);
+        Height = Math.Min(targetHeight, MaxHeight);
+        WindowStartupLocation = WindowStartupLocation.CenterScreen;
     }
 
     // -- License (the 🔑 button) ---------------------------------------------------------------
