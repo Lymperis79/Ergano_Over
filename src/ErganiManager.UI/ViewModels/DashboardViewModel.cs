@@ -82,7 +82,7 @@ public partial class DashboardViewModel : ViewModelBase, IAdminSectionViewModel
     [ObservableProperty] private string _weatherDetailsText = string.Empty;
     [ObservableProperty] private bool _hasWeather;
 
-    private static readonly HttpClient DashboardWeatherHttpClient = new() { Timeout = TimeSpan.FromSeconds(8) };
+    private static readonly HttpClient DashboardWeatherHttpClient = new() { Timeout = TimeSpan.FromSeconds(4) };
 
     public bool CanRefresh => !IsLoading;
     public bool HasCategories => Categories.Count > 0;
@@ -143,7 +143,12 @@ public partial class DashboardViewModel : ViewModelBase, IAdminSectionViewModel
         {
             var companyId = _session?.CompanyId;
             if (companyId.HasValue)
-                await RefreshDashboardWeatherAsync(companyId.Value, _session?.BranchId);
+            {
+                // Weather must not delay the dashboard's database and status refresh.
+                WeatherText = string.Empty;
+                HasWeather = false;
+                _ = RefreshDashboardWeatherAsync(companyId.Value, _session?.BranchId);
+            }
             if (!companyId.HasValue)
             {
                 CompanyName = Loc["Dashboard.NoCompany"];
