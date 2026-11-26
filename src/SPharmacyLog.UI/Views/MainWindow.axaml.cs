@@ -1690,6 +1690,8 @@ public partial class MainWindow : Window
     private List<Payment> currentPayments = new();
     private List<LedgerEntry> currentLedgerEntries = new();
     private ListBox customerHistoryList = null!;
+    private TextBox customerHistorySearch = null!;
+    private List<string> customerHistoryRows = new();
     private readonly Dictionary<string, int> customerHistoryBorrowingIds = new();
     private ListBox basketList = null!;
     private List<BorrowingRecord> currentBasket = new();
@@ -2660,6 +2662,12 @@ public partial class MainWindow : Window
 
     private TabItem BuildCustomerHistoryTab()
     {
+        customerHistorySearch = new TextBox
+        {
+            PlaceholderText = Tr.Loc.TranslateText("Search history by medicine, GTIN or prescription number…"),
+            MinHeight = 36
+        };
+        customerHistorySearch.TextChanged += (_, _) => ApplyCustomerHistoryFilter();
         customerHistoryList = new ListBox { MinHeight = 180 };
         var returnToBasket = new Button
         {
@@ -2690,6 +2698,7 @@ public partial class MainWindow : Window
                     {
                         new TextBlock { Text = "CUSTOMER MEDICINE & PRESCRIPTION HISTORY", FontSize = 18, FontWeight = FontWeight.Bold },
                         new TextBlock { Text = "All borrowing records (including returned items) and prescriptions, ordered by date.", TextWrapping = TextWrapping.Wrap, Foreground = Brushes.LightGray },
+                        customerHistorySearch,
                         customerHistoryList,
                         returnToBasket,
                         new TextBlock { Text = "PRESCRIPTION HISTORY", FontSize = 16, FontWeight = FontWeight.Bold, Margin = new Thickness(0, 8, 0, 0) },
@@ -2913,13 +2922,19 @@ public partial class MainWindow : Window
         customerHistoryBorrowingIds.Clear();
         var historyRows = allBorrowings.Select(x =>
         {
-            var text = $"{x.BorrowedAt:dd/MM/yyyy HH:mm} | BORROWING | {x.MedicineName} | Qty {x.Quantity}" + (string.IsNullOrWhiteSpace(x.PrescriptionNumber) ? string.Empty : $" | Rx {x.PrescriptionNumber}") + $" | {x.Status}";
+            var gtin = x.SerializedPackScan?.Gtin14
+                ?? (x.OriginalBarcode?.Length == 14 && x.OriginalBarcode.All(char.IsDigit) ? x.OriginalBarcode : null);
+            var text = $"{x.BorrowedAt:dd/MM/yyyy HH:mm} | BORROWING | {x.MedicineName} | Qty {x.Quantity}" +
+                (gtin is null ? string.Empty : $" | GTIN {gtin}") +
+                (string.IsNullOrWhiteSpace(x.PrescriptionNumber) ? string.Empty : $" | Rx {x.PrescriptionNumber}") +
+                $" | {x.Status}";
             customerHistoryBorrowingIds[text] = x.Id;
             return (Date: x.BorrowedAt, Text: text);
         }).Concat(prescriptions.Select(x => (Date: x.CreatedAt,
             Text: $"{x.CreatedAt:dd/MM/yyyy HH:mm} | PRESCRIPTION | {x.MedicineName} | No. {x.PrescriptionNumber ?? "-"} | {x.Status} | Valid until {x.ExpiryDate:dd/MM/yyyy}")))
           .OrderByDescending(x => x.Date).Select(x => x.Text).ToList();
-        customerHistoryList.ItemsSource = historyRows;
+        customerHistoryRows = historyRows;
+        ApplyCustomerHistoryFilter();
         currentSubscriptions = subscriptions;
         currentExecutedSubscriptions = executedSubscriptions;
         currentPayments = payments;
@@ -3391,6 +3406,15 @@ public partial class MainWindow : Window
         gs1ScanStatus.Text = Tr.Loc.TranslateText("Ready for the next GS1 DataMatrix scan.");
         gs1ScanStatus.Foreground = Brushes.Gray;
         await RefreshCustomerWorkspaceAsync();
+    }
+
+    private void ApplyCustomerHistoryFilter()
+    {
+        if (customerHistoryList is null) return;
+        var query = customerHistorySearch?.Text?.Trim();
+        customerHistoryList.ItemsSource = string.IsNullOrWhiteSpace(query)
+            ? customerHistoryRows
+            : customerHistoryRows.Where(row => row.Contains(query, StringComparison.OrdinalIgnoreCase)).ToList();
     }
 
     private async Task ReturnHistoryBorrowingToBasketAsync()
