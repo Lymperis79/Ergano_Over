@@ -147,6 +147,7 @@ public partial class MainWindow : Window
         if (CanAccessMenu(MenuDashboard)) ShowDashboard();
         else if (CanAccessMenu(MenuCalendar)) ShowExpiryCalendar();
         else if (CanAccessMenu(MenuCustomers)) ShowCustomers();
+        else if (CanAccessMenu(MenuBasket)) ShowBasket();
         else if (CanAccessMenu(MenuReports)) ShowReports();
         else if (CanAccessMenu(MenuMedicine)) OpenMedicineManagement();
         else if (CanAccessMenu(MenuStock)) OpenMedicineStock();
@@ -2905,7 +2906,7 @@ public partial class MainWindow : Window
         customerHistoryBorrowingIds.Clear();
         var historyRows = allBorrowings.Select(x =>
         {
-            var text = $"{x.BorrowedAt:dd/MM/yyyy HH:mm} | BORROWING | {x.MedicineName} | Qty {x.Quantity} | {x.Status}";
+            var text = $"{x.BorrowedAt:dd/MM/yyyy HH:mm} | BORROWING | {x.MedicineName} | Qty {x.Quantity}" + (string.IsNullOrWhiteSpace(x.PrescriptionNumber) ? string.Empty : $" | Rx {x.PrescriptionNumber}") + $" | {x.Status}";
             customerHistoryBorrowingIds[text] = x.Id;
             return (Date: x.BorrowedAt, Text: text);
         }).Concat(prescriptions.Select(x => (Date: x.CreatedAt,
