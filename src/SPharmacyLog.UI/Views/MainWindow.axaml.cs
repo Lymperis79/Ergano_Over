@@ -160,6 +160,8 @@ public partial class MainWindow : Window
         var allowed = string.IsNullOrWhiteSpace(viewModel.User.AllowedMenus)
             ? WorkspaceMenuKeys
             : viewModel.User.AllowedMenus.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        if (key == MenuBasket)
+            return allowed.Contains(MenuBasket, StringComparer.Ordinal) || allowed.Contains(MenuBorrowing, StringComparer.Ordinal);
         return allowed.Contains(key, StringComparer.Ordinal);
     }
 
