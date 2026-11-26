@@ -5373,9 +5373,9 @@ public partial class MainWindow : Window
         var dialog = new Window
         {
             Title = warningTitle,
-            Width = 540,
-            Height = 320,
-            MinWidth = 500,
+            Width = 580,
+            Height = 270,
+            MinWidth = 540,
             CanResize = false,
             WindowStartupLocation = WindowStartupLocation.CenterOwner,
             Background = new SolidColorBrush(Color.Parse("#24191B"))
@@ -5384,9 +5384,10 @@ public partial class MainWindow : Window
         var heading = new TextBlock
         {
             Text = Tr.Loc.TranslateText("WARNING — This medicine has already been registered!"),
-            FontSize = 17,
+            FontSize = 16,
             FontWeight = FontWeight.Bold,
             Foreground = new SolidColorBrush(Color.Parse("#FF6B6B")),
+            MaxWidth = 470,
             TextWrapping = TextWrapping.Wrap
         };
         var explanation = new TextBlock
