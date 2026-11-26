@@ -1701,6 +1701,108 @@ public partial class MainWindow : Window
     private Gs1DataMatrixParser.ParsedPack? currentParsedPack;
     private bool isCreatingNewCustomer;
 
+    private async void ShowBasket()
+    {
+        if (!CanAccessMenu(MenuBasket)) { ShowNoMenuAccess(); return; }
+        showingExpiryCalendar = false;
+        basketList = new ListBox { MinHeight = 260 };
+        var status = new TextBlock { TextWrapping = TextWrapping.Wrap, Foreground = Brushes.LightGreen };
+        var assign = new Button { Content = Tr.Loc.TranslateText("Assign selected item to customer"), MinHeight = 38, Classes = { "accent" } };
+        assign.Click += async (_, _) =>
+        {
+            var index = basketList.SelectedIndex;
+            if (index < 0 || index >= currentBasket.Count)
+            {
+                status.Text = Tr.Loc.TranslateText("Select an item in the basket first.");
+                return;
+            }
+
+            await using var db = new PharmacyDbContext(PharmacyDb.Options());
+            var customers = await db.Customers.AsNoTracking().Where(x => x.IsActive).OrderBy(x => x.FullName).ToListAsync();
+            if (customers.Count == 0)
+            {
+                status.Text = Tr.Loc.TranslateText("There are no active customers to assign this item to.");
+                return;
+            }
+
+            var selector = new ComboBox { MinWidth = 320, MinHeight = 36 };
+            foreach (var customer in customers)
+                selector.Items.Add(new ComboBoxItem { Content = $"{customer.FullName} | {customer.CustomerNumber}", Tag = customer.Id });
+            selector.SelectedIndex = 0;
+            var dialogStatus = new TextBlock { TextWrapping = TextWrapping.Wrap, Foreground = Brushes.OrangeRed };
+            var confirm = new Button { Content = Tr.Loc.TranslateText("Assign"), MinWidth = 110, Classes = { "accent" } };
+            var cancel = new Button { Content = Tr.Loc.TranslateText("Cancel"), MinWidth = 100 };
+            var dialog = new Window
+            {
+                Title = Tr.Loc.TranslateText("Assign basket item"),
+                Width = 480, Height = 230, MinWidth = 380, MinHeight = 200,
+                WindowStartupLocation = WindowStartupLocation.CenterOwner,
+                CanResize = true,
+                Content = new StackPanel
+                {
+                    Margin = new Thickness(18), Spacing = 12,
+                    Children =
+                    {
+                        new TextBlock { Text = Tr.Loc.TranslateText("Select the customer who will borrow this item."), TextWrapping = TextWrapping.Wrap },
+                        selector, dialogStatus,
+                        new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right, Spacing = 8, Children = { confirm, cancel } }
+                    }
+                }
+            };
+            cancel.Click += (_, _) => dialog.Close();
+            confirm.Click += async (_, _) =>
+            {
+                if (selector.SelectedItem is not ComboBoxItem selected || selected.Tag is not int customerId)
+                {
+                    dialogStatus.Text = Tr.Loc.TranslateText("Select a customer.");
+                    return;
+                }
+                var record = await db.Borrowings.FirstOrDefaultAsync(x => x.Id == currentBasket[index].Id && x.CustomerId == null && x.Status == BorrowingStatus.Borrowed);
+                if (record is null)
+                {
+                    dialogStatus.Text = Tr.Loc.TranslateText("The basket item could not be found.");
+                    return;
+                }
+                record.CustomerId = customerId;
+                record.BorrowedAt = DateTime.Now;
+                record.ReturnedAt = null;
+                await db.SaveChangesAsync();
+                dialog.Close();
+                status.Text = Tr.Loc.TranslateText("Item assigned to customer.");
+                await RefreshBasketAsync();
+            };
+            await dialog.ShowDialog(this);
+        };
+
+        pageHost.Content = new StackPanel
+        {
+            Margin = new Thickness(18), Spacing = 12,
+            Children =
+            {
+                new TextBlock { Text = Tr.Loc.TranslateText("Basket"), FontSize = 24, FontWeight = FontWeight.Bold },
+                new TextBlock { Text = Tr.Loc.TranslateText("Items returned from customers and waiting to be assigned again."), TextWrapping = TextWrapping.Wrap, Foreground = Brushes.LightGray },
+                basketList, assign, status
+            }
+        };
+        await RefreshBasketAsync();
+    }
+
+    private async Task RefreshBasketAsync()
+    {
+        if (basketList is null) return;
+        await using var db = new PharmacyDbContext(PharmacyDb.Options());
+        currentBasket = await db.Borrowings.AsNoTracking()
+            .Include(x => x.SerializedPackScan)
+            .Where(x => x.CustomerId == null && x.Status == BorrowingStatus.Borrowed)
+            .OrderByDescending(x => x.BorrowedAt)
+            .ToListAsync();
+        basketList.ItemsSource = currentBasket.Select(x =>
+            $"{x.BorrowedAt:dd/MM/yyyy HH:mm} | {x.MedicineName} | Qty {x.Quantity}" +
+            (string.IsNullOrWhiteSpace(x.PrescriptionNumber) ? string.Empty : $" | Rx {x.PrescriptionNumber}") +
+            (x.SerializedPackScan is null ? string.Empty : $" | SN {x.SerializedPackScan.SerialNumber} | Exp {x.SerializedPackScan.ExpiryDate:dd/MM/yyyy}"))
+            .ToList();
+    }
+
     private void ShowCustomers()
     {
         if (!CanAccessMenu(MenuCustomers)) { ShowNoMenuAccess(); return; }
