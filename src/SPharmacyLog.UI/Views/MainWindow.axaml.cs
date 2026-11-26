@@ -5373,9 +5373,9 @@ public partial class MainWindow : Window
         var dialog = new Window
         {
             Title = warningTitle,
-            Width = 500,
-            Height = 280,
-            MinWidth = 460,
+            Width = 540,
+            Height = 320,
+            MinWidth = 500,
             CanResize = false,
             WindowStartupLocation = WindowStartupLocation.CenterOwner,
             Background = new SolidColorBrush(Color.Parse("#24191B"))
@@ -5415,7 +5415,7 @@ public partial class MainWindow : Window
 
         dialog.Content = new Border
         {
-            Padding = new Thickness(20),
+            Padding = new Thickness(30),
             BorderBrush = new SolidColorBrush(Color.Parse("#B91C1C")),
             BorderThickness = new Thickness(2),
             CornerRadius = new CornerRadius(10),
