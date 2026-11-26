@@ -75,6 +75,7 @@ public partial class MainWindow : Window
     private const string MenuDashboard = "Dashboard";
     private const string MenuCalendar = "ExpiryCalendar";
     private const string MenuCustomers = "Customers";
+    private const string MenuBasket = "Basket";
     private const string MenuBorrowing = "Borrowing";
     private const string MenuSubscriptions = "Subscriptions";
     private const string MenuPayments = "Payments";
@@ -91,6 +92,7 @@ public partial class MainWindow : Window
         (MenuDashboard, "Dashboard"),
         (MenuCalendar, "Navigation.ExpiryCalendar"),
         (MenuCustomers, "Navigation.Customers"),
+        (MenuBasket, "Navigation.Basket"),
         (MenuBorrowing, "Navigation.Borrowing"),
         (MenuSubscriptions, "Navigation.Subscriptions"),
         (MenuPayments, "Navigation.Payments"),
@@ -106,7 +108,7 @@ public partial class MainWindow : Window
     };
     private static readonly string[] WorkspaceMenuKeys =
     {
-        MenuDashboard, MenuCalendar, MenuCustomers, MenuBorrowing, MenuSubscriptions,
+        MenuDashboard, MenuCalendar, MenuCustomers, MenuBasket, MenuBorrowing, MenuSubscriptions,
         MenuPayments, MenuMedicine, MenuStock, MenuReports
     };
     private bool skipNextCustomerSearch;
@@ -189,6 +191,7 @@ public partial class MainWindow : Window
                 MenuDashboard => ShowDashboard,
                 MenuCalendar => ShowExpiryCalendar,
                 MenuCustomers => ShowCustomers,
+                MenuBasket => ShowBasket,
                 MenuBorrowing => () => ShowPlaceholder(Tr.Loc[item.LabelKey]),
                 MenuSubscriptions => () => ShowPlaceholder(Tr.Loc[item.LabelKey]),
                 MenuPayments => () => ShowPlaceholder(Tr.Loc[item.LabelKey]),
@@ -201,6 +204,7 @@ public partial class MainWindow : Window
                 MenuDashboard => "⌂",
                 MenuCalendar => "▦",
                 MenuCustomers => "♙",
+                MenuBasket => "🧺",
                 MenuBorrowing => "▣",
                 MenuSubscriptions => "◷",
                 MenuPayments => "€",
@@ -1683,6 +1687,9 @@ public partial class MainWindow : Window
     private List<Payment> currentPayments = new();
     private List<LedgerEntry> currentLedgerEntries = new();
     private ListBox customerHistoryList = null!;
+    private readonly Dictionary<string, int> customerHistoryBorrowingIds = new();
+    private ListBox basketList = null!;
+    private List<BorrowingRecord> currentBasket = new();
     private TextBlock borrowingSelectionDetails = null!;
     private Image borrowingBarcodeImage = null!;
     private BarcodeDisplayWindow? barcodePopupWindow;
@@ -2151,6 +2158,13 @@ public partial class MainWindow : Window
         primaryFields.Children.Add(scanDateGroup);
         form.Children.Add(primaryFields);
 
+        var prescriptionNumberGroup = new StackPanel { Spacing = 4, Margin = new Thickness(0, 3) };
+        prescriptionNumberGroup.Children.Add(new TextBlock { Text = Tr.Loc.TranslateText("Prescription No."), Foreground = Brushes.LightGray, FontSize = 12 });
+        var prescriptionNumberInput = new TextBox { Text = existing?.PrescriptionNumber ?? string.Empty, MinHeight = 36, PlaceholderText = Tr.Loc.TranslateText("Prescription No.") };
+        fields["PrescriptionNumber"] = prescriptionNumberInput;
+        prescriptionNumberGroup.Children.Add(prescriptionNumberInput);
+        form.Children.Add(prescriptionNumberGroup);
+
         var noteGroup = new StackPanel { Spacing = 4, Margin = new Thickness(0, 3) };
         noteGroup.Children.Add(new TextBlock { Text = Tr.Loc.TranslateText("Notes"), Foreground = Brushes.LightGray, FontSize = 12 });
         var noteInput = new TextBox { Text = existing?.Notes ?? string.Empty, MinHeight = 36, Height = 36, AcceptsReturn = false, TextWrapping = TextWrapping.NoWrap, PlaceholderText = Tr.Loc.TranslateText("Notes") };
@@ -2262,6 +2276,7 @@ public partial class MainWindow : Window
                 record.MedicineName = name;
                 record.Quantity = quantity;
                                                 record.Notes = fields["Notes"].Text?.Trim();
+                record.PrescriptionNumber = fields["PrescriptionNumber"].Text?.Trim();
             }
             else
             {
@@ -2327,7 +2342,7 @@ public partial class MainWindow : Window
                 }
                 db.Borrowings.Add(new BorrowingRecord
                 {
-                    CustomerId = selectedCustomerId.Value, MedicineName = name, OriginalBarcode = parsedPack is not null ? correctedGtin : gtinOnlyValue,
+                    CustomerId = selectedCustomerId.Value, PrescriptionNumber = fields["PrescriptionNumber"].Text?.Trim(), MedicineName = name, OriginalBarcode = parsedPack is not null ? correctedGtin : gtinOnlyValue,
                     SerializedPackScan = serializedPack, Quantity = quantity, InternalBarcode = "BOR-" + Guid.NewGuid().ToString("N"),
                     BorrowedAt = scanCapturedAtUtc?.ToLocalTime() ?? DateTime.Now, Notes = fields["Notes"].Text?.Trim()
                 });
@@ -2541,6 +2556,8 @@ public partial class MainWindow : Window
     private TabItem BuildCustomerHistoryTab()
     {
         customerHistoryList = new ListBox { MinHeight = 180 };
+        var returnToBasket = new Button { Content = Tr.Loc.TranslateText("Return selected borrowing to basket"), MinHeight = 36 };
+        returnToBasket.Click += async (_, _) => await ReturnHistoryBorrowingToBasketAsync();
         subscriptionHistoryList = new ListBox { MinHeight = 150 };
         subscriptionHistoryList.SelectionChanged += async (_, _) =>
         {
@@ -2564,6 +2581,7 @@ public partial class MainWindow : Window
                         new TextBlock { Text = "CUSTOMER MEDICINE & PRESCRIPTION HISTORY", FontSize = 18, FontWeight = FontWeight.Bold },
                         new TextBlock { Text = "All borrowing records (including returned items) and prescriptions, ordered by date.", TextWrapping = TextWrapping.Wrap, Foreground = Brushes.LightGray },
                         customerHistoryList,
+                        returnToBasket,
                         new TextBlock { Text = "PRESCRIPTION HISTORY", FontSize = 16, FontWeight = FontWeight.Bold, Margin = new Thickness(0, 8, 0, 0) },
                         new TextBlock { Text = "Prescription records are kept here and can be opened to review their history.", TextWrapping = TextWrapping.Wrap, Foreground = Brushes.LightGray },
                         subscriptionHistoryList
@@ -2782,15 +2800,16 @@ public partial class MainWindow : Window
                 ? $"{x.BorrowedAt:dd/MM/yyyy HH:mm} | {x.MedicineName} | Qty {x.Quantity}"
                 : $"{x.SerializedPackScan.ScannedAt:dd/MM/yyyy HH:mm} | {x.MedicineName} | SN {x.SerializedPackScan.SerialNumber} | GTIN {x.SerializedPackScan.Gtin14} | Exp {x.SerializedPackScan.ExpiryDate:dd/MM/yyyy} | Lot {x.SerializedPackScan.BatchLot}")
             .ToList();
-        customerHistoryList.ItemsSource = allBorrowings.Select(x => new
-            {
-                Date = x.SerializedPackScan?.ScannedAt ?? x.BorrowedAt,
-                Text = $"{x.SerializedPackScan?.ScannedAt ?? x.BorrowedAt:dd/MM/yyyy HH:mm} | BORROWING | {x.MedicineName} | Qty {x.Quantity} | {x.Status}"
-            }).Concat(prescriptions.Select(x => new
-            {
-                Date = x.CreatedAt,
-                Text = $"{x.CreatedAt:dd/MM/yyyy HH:mm} | PRESCRIPTION | {x.MedicineName} | No. {x.PrescriptionNumber ?? "-"} | {x.Status} | Valid until {x.ExpiryDate:dd/MM/yyyy}"
-            })).OrderByDescending(x => x.Date).Select(x => x.Text).ToList();
+        customerHistoryBorrowingIds.Clear();
+        var historyRows = allBorrowings.Select(x =>
+        {
+            var text = $"{x.BorrowedAt:dd/MM/yyyy HH:mm} | BORROWING | {x.MedicineName} | Qty {x.Quantity} | {x.Status}";
+            customerHistoryBorrowingIds[text] = x.Id;
+            return (Date: x.BorrowedAt, Text: text);
+        }).Concat(prescriptions.Select(x => (Date: x.CreatedAt,
+            Text: $"{x.CreatedAt:dd/MM/yyyy HH:mm} | PRESCRIPTION | {x.MedicineName} | No. {x.PrescriptionNumber ?? "-"} | {x.Status} | Valid until {x.ExpiryDate:dd/MM/yyyy}")))
+          .OrderByDescending(x => x.Date).Select(x => x.Text).ToList();
+        customerHistoryList.ItemsSource = historyRows;
         currentSubscriptions = subscriptions;
         currentExecutedSubscriptions = executedSubscriptions;
         currentPayments = payments;
@@ -3261,6 +3280,26 @@ public partial class MainWindow : Window
         ClearGs1ParsedFields();
         gs1ScanStatus.Text = Tr.Loc.TranslateText("Ready for the next GS1 DataMatrix scan.");
         gs1ScanStatus.Foreground = Brushes.Gray;
+        await RefreshCustomerWorkspaceAsync();
+    }
+
+    private async Task ReturnHistoryBorrowingToBasketAsync()
+    {
+        var selectedText = customerHistoryList.SelectedItem?.ToString();
+        if (string.IsNullOrWhiteSpace(selectedText) || !customerHistoryBorrowingIds.TryGetValue(selectedText, out var borrowingId))
+        {
+            SetActivityStatus("Select a borrowing record in the customer history first.");
+            return;
+        }
+
+        await using var db = new PharmacyDbContext(PharmacyDb.Options());
+        var record = await db.Borrowings.FirstOrDefaultAsync(x => x.Id == borrowingId && x.Status == BorrowingStatus.Borrowed && x.CustomerId == selectedCustomerId);
+        if (record is null) { SetActivityStatus("The selected active borrowing could not be found."); return; }
+        record.CustomerId = null;
+        record.BorrowedAt = DateTime.Now;
+        record.ReturnedAt = null;
+        await db.SaveChangesAsync();
+        SetActivityStatus("Item moved to the basket.");
         await RefreshCustomerWorkspaceAsync();
     }
 
