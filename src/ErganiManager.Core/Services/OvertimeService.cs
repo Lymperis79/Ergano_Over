@@ -177,6 +177,26 @@ public class OvertimeService : IOvertimeService
         await db.SaveChangesAsync();
     }
 
+    public async Task DeleteForErganiImportAsync(int id)
+    {
+        await using var db = OpenDb();
+        var entity = await db.Overtimes.FindAsync(id);
+        if (entity == null) return;
+
+        // The imported portal file is the source of truth for this employee/date.
+        // Do not roll back the schedule here: RunImportAsync replaces it immediately afterwards.
+        var marker = "\\"overtimeId\\":" + entity.Id;
+        var pendingLogs = await db.ApiSubmissionLogs
+            .Where(l => l.SubmissionType == "Overtime" &&
+                        l.ErrorMessage == "PENDING_OVERTIME" &&
+                        l.RequestPayloadJson != null &&
+                        l.RequestPayloadJson.Contains(marker))
+            .ToListAsync();
+        db.ApiSubmissionLogs.RemoveRange(pendingLogs);
+        db.Overtimes.Remove(entity);
+        await db.SaveChangesAsync();
+    }
+
     private static bool IsScheduleGenerated(string? payload)
     {
         if (string.IsNullOrWhiteSpace(payload)) return false;
