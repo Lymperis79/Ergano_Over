@@ -59,4 +59,6 @@ public interface IOvertimeService
     Task<int> CreateAsync(OvertimeDto dto, int companyId);
     Task CancelAsync(int id);
     Task DeleteAsync(int id);
+    /// <summary>Removes a local overtime row while reconciling an authoritative Ergani import.</summary>
+    Task DeleteForErganiImportAsync(int id);
 }
