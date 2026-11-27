@@ -74,7 +74,8 @@ public sealed class AutomaticNextMonthScheduleImportService : IDisposable
             _runningCompanyId = companyId.Value;
             _awaitingDownload = true;
             _isTestRun = true;
-            _testCompletion = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+            var testCompletion = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+            _testCompletion = testCompletion;
 
             _importViewModel ??= SchedulesViewModel.Latest ?? _services.GetRequiredService<SchedulesViewModel>();
             reportStatus($"Preparing the schedule importer for {targetMonth:MMMM yyyy}…");
@@ -94,7 +95,7 @@ public sealed class AutomaticNextMonthScheduleImportService : IDisposable
                 throw new InvalidOperationException(result);
 
             reportStatus("Waiting for the Excel file to download…");
-            var completed = await _testCompletion.Task.WaitAsync(TimeSpan.FromMinutes(8)).ConfigureAwait(false);
+            var completed = await testCompletion.Task.WaitAsync(TimeSpan.FromMinutes(8)).ConfigureAwait(false);
             if (!completed)
                 throw new InvalidOperationException("The schedule import test did not complete.");
             reportStatus($"✅ Test download and import completed for {targetMonth:MMMM yyyy}. The monthly automatic-run marker was not changed.");
