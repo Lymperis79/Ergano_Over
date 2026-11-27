@@ -26,15 +26,13 @@ public static class ResponsiveWindowSizing
             // Keep the requested minimums flexible on compact screens.
             var minW = Math.Min(minimumWidth, Math.Max(320, availableWidth - 16));
             var minH = Math.Min(minimumHeight, Math.Max(240, availableHeight - 16));
-            var maxW = Math.Max(minW, availableWidth);
-            var maxH = Math.Max(minH, availableHeight);
-
+            // Limit only the initial size. Do not set MaxWidth/MaxHeight here:
+            // those limits also constrain a maximized window and leave unused
+            // space around the application on some displays.
             window.MinWidth = minW;
             window.MinHeight = minH;
-            window.MaxWidth = maxW;
-            window.MaxHeight = maxH;
-            window.Width = Math.Clamp(preferredWidth, minW, maxW);
-            window.Height = Math.Clamp(preferredHeight, minH, maxH);
+            window.Width = Math.Clamp(preferredWidth, minW, availableWidth);
+            window.Height = Math.Clamp(preferredHeight, minH, availableHeight);
             window.WindowStartupLocation = WindowStartupLocation.CenterScreen;
         }
 
