@@ -2051,22 +2051,18 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
             var (keys, samples) = await FindConflictsAsync();
             _conflictKeys = keys;
 
-            if (keys.Count == 0)
+            if (keys.Count > 0)
             {
-                await RunImportAsync(replaceExisting: false);
-                return;
+                // An Excel file exported by Ergani is authoritative, including historical dates.
+                // Reconcile every differing row from the file instead of asking the user to keep
+                // stale local values or blocking the import on the old-date UI protection.
+                StatusMessage = string.Format(
+                    Loc["Vm.Found {0} differing day(s). Synchronizing the database with the Ergani file…"],
+                    keys.Count);
             }
 
-            var shown = samples.Take(8).Select(x => "• " + x);
-            ConflictText =
-                string.Format(Loc["Vm.{0} day(s) of the file already have different data in the database:\n"], keys.Count) +
-                string.Join("\n", shown) +
-                (samples.Count > 8 ? string.Format(Loc["Vm.\n… and {0} more"], samples.Count - 8) : string.Empty) +
-                "\n\n" + Loc["Vm.Do you want to REPLACE the old data with the data from the file?"] + "\n" +
-                Loc["Vm.Yes = replace the old data of those days."] + "\n" +
-                Loc["Vm.No = keep the old data and skip those lines (the other lines are still imported)."];
-            StatusMessage = Loc["Vm.Existing data found — choose whether to replace it."];
-            IsConflictDialogOpen = true;
+            await RunImportAsync(replaceExisting: true);
+            return;
         }
         catch (Exception ex)
         {
@@ -2242,7 +2238,7 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
                         var keepOvertime = row.OvertimeRanges.Select(r => (r.Start, r.End)).ToHashSet();
                         foreach (var o in await _overtimeService.GetByCompanyAsync(replaceCompanyId, row.Date, row.Date).ConfigureAwait(false))
                             if (o.EmployeeId == employee.Id && !o.IsCancelled && !keepOvertime.Contains((o.StartTime, o.EndTime)))
-                                await _overtimeService.DeleteAsync(o.Id).ConfigureAwait(false);
+                                await _overtimeService.DeleteForErganiImportAsync(o.Id).ConfigureAwait(false);
 
                         foreach (var l in await _leaveService.GetByEmployeeDateRangeAsync(replaceCompanyId, employee.Id, row.Date, row.Date).ConfigureAwait(false))
                             if (!(row.IsLeaveOnly && string.Equals(l.LeaveTypeCode, row.LeaveTypeCode, StringComparison.OrdinalIgnoreCase)))
