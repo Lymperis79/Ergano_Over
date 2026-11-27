@@ -593,7 +593,8 @@ public partial class ReportService
             var diff = actual - scheduled;
             var extra = Math.Max(0, diff);
             var night = m?.NightHours ?? 0;
-            var threshold = ThresholdFor(key.EmployeeId);\n            var overEight = m?.Days.Sum(d => Math.Max(0, (d.ActualHours ?? 0) - threshold)) ?? 0;
+            var threshold = ThresholdFor(key.EmployeeId);
+            var overEight = m?.Days.Sum(d => Math.Max(0, (d.ActualHours ?? 0) - threshold)) ?? 0;
             var rec = overtimeByMonth.TryGetValue((key.EmployeeId, key.Year, key.Month), out var value) ? value : 0;
             monthly.Add(key.EmployeeName, ReportFormat.MonthLabel(key.Year, key.Month), ReportFormat.Hours(scheduled),
                 ReportFormat.Hours(actual), SignedHours(diff), ReportFormat.Hours(extra), ReportFormat.Hours(night),
