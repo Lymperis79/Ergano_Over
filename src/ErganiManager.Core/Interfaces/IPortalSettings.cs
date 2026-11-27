@@ -21,6 +21,12 @@ public sealed class PortalSettings
     public bool AutoClockOutEnabled { get; set; } = false;
     public int AutoClockOutMinutes { get; set; } = 15;
 
+    /// <summary>Opt-in automatic download/import of next month's schedule on the last working day of the current month.</summary>
+    public bool AutoDownloadNextMonthEnabled { get; set; } = false;
+
+    /// <summary>Local time at which the automatic next-month schedule download should run.</summary>
+    public TimeSpan AutoDownloadNextMonthTime { get; set; } = new(18, 0, 0);
+
     public ErganiPortalProfile Schedule { get; set; } = new()
     {
         TargetPageUrl = "/Mitroa/ErgazomenosWorkingSearch.aspx",
