@@ -93,6 +93,10 @@ public class OvertimeService : IOvertimeService
         // otherwise the calendar will generate the same overtime again on its next refresh.
         if (IsScheduleGenerated(entity.RequestPayloadJson))
         {
+            if (entity.OvertimeDate < DateOnly.FromDateTime(DateTime.Today))
+                throw new InvalidOperationException(ErganiManager.Data.UiText.T(
+                    "Past schedule-generated overtime cannot be deleted because it would change a historical working schedule."));
+
             var scheduleId = ReadScheduleId(entity.RequestPayloadJson);
             var scheduleQuery = db.Schedules.Include(s => s.WorkingPeriods)
                 .Where(s => s.EmployeeId == entity.EmployeeId && s.ScheduleDate == entity.OvertimeDate);
