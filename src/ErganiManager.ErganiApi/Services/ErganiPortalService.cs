@@ -45,6 +45,24 @@ public sealed class ErganiPortalService : IErganiPortalService
     public Task<string> OpenAsync(int companyId, DateOnly? from = null, DateOnly? to = null)
         => OpenProfileAsync(companyId, _settings.Current.Schedule, from, to, downloadAfterSearch: true);
 
+    public Task<string> OpenAutomaticScheduleDownloadAsync(int companyId, DateOnly from, DateOnly to)
+    {
+        var current = _settings.Current.Schedule;
+        var automaticProfile = new ErganiPortalProfile
+        {
+            PortalBaseUrl = current.PortalBaseUrl,
+            TargetPageUrl = current.TargetPageUrl,
+            FromDateFieldId = current.FromDateFieldId,
+            ToDateFieldId = current.ToDateFieldId,
+            DateFormat = current.DateFormat,
+            AutoSearch = true,
+            AutoDownload = true,
+            SearchButtonId = current.SearchButtonId,
+            DownloadFolder = current.DownloadFolder
+        };
+        return OpenProfileAsync(companyId, automaticProfile, from, to, downloadAfterSearch: true);
+    }
+
     public Task<string> OpenWorkCardsAsync(int companyId, DateOnly date)
         => OpenProfileAsync(companyId, _settings.Current.WorkCards, date, date, downloadAfterSearch: false);
 
