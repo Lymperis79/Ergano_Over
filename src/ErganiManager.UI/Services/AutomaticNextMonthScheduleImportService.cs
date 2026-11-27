@@ -97,14 +97,14 @@ public sealed class AutomaticNextMonthScheduleImportService : IDisposable
                 return;
 
             DateOnly lastWorkingDay;
-        if (_cachedWorkingMonth == $"{now.Year:D4}-{now.Month:D2}")
-            lastWorkingDay = _cachedLastWorkingDay;
-        else
-        {
-            lastWorkingDay = await GetLastWorkingDayAsync(now.Year, now.Month).ConfigureAwait(false);
-            _cachedWorkingMonth = $"{now.Year:D4}-{now.Month:D2}";
-            _cachedLastWorkingDay = lastWorkingDay;
-        }
+            if (_cachedWorkingMonth == $"{now.Year:D4}-{now.Month:D2}")
+                lastWorkingDay = _cachedLastWorkingDay;
+            else
+            {
+                lastWorkingDay = await GetLastWorkingDayAsync(now.Year, now.Month).ConfigureAwait(false);
+                _cachedWorkingMonth = $"{now.Year:D4}-{now.Month:D2}";
+                _cachedLastWorkingDay = lastWorkingDay;
+            }
             if (DateOnly.FromDateTime(now) != lastWorkingDay ||
                 now.TimeOfDay < _settings.Current.AutoDownloadNextMonthTime)
                 return;
@@ -130,7 +130,7 @@ public sealed class AutomaticNextMonthScheduleImportService : IDisposable
                 AllowedMenus = _session.AllowedMenus
             };
 
-            _importViewModel ??= _services.GetRequiredService<SchedulesViewModel>();
+            _importViewModel ??= SchedulesViewModel.Latest ?? _services.GetRequiredService<SchedulesViewModel>();
             await RunOnUiAsync(async () =>
             {
                 await _importViewModel.InitializeForAutomaticImportAsync(sessionForCompany);
@@ -210,14 +210,20 @@ public sealed class AutomaticNextMonthScheduleImportService : IDisposable
             if (!imported)
                 throw new InvalidOperationException("The downloaded Excel file could not be imported. Check the Schedules status and application log.");
 
-            var completedCompanyId = _session?.CompanyId ?? _companyContext.ActiveCompanyId
-                ?? throw new InvalidOperationException("The active company changed during the automatic import.");
+            var completedCompanyId = _runningCompanyId;
+            if (completedCompanyId <= 0)
+                throw new InvalidOperationException("The automatic import company could not be determined.");
             Directory.CreateDirectory(Path.GetDirectoryName(MarkerPath(completedCompanyId))!);
             File.WriteAllText(MarkerPath(completedCompanyId), _runningMonthKey);
             Log.Information("Automatic Ergani schedule import completed for {Month}.", _runningMonthKey);
             _awaitingDownload = false;
             _retryAfterLocal = DateTime.MinValue;
             vm.SetAutomaticPortalImportMode(false);
+            await RunOnUiAsync(async () =>
+            {
+                await SchedulesViewModel.RefreshLatestCalendarAsync();
+                return true;
+            });
         }
         catch (Exception ex)
         {
