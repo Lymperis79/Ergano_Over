@@ -78,7 +78,8 @@ public sealed class AutomaticNextMonthScheduleImportService : IDisposable
 
     private async Task CheckAsync()
     {
-        if (_session == null || !_settings.Current.AutoDownloadNextMonthEnabled ||
+        var activeSession = _session;
+        if (activeSession == null || !_settings.Current.AutoDownloadNextMonthEnabled ||
             _awaitingDownload || DateTime.Now < _retryAfterLocal)
             return;
 
@@ -90,7 +91,7 @@ public sealed class AutomaticNextMonthScheduleImportService : IDisposable
             var now = DateTime.Now;
             var targetMonth = new DateOnly(now.Year, now.Month, 1).AddMonths(1);
             var monthKey = targetMonth.ToString("yyyy-MM");
-            var companyId = _session.CompanyId ?? _companyContext.ActiveCompanyId;
+            var companyId = activeSession.CompanyId ?? _companyContext.ActiveCompanyId;
             if (!companyId.HasValue)
                 return;
             if (string.Equals(ReadCompletedMonth(companyId.Value), monthKey, StringComparison.Ordinal))
@@ -118,16 +119,16 @@ public sealed class AutomaticNextMonthScheduleImportService : IDisposable
 
             var sessionForCompany = new UserSession
             {
-                UserId = _session.UserId,
-                Username = _session.Username,
-                Role = _session.Role,
+                UserId = activeSession.UserId,
+                Username = activeSession.Username,
+                Role = activeSession.Role,
                 CompanyId = companyId,
-                CompanyName = _session.CompanyName,
-                BranchId = _session.BranchId,
-                BranchName = _session.BranchName,
-                IsOfflineSession = _session.IsOfflineSession,
-                CanSaveCredentials = _session.CanSaveCredentials,
-                AllowedMenus = _session.AllowedMenus
+                CompanyName = activeSession.CompanyName,
+                BranchId = activeSession.BranchId,
+                BranchName = activeSession.BranchName,
+                IsOfflineSession = activeSession.IsOfflineSession,
+                CanSaveCredentials = activeSession.CanSaveCredentials,
+                AllowedMenus = activeSession.AllowedMenus
             };
 
             _importViewModel ??= SchedulesViewModel.Latest ?? _services.GetRequiredService<SchedulesViewModel>();
