@@ -2184,10 +2184,49 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
         {
             StatusMessage = Loc["Vm.Importing Ergani declared schedule…"];
 
-            var employeesByAfm = AvailableEmployees
+            if (_session?.CompanyId is not int importCompanyId)
+                throw new InvalidOperationException(Loc["Vm.Select a company first."]);
+
+            var importFrom = _pendingErganiRows.Min(r => r.Date);
+            var importTo = _pendingErganiRows.Max(r => r.Date);
+            await LoadDailyOvertimeThresholdAsync();
+
+            // The official export is authoritative for the complete company/date range.
+            // Include inactive employees when matching AFMs in the downloaded file.
+            var employeesByAfm = SchedulePickerEmployees
                 .Where(e => !string.IsNullOrWhiteSpace(e.TaxId))
                 .GroupBy(e => NormalizeTaxId(e.TaxId))
                 .ToDictionary(g => g.Key, g => g.First());
+
+            // Clear all existing schedules in the covered period, including employees
+            // and dates absent from the file. Keep the audit history intact.
+            int schedulesRemoved;
+            await using (var db = new AppDbContext(_connectionState.GetDbOptions()))
+            {
+                var oldSchedules = await db.Schedules
+                    .Include(s => s.WorkingPeriods)
+                    .Where(s => s.Employee != null &&
+                                s.Employee.CompanyId == importCompanyId &&
+                                s.ScheduleDate >= importFrom &&
+                                s.ScheduleDate <= importTo)
+                    .ToListAsync()
+                    .ConfigureAwait(false);
+                schedulesRemoved = oldSchedules.Count;
+                db.Schedules.RemoveRange(oldSchedules);
+                await db.SaveChangesAsync().ConfigureAwait(false);
+            }
+
+            // Unsent overtime is generated from the calendar, so remove it before
+            // rebuilding. Submitted overtime and its protocol history are preserved.
+            int unsentOvertimeRemoved = 0;
+            var overtimeInRange = await _overtimeService
+                .GetByCompanyAsync(importCompanyId, importFrom, importTo)
+                .ConfigureAwait(false);
+            foreach (var overtime in overtimeInRange.Where(o => !o.SubmittedToErgani))
+            {
+                await _overtimeService.DeleteForErganiImportAsync(overtime.Id).ConfigureAwait(false);
+                unsentOvertimeRemoved++;
+            }
 
             int saved = 0;
             int overwritten = 0;
@@ -2224,11 +2263,6 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
                     replacedDays++;
                     if (_session?.CompanyId is int replaceCompanyId)
                     {
-                        var keepOvertime = row.OvertimeRanges.Select(r => (r.Start, r.End)).ToHashSet();
-                        foreach (var o in await _overtimeService.GetByCompanyAsync(replaceCompanyId, row.Date, row.Date).ConfigureAwait(false))
-                            if (o.EmployeeId == employee.Id && !o.IsCancelled && !keepOvertime.Contains((o.StartTime, o.EndTime)))
-                                await _overtimeService.DeleteForErganiImportAsync(o.Id).ConfigureAwait(false);
-
                         foreach (var l in await _leaveService.GetByEmployeeDateRangeAsync(replaceCompanyId, employee.Id, row.Date, row.Date).ConfigureAwait(false))
                             if (!(row.IsLeaveOnly && string.Equals(l.LeaveTypeCode, row.LeaveTypeCode, StringComparison.OrdinalIgnoreCase)))
                                 await _leaveService.DeleteAsync(l.Id).ConfigureAwait(false);
@@ -2291,17 +2325,32 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
                 else
                     saved++;
 
-                // Overtime part (Υπερωρία hh:mm-hh:mm): its own record, already declared at Ergani.
-                foreach (var (otStart, otEnd) in row.OvertimeRanges)
+                // Rebuild overtime from the complete daily calendar, including explicit
+                // overtime intervals from the export. The configured company threshold is
+                // cumulative worked time, so split shifts are handled correctly.
+                var overtimePeriods = row.WorkingPeriods
+                    .Select(p => (Start: p.Start, End: p.End))
+                    .Concat(row.OvertimeRanges.Select(p => (Start: p.Start, End: p.End)))
+                    .OrderBy(p => p.Start)
+                    .ToList();
+                if (overtimePeriods.Count == 0 &&
+                    row.StartTime is TimeOnly fallbackStart &&
+                    row.EndTime is TimeOnly fallbackEnd)
+                    overtimePeriods.Add((fallbackStart, fallbackEnd));
+
+                var calculatedOvertime = row.WorkType is AppWorkType.Office or AppWorkType.Home
+                    ? ScheduleHours.GetOvertimeRange(overtimePeriods, _dailyOvertimeThresholdHours)
+                    : null;
+
+                if (calculatedOvertime is { } overtimeRange)
                 {
                     var created = await _overtimeService.UpsertFromErganiImportAsync(new OvertimeDto
                     {
                         EmployeeId           = employee.Id,
                         BranchId             = employee.BranchId,
                         OvertimeDate         = row.Date,
-                        StartTime            = otStart,
-                        EndTime              = otEnd,
-                        // The Ergani schedule export does not contain the justification.
+                        StartTime            = overtimeRange.From,
+                        EndTime              = overtimeRange.To,
                         Justification        = AppOvertimeJustification.ExceptionalWorkload,
                         WeeklyWorkdaysNumber = employee.WeeklyWorkdays,
                         SubmittedToErgani    = true
@@ -2353,6 +2402,8 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
                 extra.Add(string.Format(Loc["Vm.{0} holiday day(s) ({1} already existed)"], leavesCreated, leavesExisting));
             if (staleRemoved > 0)
                 extra.Add(string.Format(Loc["Vm.{0} old imported \"absent\" day(s) replaced by holidays"], staleRemoved));
+            extra.Add(string.Format(Loc["Vm.{0} existing schedule row(s) cleared in the imported date range"], schedulesRemoved));
+            extra.Add(string.Format(Loc["Vm.{0} unsent overtime row(s) rebuilt"], unsentOvertimeRemoved));
             if (replacedDays > 0)
                 extra.Add(string.Format(Loc["Vm.{0} day(s) with old data replaced"], replacedDays));
             if (skippedExisting > 0)
