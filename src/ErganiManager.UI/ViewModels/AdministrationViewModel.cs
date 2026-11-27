@@ -372,6 +372,8 @@ public partial class AdministrationViewModel : ViewModelBase, IAdminSectionViewM
     [ObservableProperty] private string _schedulePortalDateFormat = string.Empty;
     [ObservableProperty] private bool _schedulePortalAutoSearch = true;
     [ObservableProperty] private bool _schedulePortalAutoDownload = true;
+    [ObservableProperty] private bool _autoDownloadNextMonthEnabled;
+    [ObservableProperty] private TimeSpan? _autoDownloadNextMonthTime = new(18, 0, 0);
     [ObservableProperty] private string _schedulePortalSearchButton = string.Empty;
     [ObservableProperty] private string _schedulePortalDownloadFolder = string.Empty;
     [ObservableProperty] private string _schedulePortalStatus = string.Empty;
@@ -506,6 +508,10 @@ public partial class AdministrationViewModel : ViewModelBase, IAdminSectionViewM
         SchedulePortalDateFormat = schedule.DateFormat;
         SchedulePortalAutoSearch = schedule.AutoSearch;
         SchedulePortalAutoDownload = schedule.AutoDownload;
+        AutoDownloadNextMonthEnabled = portal.Current.AutoDownloadNextMonthEnabled;
+        AutoDownloadNextMonthTime = portal.Current.AutoDownloadNextMonthTime >= TimeSpan.Zero && portal.Current.AutoDownloadNextMonthTime < TimeSpan.FromDays(1)
+            ? portal.Current.AutoDownloadNextMonthTime
+            : new TimeSpan(18, 0, 0);
         SchedulePortalSearchButton = schedule.SearchButtonId;
         SchedulePortalDownloadFolder = schedule.DownloadFolder;
 
@@ -616,8 +622,16 @@ public partial class AdministrationViewModel : ViewModelBase, IAdminSectionViewM
                 return;
             }
 
+            if (AutoDownloadNextMonthTime is not { } runTime || runTime < TimeSpan.Zero || runTime >= TimeSpan.FromDays(1))
+            {
+                SchedulePortalStatus = "Please select a valid run time between 00:00 and 23:59.";
+                return;
+            }
+
             var current = _portal.Current;
             current.Schedule = schedule;
+            current.AutoDownloadNextMonthEnabled = AutoDownloadNextMonthEnabled;
+            current.AutoDownloadNextMonthTime = new TimeSpan(runTime.Hours, runTime.Minutes, 0);
             _portal.Save(current);
             SchedulePortalStatus = Loc[L.SchedulePortalSaved];
         }
