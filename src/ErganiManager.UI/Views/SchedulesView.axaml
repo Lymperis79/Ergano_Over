@@ -84,8 +84,9 @@
 
                 <!-- Employee picker -->
                 <TextBlock Grid.Column="0" Text="{Binding Loc[Employee2]}" VerticalAlignment="Center" Margin="0,0,8,0" />
-                <Grid Grid.Column="1" Width="420" HorizontalAlignment="Left">
-                    <AutoCompleteBox x:Name="ScheduleEmployeePicker"
+                <Grid Grid.Column="1" Width="420" HorizontalAlignment="Left"
+                      ColumnDefinitions="*,44" ColumnSpacing="4">
+                    <AutoCompleteBox Grid.Column="0" x:Name="ScheduleEmployeePicker"
                                  ItemsSource="{Binding FilteredEmployees}"
                                  SelectedItem="{Binding SelectedEmployee, Mode=TwoWay}"
                                  Text="{Binding EmployeeSearchText, Mode=TwoWay}"
@@ -95,10 +96,8 @@
                                  IsTextCompletionEnabled="False"
                                  ClearSelectionOnLostFocus="False"
                                  HorizontalAlignment="Stretch"
-                                 ToolTip.Tip="Click to select the current text, then type an employee name, AFM or employee number">
+                                 ToolTip.Tip="Type to filter by employee name, AFM or employee number. Use the arrow to open the list.">
                     <AutoCompleteBox.Styles>
-                        <!-- Keep the editable text left-aligned even if the application has
-                             a global TextBox alignment style. -->
                         <Style Selector="TextBox">
                             <Setter Property="TextAlignment" Value="Left" />
                         </Style>
@@ -112,17 +111,22 @@
                         </DataTemplate>
                     </AutoCompleteBox.ItemTemplate>
                 </AutoCompleteBox>
-                    <ToggleButton Click="OnScheduleEmployeePickerDropdownClick"
-                                  Content="▾"
-                                  Width="30"
-                                  HorizontalAlignment="Right"
+                    <ToggleButton Grid.Column="1" Click="OnScheduleEmployeePickerDropdownClick"
+                                  Content="▼"
+                                  Width="44" Height="38"
+                                  HorizontalAlignment="Stretch"
                                   VerticalAlignment="Center"
                                   VerticalContentAlignment="Center"
                                   HorizontalContentAlignment="Center"
-                                  Background="Transparent"
-                                  BorderThickness="0"
-                                  Padding="4,0"
-                                  ToolTip.Tip="Open employee list" />
+                                  Background="{DynamicResource AccentBrush}"
+                                  Foreground="White"
+                                  BorderBrush="{DynamicResource AccentLightBrush}"
+                                  BorderThickness="1"
+                                  CornerRadius="6"
+                                  FontSize="16"
+                                  FontWeight="Bold"
+                                  Padding="4"
+                                  ToolTip.Tip="Click to open the employee list" />
                 </Grid>
 
                 <!-- View mode -->
