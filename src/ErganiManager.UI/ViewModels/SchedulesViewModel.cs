@@ -162,8 +162,8 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
         var matches = string.IsNullOrWhiteSpace(query)
             ? source
             : source.Where(e =>
-                    (!string.IsNullOrWhiteSpace(e.DisplayName) &&
-                     e.DisplayName.Contains(query, StringComparison.CurrentCultureIgnoreCase)) ||
+                    (!string.IsNullOrWhiteSpace(e.FullName) &&
+                     e.FullName.Contains(query, StringComparison.CurrentCultureIgnoreCase)) ||
                     (!string.IsNullOrWhiteSpace(e.TaxId) &&
                      e.TaxId.Contains(query, StringComparison.OrdinalIgnoreCase)) ||
                     e.Id.ToString().Contains(query, StringComparison.Ordinal))
