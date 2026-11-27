@@ -1971,7 +1971,7 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
                 return;
             }
 
-            var employeesByAfm = AvailableEmployees
+            var employeesByAfm = SchedulePickerEmployees
                 .Where(e => !string.IsNullOrWhiteSpace(e.TaxId))
                 .GroupBy(e => NormalizeTaxId(e.TaxId))
                 .ToDictionary(g => g.Key, g => g.First());
