@@ -232,8 +232,8 @@ public class OvertimeService : IOvertimeService
         // This exact interval is present in the official Ergani export, so it is already declared.
         existing.SubmittedToErgani = true;
         existing.IsCancelled = false;
-        existing.SubmissionId = null;
-        existing.Protocol = null;
+        existing.BranchId = dto.BranchId;
+        existing.WeeklyWorkdaysNumber = dto.WeeklyWorkdaysNumber;
         existing.RequestPayloadJson = null;
 
         var marker = "\"overtimeId\":" + existing.Id;
