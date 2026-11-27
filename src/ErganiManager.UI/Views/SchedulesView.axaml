@@ -92,7 +92,7 @@
                                      ItemsSource="{Binding FilteredEmployees}"
                                      SelectedItem="{Binding SelectedEmployee, Mode=TwoWay}"
                                      Text="{Binding EmployeeSearchText, Mode=TwoWay}"
-                                     ValueMemberBinding="{Binding FullName}"
+                                     ValueMemberBinding="{Binding ScheduleDisplayName}"
                                      FilterMode="Contains"
                                      MinimumPrefixLength="0"
                                      IsTextCompletionEnabled="False"
@@ -110,7 +110,7 @@
                         </AutoCompleteBox.Styles>
                         <AutoCompleteBox.ItemTemplate>
                             <DataTemplate x:DataType="core:EmployeeDto">
-                                <TextBlock Text="{Binding FullName}"
+                                <TextBlock Text="{Binding ScheduleDisplayName}"
                                            VerticalAlignment="Center"
                                            TextWrapping="NoWrap"
                                            TextTrimming="CharacterEllipsis"
