@@ -1469,21 +1469,20 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
         else if (ViewMode == ScheduleViewMode.Week)
         {
             var (wFrom, wTo) = CurrentWeekRange;
-            from = wFrom; to = wTo;
+            from = wFrom < Today ? Today : wFrom;
+            to = wTo;
             dowFilter = BuildDowFilter();
         }
         else
         {
-            from = new DateOnly(Year, Month, 1);
-            to   = new DateOnly(Year, Month, DateTime.DaysInMonth(Year, Month));
+            var monthStart = new DateOnly(Year, Month, 1);
+            from = monthStart < Today ? Today : monthStart;
+            to = new DateOnly(Year, Month, DateTime.DaysInMonth(Year, Month));
             dowFilter = BuildDowFilter();
         }
 
-        if (from < Today)
-        {
-            RejectPastDates(ExpandDates(from, to), Loc["Vm.bulk schedule changes"]);
+        if (to < Today || (_selectedDates.Count > 0 && RejectPastDates(_selectedDates, Loc["Vm.bulk schedule changes"])))
             return;
-        }
 
         try
         {
@@ -1534,11 +1533,12 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
             if (ViewMode == ScheduleViewMode.Week)
             {
                 var (f, t) = CurrentWeekRange;
-                CloneFrom = f; CloneTo = t;
+                CloneFrom = f < Today ? Today : f; CloneTo = t;
             }
             else
             {
-                CloneFrom = new DateOnly(Year, Month, 1);
+                var monthStart = new DateOnly(Year, Month, 1);
+                CloneFrom = monthStart < Today ? Today : monthStart;
                 CloneTo = new DateOnly(Year, Month, DateTime.DaysInMonth(Year, Month));
             }
         }
