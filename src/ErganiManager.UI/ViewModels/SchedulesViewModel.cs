@@ -255,6 +255,8 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
     // The portal service is a singleton; only the most recently created view model reacts to a download.
     private static SchedulesViewModel? _latest;
     private string _portalDownloadedFile = string.Empty;
+    private bool _automaticPortalImportInProgress;
+    public bool LastAutomaticImportSucceeded { get; private set; }
     [ObservableProperty] private bool _isPortalImportPromptOpen;
     [ObservableProperty] private string _portalImportPromptText = string.Empty;
 
@@ -562,6 +564,35 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
 
     /// <summary>Refreshes the visible calendar when returning to the Schedules section.</summary>
     public Task RefreshAsync() => RefreshCalendarAsync();
+
+    /// <summary>Initializes the schedule importer for a background portal import without opening the Schedules screen.</summary>
+    public async Task InitializeForAutomaticImportAsync(UserSession session)
+    {
+        _session = session;
+        HasActiveCompany = session.CompanyId.HasValue;
+        if (!HasActiveCompany)
+            throw new InvalidOperationException("No active company is selected for the automatic schedule import.");
+
+        await LoadFiltersAsync().ConfigureAwait(false);
+        if (SchedulePickerEmployees.Count == 0)
+            throw new InvalidOperationException("No employees were loaded for the automatic schedule import.");
+    }
+
+    /// <summary>Imports a downloaded portal workbook through the same authoritative path as the manual import.</summary>
+    public async Task<bool> ImportDownloadedAutomaticallyAsync(string filePath)
+    {
+        LastAutomaticImportSucceeded = false;
+        _automaticPortalImportInProgress = true;
+        try
+        {
+            await PrepareErganiImportFromFileAsync(filePath, autoConfirm: true).ConfigureAwait(false);
+            return LastAutomaticImportSucceeded;
+        }
+        finally
+        {
+            _automaticPortalImportInProgress = false;
+        }
+    }
 
     private async Task LoadFiltersAsync()
     {
@@ -1890,7 +1921,7 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
     /// <summary>The portal finished downloading the schedule Excel: ask whether to import it right away.</summary>
     private void OnPortalExcelDownloaded(string filePath)
     {
-        if (!ReferenceEquals(_latest, this)) return;
+        if (!ReferenceEquals(_latest, this) || _automaticPortalImportInProgress) return;
 
         _portalDownloadedFile = filePath;
         PortalImportPromptText =
@@ -2430,6 +2461,7 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
             if (manualKept > 0)
                 extra.Add(string.Format(Loc["Vm.{0} manual schedule day(s) on holidays left unchanged"], manualKept));
 
+            LastAutomaticImportSucceeded = true;
             StatusMessage =
                 string.Format(Loc["Vm.✅ Ergani import completed: {0} schedule day(s) imported ({1} new, {2} updated)."], total, saved, overwritten) +
                 (extra.Count > 0 ? " " + string.Join(", ", extra) + "." : string.Empty) +
