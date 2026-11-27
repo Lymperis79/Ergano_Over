@@ -103,7 +103,7 @@ public class OvertimeService : IOvertimeService
             if (schedule != null)
             {
                 var beforeSnapshot = CreateScheduleSnapshot(schedule);
-                var restored = TryApplyScheduleSnapshot(schedule, schedule.PendingPreviousSnapshotJson);
+                var restored = TryApplyScheduleSnapshot(db, schedule, schedule.PendingPreviousSnapshotJson);
 
                 if (!restored)
                 {
@@ -114,7 +114,7 @@ public class OvertimeService : IOvertimeService
                         .ThenByDescending(h => h.Id)
                         .Select(h => h.PreviousSnapshotJson)
                         .FirstOrDefaultAsync();
-                    restored = TryApplyScheduleSnapshot(schedule, historySnapshot);
+                    restored = TryApplyScheduleSnapshot(db, schedule, historySnapshot);
                 }
 
                 // For a schedule created without an earlier saved version, trim the generated
@@ -160,7 +160,7 @@ public class OvertimeService : IOvertimeService
         }
 
         // Remove the pending Overtime log row tied to this generated record as well.
-        var marker = "\\"overtimeId\\":" + entity.Id;
+        var marker = "\"overtimeId\":" + entity.Id;
         var pendingLogs = await db.ApiSubmissionLogs
             .Where(l => l.SubmissionType == "Overtime" &&
                         l.ErrorMessage == "PENDING_OVERTIME" &&
@@ -209,7 +209,7 @@ public class OvertimeService : IOvertimeService
             }).ToList()
         });
 
-    private static bool TryApplyScheduleSnapshot(EmployeeSchedule schedule, string? snapshotJson)
+    private static bool TryApplyScheduleSnapshot(AppDbContext db, EmployeeSchedule schedule, string? snapshotJson)
     {
         if (string.IsNullOrWhiteSpace(snapshotJson)) return false;
         try
@@ -241,6 +241,7 @@ public class OvertimeService : IOvertimeService
                 });
             }
 
+            db.ScheduleWorkingPeriods.RemoveRange(schedule.WorkingPeriods);
             schedule.WorkType = workType;
             schedule.WorkingPeriods = periods.OrderBy(p => p.PeriodNumber).ToList();
             schedule.StartTime = schedule.WorkingPeriods.FirstOrDefault()?.StartTime;
