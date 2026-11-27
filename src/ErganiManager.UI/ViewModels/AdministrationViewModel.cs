@@ -1050,7 +1050,7 @@ public partial class AdministrationViewModel : ViewModelBase, IAdminSectionViewM
                     _loadedCompanySettings = company;
                     CompanyErganiBaseUrl = company.ErganiBaseUrl ?? string.Empty;
                     // Older databases may contain 0 from before this setting was validated. The UI and save validation require 1–24 hours; show the standard 8-hour default so this legacy value cannot block saving every company setting.
-                    DailyOvertimeThresholdHours = company.DailyOvertimeThresholdHours is >= 1 and <= 24
+                    DailyOvertimeThresholdHours = company.DailyOvertimeThresholdHours is >= 0 and <= 24
                         ? (decimal)company.DailyOvertimeThresholdHours
                         : 8m;
                     EarlyClockInBlockMinutes = company.EarlyClockInBlockMinutes;
@@ -1157,7 +1157,7 @@ public partial class AdministrationViewModel : ViewModelBase, IAdminSectionViewM
             return;
         }
 
-        if (DailyOvertimeThresholdHours is not { } overtimeThreshold || overtimeThreshold < 1m || overtimeThreshold > 24m ||
+        if (DailyOvertimeThresholdHours is not { } overtimeThreshold || overtimeThreshold < 0m || overtimeThreshold > 24m ||
             overtimeThreshold * 2m != decimal.Truncate(overtimeThreshold * 2m) ||
             EarlyClockInBlockMinutes is < 0 or > 120 ||
             EarlyDepartureAlertMinutes is < 0 or > 120 ||
