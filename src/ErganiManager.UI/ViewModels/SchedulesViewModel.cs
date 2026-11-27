@@ -578,6 +578,8 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
             throw new InvalidOperationException("No employees were loaded for the automatic schedule import.");
     }
 
+    public void SetAutomaticPortalImportMode(bool enabled) => _automaticPortalImportInProgress = enabled;
+
     /// <summary>Imports a downloaded portal workbook through the same authoritative path as the manual import.</summary>
     public async Task<bool> ImportDownloadedAutomaticallyAsync(string filePath)
     {
