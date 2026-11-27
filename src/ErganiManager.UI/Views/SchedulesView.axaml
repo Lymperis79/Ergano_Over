@@ -453,6 +453,10 @@
                             <TextBlock Text="{Binding EditingDate, StringFormat='Schedule for {0:dd/MM/yyyy}'}"
                                        FontSize="16" FontWeight="Bold" />
 
+                            <TextBlock Text="{Binding Loc[Vm.Past dates are read-only because Ergani does not accept ordinary changes for them.]}"
+                                       Foreground="#FFB74D" TextWrapping="Wrap"
+                                       IsVisible="{Binding IsPastEditingDate}" />
+                            <StackPanel IsEnabled="{Binding CanEditEditingDay}" Spacing="10">
                             <TextBlock Text="{Binding Loc[WorkType]}" FontWeight="SemiBold" />
                             <ComboBox ItemsSource="{Binding AvailableWorkTypes}"
                                       SelectedItem="{Binding EditingWorkType}"
@@ -504,6 +508,7 @@
 
                             <TextBlock Text="{Binding Loc[Comments]}" FontWeight="SemiBold" />
                             <TextBox Text="{Binding EditingComments}" />
+                            </StackPanel>
 
                             <TextBlock Text="{Binding EditingActualText}" Foreground="Gray" FontSize="11"
                                        IsVisible="{Binding EditingActualText,
@@ -522,6 +527,7 @@
                         <Button Content="{Binding Loc[Delete2]}"
                                 Command="{Binding DeleteDayCommand}"
                                 IsVisible="{Binding IsEditingExisting}"
+                                IsEnabled="{Binding CanEditEditingDay}"
                                 Foreground="#EF9A9A" />
                         <Button Content="{Binding Loc[SaveSubmit]}"
                                 Command="{Binding SaveAndSubmitDayCommand}"
@@ -529,7 +535,8 @@
                                 IsEnabled="{Binding CanSubmitEditingDay}"
                                 ToolTip.Tip="{Binding Loc[RestSubmitBlockedTooltip]}" />
                         <Button Content="{Binding Loc[Save]}"
-                                Command="{Binding SaveDayCommand}" Classes="accent" />
+                                Command="{Binding SaveDayCommand}" Classes="accent"
+                                IsEnabled="{Binding CanEditEditingDay}" />
                     </StackPanel>
                 </Grid>
             </Border>
