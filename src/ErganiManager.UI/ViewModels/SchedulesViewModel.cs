@@ -575,7 +575,7 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
         if (!HasActiveCompany)
             throw new InvalidOperationException("No active company is selected for the automatic schedule import.");
 
-        await LoadFiltersAsync().ConfigureAwait(false);
+        await LoadFiltersAsync();
         if (SchedulePickerEmployees.Count == 0)
             throw new InvalidOperationException("No employees were loaded for the automatic schedule import.");
     }
