@@ -1481,7 +1481,12 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
             dowFilter = BuildDowFilter();
         }
 
-        if (to < Today || (_selectedDates.Count > 0 && RejectPastDates(_selectedDates, Loc["Vm.bulk schedule changes"])))
+        if (to < Today)
+        {
+            RejectPastDates(new[] { to }, Loc["Vm.bulk schedule changes"]);
+            return;
+        }
+        if (_selectedDates.Count > 0 && RejectPastDates(_selectedDates, Loc["Vm.bulk schedule changes"]))
             return;
 
         try
@@ -1543,6 +1548,11 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
             }
         }
         OnPropertyChanged(nameof(CloneScopeDescription));
+        if (CloneTo < Today)
+        {
+            RejectPastDates(new[] { CloneTo!.Value }, Loc["Vm.schedule copying"]);
+            return;
+        }
         var proposedCloneDates = _cloneDates.Count > 0
             ? _cloneDates
             : ExpandDates(CloneFrom!.Value, CloneTo!.Value);
