@@ -400,7 +400,20 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
     public bool BulkShowTimeFields => BulkWorkType    is AppWorkType.Office or AppWorkType.Home;
     public bool IsEditingExisting  => EditingScheduleId != 0;
     /// <summary>Only Office/Home days that are not yet at Ergani can be submitted from the day dialog.</summary>
-    public bool CanShowSubmitEditingDay => ShowTimeFields && !EditingSubmitted;
+    private static DateOnly Today => DateOnly.FromDateTime(DateTime.Today);
+    private static bool IsPastDate(DateOnly date) => date < Today;
+    private static bool ContainsPastDate(IEnumerable<DateOnly> dates) => dates.Any(IsPastDate);
+    private bool RejectPastDates(IEnumerable<DateOnly> dates, string operation)
+    {
+        var past = dates.Where(IsPastDate).Distinct().OrderBy(d => d).ToList();
+        if (past.Count == 0) return false;
+        StatusMessage = string.Format(Loc["Vm.⛔ {0} cannot be changed for past dates. Past dates are read-only because Ergani does not accept ordinary schedule changes for them."], operation);
+        return true;
+    }
+
+    public bool IsPastEditingDate => IsPastDate(EditingDate);
+    public bool CanEditEditingDay => !IsPastEditingDate;
+    public bool CanShowSubmitEditingDay => ShowTimeFields && !EditingSubmitted && CanEditEditingDay;
     public bool CanSubmitEditingDay => CanShowSubmitEditingDay && !HasEditingRestViolation;
     public bool HasEditingOvertime => PotentialExtraHours > 0;
     public double EditingTotalHours => GetEditingPeriods()
@@ -1170,6 +1183,9 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
     {
         OnPropertyChanged(nameof(HasEditingRestViolation));
         OnPropertyChanged(nameof(CanSubmitEditingDay));
+        OnPropertyChanged(nameof(IsPastEditingDate));
+        OnPropertyChanged(nameof(CanEditEditingDay));
+        OnPropertyChanged(nameof(CanShowSubmitEditingDay));
     }
 
     partial void OnEditingSubmittedChanged(bool value) =>
@@ -1199,6 +1215,11 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
     [RelayCommand]
     private async Task SaveDayAsync()
     {
+        if (IsPastDate(EditingDate))
+        {
+            RejectPastDates(new[] { EditingDate }, Loc["Vm.schedule"]);
+            return;
+        }
         if (SelectedEmployee == null || EditingBranch == null) return;
         try
         {
@@ -1314,6 +1335,11 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
     [RelayCommand]
     private async Task SaveAndSubmitDayAsync()
     {
+        if (IsPastDate(EditingDate))
+        {
+            RejectPastDates(new[] { EditingDate }, Loc["Vm.schedule"]);
+            return;
+        }
         if (SelectedEmployee == null || EditingBranch == null || _session?.CompanyId is not int companyId) return;
         try
         {
@@ -1335,6 +1361,11 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
     [RelayCommand]
     private void DeleteDay()
     {
+        if (IsPastDate(EditingDate))
+        {
+            RejectPastDates(new[] { EditingDate }, Loc["Vm.schedule"]);
+            return;
+        }
         if (EditingScheduleId == 0) return;
         RequestDelete(new[] { EditingDate });
     }
@@ -1344,6 +1375,8 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
 
     private void RequestDelete(IEnumerable<DateOnly> dates)
     {
+        var requestedDates = dates.Distinct().ToList();
+        if (RejectPastDates(requestedDates, Loc["Vm.schedule deletion"])) return;
         var byDate = Cells.Where(c => c.Date.HasValue).ToDictionary(c => c.Date!.Value);
         var withSchedule = dates
             .Distinct()
@@ -1380,6 +1413,8 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
     [RelayCommand]
     private async Task ConfirmDeleteAsync()
     {
+        if (RejectPastDates(_pendingDeleteDates, Loc["Vm.schedule deletion"]))
+        { IsConfirmDeleteOpen = false; return; }
         if (SelectedEmployee == null) { IsConfirmDeleteOpen = false; return; }
 
         var dates = _pendingDeleteDates.ToList();
@@ -1445,6 +1480,12 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
             dowFilter = BuildDowFilter();
         }
 
+        if (from <= Today)
+        {
+            RejectPastDates(ExpandDates(from, to), Loc["Vm.bulk schedule changes"]);
+            return;
+        }
+
         try
         {
             var count = await _scheduleService.BulkSetAsync(
@@ -1503,6 +1544,10 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
             }
         }
         OnPropertyChanged(nameof(CloneScopeDescription));
+        var proposedCloneDates = _cloneDates.Count > 0
+            ? _cloneDates
+            : ExpandDates(CloneFrom!.Value, CloneTo!.Value);
+        if (RejectPastDates(proposedCloneDates, Loc["Vm.schedule copying"])) return;
 
         var targets = AvailableEmployees
             .Where(e => e.Id != SelectedEmployee.Id)
@@ -1629,6 +1674,8 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
     private async Task ApplyCloneAsync()
     {
         if (SelectedEmployee == null || CloneFrom == null || CloneTo == null) return;
+        var cloneDates = _cloneDates.Count > 0 ? _cloneDates : ExpandDates(CloneFrom.Value, CloneTo.Value);
+        if (RejectPastDates(cloneDates, Loc["Vm.schedule copying"])) return;
 
         var targetIds = CloneTargets.Where(t => t.IsSelected).Select(t => t.Employee.Id).ToList();
         if (targetIds.Count == 0)
@@ -2699,6 +2746,12 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
         {
             StatusMessage = string.Format(
                 Loc["Vm.Sending the overtime of {0} day(s) to Ergani, all employees in one request per branch…"], days.Count);
+            days = days.Where(d => d.ScheduleDate >= Today).ToList();
+            if (days.Count == 0)
+            {
+                StatusMessage = Loc["Vm.Past dates are read-only. There is no current or future schedule to process."];
+                return;
+            }
             var result = await _scheduleSubmitter.SubmitOvertimeFromScheduleAsync(companyId, days, ErganiManager.Data.Entities.OvertimeJustification.ExceptionalWorkload.ToString());
 
             var protocol = result.Days.Select(d => d.OvertimeProtocol).FirstOrDefault(p => !string.IsNullOrEmpty(p));
@@ -2898,7 +2951,8 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
     private async Task SubmitDaysAsync(int companyId, List<ScheduleDayDto> candidates, int? pickedCount)
     {
         var eligible = candidates
-            .Where(c => !c.SubmittedToErgani && (c.WorkType is AppWorkType.Office or AppWorkType.Home))
+            .Where(c => c.ScheduleDate >= Today && !c.SubmittedToErgani &&
+                        (c.WorkType is AppWorkType.Office or AppWorkType.Home))
             .ToList();
         var blockedForRest = new List<ScheduleDayDto>();
         foreach (var day in eligible)
@@ -3278,7 +3332,7 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
             var leaves = await _leaveService.GetByEmployeeDateRangeAsync(companyId, SelectedEmployee.Id, from, to);
             if (picked.Count > 0) leaves = leaves.Where(l => picked.Contains(l.LeaveDate)).ToList();
 
-            var unsent = leaves.Where(l => !l.SubmittedToErgani).ToList();
+            var unsent = leaves.Where(l => l.LeaveDate >= Today && !l.SubmittedToErgani).ToList();
             if (unsent.Count == 0)
             {
                 StatusMessage = leaves.Count > 0
