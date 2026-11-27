@@ -235,10 +235,10 @@ public sealed class AutomaticNextMonthScheduleImportService : IDisposable
 
     private async Task WatchForDownloadTimeoutAsync(string monthKey)
     {
-        await Task.Delay(TimeSpan.FromMinutes(3)).ConfigureAwait(false);
+        await Task.Delay(TimeSpan.FromMinutes(8)).ConfigureAwait(false);
         if (!_awaitingDownload || _runningMonthKey != monthKey)
             return;
-        FailAttempt("The Ergani portal did not produce an Excel download within three minutes.");
+        FailAttempt("The Ergani portal did not produce an Excel download within eight minutes.");
     }
 
     private void FailAttempt(string reason)
