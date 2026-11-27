@@ -27,7 +27,8 @@ public partial class AdminShellView : Window
     {
         InitializeComponent();
         DataContextChanged += OnDataContextChanged;
-        Opened += (_, _) => { ResponsiveWindowSizing.Apply(this, 1200, 760, 640, 480); UpdateNavHighlight(); ShowLicenseButton(); };
+        ResponsiveWindowSizing.Apply(this, 1100, 700, 680, 440, 32);
+        Opened += (_, _) => { UpdateNavHighlight(); ShowLicenseButton(); };
     }
 
     // -- License (the 🔑 button) ---------------------------------------------------------------
