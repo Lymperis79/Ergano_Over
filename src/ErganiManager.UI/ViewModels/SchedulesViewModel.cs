@@ -2200,17 +2200,6 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
             int replacedDays = 0;
             int skippedExisting = 0;
 
-            // Overtime already in the database (so a second import does not duplicate it).
-            var knownOvertime = new HashSet<(int Employee, DateOnly Date, TimeOnly Start, TimeOnly End)>();
-            if (_pendingErganiRows.Any(r => r.HasOvertime) && _session?.CompanyId is int companyId)
-            {
-                var from = _pendingErganiRows.Min(r => r.Date);
-                var to   = _pendingErganiRows.Max(r => r.Date);
-                foreach (var o in await _overtimeService.GetByCompanyAsync(companyId, from, to).ConfigureAwait(false))
-                    if (!o.IsCancelled)
-                        knownOvertime.Add((o.EmployeeId, o.OvertimeDate, o.StartTime, o.EndTime));
-            }
-
             foreach (var row in _pendingErganiRows)
             {
                 if (!employeesByAfm.TryGetValue(NormalizeTaxId(row.TaxId), out var employee))
@@ -2305,13 +2294,7 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
                 // Overtime part (Υπερωρία hh:mm-hh:mm): its own record, already declared at Ergani.
                 foreach (var (otStart, otEnd) in row.OvertimeRanges)
                 {
-                    if (!knownOvertime.Add((employee.Id, row.Date, otStart, otEnd)))
-                    {
-                        overtimeExisting++;
-                        continue;
-                    }
-
-                    await _overtimeService.CreateAsync(new OvertimeDto
+                    var created = await _overtimeService.UpsertFromErganiImportAsync(new OvertimeDto
                     {
                         EmployeeId           = employee.Id,
                         BranchId             = employee.BranchId,
@@ -2323,7 +2306,8 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
                         WeeklyWorkdaysNumber = employee.WeeklyWorkdays,
                         SubmittedToErgani    = true
                     }, employee.CompanyId).ConfigureAwait(false);
-                    overtimeCreated++;
+                    if (created) overtimeCreated++;
+                    else overtimeExisting++;
                 }
             }
 
