@@ -80,14 +80,23 @@ public partial class SchedulesView : UserControl
         _menuCloseTimer.Start();
     }
 
+    private void OnScheduleEmployeePickerPointerPressed(object? sender, PointerPressedEventArgs e)
+    {
+        if (DataContext is not SchedulesViewModel vm)
+            return;
+
+        // Start a new search immediately when the user clicks into the picker,
+        // rather than making them manually delete the previous search text.
+        vm.EmployeeSearchText = string.Empty;
+    }
+
     private void OnScheduleEmployeePickerDropdownClick(object? sender, RoutedEventArgs e)
     {
         if (DataContext is not SchedulesViewModel vm)
             return;
 
-        // Opening the list must not clear the active employee. The user can
-        // browse or type a filter, and the current selection remains in effect
-        // until another employee is explicitly selected.
+        // Arrow click also resets the search so the user sees the full list.
+        vm.EmployeeSearchText = string.Empty;
         Dispatcher.UIThread.Post(() =>
         {
             ScheduleEmployeePicker.IsDropDownOpen = true;
@@ -95,7 +104,6 @@ public partial class SchedulesView : UserControl
                 .OfType<TextBox>()
                 .FirstOrDefault();
             editor?.Focus();
-            editor?.SelectAll();
         });
     }
 
