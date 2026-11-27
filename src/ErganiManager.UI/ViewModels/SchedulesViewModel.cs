@@ -2422,7 +2422,7 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
             if (staleRemoved > 0)
                 extra.Add(string.Format(Loc["Vm.{0} old imported \"absent\" day(s) replaced by holidays"], staleRemoved));
             extra.Add(string.Format(Loc["Vm.{0} existing schedule row(s) cleared in the imported date range"], schedulesRemoved));
-            extra.Add(string.Format(Loc["Vm.{0} unsent overtime row(s) rebuilt"], unsentOvertimeRemoved));
+            extra.Add(string.Format(Loc["Vm.{0} unsent overtime row(s) cleared before recalculation"], unsentOvertimeRemoved));
             if (replacedDays > 0)
                 extra.Add(string.Format(Loc["Vm.{0} day(s) with old data replaced"], replacedDays));
             if (skippedExisting > 0)
