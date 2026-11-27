@@ -32,9 +32,9 @@ public sealed class AutomaticNextMonthScheduleImportService : IDisposable
     private DateTime _retryAfterLocal = DateTime.MinValue;
     private string _runningMonthKey = string.Empty;
 
-    private static string MarkerPath => Path.Combine(
+    private static string MarkerPath(int companyId) => Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-        "ErganiManager", "automatic-next-month-import.txt");
+        "ErganiManager", $"automatic-next-month-import-{companyId}.txt");
 
     public AutomaticNextMonthScheduleImportService(
         IPortalSettingsService settings,
@@ -87,7 +87,7 @@ public sealed class AutomaticNextMonthScheduleImportService : IDisposable
             var companyId = _session.CompanyId ?? _companyContext.ActiveCompanyId;
             if (!companyId.HasValue)
                 return;
-            if (string.Equals(ReadCompletedMonth(), $"{companyId.Value}:{monthKey}", StringComparison.Ordinal))
+            if (string.Equals(ReadCompletedMonth(companyId.Value), monthKey, StringComparison.Ordinal))
                 return;
 
             var lastWorkingDay = await GetLastWorkingDayAsync(now.Year, now.Month).ConfigureAwait(false);
@@ -115,7 +115,7 @@ public sealed class AutomaticNextMonthScheduleImportService : IDisposable
                 AllowedMenus = _session.AllowedMenus
             };
 
-            _importViewModel = _services.GetRequiredService<SchedulesViewModel>();
+            _importViewModel ??= _services.GetRequiredService<SchedulesViewModel>();
             await RunOnUiAsync(async () =>
             {
                 await _importViewModel.InitializeForAutomaticImportAsync(sessionForCompany);
@@ -195,8 +195,10 @@ public sealed class AutomaticNextMonthScheduleImportService : IDisposable
             if (!imported)
                 throw new InvalidOperationException("The downloaded Excel file could not be imported. Check the Schedules status and application log.");
 
-            Directory.CreateDirectory(Path.GetDirectoryName(MarkerPath)!);
-            File.WriteAllText(MarkerPath, $"{(_session?.CompanyId ?? _companyContext.ActiveCompanyId)?.ToString() ?? "0"}:{_runningMonthKey}");
+            var completedCompanyId = _session?.CompanyId ?? _companyContext.ActiveCompanyId
+                ?? throw new InvalidOperationException("The active company changed during the automatic import.");
+            Directory.CreateDirectory(Path.GetDirectoryName(MarkerPath(completedCompanyId))!);
+            File.WriteAllText(MarkerPath(completedCompanyId), _runningMonthKey);
             Log.Information("Automatic Ergani schedule import completed for {Month}.", _runningMonthKey);
             _awaitingDownload = false;
             _retryAfterLocal = DateTime.MinValue;
@@ -237,9 +239,9 @@ public sealed class AutomaticNextMonthScheduleImportService : IDisposable
         return await completion.Task.ConfigureAwait(false);
     }
 
-    private static string ReadCompletedMonth()
+    private static string ReadCompletedMonth(int companyId)
     {
-        try { return File.Exists(MarkerPath) ? File.ReadAllText(MarkerPath).Trim() : string.Empty; }
+        try { return File.Exists(MarkerPath(companyId)) ? File.ReadAllText(MarkerPath(companyId)).Trim() : string.Empty; }
         catch { return string.Empty; }
     }
 
