@@ -1360,6 +1360,20 @@ public partial class AdministrationViewModel : ViewModelBase, IAdminSectionViewM
     }
 
     [RelayCommand]
+    private void SelectAllOfficialHolidays()
+    {
+        foreach (var holiday in OfficialHolidays)
+            holiday.IsEnabled = true;
+    }
+
+    [RelayCommand]
+    private void UnselectAllOfficialHolidays()
+    {
+        foreach (var holiday in OfficialHolidays)
+            holiday.IsEnabled = false;
+    }
+
+    [RelayCommand]
     private async Task SaveOfficialHolidaysAsync()
     {
         if (_activeCompanyId is not { } companyId)

@@ -35,6 +35,15 @@ public sealed class PharmacyDbContextModelSnapshot : ModelSnapshot
             entity.Property(customer => customer.CustomerNumber).IsRequired();
             entity.Property(customer => customer.FullName).IsRequired();
             entity.Property(customer => customer.Phone).IsRequired();
+            entity.Property(customer => customer.FirstName);
+            entity.Property(customer => customer.Surname);
+            entity.Property(customer => customer.Telephone);
+            entity.Property(customer => customer.Mobile);
+            entity.Property(customer => customer.Email);
+            entity.Property(customer => customer.Amka);
+            entity.Property(customer => customer.Insurance);
+            entity.Property(customer => customer.City);
+            entity.Property(customer => customer.Postcode);
             entity.Property(customer => customer.Address);
             entity.Property(customer => customer.Notes);
             entity.Property(customer => customer.IsActive);
@@ -56,6 +65,7 @@ public sealed class PharmacyDbContextModelSnapshot : ModelSnapshot
             entity.Property(prescription => prescription.Notes);
             entity.Property(prescription => prescription.CreatedAt);
             entity.HasIndex(prescription => prescription.ExpiryDate);
+            entity.HasIndex(prescription => prescription.CustomerId);
             entity.HasOne(prescription => prescription.Customer)
                 .WithMany(customer => customer.Prescriptions)
                 .HasForeignKey(prescription => prescription.CustomerId)
@@ -73,13 +83,53 @@ public sealed class PharmacyDbContextModelSnapshot : ModelSnapshot
             entity.Property(medicine => medicine.IsActive);
         });
 
+        modelBuilder.Entity<MedicineBarcode>(entity =>
+        {
+            entity.ToTable("MedicineBarcodes");
+            entity.HasKey(barcode => barcode.Id);
+            entity.Property(barcode => barcode.Id).ValueGeneratedOnAdd();
+            entity.Property(barcode => barcode.BarcodeValue).IsRequired().HasMaxLength(64);
+            entity.Property(barcode => barcode.BarcodeType).IsRequired().HasMaxLength(24);
+            entity.HasIndex(barcode => barcode.BarcodeValue).IsUnique();
+            entity.HasIndex(barcode => barcode.MedicineId);
+            entity.HasOne(barcode => barcode.Medicine)
+                .WithMany(medicine => medicine.Barcodes)
+                .HasForeignKey(barcode => barcode.MedicineId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<SerializedPackScan>(entity =>
+        {
+            entity.ToTable("SerializedPackScans");
+            entity.HasKey(pack => pack.Id);
+            entity.Property(pack => pack.Id).ValueGeneratedOnAdd();
+            entity.Property(pack => pack.RawGs1String).IsRequired().HasMaxLength(255).IsUnicode(false);
+            entity.Property(pack => pack.Gtin14).IsRequired().HasMaxLength(14).IsFixedLength().IsUnicode(false);
+            entity.Property(pack => pack.EofEan13).HasMaxLength(13).IsFixedLength().IsUnicode(false);
+            entity.Property(pack => pack.SerialNumber).IsRequired().HasMaxLength(20).IsUnicode(false);
+            entity.Property(pack => pack.ExpiryDate).HasColumnType("date");
+            entity.Property(pack => pack.BatchLot).IsRequired().HasMaxLength(20).IsUnicode(false);
+            entity.Property(pack => pack.HmvoStatus).IsRequired().HasMaxLength(20).IsUnicode(false).HasDefaultValue("ACTIVE");
+            entity.Property(pack => pack.ScannedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
+            entity.HasIndex(pack => new { pack.Gtin14, pack.SerialNumber }).IsUnique();
+            entity.HasIndex(pack => pack.EofEan13);
+            entity.HasIndex(pack => pack.MedicineId);
+            entity.HasIndex(pack => new { pack.HmvoStatus, pack.ExpiryDate });
+            entity.HasOne(pack => pack.Medicine)
+                .WithMany(medicine => medicine.SerializedPacks)
+                .HasForeignKey(pack => pack.MedicineId)
+                .OnDelete(DeleteBehavior.SetNull);
+        });
+
         modelBuilder.Entity<BorrowingRecord>(entity =>
         {
             entity.ToTable("Borrowings");
             entity.HasKey(borrowing => borrowing.Id);
             entity.Property(borrowing => borrowing.Id).ValueGeneratedOnAdd();
+            entity.Property(borrowing => borrowing.PrescriptionNumber);
             entity.Property(borrowing => borrowing.MedicineName).IsRequired();
             entity.Property(borrowing => borrowing.OriginalBarcode);
+            entity.Property(borrowing => borrowing.SerializedPackScanId);
             entity.Property(borrowing => borrowing.InternalBarcode).IsRequired();
             entity.Property(borrowing => borrowing.Quantity);
             entity.Property(borrowing => borrowing.BorrowedAt);
@@ -89,10 +139,16 @@ public sealed class PharmacyDbContextModelSnapshot : ModelSnapshot
             entity.Property(borrowing => borrowing.Value);
             entity.Property(borrowing => borrowing.Notes);
             entity.HasIndex(borrowing => borrowing.InternalBarcode).IsUnique();
+            entity.HasIndex(borrowing => borrowing.CustomerId);
+            entity.HasIndex(borrowing => borrowing.SerializedPackScanId);
             entity.HasOne(borrowing => borrowing.Customer)
                 .WithMany(customer => customer.Borrowings)
                 .HasForeignKey(borrowing => borrowing.CustomerId)
-                .OnDelete(DeleteBehavior.Cascade);
+                .OnDelete(DeleteBehavior.SetNull);
+            entity.HasOne(borrowing => borrowing.SerializedPackScan)
+                .WithMany(pack => pack.Borrowings)
+                .HasForeignKey(borrowing => borrowing.SerializedPackScanId)
+                .OnDelete(DeleteBehavior.Restrict);
         });
 
         modelBuilder.Entity<Subscription>(entity =>
@@ -103,15 +159,77 @@ public sealed class PharmacyDbContextModelSnapshot : ModelSnapshot
             entity.Property(subscription => subscription.Title).IsRequired();
             entity.Property(subscription => subscription.Barcode);
             entity.Property(subscription => subscription.StartDate);
-            entity.Property(subscription => subscription.NextDueDate);
-            entity.Property(subscription => subscription.ExpiryDate);
+            entity.Property(subscription => subscription.ExpiryDate).IsRequired();
             entity.Property(subscription => subscription.Frequency).IsRequired();
             entity.Property(subscription => subscription.Status).HasConversion<int>();
             entity.Property(subscription => subscription.Notes);
+            entity.Property(subscription => subscription.CreatedAt);
+            entity.Property(subscription => subscription.CreatedBy).IsRequired().HasMaxLength(255);
+            entity.Property(subscription => subscription.LastModifiedAt);
+            entity.Property(subscription => subscription.LastModifiedBy).IsRequired().HasMaxLength(255);
+            entity.HasIndex(subscription => subscription.CustomerId);
+            entity.HasIndex(subscription => subscription.Status);
             entity.HasOne(subscription => subscription.Customer)
                 .WithMany(customer => customer.Subscriptions)
                 .HasForeignKey(subscription => subscription.CustomerId)
                 .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<SubscriptionAuditEntry>(entity =>
+        {
+            entity.ToTable("SubscriptionAuditEntries");
+            entity.HasKey(entry => entry.Id);
+            entity.Property(entry => entry.Id).ValueGeneratedOnAdd();
+            entity.Property(entry => entry.Action).IsRequired().HasMaxLength(255);
+            entity.Property(entry => entry.PreviousStatus);
+            entity.Property(entry => entry.NewStatus);
+            entity.Property(entry => entry.ChangedBy).IsRequired().HasMaxLength(255);
+            entity.Property(entry => entry.ChangedAt);
+            entity.Property(entry => entry.Details);
+            entity.HasIndex(entry => new { entry.SubscriptionId, entry.ChangedAt });
+            entity.HasOne(entry => entry.Subscription)
+                .WithMany(subscription => subscription.AuditEntries)
+                .HasForeignKey(entry => entry.SubscriptionId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<MedicineStockMovement>(entity =>
+        {
+            entity.ToTable("MedicineStockMovements");
+            entity.HasKey(movement => movement.Id);
+            entity.Property(movement => movement.Id).ValueGeneratedOnAdd();
+            entity.Property(movement => movement.MedicineId);
+            entity.Property(movement => movement.Type).HasConversion<int>();
+            entity.Property(movement => movement.Quantity);
+            entity.Property(movement => movement.CountedQuantity);
+            entity.Property(movement => movement.MovementDate);
+            entity.Property(movement => movement.ExpiryDate);
+            entity.Property(movement => movement.BarcodeScanned).HasMaxLength(64);
+            entity.Property(movement => movement.BatchLot).HasMaxLength(64);
+            entity.Property(movement => movement.PerformedBy).IsRequired().HasMaxLength(255);
+            entity.Property(movement => movement.Notes);
+            entity.HasIndex(movement => new { movement.MedicineId, movement.ExpiryDate, movement.MovementDate });
+            entity.HasOne(movement => movement.Medicine)
+                .WithMany()
+                .HasForeignKey(movement => movement.MedicineId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<CalendarNote>(entity =>
+        {
+            entity.ToTable("CalendarNotes");
+            entity.HasKey(note => note.Id);
+            entity.Property(note => note.Id).ValueGeneratedOnAdd();
+            entity.Property(note => note.CalendarDate).HasColumnType("date");
+            entity.Property(note => note.Header).IsRequired().HasMaxLength(200);
+            entity.Property(note => note.Note).IsRequired();
+            entity.Property(note => note.CreatedBy).IsRequired().HasMaxLength(255);
+            entity.Property(note => note.IsShared);
+            entity.Property(note => note.CreatedAt);
+            entity.Property(note => note.IsCompleted).HasDefaultValue(false);
+            entity.Property(note => note.CompletedBy).HasMaxLength(255);
+            entity.Property(note => note.CompletedAt);
+            entity.HasIndex(note => new { note.CalendarDate, note.IsShared, note.CreatedBy });
         });
 
         modelBuilder.Entity<Payment>(entity =>
@@ -125,6 +243,7 @@ public sealed class PharmacyDbContextModelSnapshot : ModelSnapshot
             entity.Property(payment => payment.Reference);
             entity.Property(payment => payment.Notes);
             entity.Property(payment => payment.RecordedBy).IsRequired();
+            entity.HasIndex(payment => payment.CustomerId);
             entity.HasOne(payment => payment.Customer)
                 .WithMany(customer => customer.Payments)
                 .HasForeignKey(payment => payment.CustomerId)

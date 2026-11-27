@@ -1,0 +1,391 @@
+using System.Data;
+using System.Security.Cryptography;
+using System.Text;
+using System.Text.Json;
+using Microsoft.Data.SqlClient;
+using Microsoft.EntityFrameworkCore;
+using SPharmacyLog.Data;
+using SPharmacyLog.Data.Entities;
+
+namespace SPharmacyLog.UI.Services;
+
+public sealed class CustomerDatabaseSyncSettings
+{
+    public string Server { get; set; } = string.Empty;
+    public string Database { get; set; } = string.Empty;
+    public bool IntegratedSecurity { get; set; } = true;
+    public bool TrustServerCertificate { get; set; } = false;
+    public string Username { get; set; } = string.Empty;
+    public string Password { get; set; } = string.Empty;
+    public string Table { get; set; } = string.Empty;
+    public string FilterColumn { get; set; } = "KPP_KATHGOR";
+    public string FilterValue { get; set; } = "ΠΕΛ";
+    public List<CustomerImportFilter> Filters { get; set; } = new();
+    public bool DeactivateWhenAmkaMissing { get; set; }
+    public Dictionary<string, string> FieldMappings { get; set; } = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ["CustomerNumber"] = "PEL_PRO_CODE",
+        ["FullName"] = "EPONYM",
+        ["Address"] = "ODOS",
+        ["Postcode"] = "TAX_KOD",
+        ["City"] = "POLH",
+        ["Telephone"] = "THLEF",
+        ["Amka"] = "PEL_PRO_AMKA",
+        ["Insurance"] = "PEL_PRO_CODE_AT"
+    };
+}
+
+public sealed class CustomerImportFilter
+{
+    public string Column { get; set; } = string.Empty;
+    public string Operator { get; set; } = "Equals";
+    public string Value { get; set; } = string.Empty;
+}
+
+public sealed record CustomerImportResult(int Added, int Updated, int InactiveSkipped, int InvalidSkipped, int MarkedInactive);
+
+/// <summary>
+/// One-way SQL Server customer import. The source database is read-only from this service.
+/// </summary>
+public static class CustomerDatabaseSyncService
+{
+    private const string Entropy = "SPharmacyLog.CustomerDatabaseSync.v1";
+    private static string SettingsFolder => Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "SPharmacyLog");
+    private static string SettingsPath => Path.Combine(SettingsFolder, "customer-database-sync.dat");
+
+    public static CustomerDatabaseSyncSettings LoadSettings()
+    {
+        if (!OperatingSystem.IsWindows() || !File.Exists(SettingsPath))
+            return new CustomerDatabaseSyncSettings();
+        try
+        {
+            var encrypted = File.ReadAllBytes(SettingsPath);
+            var clear = ProtectedData.Unprotect(encrypted, Encoding.UTF8.GetBytes(Entropy), DataProtectionScope.CurrentUser);
+            try { return JsonSerializer.Deserialize<CustomerDatabaseSyncSettings>(clear) ?? new(); }
+            finally { CryptographicOperations.ZeroMemory(clear); }
+        }
+        catch { return new CustomerDatabaseSyncSettings(); }
+    }
+
+    public static void SaveSettings(CustomerDatabaseSyncSettings settings)
+    {
+        if (!OperatingSystem.IsWindows())
+            throw new PlatformNotSupportedException("Protected connection settings require Windows.");
+        Directory.CreateDirectory(SettingsFolder);
+        var clear = JsonSerializer.SerializeToUtf8Bytes(settings);
+        try
+        {
+            var encrypted = ProtectedData.Protect(clear, Encoding.UTF8.GetBytes(Entropy), DataProtectionScope.CurrentUser);
+            File.WriteAllBytes(SettingsPath, encrypted);
+        }
+        finally { CryptographicOperations.ZeroMemory(clear); }
+    }
+
+    public static string BuildConnectionString(CustomerDatabaseSyncSettings settings)
+    {
+        var builder = new SqlConnectionStringBuilder
+        {
+            DataSource = settings.Server.Trim(),
+            InitialCatalog = settings.Database.Trim(),
+            IntegratedSecurity = settings.IntegratedSecurity,
+            Encrypt = true,
+            TrustServerCertificate = settings.TrustServerCertificate,
+            ConnectTimeout = 10,
+            ApplicationName = "S Pharmacy Log customer import"
+        };
+        if (!settings.IntegratedSecurity)
+        {
+            builder.UserID = settings.Username;
+            builder.Password = settings.Password;
+        }
+        return builder.ConnectionString;
+    }
+
+    public static async Task TestConnectionAsync(CustomerDatabaseSyncSettings settings, CancellationToken cancellationToken = default)
+    {
+        await using var connection = new SqlConnection(BuildConnectionString(settings));
+        await connection.OpenAsync(cancellationToken);
+    }
+
+    public static async Task<IReadOnlyList<string>> GetTablesAsync(CustomerDatabaseSyncSettings settings, CancellationToken cancellationToken = default)
+    {
+        const string sql = """
+            SELECT TABLE_SCHEMA, TABLE_NAME
+            FROM INFORMATION_SCHEMA.TABLES
+            WHERE TABLE_TYPE = 'BASE TABLE'
+            ORDER BY TABLE_SCHEMA, TABLE_NAME;
+            """;
+        await using var connection = new SqlConnection(BuildConnectionString(settings));
+        await connection.OpenAsync(cancellationToken);
+        await using var command = new SqlCommand(sql, connection);
+        var tables = new List<string>();
+        await using var reader = await command.ExecuteReaderAsync(cancellationToken);
+        while (await reader.ReadAsync(cancellationToken))
+            tables.Add($"{reader.GetString(0)}.{reader.GetString(1)}");
+        return tables;
+    }
+
+    public static async Task<IReadOnlyList<string>> GetColumnsAsync(CustomerDatabaseSyncSettings settings, string table, CancellationToken cancellationToken = default)
+    {
+        var (schema, name) = ParseTable(table);
+        const string sql = """
+            SELECT COLUMN_NAME
+            FROM INFORMATION_SCHEMA.COLUMNS
+            WHERE TABLE_SCHEMA = @schema AND TABLE_NAME = @table
+            ORDER BY ORDINAL_POSITION;
+            """;
+        await using var connection = new SqlConnection(BuildConnectionString(settings));
+        await connection.OpenAsync(cancellationToken);
+        await using var command = new SqlCommand(sql, connection);
+        command.Parameters.AddWithValue("@schema", schema);
+        command.Parameters.AddWithValue("@table", name);
+        var columns = new List<string>();
+        await using var reader = await command.ExecuteReaderAsync(cancellationToken);
+        while (await reader.ReadAsync(cancellationToken))
+            columns.Add(reader.GetString(0));
+        return columns;
+    }
+
+    public static async Task<int> PreviewCountAsync(CustomerDatabaseSyncSettings settings, CancellationToken cancellationToken = default)
+    {
+        var (schema, table) = ParseTable(settings.Table);
+        var columns = await GetColumnsAsync(settings, settings.Table, cancellationToken);
+        var (where, parameters) = BuildFilterClause(settings, columns);
+        var sql = $"SELECT COUNT_BIG(1) FROM {Quote(schema)}.{Quote(table)}{where};";
+        await using var connection = new SqlConnection(BuildConnectionString(settings));
+        await connection.OpenAsync(cancellationToken);
+        await using var command = new SqlCommand(sql, connection);
+        foreach (var parameter in parameters)
+            command.Parameters.AddWithValue(parameter.Name, parameter.Value);
+        var count = await command.ExecuteScalarAsync(cancellationToken);
+        return Convert.ToInt32(count);
+    }
+
+    public static async Task<CustomerImportResult> ImportAsync(
+        CustomerDatabaseSyncSettings settings,
+        PharmacyDbContext destination,
+        CancellationToken cancellationToken = default)
+    {
+        var columns = await GetColumnsAsync(settings, settings.Table, cancellationToken);
+        var mappings = settings.FieldMappings
+            .Where(pair => !string.IsNullOrWhiteSpace(pair.Value))
+            .ToDictionary(pair => pair.Key, pair => ResolveColumn(pair.Value, columns), StringComparer.OrdinalIgnoreCase);
+        if (!mappings.TryGetValue(nameof(Customer.CustomerNumber), out var customerNumberColumn) ||
+            string.IsNullOrWhiteSpace(customerNumberColumn))
+            throw new InvalidOperationException("Map a source column to Customer number before importing.");
+
+        var selectedColumns = mappings.Values.Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
+        var (schema, table) = ParseTable(settings.Table);
+        var (where, parameters) = BuildFilterClause(settings, columns);
+        var sql = $"SELECT {string.Join(", ", selectedColumns.Select(Quote))} FROM {Quote(schema)}.{Quote(table)}{where}";
+
+        await using var source = new SqlConnection(BuildConnectionString(settings));
+        await source.OpenAsync(cancellationToken);
+        await using var command = new SqlCommand(sql, source);
+        foreach (var parameter in parameters)
+            command.Parameters.AddWithValue(parameter.Name, parameter.Value);
+
+        var added = 0;
+        var updated = 0;
+        var inactiveSkipped = 0;
+        var invalidSkipped = 0;
+        var markedInactive = 0;
+        // Load destination customers once. This also lets repeated source rows
+        // resolve to the same tracked entity without issuing one query per row.
+        var customerByNumber = (await destination.Customers.ToListAsync(cancellationToken))
+            .GroupBy(customer => customer.CustomerNumber, StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(group => group.Key, group => group.First(), StringComparer.OrdinalIgnoreCase);
+
+        await using var transaction = await destination.Database.BeginTransactionAsync(cancellationToken);
+        await using var reader = await command.ExecuteReaderAsync(cancellationToken);
+        var ordinalByColumn = selectedColumns.ToDictionary(column => column, reader.GetOrdinal, StringComparer.OrdinalIgnoreCase);
+
+        while (await reader.ReadAsync(cancellationToken))
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            var values = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
+            foreach (var mapping in mappings)
+            {
+                var ordinal = ordinalByColumn[mapping.Value];
+                values[mapping.Key] = await reader.IsDBNullAsync(ordinal, cancellationToken)
+                    ? null
+                    : Convert.ToString(reader.GetValue(ordinal), System.Globalization.CultureInfo.InvariantCulture)?.Trim();
+            }
+
+            var customerNumber = values.GetValueOrDefault(nameof(Customer.CustomerNumber));
+            if (string.IsNullOrWhiteSpace(customerNumber))
+            {
+                invalidSkipped++;
+                continue;
+            }
+
+            customerByNumber.TryGetValue(customerNumber, out var existing);
+
+            // Critical safeguard: an inactive customer is an explicit local decision.
+            // Do not update, reactivate, or otherwise modify any part of that record.
+            if (existing is not null && !existing.IsActive)
+            {
+                inactiveSkipped++;
+                continue;
+            }
+
+            if (existing is null)
+            {
+                existing = new Customer
+                {
+                    CustomerNumber = customerNumber,
+                    FullName = values.GetValueOrDefault(nameof(Customer.FullName)) ?? customerNumber,
+                    Phone = string.Empty,
+                    IsActive = true,
+                    CreatedAt = DateTime.UtcNow
+                };
+                ApplyMappedValues(existing, values, isNew: true);
+                if (ShouldDeactivateForMissingAmka(settings, mappings, values))
+                {
+                    existing.IsActive = false;
+                    markedInactive++;
+                }
+                destination.Customers.Add(existing);
+                customerByNumber[customerNumber] = existing;
+                added++;
+            }
+            else
+            {
+                ApplyMappedValues(existing, values, isNew: false);
+                if (ShouldDeactivateForMissingAmka(settings, mappings, values))
+                {
+                    existing.IsActive = false;
+                    markedInactive++;
+                }
+                updated++;
+            }
+        }
+
+        await reader.CloseAsync();
+        await destination.SaveChangesAsync(cancellationToken);
+        await transaction.CommitAsync(cancellationToken);
+        return new CustomerImportResult(added, updated, inactiveSkipped, invalidSkipped, markedInactive);
+    }
+
+
+
+    private static bool ShouldDeactivateForMissingAmka(
+        CustomerDatabaseSyncSettings settings,
+        IReadOnlyDictionary<string, string> mappings,
+        IReadOnlyDictionary<string, string?> values)
+    {
+        return settings.DeactivateWhenAmkaMissing
+            && mappings.ContainsKey(nameof(Customer.Amka))
+            && (!values.TryGetValue(nameof(Customer.Amka), out var amka) || string.IsNullOrWhiteSpace(amka));
+    }
+
+    private static (string Where, List<(string Name, object Value)> Parameters) BuildFilterClause(
+        CustomerDatabaseSyncSettings settings, IReadOnlyList<string> availableColumns)
+    {
+        // Older saved configurations used one exact-match filter. Keep them working.
+        var filters = settings.Filters?.Where(filter =>
+            !string.IsNullOrWhiteSpace(filter.Column) &&
+            (filter.Operator is "IsEmpty" or "IsNotEmpty" || !string.IsNullOrWhiteSpace(filter.Value))).ToList()
+            ?? new List<CustomerImportFilter>();
+        if (filters.Count == 0 && !string.IsNullOrWhiteSpace(settings.FilterValue))
+            filters.Add(new CustomerImportFilter { Column = settings.FilterColumn, Operator = "Equals", Value = settings.FilterValue });
+
+        var clauses = new List<string>();
+        var parameters = new List<(string Name, object Value)>();
+        foreach (var filter in filters)
+        {
+            var column = ResolveColumn(filter.Column, availableColumns);
+            var quoted = Quote(column);
+            var parameter = "@filter" + parameters.Count;
+            switch (filter.Operator)
+            {
+                case "Equals":
+                    clauses.Add($"{quoted} = {parameter}");
+                    parameters.Add((parameter, filter.Value));
+                    break;
+                case "NotEquals":
+                    clauses.Add($"{quoted} <> {parameter}");
+                    parameters.Add((parameter, filter.Value));
+                    break;
+                case "Contains":
+                    clauses.Add($"{quoted} LIKE {parameter} ESCAPE '\\'");
+                    parameters.Add((parameter, "%" + EscapeLike(filter.Value) + "%"));
+                    break;
+                case "StartsWith":
+                    clauses.Add($"{quoted} LIKE {parameter} ESCAPE '\\'");
+                    parameters.Add((parameter, EscapeLike(filter.Value) + "%"));
+                    break;
+                case "GreaterThan":
+                    clauses.Add($"{quoted} > {parameter}");
+                    parameters.Add((parameter, filter.Value));
+                    break;
+                case "LessThan":
+                    clauses.Add($"{quoted} < {parameter}");
+                    parameters.Add((parameter, filter.Value));
+                    break;
+                case "IsEmpty":
+                    clauses.Add($"({quoted} IS NULL OR LTRIM(RTRIM(CONVERT(nvarchar(max), {quoted}))) = '')");
+                    break;
+                case "IsNotEmpty":
+                    clauses.Add($"({quoted} IS NOT NULL AND LTRIM(RTRIM(CONVERT(nvarchar(max), {quoted}))) <> '')");
+                    break;
+                default:
+                    throw new InvalidOperationException($"Unsupported filter operator: {filter.Operator}");
+            }
+        }
+        return (clauses.Count == 0 ? string.Empty : " WHERE " + string.Join(" AND ", clauses), parameters);
+    }
+
+    private static string EscapeLike(string value) => value
+        .Replace("\\", "\\\\", StringComparison.Ordinal)
+        .Replace("%", "\\%", StringComparison.Ordinal)
+        .Replace("_", "\\_", StringComparison.Ordinal)
+        .Replace("[", "\\[", StringComparison.Ordinal);
+
+    private static void ApplyMappedValues(Customer customer, IReadOnlyDictionary<string, string?> values, bool isNew)
+    {
+        string? Value(string key) => values.TryGetValue(key, out var value) ? value : null;
+        void Set(string key, Action<string> setter)
+        {
+            var value = Value(key);
+            // Blank source values never erase data already maintained in S Pharmacy Log.
+            if (!string.IsNullOrWhiteSpace(value)) setter(value);
+        }
+
+        Set(nameof(Customer.CustomerNumber), value => customer.CustomerNumber = value);
+        Set(nameof(Customer.FullName), value => customer.FullName = value);
+        Set(nameof(Customer.FirstName), value => customer.FirstName = value);
+        Set(nameof(Customer.Surname), value => customer.Surname = value);
+        Set(nameof(Customer.Address), value => customer.Address = value);
+        Set(nameof(Customer.City), value => customer.City = value);
+        Set(nameof(Customer.Postcode), value => customer.Postcode = value);
+        Set(nameof(Customer.Telephone), value => customer.Telephone = value);
+        Set(nameof(Customer.Mobile), value => customer.Mobile = value);
+        Set(nameof(Customer.Email), value => customer.Email = value);
+        Set(nameof(Customer.Amka), value => customer.Amka = value);
+        Set(nameof(Customer.Insurance), value => customer.Insurance = value);
+        Set(nameof(Customer.Phone), value => customer.Phone = value);
+        if (isNew && string.IsNullOrWhiteSpace(customer.Phone))
+            customer.Phone = customer.Telephone ?? customer.Mobile ?? string.Empty;
+    }
+
+    private static string ResolveColumn(string requested, IReadOnlyList<string> available)
+    {
+        if (string.IsNullOrWhiteSpace(requested)) return string.Empty;
+        var actual = available.FirstOrDefault(column => string.Equals(column, requested, StringComparison.OrdinalIgnoreCase));
+        if (actual is null)
+            throw new InvalidOperationException($"Source column '{requested}' does not exist in the selected table.");
+        return actual;
+    }
+
+    private static (string Schema, string Table) ParseTable(string value)
+    {
+        var parts = (value ?? string.Empty).Split('.', 2, StringSplitOptions.TrimEntries);
+        if (parts.Length != 2 || parts.Any(string.IsNullOrWhiteSpace))
+            throw new InvalidOperationException("Select a table using its schema and table name.");
+        return (parts[0], parts[1]);
+    }
+
+    private static string Quote(string identifier) => "[" + identifier.Replace("]", "]]", StringComparison.Ordinal) + "]";
+}

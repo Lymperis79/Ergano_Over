@@ -42,6 +42,8 @@
                                 </StackPanel>
                             </Border>
 
+                            
+
                             <Border Background="{DynamicResource CardBrush}" CornerRadius="8" Padding="20">
                                 <StackPanel Spacing="10">
                                     <TextBlock Text="{Binding Loc[AdminLocalCache]}" FontSize="16" FontWeight="SemiBold" />
@@ -114,6 +116,18 @@
 
                     <TabItem Header="{Binding Loc[CompanySettings]}" IsVisible="{Binding !IsDatabaseOptionsView}">
                         <StackPanel Spacing="16" Margin="0,12,0,0">
+<Border Background="{DynamicResource CardBrush}" CornerRadius="8" Padding="20">
+                                <StackPanel Spacing="10">
+                                    <TextBlock Text="Transfer installation settings" FontSize="16" FontWeight="SemiBold" />
+                                    <TextBlock Text="Export an encrypted package to configure other client PCs. Includes database connection, portal, rounding and appearance settings. Database records and user accounts are not included. Restart Ergani Manager after import." Foreground="Gray" TextWrapping="Wrap" FontSize="12" />
+                                    <StackPanel Orientation="Horizontal" Spacing="8">
+                                        <Button Content="Export settings" Click="OnExportSettingsClick" />
+                                        <Button Content="Import settings" Click="OnImportSettingsClick" />
+                                    </StackPanel>
+                                    <TextBlock x:Name="SettingsTransferStatus" TextWrapping="Wrap" Foreground="Gray" />
+                                </StackPanel>
+                            </Border>
+
                             <Border Background="{DynamicResource CardBrush}" CornerRadius="8" Padding="20">
                                 <StackPanel Spacing="10">
                                     <TextBlock Text="{Binding Loc[CompanySettings]}" FontSize="16" FontWeight="SemiBold" />
@@ -207,7 +221,11 @@
                                 <StackPanel Spacing="10">
                                     <TextBlock Text="{Binding Loc[OfficialHolidaysTitle]}" FontSize="16" FontWeight="SemiBold" />
                                     <TextBlock Text="{Binding Loc[OfficialHolidaysDescription]}" Foreground="Gray" FontSize="12" TextWrapping="Wrap" />
-                                    <Button Content="{Binding Loc[OfficialHolidaysSynchronize]}" Command="{Binding SynchronizeOfficialHolidaysCommand}" HorizontalAlignment="Left" />
+                                    <StackPanel Orientation="Horizontal" Spacing="8">
+                                        <Button Content="{Binding Loc[OfficialHolidaysSynchronize]}" Command="{Binding SynchronizeOfficialHolidaysCommand}" />
+                                        <Button Content="{Binding Loc[OfficialHolidaysSelectAll]}" Command="{Binding SelectAllOfficialHolidaysCommand}" />
+                                        <Button Content="{Binding Loc[OfficialHolidaysUnselectAll]}" Command="{Binding UnselectAllOfficialHolidaysCommand}" />
+                                    </StackPanel>
                                     <TextBlock Text="{Binding OfficialHolidaysStatus}" TextWrapping="Wrap" />
                                     <ItemsControl ItemsSource="{Binding OfficialHolidays}">
                                         <ItemsControl.ItemsPanel>

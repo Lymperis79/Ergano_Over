@@ -1,0 +1,579 @@
+using Avalonia;
+using Avalonia.Controls;
+using Avalonia.Layout;
+using Avalonia.Media;
+using Microsoft.EntityFrameworkCore;
+using SPharmacyLog.Data;
+using SPharmacyLog.UI.Services;
+
+namespace SPharmacyLog.UI.Views;
+
+public sealed class CustomerDatabaseSyncWindow : UserControl
+{
+    private readonly TextBox server = new() { PlaceholderText = "SQL Server / instance" };
+    private readonly TextBox database = new() { PlaceholderText = "Database name" };
+    private readonly CheckBox integrated = new() { Content = "Windows authentication", IsChecked = true };
+    private readonly CheckBox trustServerCertificate = new() { Content = "Trust SQL Server certificate (for self-signed / untrusted certificates)" };
+    private readonly TextBox username = new() { PlaceholderText = "SQL username" };
+    private readonly TextBox password = new() { PlaceholderText = "SQL password", PasswordChar = '●' };
+    private readonly ComboBox table = new() { MinWidth = 300 };
+    private readonly StackPanel filtersPanel = new() { Spacing = 6 };
+    private readonly List<(ComboBox Column, ComboBox Operator, TextBox Value)> filterRows = new();
+    private readonly Button addFilterButton = new() { Content = "+ Add filter", MinWidth = 105 };
+    private readonly CheckBox deactivateMissingAmka = new() { Content = "Set customer inactive when the source AMKA is NULL or empty" };
+    private readonly TextBlock status = new() { TextWrapping = TextWrapping.Wrap };
+    private readonly TextBlock savedConfigurationInfo = new() { TextWrapping = TextWrapping.Wrap };
+    private readonly Button loadSavedSettingsButton = new() { Content = "Load saved settings", MinWidth = 150 };
+    private bool hasSavedSettings;
+    private readonly StackPanel mappingsPanel = new() { Spacing = 7 };
+    private readonly Dictionary<string, ComboBox> mappingBoxes = new(StringComparer.OrdinalIgnoreCase);
+    private IReadOnlyList<string> availableColumns = Array.Empty<string>();
+    private string? savedTable;
+    private string? savedFilterColumn;
+    private List<CustomerImportFilter> savedFilters = new();
+    private Dictionary<string, string> savedMappings = new(StringComparer.OrdinalIgnoreCase);
+    private bool suppressTableSelectionChanged;
+    private bool filtersInitialized;
+    private bool savedConfigurationInitializationStarted;
+
+    private Window GetOwnerWindow() => TopLevel.GetTopLevel(this) as Window ?? throw new InvalidOperationException("The database synchronization page is not attached to a window.");
+
+    private static readonly (string Target, string Label, string SuggestedSource)[] MappingDefinitions =
+    {
+        ("CustomerNumber", "Customer number (match key)", "PEL_PRO_CODE"),
+        ("FullName", "Full name", "EPONYM"),
+        ("FirstName", "First name", ""),
+        ("Surname", "Surname", ""),
+        ("Address", "Address", "ODOS"),
+        ("City", "City", "POLH"),
+        ("Postcode", "Postcode", "TAX_KOD"),
+        ("Telephone", "Telephone", "THLEF"),
+        ("Mobile", "Mobile", ""),
+        ("Phone", "Phone (legacy field)", "THLEF"),
+        ("Email", "Email", ""),
+        ("Amka", "AMKA", "PEL_PRO_AMKA"),
+        ("Insurance", "Insurance code", "PEL_PRO_CODE_AT")
+    };
+
+    public CustomerDatabaseSyncWindow()
+    {
+        Background = new SolidColorBrush(Color.Parse("#17212D"));
+
+        var root = new StackPanel { Margin = new Thickness(22), Spacing = 12 };
+        root.Children.Add(new TextBlock { Text = "Import customers from an external SQL Server", FontSize = 22, FontWeight = FontWeight.Bold });
+        root.Children.Add(new TextBlock
+        {
+            Text = "One-way import into S Pharmacy Log. The source database is only read; customer history and related records are never imported or deleted.",
+            TextWrapping = TextWrapping.Wrap,
+            Foreground = Brushes.LightGray
+        });
+
+        var savedConfigurationPanel = new StackPanel { Spacing = 8 };
+        savedConfigurationPanel.Children.Add(new TextBlock { Text = "SAVED CONFIGURATION", FontWeight = FontWeight.SemiBold });
+        savedConfigurationPanel.Children.Add(savedConfigurationInfo);
+        savedConfigurationPanel.Children.Add(new StackPanel
+        {
+            Orientation = Orientation.Horizontal,
+            Spacing = 8,
+            Children =
+            {
+                loadSavedSettingsButton,
+                new TextBlock
+                {
+                    Text = "Load the previously saved connection, table, filters and field mappings to review or edit them.",
+                    TextWrapping = TextWrapping.Wrap,
+                    VerticalAlignment = VerticalAlignment.Center
+                }
+            }
+        });
+        root.Children.Add(Card(savedConfigurationPanel));
+
+        var connectionPanel = new StackPanel { Spacing = 8 };
+        connectionPanel.Children.Add(new TextBlock { Text = "SQL SERVER CONNECTION", FontWeight = FontWeight.SemiBold });
+        connectionPanel.Children.Add(Row("Server / instance", server, "Database", database));
+        connectionPanel.Children.Add(integrated);
+        connectionPanel.Children.Add(trustServerCertificate);
+        connectionPanel.Children.Add(Row("Username", username, "Password", password));
+        var testButton = new Button { Content = "Test connection", MinWidth = 130 };
+        var loadTablesButton = new Button { Content = "Load tables", MinWidth = 110 };
+        var saveButton = new Button { Content = "Save all import settings", MinWidth = 180 };
+        var connectionButtons = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, Children = { testButton, loadTablesButton, saveButton } };
+        connectionPanel.Children.Add(connectionButtons);
+        root.Children.Add(Card(connectionPanel));
+
+        var sourcePanel = new StackPanel { Spacing = 8 };
+        sourcePanel.Children.Add(new TextBlock { Text = "SOURCE TABLE AND FILTER", FontWeight = FontWeight.SemiBold });
+        sourcePanel.Children.Add(Row("Source table", table));
+        sourcePanel.Children.Add(new TextBlock { Text = "Filters (all conditions must match):", Foreground = Brushes.LightGray });
+        sourcePanel.Children.Add(filtersPanel);
+        sourcePanel.Children.Add(addFilterButton);
+        sourcePanel.Children.Add(deactivateMissingAmka);
+        sourcePanel.Children.Add(new TextBlock { Text = "Add as many filters as needed. Leave a filter value empty or remove the row to ignore it.", Foreground = Brushes.LightGray, TextWrapping = TextWrapping.Wrap });
+        root.Children.Add(Card(sourcePanel));
+
+        var mappingScroll = new ScrollViewer { Content = mappingsPanel, MaxHeight = 330, VerticalScrollBarVisibility = Avalonia.Controls.Primitives.ScrollBarVisibility.Auto };
+        var mappingPanel = new StackPanel { Spacing = 8, Children =
+        {
+            new TextBlock { Text = "FIELD MAPPING", FontWeight = FontWeight.SemiBold },
+            new TextBlock { Text = "Map each S Pharmacy Log customer field to a column in the source table. Customer number is required for matching.", Foreground = Brushes.LightGray, TextWrapping = TextWrapping.Wrap },
+            mappingScroll
+        }};
+        root.Children.Add(Card(mappingPanel));
+
+        var bottom = new StackPanel { Spacing = 8 };
+        var previewButton = new Button { Content = "Count matching source rows", MinWidth = 210 };
+        var saveAndSyncButton = new Button { Content = "Save & Sync now", MinWidth = 150 };
+        var syncSavedButton = new Button { Content = "Sync saved settings", MinWidth = 170 };
+        bottom.Children.Add(new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, Children = { previewButton, saveAndSyncButton, syncSavedButton } });
+        bottom.Children.Add(status);
+        root.Children.Add(bottom);
+
+        Content = new ScrollViewer { Content = root, VerticalScrollBarVisibility = Avalonia.Controls.Primitives.ScrollBarVisibility.Auto };
+
+        loadSavedSettingsButton.Click += async (_, _) =>
+        {
+            LoadSavedSettings();
+            UpdateAuthenticationFields();
+            filtersInitialized = false;
+            filtersPanel.Children.Clear();
+            filterRows.Clear();
+            availableColumns = Array.Empty<string>();
+            table.ItemsSource = null;
+            foreach (var combo in mappingBoxes.Values)
+            {
+                combo.ItemsSource = new[] { "— Do not import —" };
+                combo.SelectedIndex = 0;
+            }
+            RefreshSavedConfigurationSummary();
+            await InitializeSavedConfigurationAsync();
+        };
+
+        integrated.IsCheckedChanged += (_, _) => UpdateAuthenticationFields();
+        addFilterButton.Click += (_, _) => AddFilterRow();
+        testButton.Click += async (_, _) => await RunAsync(async settings =>
+        {
+            await CustomerDatabaseSyncService.TestConnectionAsync(settings);
+            status.Text = "Connection successful.";
+        });
+        loadTablesButton.Click += async (_, _) => await RunAsync(async settings =>
+        {
+            await CustomerDatabaseSyncService.TestConnectionAsync(settings);
+            var tables = await CustomerDatabaseSyncService.GetTablesAsync(settings);
+            suppressTableSelectionChanged = true;
+            table.ItemsSource = tables;
+            if (!string.IsNullOrWhiteSpace(savedTable) && tables.Contains(savedTable))
+                table.SelectedItem = savedTable;
+            else if (tables.Count > 0)
+                table.SelectedIndex = 0;
+            suppressTableSelectionChanged = false;
+            var selectedTable = table.SelectedItem?.ToString() ?? string.Empty;
+            if (!string.IsNullOrWhiteSpace(selectedTable))
+            {
+                await LoadColumnsAsync(selectedTable);
+                ApplySavedMappings();
+            }
+            status.Text = $"Loaded {tables.Count} table(s). Select the source table and review the field mappings.";
+        });
+        table.SelectionChanged += async (_, _) =>
+        {
+            if (suppressTableSelectionChanged || table.SelectedItem is not string selected) return;
+            await RunAsync(async settings =>
+            {
+                await LoadColumnsAsync(selected);
+                ApplySavedMappings();
+                status.Text = $"Loaded {availableColumns.Count} source column(s).";
+            });
+        };
+        saveButton.Click += async (_, _) => await RunAsync(settings =>
+        {
+            CustomerDatabaseSyncService.SaveSettings(settings);
+            savedTable = settings.Table;
+            savedFilterColumn = settings.FilterColumn;
+            savedFilters = settings.Filters.ToList();
+            savedMappings = new Dictionary<string, string>(settings.FieldMappings, StringComparer.OrdinalIgnoreCase);
+            hasSavedSettings = true;
+            RefreshSavedConfigurationSummary();
+            status.Text = "All connection, table, mapping and filter settings saved securely for this Windows user.";
+            return Task.CompletedTask;
+        });
+        previewButton.Click += async (_, _) => await RunAsync(async settings =>
+        {
+            var count = await CustomerDatabaseSyncService.PreviewCountAsync(settings);
+            status.Text = $"Preview: {count:N0} source customer row(s) match the selected filter. Inactive matching customers will be skipped without any changes.";
+        });
+        saveAndSyncButton.Click += async (_, _) => await RunAsync(async settings =>
+        {
+            ValidateSettingsForSync(settings);
+            CustomerDatabaseSyncService.SaveSettings(settings);
+            savedTable = settings.Table;
+            savedFilters = settings.Filters.ToList();
+            savedMappings = new Dictionary<string, string>(settings.FieldMappings, StringComparer.OrdinalIgnoreCase);
+            hasSavedSettings = true;
+            RefreshSavedConfigurationSummary();
+            await ExecuteImportAsync(settings, requireConfirmation: true);
+        });
+        syncSavedButton.Click += async (_, _) => await RunAsync(async _ =>
+        {
+            var saved = CustomerDatabaseSyncService.LoadSettings();
+            ValidateSettingsForSync(saved);
+            await ExecuteImportAsync(saved, requireConfirmation: false);
+        });
+
+        LoadSavedSettings();
+        UpdateAuthenticationFields();
+        BuildMappingRows();
+        RefreshSavedConfigurationSummary();
+    }
+
+    protected override async void OnAttachedToVisualTree(Avalonia.VisualTreeAttachmentEventArgs e)
+    {
+        base.OnAttachedToVisualTree(e);
+        if (savedConfigurationInitializationStarted) return;
+        savedConfigurationInitializationStarted = true;
+        await InitializeSavedConfigurationAsync();
+    }
+
+    private async Task InitializeSavedConfigurationAsync()
+    {
+        if (!hasSavedSettings || string.IsNullOrWhiteSpace(server.Text) || string.IsNullOrWhiteSpace(database.Text))
+        {
+            status.Text = "No saved database synchronization configuration was found. Enter the connection details, choose a source table and save the settings.";
+            return;
+        }
+        if (string.IsNullOrWhiteSpace(savedTable))
+        {
+            ApplySavedMappings();
+            status.Text = "Connection settings are saved, but no source table has been saved yet. Load tables, choose one and save the settings.";
+            return;
+        }
+
+        // Restore saved values immediately so they remain reviewable even if the source
+        // SQL Server is temporarily unavailable. Live schema validation follows below.
+        ApplySavedMappings();
+
+        try
+        {
+            IsEnabled = false;
+            status.Text = "Loading saved table and field mappings…";
+            await CustomerDatabaseSyncService.TestConnectionAsync(ReadSettings());
+            var tables = await CustomerDatabaseSyncService.GetTablesAsync(ReadSettings());
+            suppressTableSelectionChanged = true;
+            table.ItemsSource = tables;
+            table.SelectedItem = tables.FirstOrDefault(item =>
+                string.Equals(item, savedTable, StringComparison.OrdinalIgnoreCase));
+            suppressTableSelectionChanged = false;
+
+            if (table.SelectedItem is string selected)
+            {
+                await LoadColumnsAsync(selected);
+                ApplySavedMappings();
+                status.Text = "Saved source table, filters and field mappings loaded automatically.";
+            }
+            else
+            {
+                status.Text = "The saved source table was not found. Use Load tables to choose a replacement.";
+            }
+        }
+        catch (Exception ex)
+        {
+            suppressTableSelectionChanged = false;
+            status.Text = "Could not load saved table/mappings: " + ex.GetBaseException().Message;
+        }
+        finally { IsEnabled = true; }
+    }
+
+    private static Border Card(Control content) => new()
+    {
+        Background = new SolidColorBrush(Color.Parse("#202B38")),
+        BorderBrush = new SolidColorBrush(Color.Parse("#354456")),
+        BorderThickness = new Thickness(1),
+        CornerRadius = new CornerRadius(9),
+        Padding = new Thickness(14),
+        Child = content
+    };
+
+    private static StackPanel Row(string firstLabel, Control first, string? secondLabel = null, Control? second = null)
+    {
+        var row = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8 };
+        row.Children.Add(new TextBlock { Text = firstLabel, Width = 120, VerticalAlignment = VerticalAlignment.Center });
+        first.Width = first.Width > 0 ? first.Width : 190;
+        row.Children.Add(first);
+        if (second is not null)
+        {
+            row.Children.Add(new TextBlock { Text = secondLabel, Width = 95, VerticalAlignment = VerticalAlignment.Center });
+            second.Width = second.Width > 0 ? second.Width : 190;
+            row.Children.Add(second);
+        }
+        return row;
+    }
+
+    private void BuildMappingRows()
+    {
+        mappingsPanel.Children.Clear();
+        mappingBoxes.Clear();
+        foreach (var definition in MappingDefinitions)
+        {
+            var combo = new ComboBox { MinWidth = 280, Width = 300, PlaceholderText = "— Do not import —" };
+            combo.ItemsSource = new[] { "— Do not import —" };
+            combo.SelectedIndex = 0;
+            mappingBoxes[definition.Target] = combo;
+            mappingsPanel.Children.Add(Row(definition.Label, combo));
+        }
+        UpdateMappingChoices();
+    }
+
+    private void UpdateMappingChoices()
+    {
+        foreach (var definition in MappingDefinitions)
+        {
+            var combo = mappingBoxes[definition.Target];
+            var current = combo.SelectedItem?.ToString();
+            var options = new[] { "— Do not import —" }.Concat(availableColumns).ToArray();
+            combo.ItemsSource = options;
+            var desired = !string.IsNullOrWhiteSpace(current) && current != "— Do not import —"
+                ? current
+                : definition.SuggestedSource;
+            combo.SelectedItem = options.FirstOrDefault(option => string.Equals(option, desired, StringComparison.OrdinalIgnoreCase))
+                                 ?? options[0];
+        }
+        foreach (var row in filterRows)
+        {
+            var selected = row.Column.SelectedItem?.ToString();
+            row.Column.ItemsSource = availableColumns;
+            if (!string.IsNullOrWhiteSpace(selected) && availableColumns.Contains(selected, StringComparer.OrdinalIgnoreCase))
+                row.Column.SelectedItem = availableColumns.First(c => c.Equals(selected, StringComparison.OrdinalIgnoreCase));
+            else if (string.IsNullOrWhiteSpace(selected) && availableColumns.Contains("KPP_KATHGOR", StringComparer.OrdinalIgnoreCase))
+                row.Column.SelectedItem = availableColumns.First(c => c.Equals("KPP_KATHGOR", StringComparison.OrdinalIgnoreCase));
+        }
+    }
+
+    private async Task LoadColumnsAsync(string selectedTable)
+    {
+        if (string.IsNullOrWhiteSpace(selectedTable)) return;
+        var settings = ReadSettings();
+        availableColumns = await CustomerDatabaseSyncService.GetColumnsAsync(settings, selectedTable);
+        UpdateMappingChoices();
+    }
+
+    private void LoadSavedSettings()
+    {
+        var settings = CustomerDatabaseSyncService.LoadSettings();
+        server.Text = settings.Server;
+        database.Text = settings.Database;
+        integrated.IsChecked = settings.IntegratedSecurity;
+        trustServerCertificate.IsChecked = settings.TrustServerCertificate;
+        username.Text = settings.Username;
+        password.Text = settings.Password;
+        deactivateMissingAmka.IsChecked = settings.DeactivateWhenAmkaMissing;
+        savedTable = settings.Table;
+        savedFilterColumn = settings.FilterColumn;
+        savedFilters = settings.Filters ?? new List<CustomerImportFilter>();
+        if (savedFilters.Count == 0 && !string.IsNullOrWhiteSpace(settings.FilterValue))
+            savedFilters.Add(new CustomerImportFilter { Column = settings.FilterColumn, Operator = "Equals", Value = settings.FilterValue });
+        savedMappings = settings.FieldMappings ?? new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        hasSavedSettings = !string.IsNullOrWhiteSpace(settings.Server) && !string.IsNullOrWhiteSpace(settings.Database);
+        loadSavedSettingsButton.IsEnabled = hasSavedSettings;
+        RefreshSavedConfigurationSummary();
+    }
+
+    private void RefreshSavedConfigurationSummary()
+    {
+        if (!hasSavedSettings)
+        {
+            savedConfigurationInfo.Text = "No saved configuration found on this Windows user account. Once saved, its details will be shown here.";
+            savedConfigurationInfo.Foreground = Brushes.LightGray;
+            loadSavedSettingsButton.IsEnabled = false;
+            return;
+        }
+
+        var authentication = integrated.IsChecked == true ? "Windows authentication" : "SQL authentication";
+        var tableSummary = string.IsNullOrWhiteSpace(savedTable) ? "table not selected" : savedTable;
+        var mappingCount = savedMappings.Count(pair => !string.IsNullOrWhiteSpace(pair.Value));
+        var filterCount = savedFilters.Count(filter => !string.IsNullOrWhiteSpace(filter.Column));
+        savedConfigurationInfo.Text = $"Saved configuration found  •  {server.Text} / {database.Text}  •  {authentication}  •  Source: {tableSummary}  •  {mappingCount} field mappings  •  {filterCount} filter(s). Passwords are kept encrypted and are never displayed.";
+        savedConfigurationInfo.Foreground = Brushes.LightGreen;
+        loadSavedSettingsButton.IsEnabled = true;
+    }
+
+    private void ApplySavedMappings()
+    {
+        foreach (var definition in MappingDefinitions)
+        {
+            if (!savedMappings.TryGetValue(definition.Target, out var source) || string.IsNullOrWhiteSpace(source))
+                continue;
+            var options = new[] { "— Do not import —" }.Concat(availableColumns)
+                .Concat(new[] { source })
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToArray();
+            mappingBoxes[definition.Target].ItemsSource = options;
+            mappingBoxes[definition.Target].SelectedItem = options.First(option =>
+                string.Equals(option, source, StringComparison.OrdinalIgnoreCase));
+        }
+        if (!filtersInitialized)
+        {
+            filtersPanel.Children.Clear();
+            filterRows.Clear();
+            if (savedFilters.Count == 0)
+                AddFilterRow();
+            else
+                foreach (var filter in savedFilters)
+                    AddFilterRow(filter);
+            filtersInitialized = true;
+        }
+    }
+
+
+    private void AddFilterRow(CustomerImportFilter? saved = null)
+    {
+        var column = new ComboBox { Width = 190, MinWidth = 150, PlaceholderText = "Select column" };
+        column.ItemsSource = availableColumns
+            .Concat(string.IsNullOrWhiteSpace(saved?.Column) ? Array.Empty<string>() : new[] { saved.Column })
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+        var op = new ComboBox
+        {
+            Width = 135,
+            ItemsSource = new[] { "Equals", "NotEquals", "Contains", "StartsWith", "GreaterThan", "LessThan", "IsEmpty", "IsNotEmpty" },
+            SelectedItem = saved?.Operator ?? "Equals"
+        };
+        var value = new TextBox { Width = 150, PlaceholderText = "Value", Text = saved?.Value ?? string.Empty };
+        var remove = new Button { Content = "Remove", MinWidth = 70 };
+        var row = (column, op, value);
+        filterRows.Add(row);
+        if (!string.IsNullOrWhiteSpace(saved?.Column))
+            column.SelectedItem = column.ItemsSource is IEnumerable<string> options
+                ? options.FirstOrDefault(c => c.Equals(saved.Column, StringComparison.OrdinalIgnoreCase))
+                : saved.Column;
+        else if (availableColumns.Contains("KPP_KATHGOR", StringComparer.OrdinalIgnoreCase))
+            column.SelectedItem = availableColumns.First(c => c.Equals("KPP_KATHGOR", StringComparison.OrdinalIgnoreCase));
+        remove.Click += (_, _) => filterRows.Remove(row);
+        var line = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 6 };
+        line.Children.Add(column);
+        line.Children.Add(op);
+        line.Children.Add(value);
+        line.Children.Add(remove);
+        filtersPanel.Children.Add(line);
+        remove.Click += (_, _) => filtersPanel.Children.Remove(line);
+        op.SelectionChanged += (_, _) => value.IsEnabled = op.SelectedItem?.ToString() is not ("IsEmpty" or "IsNotEmpty");
+        value.IsEnabled = op.SelectedItem?.ToString() is not ("IsEmpty" or "IsNotEmpty");
+    }
+
+    private void UpdateAuthenticationFields()
+    {
+        var sqlAuthentication = integrated.IsChecked != true;
+        username.IsEnabled = sqlAuthentication;
+        password.IsEnabled = sqlAuthentication;
+    }
+
+    private CustomerDatabaseSyncSettings ReadSettings()
+    {
+        var settings = new CustomerDatabaseSyncSettings
+        {
+            Server = server.Text?.Trim() ?? string.Empty,
+            Database = database.Text?.Trim() ?? string.Empty,
+            IntegratedSecurity = integrated.IsChecked == true,
+            TrustServerCertificate = trustServerCertificate.IsChecked == true,
+            Username = username.Text ?? string.Empty,
+            Password = password.Text ?? string.Empty,
+            DeactivateWhenAmkaMissing = deactivateMissingAmka.IsChecked == true,
+            Table = table.SelectedItem?.ToString() ?? string.Empty,
+            FilterColumn = string.Empty,
+            FilterValue = string.Empty,
+            Filters = filterRows
+                .Where(row => !string.IsNullOrWhiteSpace(row.Column.SelectedItem?.ToString()))
+                .Select(row => new CustomerImportFilter
+                {
+                    Column = row.Column.SelectedItem!.ToString()!,
+                    Operator = row.Operator.SelectedItem?.ToString() ?? "Equals",
+                    Value = row.Value.Text ?? string.Empty
+                }).ToList(),
+            FieldMappings = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+        };
+        if (settings.Filters.Count > 0)
+        {
+            settings.FilterColumn = settings.Filters[0].Column;
+            settings.FilterValue = settings.Filters[0].Value;
+        }
+        foreach (var pair in mappingBoxes)
+        {
+            var value = pair.Value.SelectedItem?.ToString();
+            if (!string.IsNullOrWhiteSpace(value) && value != "— Do not import —")
+                settings.FieldMappings[pair.Key] = value;
+        }
+        return settings;
+    }
+
+
+    private static void ValidateSettingsForSync(CustomerDatabaseSyncSettings settings)
+    {
+        if (string.IsNullOrWhiteSpace(settings.Server) || string.IsNullOrWhiteSpace(settings.Database))
+            throw new InvalidOperationException("Complete and save the SQL Server connection settings first.");
+        if (string.IsNullOrWhiteSpace(settings.Table))
+            throw new InvalidOperationException("Select and save a source table first.");
+        if (!settings.FieldMappings.ContainsKey("CustomerNumber"))
+            throw new InvalidOperationException("Map and save the Customer number field first.");
+        if (settings.DeactivateWhenAmkaMissing && !settings.FieldMappings.ContainsKey("Amka"))
+            throw new InvalidOperationException("The inactive-on-missing-AMKA option requires an AMKA source column mapping.");
+    }
+
+    private async Task ExecuteImportAsync(CustomerDatabaseSyncSettings settings, bool requireConfirmation)
+    {
+        if (requireConfirmation)
+        {
+            var confirmation = new Window
+            {
+                Title = "Confirm customer synchronization",
+                Width = 500,
+                Height = 250,
+                WindowStartupLocation = WindowStartupLocation.CenterOwner
+            };
+            var cancel = new Button { Content = "Cancel", MinWidth = 90 };
+            var confirm = new Button { Content = "Sync", MinWidth = 90, IsDefault = true };
+            cancel.Click += (_, _) => confirmation.Close(false);
+            confirm.Click += (_, _) => confirmation.Close(true);
+            confirmation.Content = new StackPanel
+            {
+                Margin = new Thickness(20),
+                Spacing = 14,
+                Children =
+                {
+                    new TextBlock
+                    {
+                        Text = settings.DeactivateWhenAmkaMissing
+                            ? "Synchronize customers using the saved selection? Customers whose source AMKA is NULL or empty will be marked inactive. Existing inactive customers remain unchanged."
+                            : "Synchronize customers using the selected source and filters? Existing active customers will be updated; existing inactive customers remain unchanged.",
+                        TextWrapping = TextWrapping.Wrap
+                    },
+                    new StackPanel
+                    {
+                        Orientation = Orientation.Horizontal,
+                        HorizontalAlignment = HorizontalAlignment.Right,
+                        Spacing = 8,
+                        Children = { cancel, confirm }
+                    }
+                }
+            };
+            if (!await confirmation.ShowDialog<bool>(GetOwnerWindow()))
+                return;
+        }
+
+        await using var db = new PharmacyDbContext(PharmacyDb.Options());
+        var result = await CustomerDatabaseSyncService.ImportAsync(settings, db);
+        status.Text = $"Synchronization completed. Added: {result.Added}. Updated: {result.Updated}. Marked inactive (missing AMKA): {result.MarkedInactive}. Previously inactive skipped: {result.InactiveSkipped}. Invalid rows skipped: {result.InvalidSkipped}.";
+    }
+
+    private async Task RunAsync(Func<CustomerDatabaseSyncSettings, Task> action)
+    {
+        try
+        {
+            status.Text = "Working…";
+            IsEnabled = false;
+            await action(ReadSettings());
+        }
+        catch (Exception ex)
+        {
+            status.Text = "Operation failed: " + ex.Message;
+        }
+        finally { IsEnabled = true; }
+    }
+}

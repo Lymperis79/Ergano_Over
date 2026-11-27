@@ -196,6 +196,8 @@ public static class GreekStrings
         [L.AutoClockOutSaveFailed] = "Αποτυχία αποθήκευσης ρυθμίσεων αυτόματης εξόδου: {0}.",
         [L.OfficialHolidays] = "Επίσημες αργίες",
         [L.OfficialHolidaysTitle] = "Επίσημες αργίες εταιρείας",
+        ["OfficialHolidaysSelectAll"] = "Επιλογή όλων",
+        ["OfficialHolidaysUnselectAll"] = "Αποεπιλογή όλων",
         [L.OfficialHolidaysDescription] = "Επιλέξτε ποιες επίσημες αργίες είναι μη εργάσιμες για την εταιρεία. Οι ελληνικές δημόσιες αργίες συγχρονίζονται στην κοινόχρηστη βάση και διατηρούνται μόνιμα· μπορείτε επίσης να προσθέσετε δικές σας ημερομηνίες.",
         [L.OfficialHolidaysEffect] = "Οι ενεργοποιημένες αργίες θεωρούνται μη εργάσιμες στους ελέγχους παρουσίας. Τα δηλωμένα ωράρια παραμένουν ορατά και οι σαρώσεις προσέλευσης εξακολουθούν να γίνονται δεκτές.",
         [L.OfficialHolidaysSelectCompany] = "Επιλέξτε εταιρεία για να ρυθμίσετε τις επίσημες αργίες της.",
@@ -233,6 +235,10 @@ public static class GreekStrings
 
         // ── Employees ─────────────────────────────────────────
         [L.Employees] = "Εργαζόμενοι",
+        [L.SortEmployeesBy] = "Ταξινόμηση εργαζομένων κατά:",
+        [L.SortSurnameAscending] = "Επώνυμο (Α–Ω)",
+        [L.SortFirstNameAscending] = "Όνομα (Α–Ω)",
+        [L.SortAfmAscending] = "ΑΦΜ (αύξουσα σειρά)",
         [L.FirstName] = "Όνομα",
         [L.LastName] = "Επώνυμο",
         [L.Amka] = "ΑΜΚΑ",

@@ -27,10 +27,8 @@ public enum BorrowingStatus
 
 public enum SubscriptionStatus
 {
-    Active,
-    Paused,
-    Completed,
-    Cancelled
+    Active = 0,
+    Executed = 1
 }
 
 public enum LedgerEntryType
@@ -39,6 +37,18 @@ public enum LedgerEntryType
     Payment,
     Adjustment,
     Reversal
+}
+
+/// <summary>
+/// Lifecycle state of a serialized pharmaceutical pack.
+/// Values are stored as text to match GS1/HMVO terminology.
+/// </summary>
+public static class SerializedPackStatuses
+{
+    public const string Active = "ACTIVE";
+    public const string Dispensed = "DISPENSED";
+    public const string Returned = "RETURNED";
+    public const string Alert = "ALERT";
 }
 
 /// <summary>
@@ -78,6 +88,24 @@ public class Customer
     public string FullName { get; set; } = string.Empty;
 
     public string Phone { get; set; } = string.Empty;
+
+    public string? FirstName { get; set; }
+
+    public string? Surname { get; set; }
+
+    public string? Telephone { get; set; }
+
+    public string? Mobile { get; set; }
+
+    public string? Email { get; set; }
+
+    public string? Amka { get; set; }
+
+    public string? Insurance { get; set; }
+
+    public string? City { get; set; }
+
+    public string? Postcode { get; set; }
 
     public string? Address { get; set; }
 
@@ -145,6 +173,70 @@ public class MedicineCatalogItem
     public string? Notes { get; set; }
 
     public bool IsActive { get; set; } = true;
+
+    /// <summary>All known manufacturer, EOF/NTIN and other barcodes for this medicine.</summary>
+    public ICollection<MedicineBarcode> Barcodes { get; set; } = new List<MedicineBarcode>();
+
+    /// <summary>Serialized physical packs identified by GS1 DataMatrix.</summary>
+    public ICollection<SerializedPackScan> SerializedPacks { get; set; } = new List<SerializedPackScan>();
+}
+
+/// <summary>
+/// An alternate barcode that resolves to a medicine catalogue item.
+/// A medicine may have multiple barcode rows (for example GTIN and EOF/NTIN).
+/// </summary>
+public class MedicineBarcode
+{
+    public int Id { get; set; }
+
+    public int MedicineId { get; set; }
+
+    public MedicineCatalogItem? Medicine { get; set; }
+
+    /// <summary>Exact barcode value without scanner symbology prefixes.</summary>
+    public string BarcodeValue { get; set; } = string.Empty;
+
+    /// <summary>GTIN14, EOF_EAN13, OTHER or LEGACY.</summary>
+    public string BarcodeType { get; set; } = "OTHER";
+}
+
+/// <summary>
+/// One physical medicine pack scanned from a GS1 DataMatrix.
+/// The raw payload is retained exactly, including ASCII 29 group separators.
+/// </summary>
+public class SerializedPackScan
+{
+    public int Id { get; set; }
+
+    /// <summary>Exact scanner output; ASCII 29 (0x1D) must be preserved.</summary>
+    public string RawGs1String { get; set; } = string.Empty;
+
+    /// <summary>GS1 AI (01), exactly 14 digits.</summary>
+    public string Gtin14 { get; set; } = string.Empty;
+
+    /// <summary>Optional mapped Greek EOF/NTIN barcode, exactly 13 digits.</summary>
+    public string? EofEan13 { get; set; }
+
+    /// <summary>GS1 AI (21).</summary>
+    public string SerialNumber { get; set; } = string.Empty;
+
+    /// <summary>GS1 AI (17), interpreted as a calendar date.</summary>
+    public DateTime ExpiryDate { get; set; }
+
+    /// <summary>GS1 AI (10).</summary>
+    public string BatchLot { get; set; } = string.Empty;
+
+    /// <summary>ACTIVE, DISPENSED, RETURNED or ALERT.</summary>
+    public string HmvoStatus { get; set; } = SerializedPackStatuses.Active;
+
+    public DateTime ScannedAt { get; set; } = DateTime.UtcNow;
+
+    /// <summary>Resolved medicine catalogue item; null when not yet matched.</summary>
+    public int? MedicineId { get; set; }
+
+    public MedicineCatalogItem? Medicine { get; set; }
+
+    public ICollection<BorrowingRecord> Borrowings { get; set; } = new List<BorrowingRecord>();
 }
 
 /// <summary>
@@ -154,13 +246,20 @@ public class BorrowingRecord
 {
     public int Id { get; set; }
 
-    public int CustomerId { get; set; }
+    public int? CustomerId { get; set; }
 
     public Customer? Customer { get; set; }
+
+    public string? PrescriptionNumber { get; set; }
 
     public string MedicineName { get; set; } = string.Empty;
 
     public string? OriginalBarcode { get; set; }
+
+    /// <summary>Optional link to the exact serialized pack scanned for this borrowing.</summary>
+    public int? SerializedPackScanId { get; set; }
+
+    public SerializedPackScan? SerializedPackScan { get; set; }
 
     public string InternalBarcode { get; set; } = string.Empty;
 
@@ -196,15 +295,48 @@ public class Subscription
 
     public DateTime StartDate { get; set; } = DateTime.Today;
 
-    public DateTime NextDueDate { get; set; }
 
-    public DateTime? ExpiryDate { get; set; }
+    public DateTime ExpiryDate { get; set; }
 
     public string Frequency { get; set; } = "Monthly";
 
     public SubscriptionStatus Status { get; set; } = SubscriptionStatus.Active;
 
     public string? Notes { get; set; }
+
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
+    public string CreatedBy { get; set; } = "system";
+
+    public DateTime LastModifiedAt { get; set; } = DateTime.UtcNow;
+
+    public string LastModifiedBy { get; set; } = "system";
+
+    public ICollection<SubscriptionAuditEntry> AuditEntries { get; set; } = new List<SubscriptionAuditEntry>();
+}
+
+/// <summary>
+/// Immutable audit event for a subscription creation, edit or status transition.
+/// </summary>
+public class SubscriptionAuditEntry
+{
+    public int Id { get; set; }
+
+    public int SubscriptionId { get; set; }
+
+    public Subscription? Subscription { get; set; }
+
+    public string Action { get; set; } = string.Empty;
+
+    public int? PreviousStatus { get; set; }
+
+    public int NewStatus { get; set; }
+
+    public string ChangedBy { get; set; } = string.Empty;
+
+    public DateTime ChangedAt { get; set; } = DateTime.UtcNow;
+
+    public string? Details { get; set; }
 }
 
 /// <summary>
@@ -253,4 +385,49 @@ public class LedgerEntry
     public string? SourceReference { get; set; }
 
     public string RecordedBy { get; set; } = string.Empty;
+}
+
+/// <summary>
+/// A calendar note belonging to a date. Private notes are visible only to their creator.
+/// </summary>
+public class CalendarNote
+{
+    public int Id { get; set; }
+    public DateTime CalendarDate { get; set; }
+    public string Header { get; set; } = string.Empty;
+    public string Note { get; set; } = string.Empty;
+    public string CreatedBy { get; set; } = string.Empty;
+    public bool IsShared { get; set; }
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public bool IsCompleted { get; set; }
+    public string? CompletedBy { get; set; }
+    public DateTime? CompletedAt { get; set;}
+}
+
+
+/// <summary>Stock movement types. Stock counts establish a baseline for a batch; subsequent movements are added to it.</summary>
+public enum MedicineStockMovementType
+{
+    Count = 0,
+    Add = 1,
+    Remove = 2
+}
+
+/// <summary>Immutable audit record for medicine stock counts and movements.</summary>
+public class MedicineStockMovement
+{
+    public int Id { get; set; }
+    public int MedicineId { get; set; }
+    public MedicineCatalogItem? Medicine { get; set; }
+    public MedicineStockMovementType Type { get; set; }
+    /// <summary>Positive amount for add/remove movements.</summary>
+    public decimal Quantity { get; set; }
+    /// <summary>Absolute counted quantity for a Count movement.</summary>
+    public decimal? CountedQuantity { get; set; }
+    public DateTime MovementDate { get; set; } = DateTime.Now;
+    public DateTime? ExpiryDate { get; set; }
+    public string? BarcodeScanned { get; set; }
+    public string? BatchLot { get; set; }
+    public string PerformedBy { get; set; } = string.Empty;
+    public string? Notes { get; set; }
 }

@@ -22,6 +22,37 @@ public partial class EmployeesViewModel : ViewModelBase, IAdminSectionViewModel
 
     public ObservableCollection<BranchDto> AvailableBranches { get; } = new();
 
+    public ObservableCollection<string> SortByOptions { get; } = new();
+
+    [ObservableProperty]
+    private int _sortByIndex;
+
+    partial void OnSortByIndexChanged(int value) => ApplyEmployeeSort();
+
+    private void RefreshSortByOptions()
+    {
+        SortByOptions.Clear();
+        SortByOptions.Add(Loc[L.SortSurnameAscending]);
+        SortByOptions.Add(Loc[L.SortFirstNameAscending]);
+        SortByOptions.Add(Loc[L.SortAfmAscending]);
+    }
+
+    private void ApplyEmployeeSort()
+    {
+        var sorted = SortByIndex switch
+        {
+            1 => Employees.OrderBy(e => e.FirstName, StringComparer.CurrentCultureIgnoreCase)
+                          .ThenBy(e => e.LastName, StringComparer.CurrentCultureIgnoreCase).ToList(),
+            2 => Employees.OrderBy(e => e.TaxId, StringComparer.Ordinal).ToList(),
+            _ => Employees.OrderBy(e => e.LastName, StringComparer.CurrentCultureIgnoreCase)
+                          .ThenBy(e => e.FirstName, StringComparer.CurrentCultureIgnoreCase).ToList()
+        };
+
+        Employees.Clear();
+        foreach (var employee in sorted)
+            Employees.Add(employee);
+    }
+
     [ObservableProperty]
     private bool _isEditing;
 
@@ -150,6 +181,9 @@ public partial class EmployeesViewModel : ViewModelBase, IAdminSectionViewModel
     {
         _employeeService = employeeService;
         _branchService = branchService;
+
+        RefreshSortByOptions();
+        Loc.LanguageChanged += (_, _) => RefreshSortByOptions();
     }
 
     public void Initialize(UserSession session)
@@ -226,6 +260,8 @@ public partial class EmployeesViewModel : ViewModelBase, IAdminSectionViewModel
                     {
                         Employees.Add(employee);
                     }
+
+                    ApplyEmployeeSort();
                 });
 
             StatusMessage =

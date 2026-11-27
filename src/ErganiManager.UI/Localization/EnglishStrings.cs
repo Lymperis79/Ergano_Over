@@ -196,6 +196,8 @@ public static class EnglishStrings
         [L.AutoClockOutSaveFailed] = "Could not save automatic clock-out settings: {0}.",
         [L.OfficialHolidays] = "Official holidays",
         [L.OfficialHolidaysTitle] = "Company official holidays",
+        ["OfficialHolidaysSelectAll"] = "Select all",
+        ["OfficialHolidaysUnselectAll"] = "Unselect all",
         [L.OfficialHolidaysDescription] = "Select the official holidays that are non-working days for this company. Greek public holidays are synchronized into the shared database and retained permanently; you can also add custom dates.",
         [L.OfficialHolidaysEffect] = "Enabled holidays are treated as non-working days for attendance checks. Declared schedule times remain visible, and clock-in scans are still accepted.",
         [L.OfficialHolidaysSelectCompany] = "Select a company to configure its official holidays.",
@@ -233,6 +235,10 @@ public static class EnglishStrings
 
         // ── Employees ─────────────────────────────────────────
         [L.Employees] = "Employees",
+        [L.SortEmployeesBy] = "Sort employees by:",
+        [L.SortSurnameAscending] = "Surname (A–Z)",
+        [L.SortFirstNameAscending] = "First name (A–Z)",
+        [L.SortAfmAscending] = "AFM (ascending)",
         [L.FirstName] = "First Name",
         [L.LastName] = "Last Name",
         [L.Amka] = "Social Security Number (AMKA)",

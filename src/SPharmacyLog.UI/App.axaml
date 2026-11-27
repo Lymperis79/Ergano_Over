@@ -1,1 +1,104 @@
-<Application xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" x:Class="SPharmacyLog.UI.App"><Application.Styles><FluentTheme/></Application.Styles></Application>
+<Application xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" x:Class="SPharmacyLog.UI.App" RequestedThemeVariant="Dark">
+  <Application.Resources>
+    <SolidColorBrush x:Key="WindowBrush" Color="#151922"/>
+    <SolidColorBrush x:Key="SidebarBrush" Color="#11151C"/>
+    <SolidColorBrush x:Key="PanelBrush" Color="#202733"/>
+    <SolidColorBrush x:Key="CardBrush" Color="#202733"/>
+    <SolidColorBrush x:Key="HoverBrush" Color="#293342"/>
+    <SolidColorBrush x:Key="LineBrush" Color="#354152"/>
+    <SolidColorBrush x:Key="AccentBrush" Color="#21A1D8"/>
+    <SolidColorBrush x:Key="AccentHoverBrush" Color="#1688BD"/>
+    <SolidColorBrush x:Key="AccentLightBrush" Color="#73D0FA"/>
+    <SolidColorBrush x:Key="AccentSoftBrush" Color="#3321A1D8"/>
+    <SolidColorBrush x:Key="AccentFaintBrush" Color="#1A21A1D8"/>
+    <SolidColorBrush x:Key="NavActiveBrush" Color="#243C52"/>
+    <SolidColorBrush x:Key="NavActiveHoverBrush" Color="#2D4C66"/>
+  </Application.Resources>
+  <Application.Styles>
+    <FluentTheme/>
+    <Style Selector="Window">
+      <Setter Property="Background" Value="{DynamicResource WindowBrush}"/>
+      <Setter Property="Foreground" Value="#E7EDF5"/>
+    </Style>
+    <Style Selector="Button">
+      <Setter Property="CornerRadius" Value="7"/>
+      <Setter Property="Padding" Value="13,8"/>
+      <Setter Property="Cursor" Value="Hand"/>
+      <Setter Property="FontWeight" Value="Medium"/>
+    </Style>
+    <Style Selector="Button.accent">
+      <Setter Property="Background" Value="{DynamicResource AccentBrush}"/>
+      <Setter Property="Foreground" Value="White"/>
+      <Setter Property="FontWeight" Value="SemiBold"/>
+    </Style>
+    <Style Selector="Button.accent:pointerover /template/ ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource AccentHoverBrush}"/>
+    </Style>
+    <Style Selector="TextBox">
+      <Setter Property="CornerRadius" Value="6"/>
+      <Setter Property="Padding" Value="10,8"/>
+      <Setter Property="MinHeight" Value="38"/>
+    </Style>
+    <Style Selector="ComboBox">
+      <Setter Property="CornerRadius" Value="6"/>
+      <Setter Property="MinHeight" Value="38"/>
+    </Style>
+    <Style Selector="CheckBox">
+      <Setter Property="Padding" Value="4"/>
+    </Style>
+    <!-- Shared list styling keeps list-based screens consistent across the application. -->
+    <Style Selector="ListBox">
+      <Setter Property="Background" Value="#171E28"/>
+      <Setter Property="BorderBrush" Value="{DynamicResource LineBrush}"/>
+      <Setter Property="BorderThickness" Value="1"/>
+      <Setter Property="Padding" Value="5"/>
+    </Style>
+    <Style Selector="ListBoxItem">
+      <Setter Property="MinHeight" Value="38"/>
+      <Setter Property="Padding" Value="10,8"/>
+      <Setter Property="Margin" Value="1,2"/>
+      <Setter Property="Background" Value="Transparent"/>
+      <Setter Property="Foreground" Value="#E1E8F0"/>
+      <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+    </Style>
+    <Style Selector="ListBoxItem:pointerover">
+      <Setter Property="Background" Value="{DynamicResource HoverBrush}"/>
+    </Style>
+    <Style Selector="ListBoxItem:selected">
+      <Setter Property="Background" Value="{DynamicResource NavActiveBrush}"/>
+      <Setter Property="Foreground" Value="White"/>
+      <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}"/>
+      <Setter Property="BorderThickness" Value="1"/>
+    </Style>
+    <Style Selector="ListBoxItem:selected:pointerover">
+      <Setter Property="Background" Value="{DynamicResource NavActiveHoverBrush}"/>
+    </Style>
+    <Style Selector="Border.card">
+      <Setter Property="Background" Value="{DynamicResource CardBrush}"/>
+      <Setter Property="BorderBrush" Value="{DynamicResource LineBrush}"/>
+      <Setter Property="BorderThickness" Value="1"/>
+      <Setter Property="CornerRadius" Value="12"/>
+      <Setter Property="Padding" Value="18"/>
+    </Style>
+    <Style Selector="Button.nav">
+      <Setter Property="HorizontalContentAlignment" Value="Left"/>
+      <Setter Property="Background" Value="Transparent"/>
+      <Setter Property="BorderThickness" Value="0"/>
+      <Setter Property="Padding" Value="12,10"/>
+      <Setter Property="Foreground" Value="#C8D4E2"/>
+    </Style>
+    <Style Selector="Button.nav:pointerover">
+      <Setter Property="Background" Value="{DynamicResource HoverBrush}"/>
+    </Style>
+    <Style Selector="Button.nav.selected">
+      <Setter Property="Background" Value="{DynamicResource NavActiveBrush}"/>
+      <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}"/>
+      <Setter Property="BorderThickness" Value="1"/>
+      <Setter Property="Foreground" Value="White"/>
+      <Setter Property="FontWeight" Value="SemiBold"/>
+    </Style>
+    <Style Selector="Button.nav.selected:pointerover">
+      <Setter Property="Background" Value="{DynamicResource NavActiveHoverBrush}"/>
+    </Style>
+  </Application.Styles>
+</Application>

@@ -4,6 +4,8 @@ using System.Linq;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
 using Avalonia.Platform.Storage;
+using Avalonia.VisualTree;
+using SPharmacyLog.UI.Localization;
 using ErganiManager.Licensing;
 using SPharmacyLog.UI.Services;
 
@@ -12,6 +14,8 @@ namespace SPharmacyLog.UI.Views;
 public partial class LicenseActivationWindow : Window
 {
     private readonly bool startup;
+    private bool isApplyingTranslations;
+    private ComboBox languageBox = null!;
 
     public LicenseActivationWindow()
         : this(true)
@@ -23,6 +27,9 @@ public partial class LicenseActivationWindow : Window
         this.startup = startup;
 
         InitializeComponent();
+        languageBox = this.FindControl<ComboBox>("LanguageBox")!;
+        Tr.Loc.LanguageChanged += (_, _) => ApplyTranslations();
+        Opened += (_, _) => ApplyTranslations();
 
         PcCodeBox.Text = PharmacyLicenseManager.PcCode;
         ExitButton.Content = startup ? "Exit" : "Close";
@@ -56,8 +63,35 @@ public partial class LicenseActivationWindow : Window
                 _ => "Please activate this application."
             };
         }
+        ApplyTranslations();
     }
 
+    private void ApplyTranslations()
+    {
+        isApplyingTranslations = true;
+        Title = Tr.Loc.TranslateText("S Pharmacy Log — Licence activation");
+        languageBox.SelectedIndex = Tr.Loc.CurrentLanguage == AppLanguage.Greek ? 1 : 0;
+        foreach (var control in this.GetVisualDescendants().OfType<Control>())
+        {
+            switch (control)
+            {
+                case TextBlock textBlock when !string.IsNullOrEmpty(textBlock.Text):
+                    textBlock.Text = Tr.Loc.TranslateText(textBlock.Text);
+                    break;
+                case Button button when button.Content is string buttonText:
+                    button.Content = Tr.Loc.TranslateText(buttonText);
+                    break;
+            }
+        }
+        isApplyingTranslations = false;
+    }
+
+    private void OnLanguageChanged(object? sender, SelectionChangedEventArgs e)
+    {
+        if (isApplyingTranslations) return;
+        if (languageBox?.SelectedIndex == 1) Tr.Loc.SetLanguage(AppLanguage.Greek);
+        else if (languageBox?.SelectedIndex == 0) Tr.Loc.SetLanguage(AppLanguage.English);
+    }
 
     private void OnCopyClick(object? sender, RoutedEventArgs e)
     {
@@ -67,6 +101,7 @@ public partial class LicenseActivationWindow : Window
         PcCodeBox.Focus();
         PcCodeBox.SelectAll();
         StatusText.Text = "PC code selected. Press Ctrl+C to copy it.";
+        ApplyTranslations();
     }
 
     private async void OnLoadClick(object? sender, RoutedEventArgs e)
@@ -74,11 +109,11 @@ public partial class LicenseActivationWindow : Window
         var files = await StorageProvider.OpenFilePickerAsync(
             new FilePickerOpenOptions
             {
-                Title = "Load licence file",
+                Title = Tr.Loc.TranslateText("Load licence file"),
                 AllowMultiple = false,
                 FileTypeFilter =
                 [
-                    new FilePickerFileType("Licence files")
+                    new FilePickerFileType(Tr.Loc.TranslateText("Licence files"))
                     {
                         Patterns = ["*.lic", "*.key", "*.txt"]
                     },
@@ -100,6 +135,7 @@ public partial class LicenseActivationWindow : Window
         catch (Exception ex)
         {
             StatusText.Text = ex.Message;
+            ApplyTranslations();
         }
     }
 
@@ -119,11 +155,12 @@ public partial class LicenseActivationWindow : Window
                     "The licence does not include SPharmacyLog.",
                 _ => $"Activation failed: {result.Check}"
             };
-
+            ApplyTranslations();
             return;
         }
 
         StatusText.Text = "Licence activated successfully.";
+        ApplyTranslations();
 
         if (startup)
         {

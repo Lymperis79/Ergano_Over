@@ -25,6 +25,7 @@ public partial class ActivationWindow : Window
     {
         _startup = startup;
         InitializeComponent();
+        ResponsiveWindowSizing.Apply(this, 700, 620, 440, 420);
 
         var loc = Tr.Loc;
         Title = "Ergani Manager — " + loc["LicenseTitle"];
