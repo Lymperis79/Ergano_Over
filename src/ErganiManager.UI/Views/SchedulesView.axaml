@@ -84,37 +84,45 @@
 
                 <!-- Employee picker -->
                 <TextBlock Grid.Column="0" Text="{Binding Loc[Employee2]}" VerticalAlignment="Center" Margin="0,0,8,0" />
-                <Grid Grid.Column="1" Width="420" HorizontalAlignment="Left"
+                <Grid Grid.Column="1" Width="420" Height="36" HorizontalAlignment="Left"
                       ColumnDefinitions="*,32" ColumnSpacing="4">
-                    <AutoCompleteBox Grid.Column="0" x:Name="ScheduleEmployeePicker"
-                                 ItemsSource="{Binding FilteredEmployees}"
-                                 SelectedItem="{Binding SelectedEmployee, Mode=TwoWay}"
-                                 Text="{Binding EmployeeSearchText, Mode=TwoWay}"
-                                 ValueMemberBinding="{Binding DisplayName}"
-                                 FilterMode="Contains"
-                                 MinimumPrefixLength="0"
-                                 IsTextCompletionEnabled="False"
-                                 ClearSelectionOnLostFocus="False"
-                                 HorizontalAlignment="Stretch"
-                                 PointerPressed="OnScheduleEmployeePickerPointerPressed"
-                                 ToolTip.Tip="Click to start a fresh search by employee name, AFM or employee number.">
-                    <AutoCompleteBox.Styles>
-                        <Style Selector="TextBox">
-                            <Setter Property="TextAlignment" Value="Left" />
-                        </Style>
-                    </AutoCompleteBox.Styles>
-                    <AutoCompleteBox.ItemTemplate>
-                        <DataTemplate x:DataType="core:EmployeeDto">
-                            <TextBlock Text="{Binding DisplayName}"
-                                       TextWrapping="NoWrap"
-                                       TextTrimming="CharacterEllipsis"
-                                       Margin="6,4" />
-                        </DataTemplate>
-                    </AutoCompleteBox.ItemTemplate>
-                </AutoCompleteBox>
-                    <ToggleButton Grid.Column="1" Click="OnScheduleEmployeePickerDropdownClick"
+                    <AutoCompleteBox Grid.Column="0"
+                                     x:Name="ScheduleEmployeePicker"
+                                     Height="36"
+                                     ItemsSource="{Binding FilteredEmployees}"
+                                     SelectedItem="{Binding SelectedEmployee, Mode=TwoWay}"
+                                     Text="{Binding EmployeeSearchText, Mode=TwoWay}"
+                                     ValueMemberBinding="{Binding FullName}"
+                                     FilterMode="Contains"
+                                     MinimumPrefixLength="0"
+                                     IsTextCompletionEnabled="False"
+                                     ClearSelectionOnLostFocus="False"
+                                     HorizontalAlignment="Stretch"
+                                     VerticalAlignment="Center"
+                                     VerticalContentAlignment="Center"
+                                     PointerPressed="OnScheduleEmployeePickerPointerPressed"
+                                     ToolTip.Tip="Search employees by name, AFM or employee number.">
+                        <AutoCompleteBox.Styles>
+                            <Style Selector="TextBox">
+                                <Setter Property="TextAlignment" Value="Left" />
+                                <Setter Property="VerticalContentAlignment" Value="Center" />
+                                <Setter Property="Padding" Value="8,0" />
+                            </Style>
+                        </AutoCompleteBox.Styles>
+                        <AutoCompleteBox.ItemTemplate>
+                            <DataTemplate x:DataType="core:EmployeeDto">
+                                <TextBlock Text="{Binding FullName}"
+                                           VerticalAlignment="Center"
+                                           TextWrapping="NoWrap"
+                                           TextTrimming="CharacterEllipsis"
+                                           Margin="8,4" />
+                            </DataTemplate>
+                        </AutoCompleteBox.ItemTemplate>
+                    </AutoCompleteBox>
+                    <ToggleButton Grid.Column="1"
+                                  Click="OnScheduleEmployeePickerDropdownClick"
                                   Content="▼"
-                                  Width="44" Height="38"
+                                  Width="32" Height="36"
                                   HorizontalAlignment="Stretch"
                                   VerticalAlignment="Center"
                                   VerticalContentAlignment="Center"
@@ -124,9 +132,9 @@
                                   BorderBrush="{DynamicResource AccentLightBrush}"
                                   BorderThickness="1"
                                   CornerRadius="6"
-                                  FontSize="16"
+                                  FontSize="13"
                                   FontWeight="Bold"
-                                  Padding="4"
+                                  Padding="0"
                                   ToolTip.Tip="Click to open the employee list" />
                 </Grid>
 
