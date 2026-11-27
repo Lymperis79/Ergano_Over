@@ -84,11 +84,10 @@ public sealed class AutomaticNextMonthScheduleImportService : IDisposable
             var now = DateTime.Now;
             var targetMonth = new DateOnly(now.Year, now.Month, 1).AddMonths(1);
             var monthKey = targetMonth.ToString("yyyy-MM");
-            if (string.Equals(ReadCompletedMonth(), monthKey, StringComparison.Ordinal))
-                return;
-
             var companyId = _session.CompanyId ?? _companyContext.ActiveCompanyId;
             if (!companyId.HasValue)
+                return;
+            if (string.Equals(ReadCompletedMonth(), $"{companyId.Value}:{monthKey}", StringComparison.Ordinal))
                 return;
 
             var lastWorkingDay = await GetLastWorkingDayAsync(now.Year, now.Month).ConfigureAwait(false);
@@ -117,8 +116,11 @@ public sealed class AutomaticNextMonthScheduleImportService : IDisposable
             };
 
             _importViewModel = _services.GetRequiredService<SchedulesViewModel>();
-            await Dispatcher.UIThread.InvokeAsync(async () =>
-                await _importViewModel.InitializeForAutomaticImportAsync(sessionForCompany));
+            await RunOnUiAsync(async () =>
+            {
+                await _importViewModel.InitializeForAutomaticImportAsync(sessionForCompany);
+                return true;
+            });
 
             _importViewModel.SetAutomaticPortalImportMode(true);
 
@@ -188,17 +190,16 @@ public sealed class AutomaticNextMonthScheduleImportService : IDisposable
                 throw new InvalidOperationException("The automatic schedule importer was not initialized.");
 
             var imported = false;
-            await Dispatcher.UIThread.InvokeAsync(async () =>
-                imported = await vm.ImportDownloadedAutomaticallyAsync(filePath));
+            imported = await RunOnUiAsync(() => vm.ImportDownloadedAutomaticallyAsync(filePath));
 
             if (!imported)
                 throw new InvalidOperationException("The downloaded Excel file could not be imported. Check the Schedules status and application log.");
 
             Directory.CreateDirectory(Path.GetDirectoryName(MarkerPath)!);
-            File.WriteAllText(MarkerPath, _runningMonthKey);
+            File.WriteAllText(MarkerPath, $"{(_session?.CompanyId ?? _companyContext.ActiveCompanyId)?.ToString() ?? "0"}:{_runningMonthKey}");
             Log.Information("Automatic Ergani schedule import completed for {Month}.", _runningMonthKey);
             _awaitingDownload = false;
-            _retryAfterLocal = DateTime.MaxValue;
+            _retryAfterLocal = DateTime.MinValue;
             vm.SetAutomaticPortalImportMode(false);
         }
         catch (Exception ex)
@@ -221,7 +222,19 @@ public sealed class AutomaticNextMonthScheduleImportService : IDisposable
         _awaitingDownload = false;
         _retryAfterLocal = DateTime.Now.AddMinutes(15);
         _importViewModel?.SetAutomaticPortalImportMode(false);
+        _runningMonthKey = string.Empty;
         Log.Warning("Automatic next-month schedule import will retry later: {Reason}", reason);
+    }
+
+    private static async Task<T> RunOnUiAsync<T>(Func<Task<T>> action)
+    {
+        var completion = new TaskCompletionSource<T>(TaskCreationOptions.RunContinuationsAsynchronously);
+        Dispatcher.UIThread.Post(async () =>
+        {
+            try { completion.TrySetResult(await action()); }
+            catch (Exception ex) { completion.TrySetException(ex); }
+        });
+        return await completion.Task.ConfigureAwait(false);
     }
 
     private static string ReadCompletedMonth()
