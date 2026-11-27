@@ -185,7 +185,7 @@ public class OvertimeService : IOvertimeService
 
         // The imported portal file is the source of truth for this employee/date.
         // Do not roll back the schedule here: RunImportAsync replaces it immediately afterwards.
-        var marker = "\\"overtimeId\\":" + entity.Id;
+        var marker = "\"overtimeId\":" + entity.Id;
         var pendingLogs = await db.ApiSubmissionLogs
             .Where(l => l.SubmissionType == "Overtime" &&
                         l.ErrorMessage == "PENDING_OVERTIME" &&
@@ -195,6 +195,57 @@ public class OvertimeService : IOvertimeService
         db.ApiSubmissionLogs.RemoveRange(pendingLogs);
         db.Overtimes.Remove(entity);
         await db.SaveChangesAsync();
+    }
+
+    public async Task<bool> UpsertFromErganiImportAsync(OvertimeDto dto, int companyId)
+    {
+        if (dto.EndTime <= dto.StartTime)
+            throw new InvalidOperationException(ErganiManager.Data.UiText.T("End time must be after start time."));
+
+        await using var db = OpenDb();
+        var employee = await db.Employees.FirstOrDefaultAsync(e =>
+            e.Id == dto.EmployeeId && e.CompanyId == companyId);
+        if (employee == null)
+            throw new InvalidOperationException(ErganiManager.Data.UiText.T("The employee does not belong to the selected company."));
+
+        var existing = await db.Overtimes.FirstOrDefaultAsync(o =>
+            o.EmployeeId == dto.EmployeeId && o.OvertimeDate == dto.OvertimeDate &&
+            o.StartTime == dto.StartTime && o.EndTime == dto.EndTime && !o.IsCancelled);
+
+        bool created = existing == null;
+        if (existing == null)
+        {
+            existing = new Overtime
+            {
+                EmployeeId = dto.EmployeeId,
+                BranchId = dto.BranchId,
+                OvertimeDate = dto.OvertimeDate,
+                StartTime = dto.StartTime,
+                EndTime = dto.EndTime,
+                Justification = ToEntityJustification(dto.Justification),
+                WeeklyWorkdaysNumber = dto.WeeklyWorkdaysNumber,
+                CreatedAt = DateTime.UtcNow
+            };
+            db.Overtimes.Add(existing);
+        }
+
+        // This exact interval is present in the official Ergani export, so it is already declared.
+        existing.SubmittedToErgani = true;
+        existing.IsCancelled = false;
+        existing.SubmissionId = null;
+        existing.Protocol = null;
+        existing.RequestPayloadJson = null;
+
+        var marker = "\\"overtimeId\\" :" + existing.Id;
+        var pendingLogs = await db.ApiSubmissionLogs
+            .Where(l => l.SubmissionType == "Overtime" &&
+                        l.ErrorMessage == "PENDING_OVERTIME" &&
+                        l.RequestPayloadJson != null &&
+                        l.RequestPayloadJson.Contains("\\\"overtimeId\\\":" + existing.Id))
+            .ToListAsync();
+        db.ApiSubmissionLogs.RemoveRange(pendingLogs);
+        await db.SaveChangesAsync();
+        return created;
     }
 
     private static bool IsScheduleGenerated(string? payload)
