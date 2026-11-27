@@ -294,5 +294,24 @@ public partial class OvertimeViewModel : ViewModelBase, IAdminSectionViewModel
     }
 
     [RelayCommand] private async Task CancelOvertimeAsync(OvertimeDto record) { try { await _overtimeService.CancelAsync(record.Id); await LoadRecordsAsync(); } catch(Exception ex){ StatusMessage=$"❌ {ex.Message}"; } }
-    [RelayCommand] private async Task DeleteAsync(OvertimeDto record) { await _overtimeService.DeleteAsync(record.Id); await LoadRecordsAsync(); }
+    [RelayCommand]
+    private async Task DeleteAsync(OvertimeDto record)
+    {
+        if (record.SubmittedToErgani)
+        {
+            StatusMessage = Loc["Vm.Submitted overtime cannot be deleted locally."];
+            return;
+        }
+
+        try
+        {
+            await _overtimeService.DeleteAsync(record.Id);
+            await LoadRecordsAsync();
+            StatusMessage = Loc["Vm.Overtime deleted. The related working time was restored where applicable."];
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = $"❌ {ex.Message}";
+        }
+    }
 }
