@@ -99,7 +99,6 @@
                                      ClearSelectionOnLostFocus="False"
                                      HorizontalAlignment="Stretch"
                                      VerticalAlignment="Center"
-                                     VerticalContentAlignment="Center"
                                      PointerPressed="OnScheduleEmployeePickerPointerPressed"
                                      ToolTip.Tip="Search employees by name, AFM or employee number.">
                         <AutoCompleteBox.Styles>
