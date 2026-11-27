@@ -150,7 +150,9 @@ public class ScheduleService : IScheduleService
 
         if (alreadyAtErgani)
         {
-            existing.SubmittedToErgani = true; // keep any protocol we already know
+            existing.SubmittedToErgani = true; // the portal export is already declared at Ergani
+            existing.HasPendingChange = false;
+            existing.PendingPreviousSnapshotJson = null;
         }
         else if (existing.SubmittedToErgani)
         {
