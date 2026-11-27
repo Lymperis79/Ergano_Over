@@ -236,12 +236,12 @@ public class OvertimeService : IOvertimeService
         existing.Protocol = null;
         existing.RequestPayloadJson = null;
 
-        var marker = "\\"overtimeId\\" :" + existing.Id;
+        var marker = "\"overtimeId\":" + existing.Id;
         var pendingLogs = await db.ApiSubmissionLogs
             .Where(l => l.SubmissionType == "Overtime" &&
                         l.ErrorMessage == "PENDING_OVERTIME" &&
                         l.RequestPayloadJson != null &&
-                        l.RequestPayloadJson.Contains("\\\"overtimeId\\\":" + existing.Id))
+                        l.RequestPayloadJson.Contains(marker))
             .ToListAsync();
         db.ApiSubmissionLogs.RemoveRange(pendingLogs);
         await db.SaveChangesAsync();
