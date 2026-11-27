@@ -45,6 +45,10 @@ public partial class AdministrationViewModel : ViewModelBase, IAdminSectionViewM
     [ObservableProperty] private string _lastBackupInfo = string.Empty;
 
     private readonly ErganiManager.UI.Services.AutomaticDatabaseBackupService _automaticBackup;
+    private readonly ErganiManager.UI.Services.AutomaticNextMonthScheduleImportService _automaticScheduleImport;
+    private UserSession? _session;
+    [ObservableProperty] private bool _isTestingAutomaticScheduleImport;
+    [ObservableProperty] private string _automaticScheduleImportTestStatus = string.Empty;
     [ObservableProperty] private bool _automaticBackupEnabled;
     [ObservableProperty] private int _automaticBackupIntervalHours = 24;
     [ObservableProperty] private int _automaticBackupRetentionCount = 14;
@@ -477,7 +481,7 @@ public partial class AdministrationViewModel : ViewModelBase, IAdminSectionViewM
         IOfficialHolidayCatalogService holidayCatalog, IEmailAlertService emailAlertService,
         IInternetCheckService internetCheckService, IHttpClientFactory httpClientFactory,
         IErganiHealthCheckService erganiHealthCheckService, IConnectionStateService connectionState,
-        ICredentialProtector credentialProtector, ErganiManager.UI.Services.AutomaticDatabaseBackupService automaticBackup)
+        ICredentialProtector credentialProtector, ErganiManager.UI.Services.AutomaticDatabaseBackupService automaticBackup, ErganiManager.UI.Services.AutomaticNextMonthScheduleImportService automaticScheduleImport)
     {
         _maintenance = maintenance;
         _rounding = rounding;
@@ -492,6 +496,7 @@ public partial class AdministrationViewModel : ViewModelBase, IAdminSectionViewM
         _connectionState = connectionState;
         _credentialProtector = credentialProtector;
         _automaticBackup = automaticBackup;
+        _automaticScheduleImport = automaticScheduleImport;
         AutomaticBackupEnabled = automaticBackup.IsEnabled;
         AutomaticBackupIntervalHours = automaticBackup.IntervalHours;
         AutomaticBackupRetentionCount = automaticBackup.RetentionCount;
@@ -638,6 +643,47 @@ public partial class AdministrationViewModel : ViewModelBase, IAdminSectionViewM
         catch (Exception ex)
         {
             SchedulePortalStatus = string.Format(Loc[L.CouldNotSaveSchedulePortal], ex.Message);
+        }
+    }
+
+    [RelayCommand]
+    private async Task TestAutomaticNextMonthScheduleImportAsync()
+    {
+        if (_session == null || _session.Role != AppUserRole.Admin)
+        {
+            AutomaticScheduleImportTestStatus = "❌ An administrator session is required.";
+            return;
+        }
+
+        if (_activeCompanyId is not int companyId)
+        {
+            AutomaticScheduleImportTestStatus = "❌ Select a company in the main window first.";
+            return;
+        }
+
+        if (_portal.Current.Schedule == null ||
+            string.IsNullOrWhiteSpace(_portal.Current.Schedule.PortalBaseUrl) ||
+            string.IsNullOrWhiteSpace(_portal.Current.Schedule.TargetPageUrl) ||
+            string.IsNullOrWhiteSpace(_portal.Current.Schedule.DownloadFolder))
+        {
+            AutomaticScheduleImportTestStatus = "❌ Save the Ergani schedule portal settings before running the test.";
+            return;
+        }
+
+        IsTestingAutomaticScheduleImport = true;
+        AutomaticScheduleImportTestStatus = "Starting test…";
+        try
+        {
+            await _automaticScheduleImport.RunTestAsync(_session, message =>
+                Dispatcher.UIThread.Post(() => AutomaticScheduleImportTestStatus = message));
+        }
+        catch (Exception ex)
+        {
+            AutomaticScheduleImportTestStatus = "❌ " + ex.Message;
+        }
+        finally
+        {
+            IsTestingAutomaticScheduleImport = false;
         }
     }
 
@@ -1277,6 +1323,7 @@ public partial class AdministrationViewModel : ViewModelBase, IAdminSectionViewM
 
     public void Initialize(UserSession session)
     {
+        _session = session;
         Refresh();
         var previousCompanyId = _activeCompanyId;
         _activeCompanyId = session.CompanyId;
