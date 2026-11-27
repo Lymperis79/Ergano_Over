@@ -96,7 +96,8 @@
                                  IsTextCompletionEnabled="False"
                                  ClearSelectionOnLostFocus="False"
                                  HorizontalAlignment="Stretch"
-                                 PointerPressed="OnScheduleEmployeePickerPointerPressed"\n                                 ToolTip.Tip="Click to start a fresh search by employee name, AFM or employee number.">
+                                 PointerPressed="OnScheduleEmployeePickerPointerPressed"
+                                 ToolTip.Tip="Click to start a fresh search by employee name, AFM or employee number.">
                     <AutoCompleteBox.Styles>
                         <Style Selector="TextBox">
                             <Setter Property="TextAlignment" Value="Left" />
