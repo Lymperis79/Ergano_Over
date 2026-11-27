@@ -2200,9 +2200,37 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
 
             // Clear all existing schedules in the covered period, including employees
             // and dates absent from the file. Keep the audit history intact.
+            // Remove unsent overtime and its pending log markers in the same save.
+            // Submitted overtime and its protocol history are preserved.
             int schedulesRemoved;
+            int unsentOvertimeRemoved;
             await using (var db = new AppDbContext(_connectionState.GetDbOptions()))
             {
+                var unsentOvertime = await db.Overtimes
+                    .Where(o => o.Employee != null &&
+                                o.Employee.CompanyId == importCompanyId &&
+                                o.OvertimeDate >= importFrom &&
+                                o.OvertimeDate <= importTo &&
+                                !o.SubmittedToErgani)
+                    .ToListAsync()
+                    .ConfigureAwait(false);
+
+                var overtimeMarkers = unsentOvertime
+                    .Select(o => "\\"overtimeId\\":" + o.Id)
+                    .ToList();
+                var pendingOvertimeLogs = await db.ApiSubmissionLogs
+                    .Where(l => l.CompanyId == importCompanyId &&
+                                l.SubmissionType == "Overtime" &&
+                                l.ErrorMessage == "PENDING_OVERTIME" &&
+                                l.RequestPayloadJson != null)
+                    .ToListAsync()
+                    .ConfigureAwait(false);
+                var logsToRemove = pendingOvertimeLogs
+                    .Where(l => overtimeMarkers.Any(marker => l.RequestPayloadJson!.Contains(marker, StringComparison.Ordinal)))
+                    .ToList();
+                db.ApiSubmissionLogs.RemoveRange(logsToRemove);
+                db.Overtimes.RemoveRange(unsentOvertime);
+
                 var oldSchedules = await db.Schedules
                     .Include(s => s.WorkingPeriods)
                     .Where(s => s.Employee != null &&
@@ -2212,20 +2240,11 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
                     .ToListAsync()
                     .ConfigureAwait(false);
                 schedulesRemoved = oldSchedules.Count;
+                unsentOvertimeRemoved = unsentOvertime.Count;
                 db.Schedules.RemoveRange(oldSchedules);
-                await db.SaveChangesAsync().ConfigureAwait(false);
-            }
 
-            // Unsent overtime is generated from the calendar, so remove it before
-            // rebuilding. Submitted overtime and its protocol history are preserved.
-            int unsentOvertimeRemoved = 0;
-            var overtimeInRange = await _overtimeService
-                .GetByCompanyAsync(importCompanyId, importFrom, importTo)
-                .ConfigureAwait(false);
-            foreach (var overtime in overtimeInRange.Where(o => !o.SubmittedToErgani))
-            {
-                await _overtimeService.DeleteForErganiImportAsync(overtime.Id).ConfigureAwait(false);
-                unsentOvertimeRemoved++;
+                // EF Core wraps this SaveChanges in a transaction.
+                await db.SaveChangesAsync().ConfigureAwait(false);
             }
 
             int saved = 0;
