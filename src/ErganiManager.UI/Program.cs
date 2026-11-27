@@ -112,6 +112,7 @@ internal static class Program
             retryService.Start();
             var autoClockOutMonitor = Services.GetRequiredService<ErganiManager.UI.Services.AutoClockOutMonitor>();
             autoClockOutMonitor.Start();
+            _ = Services.GetRequiredService<ErganiManager.UI.Services.AutomaticNextMonthScheduleImportService>();
             var automaticDatabaseBackup = Services.GetRequiredService<ErganiManager.UI.Services.AutomaticDatabaseBackupService>();
             automaticDatabaseBackup.Start();
             var dailyReconciliation = Services.GetRequiredService<ErganiManager.UI.Services.DailyReconciliationService>();
@@ -189,6 +190,7 @@ internal static class Program
         services.AddErganiManagerCore();
         services.AddSingleton<ErganiManager.UI.Services.CompanyLogoService>();
         services.AddSingleton<ErganiManager.UI.Services.AutoClockOutMonitor>();
+        services.AddSingleton<ErganiManager.UI.Services.AutomaticNextMonthScheduleImportService>();
         services.AddSingleton<ErganiManager.UI.Services.AutomaticDatabaseBackupService>();
         services.AddSingleton<ErganiManager.UI.Services.DailyReconciliationService>();
         services.AddErganiApiClient();
