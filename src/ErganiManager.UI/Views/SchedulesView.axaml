@@ -85,7 +85,7 @@
                 <!-- Employee picker -->
                 <TextBlock Grid.Column="0" Text="{Binding Loc[Employee2]}" VerticalAlignment="Center" Margin="0,0,8,0" />
                 <Grid Grid.Column="1" Width="420" HorizontalAlignment="Left"
-                      ColumnDefinitions="*,44" ColumnSpacing="4">
+                      ColumnDefinitions="*,32" ColumnSpacing="4">
                     <AutoCompleteBox Grid.Column="0" x:Name="ScheduleEmployeePicker"
                                  ItemsSource="{Binding FilteredEmployees}"
                                  SelectedItem="{Binding SelectedEmployee, Mode=TwoWay}"
@@ -96,7 +96,7 @@
                                  IsTextCompletionEnabled="False"
                                  ClearSelectionOnLostFocus="False"
                                  HorizontalAlignment="Stretch"
-                                 ToolTip.Tip="Type to filter by employee name, AFM or employee number. Use the arrow to open the list.">
+                                 PointerPressed="OnScheduleEmployeePickerPointerPressed"\n                                 ToolTip.Tip="Click to start a fresh search by employee name, AFM or employee number.">
                     <AutoCompleteBox.Styles>
                         <Style Selector="TextBox">
                             <Setter Property="TextAlignment" Value="Left" />
