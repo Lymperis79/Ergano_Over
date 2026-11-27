@@ -34,6 +34,88 @@ public sealed class AutomaticNextMonthScheduleImportService : IDisposable
     private int _runningCompanyId;
     private string _cachedWorkingMonth = string.Empty;
     private DateOnly _cachedLastWorkingDay;
+    private TaskCompletionSource<bool>? _testCompletion;
+    private bool _isTestRun;
+
+    /// <summary>Runs a one-off download/import for the next calendar month without changing the scheduled-run marker.</summary>
+    public async Task RunTestAsync(UserSession session, Action<string> reportStatus)
+    {
+        if (session.Role != AppUserRole.Admin)
+            throw new InvalidOperationException("Only an administrator can run the automatic schedule import test.");
+        if (!await _gate.WaitAsync(0).ConfigureAwait(false))
+            throw new InvalidOperationException("An automatic schedule download or import is already running.");
+
+        try
+        {
+            if (_awaitingDownload)
+                throw new InvalidOperationException("An automatic schedule download or import is already running.");
+
+            var companyId = session.CompanyId ?? _companyContext.ActiveCompanyId;
+            if (!companyId.HasValue)
+                throw new InvalidOperationException("Select a company before testing the automatic schedule import.");
+
+            var targetMonth = new DateOnly(DateTime.Today.Year, DateTime.Today.Month, 1).AddMonths(1);
+            var monthKey = targetMonth.ToString("yyyy-MM");
+            var testSession = new UserSession
+            {
+                UserId = session.UserId,
+                Username = session.Username,
+                Role = session.Role,
+                CompanyId = companyId,
+                CompanyName = session.CompanyName,
+                BranchId = session.BranchId,
+                BranchName = session.BranchName,
+                IsOfflineSession = session.IsOfflineSession,
+                CanSaveCredentials = session.CanSaveCredentials,
+                AllowedMenus = session.AllowedMenus
+            };
+
+            _runningMonthKey = monthKey;
+            _runningCompanyId = companyId.Value;
+            _awaitingDownload = true;
+            _isTestRun = true;
+            _testCompletion = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+
+            _importViewModel ??= SchedulesViewModel.Latest ?? _services.GetRequiredService<SchedulesViewModel>();
+            reportStatus($"Preparing the schedule importer for {targetMonth:MMMM yyyy}…");
+            await RunOnUiAsync(async () =>
+            {
+                await _importViewModel.InitializeForAutomaticImportAsync(testSession);
+                return true;
+            });
+            _importViewModel.SetAutomaticPortalImportMode(true);
+
+            reportStatus($"Opening the configured Ergani portal for {targetMonth:MMMM yyyy}…");
+            var from = targetMonth;
+            var to = targetMonth.AddMonths(1).AddDays(-1);
+            var result = await _portal.OpenAutomaticScheduleDownloadAsync(companyId.Value, from, to)
+                .ConfigureAwait(false);
+            if (result.StartsWith("❌", StringComparison.Ordinal))
+                throw new InvalidOperationException(result);
+
+            reportStatus("Waiting for the Excel file to download…");
+            var completed = await _testCompletion.Task.WaitAsync(TimeSpan.FromMinutes(8)).ConfigureAwait(false);
+            if (!completed)
+                throw new InvalidOperationException("The schedule import test did not complete.");
+            reportStatus($"✅ Test download and import completed for {targetMonth:MMMM yyyy}. The monthly automatic-run marker was not changed.");
+        }
+        catch (Exception ex)
+        {
+            _awaitingDownload = false;
+            _isTestRun = false;
+            _testCompletion?.TrySetException(ex);
+            _testCompletion = null;
+            _importViewModel?.SetAutomaticPortalImportMode(false);
+            _runningMonthKey = string.Empty;
+            _runningCompanyId = 0;
+            reportStatus("❌ Test failed: " + ex.Message);
+            throw;
+        }
+        finally
+        {
+            _gate.Release();
+        }
+    }
 
     private static string MarkerPath(int companyId) => Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
@@ -211,25 +293,49 @@ public sealed class AutomaticNextMonthScheduleImportService : IDisposable
             if (!imported)
                 throw new InvalidOperationException("The downloaded Excel file could not be imported. Check the Schedules status and application log.");
 
-            var completedCompanyId = _runningCompanyId;
-            if (completedCompanyId <= 0)
-                throw new InvalidOperationException("The automatic import company could not be determined.");
-            Directory.CreateDirectory(Path.GetDirectoryName(MarkerPath(completedCompanyId))!);
-            File.WriteAllText(MarkerPath(completedCompanyId), _runningMonthKey);
-            Log.Information("Automatic Ergani schedule import completed for {Month}.", _runningMonthKey);
+            var wasTestRun = _isTestRun;
+            if (!wasTestRun)
+            {
+                var completedCompanyId = _runningCompanyId;
+                if (completedCompanyId <= 0)
+                    throw new InvalidOperationException("The automatic import company could not be determined.");
+                Directory.CreateDirectory(Path.GetDirectoryName(MarkerPath(completedCompanyId))!);
+                File.WriteAllText(MarkerPath(completedCompanyId), _runningMonthKey);
+                Log.Information("Automatic Ergani schedule import completed for {Month}.", _runningMonthKey);
+            }
+            else
+            {
+                Log.Information("Manual test of automatic Ergani schedule import completed for {Month}; scheduled-run marker was not changed.", _runningMonthKey);
+            }
             _awaitingDownload = false;
             _retryAfterLocal = DateTime.MinValue;
+            _isTestRun = false;
             vm.SetAutomaticPortalImportMode(false);
             await RunOnUiAsync(async () =>
             {
                 await SchedulesViewModel.RefreshLatestCalendarAsync();
                 return true;
             });
+            _testCompletion?.TrySetResult(true);
+            _testCompletion = null;
         }
         catch (Exception ex)
         {
             Log.Error(ex, "Automatic Ergani schedule Excel import failed.");
-            FailAttempt(ex.Message);
+            if (_isTestRun)
+            {
+                _testCompletion?.TrySetException(ex);
+                _testCompletion = null;
+                _isTestRun = false;
+                _awaitingDownload = false;
+                _runningMonthKey = string.Empty;
+                _runningCompanyId = 0;
+                _importViewModel?.SetAutomaticPortalImportMode(false);
+            }
+            else
+            {
+                FailAttempt(ex.Message);
+            }
         }
     }
 
