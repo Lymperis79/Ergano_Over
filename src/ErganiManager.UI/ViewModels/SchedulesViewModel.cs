@@ -402,7 +402,6 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
     /// <summary>Only Office/Home days that are not yet at Ergani can be submitted from the day dialog.</summary>
     private static DateOnly Today => DateOnly.FromDateTime(DateTime.Today);
     private static bool IsPastDate(DateOnly date) => date < Today;
-    private static bool ContainsPastDate(IEnumerable<DateOnly> dates) => dates.Any(IsPastDate);
     private bool RejectPastDates(IEnumerable<DateOnly> dates, string operation)
     {
         var past = dates.Where(IsPastDate).Distinct().OrderBy(d => d).ToList();
@@ -1480,7 +1479,7 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
             dowFilter = BuildDowFilter();
         }
 
-        if (from <= Today)
+        if (from < Today)
         {
             RejectPastDates(ExpandDates(from, to), Loc["Vm.bulk schedule changes"]);
             return;
@@ -2746,12 +2745,6 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
         {
             StatusMessage = string.Format(
                 Loc["Vm.Sending the overtime of {0} day(s) to Ergani, all employees in one request per branch…"], days.Count);
-            days = days.Where(d => d.ScheduleDate >= Today).ToList();
-            if (days.Count == 0)
-            {
-                StatusMessage = Loc["Vm.Past dates are read-only. There is no current or future schedule to process."];
-                return;
-            }
             var result = await _scheduleSubmitter.SubmitOvertimeFromScheduleAsync(companyId, days, ErganiManager.Data.Entities.OvertimeJustification.ExceptionalWorkload.ToString());
 
             var protocol = result.Days.Select(d => d.OvertimeProtocol).FirstOrDefault(p => !string.IsNullOrEmpty(p));
@@ -3270,6 +3263,13 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
         {
             var picked = _selectedDates.ToHashSet();
             var days   = await LoadScopeDaysAsync(SelectedEmployee.Id, picked);
+
+            days = days.Where(d => d.ScheduleDate >= Today).ToList();
+            if (days.Count == 0)
+            {
+                StatusMessage = Loc["Vm.Past dates are read-only. There is no current or future schedule to process."];
+                return;
+            }
 
             StatusMessage = Loc["Vm.Detecting overtime and submitting…"];
             var result = await _scheduleSubmitter.SubmitOvertimeFromScheduleAsync(companyId, days, ErganiManager.Data.Entities.OvertimeJustification.ExceptionalWorkload.ToString());
