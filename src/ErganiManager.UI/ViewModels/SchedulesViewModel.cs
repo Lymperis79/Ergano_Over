@@ -254,6 +254,8 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
 
     // The portal service is a singleton; only the most recently created view model reacts to a download.
     private static SchedulesViewModel? _latest;
+    private static bool _automaticPortalImportActive;
+    public static SchedulesViewModel? Latest => _latest;
     private string _portalDownloadedFile = string.Empty;
     private bool _automaticPortalImportInProgress;
     public bool LastAutomaticImportSucceeded { get; private set; }
@@ -578,7 +580,13 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
             throw new InvalidOperationException("No employees were loaded for the automatic schedule import.");
     }
 
-    public void SetAutomaticPortalImportMode(bool enabled) => _automaticPortalImportInProgress = enabled;
+    public void SetAutomaticPortalImportMode(bool enabled)
+    {
+        _automaticPortalImportInProgress = enabled;
+        _automaticPortalImportActive = enabled;
+    }
+
+    public static Task RefreshLatestCalendarAsync() => _latest?.RefreshAsync() ?? Task.CompletedTask;
 
     /// <summary>Imports a downloaded portal workbook through the same authoritative path as the manual import.</summary>
     public async Task<bool> ImportDownloadedAutomaticallyAsync(string filePath)
@@ -1923,7 +1931,7 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
     /// <summary>The portal finished downloading the schedule Excel: ask whether to import it right away.</summary>
     private void OnPortalExcelDownloaded(string filePath)
     {
-        if (!ReferenceEquals(_latest, this) || _automaticPortalImportInProgress) return;
+        if (!ReferenceEquals(_latest, this) || _automaticPortalImportActive || _automaticPortalImportInProgress) return;
 
         _portalDownloadedFile = filePath;
         PortalImportPromptText =
