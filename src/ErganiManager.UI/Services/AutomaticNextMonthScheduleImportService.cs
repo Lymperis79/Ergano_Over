@@ -103,7 +103,6 @@ public sealed class AutomaticNextMonthScheduleImportService : IDisposable
         {
             _awaitingDownload = false;
             _isTestRun = false;
-            _testCompletion?.TrySetException(ex);
             _testCompletion = null;
             _importViewModel?.SetAutomaticPortalImportMode(false);
             _runningMonthKey = string.Empty;
@@ -322,9 +321,9 @@ public sealed class AutomaticNextMonthScheduleImportService : IDisposable
         catch (Exception ex)
         {
             Log.Error(ex, "Automatic Ergani schedule Excel import failed.");
-            if (_isTestRun)
+            if (_testCompletion != null)
             {
-                _testCompletion?.TrySetException(ex);
+                _testCompletion.TrySetException(ex);
                 _testCompletion = null;
                 _isTestRun = false;
                 _awaitingDownload = false;
