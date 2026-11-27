@@ -73,5 +73,6 @@ public interface IErganiPortalService : IDisposable
     event Action<string>? ExcelDownloaded;
 
     Task<string> OpenAsync(int companyId, DateOnly? from = null, DateOnly? to = null);
+    Task<string> OpenAutomaticScheduleDownloadAsync(int companyId, DateOnly from, DateOnly to);
     Task<string> OpenWorkCardsAsync(int companyId, DateOnly date);
 }
