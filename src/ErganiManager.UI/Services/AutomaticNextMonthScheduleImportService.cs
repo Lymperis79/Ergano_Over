@@ -36,6 +36,7 @@ public sealed class AutomaticNextMonthScheduleImportService : IDisposable
     private DateOnly _cachedLastWorkingDay;
     private TaskCompletionSource<bool>? _testCompletion;
     private bool _isTestRun;
+    private Action<string>? _testStatusReporter;
 
     /// <summary>Runs a one-off download/import for the next calendar month without changing the scheduled-run marker.</summary>
     public async Task RunTestAsync(UserSession session, Action<string> reportStatus)
@@ -74,6 +75,7 @@ public sealed class AutomaticNextMonthScheduleImportService : IDisposable
             _runningCompanyId = companyId.Value;
             _awaitingDownload = true;
             _isTestRun = true;
+            _testStatusReporter = reportStatus;
             var testCompletion = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
             _testCompletion = testCompletion;
 
@@ -105,6 +107,7 @@ public sealed class AutomaticNextMonthScheduleImportService : IDisposable
             _awaitingDownload = false;
             _isTestRun = false;
             _testCompletion = null;
+            _testStatusReporter = null;
             _importViewModel?.SetAutomaticPortalImportMode(false);
             _runningMonthKey = string.Empty;
             _runningCompanyId = 0;
@@ -284,6 +287,8 @@ public sealed class AutomaticNextMonthScheduleImportService : IDisposable
         try
         {
             var vm = _importViewModel;
+            if (_isTestRun)
+                _testStatusReporter?.Invoke("Excel downloaded. Importing schedules and recalculating unsent overtime…");
             if (vm == null)
                 throw new InvalidOperationException("The automatic schedule importer was not initialized.");
 
@@ -321,8 +326,10 @@ public sealed class AutomaticNextMonthScheduleImportService : IDisposable
                 _runningMonthKey = string.Empty;
                 _runningCompanyId = 0;
             }
+            _testStatusReporter?.Invoke("Calendar refreshed.");
             _testCompletion?.TrySetResult(true);
             _testCompletion = null;
+            _testStatusReporter = null;
         }
         catch (Exception ex)
         {
@@ -331,6 +338,7 @@ public sealed class AutomaticNextMonthScheduleImportService : IDisposable
             {
                 _testCompletion.TrySetException(ex);
                 _testCompletion = null;
+                _testStatusReporter = null;
                 _isTestRun = false;
                 _awaitingDownload = false;
                 _runningMonthKey = string.Empty;
