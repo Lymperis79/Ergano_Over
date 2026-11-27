@@ -692,6 +692,18 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
 
     private string BuildOvertimeText(ScheduleDayDto? sched, List<OvertimeDto>? records)
     {
+        // After editing a previously submitted schedule, the current schedule is authoritative.
+        // Old overtime records remain in Overtime/history, but must not keep showing an obsolete
+        // schedule-generated interval in the calendar.
+        if (sched?.HasPendingChange == true)
+        {
+            if (sched.WorkType is AppWorkType.Office or AppWorkType.Home &&
+                GetScheduledOvertimeRange(sched) is { } currentRange)
+                return $"⏱ {currentRange.From:HH:mm}–{currentRange.To:HH:mm}";
+
+            return string.Empty;
+        }
+
         if (records is { Count: > 0 })
         {
             // Merge overlapping/adjacent overtime entries for the same day so extending
@@ -724,6 +736,19 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
     {
         if (records is not { Count: > 0 }) return string.Empty;
         return records.All(o => o.SubmittedToErgani) ? Loc["Sent"] : Loc["Pending"];
+    }
+
+    private string BuildOvertimeStatusText(ScheduleDayDto? schedule, List<OvertimeDto>? records)
+    {
+        // A schedule edit invalidates the old schedule-derived overtime status. The
+        // reconciliation below creates/removes the pending overtime for the new hours.
+        if (schedule?.HasPendingChange == true)
+            return schedule.WorkType is AppWorkType.Office or AppWorkType.Home &&
+                   GetScheduledOvertimeRange(schedule).HasValue
+                ? Loc["Pending"]
+                : string.Empty;
+
+        return BuildOvertimeStatusText(records);
     }
 
     /// <summary>The work line of a calendar cell; overtime is shown separately using the company's daily threshold.</summary>
@@ -890,7 +915,7 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
             // The calendar already displays the schedule/leave "Sent" badge below. Avoid a second identical badge when overtime is also submitted.
             var overtimeStatusText = sched is { SubmittedToErgani: true }
                 ? string.Empty
-                : BuildOvertimeStatusText(dayOvertime);
+                : BuildOvertimeStatusText(sched, dayOvertime);
             official.TryGetValue(date, out var officialName);
             var userHolidayText = dayLeaves is null ? string.Empty : string.Join(" · ", dayLeaves.Select(l =>
                 (LeaveTypes.Find(l.LeaveTypeCode)?.LocalizedDescription ?? l.LeaveTypeCode) +
@@ -984,7 +1009,9 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
             leavesByDate.TryGetValue(d, out var dayLeaves);
             overtimeByDate.TryGetValue(d, out var dayOvertime);
             var overtimeText = BuildOvertimeText(sched, dayOvertime);
-            var overtimeStatusText = BuildOvertimeStatusText(dayOvertime);
+            var overtimeStatusText = sched is { SubmittedToErgani: true }
+                ? string.Empty
+                : BuildOvertimeStatusText(sched, dayOvertime);
             officialByDate.TryGetValue(d, out var officialName);
             var userHolidayText = dayLeaves is null ? string.Empty : string.Join(" · ", dayLeaves.Select(l => LeaveTypes.Find(l.LeaveTypeCode)?.LocalizedDescription ?? l.LeaveTypeCode));
             // Annual leave takes precedence over the imported work-schedule status in the calendar.
