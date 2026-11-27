@@ -316,6 +316,11 @@ public sealed class AutomaticNextMonthScheduleImportService : IDisposable
                 await SchedulesViewModel.RefreshLatestCalendarAsync();
                 return true;
             });
+            if (wasTestRun)
+            {
+                _runningMonthKey = string.Empty;
+                _runningCompanyId = 0;
+            }
             _testCompletion?.TrySetResult(true);
             _testCompletion = null;
         }
