@@ -31,6 +31,9 @@ public sealed class AutomaticNextMonthScheduleImportService : IDisposable
     private bool _awaitingDownload;
     private DateTime _retryAfterLocal = DateTime.MinValue;
     private string _runningMonthKey = string.Empty;
+    private int _runningCompanyId;
+    private string _cachedWorkingMonth = string.Empty;
+    private DateOnly _cachedLastWorkingDay;
 
     private static string MarkerPath(int companyId) => Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
@@ -53,6 +56,8 @@ public sealed class AutomaticNextMonthScheduleImportService : IDisposable
 
     public void Start(UserSession session)
     {
+        if (session.Role != AppUserRole.Admin)
+            return;
         _session = session;
         _timer ??= new Timer(_ => _ = CheckAsync(), null,
             TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(30));
@@ -68,6 +73,7 @@ public sealed class AutomaticNextMonthScheduleImportService : IDisposable
         _importViewModel = null;
         _awaitingDownload = false;
         _runningMonthKey = string.Empty;
+        _runningCompanyId = 0;
     }
 
     private async Task CheckAsync()
@@ -90,15 +96,24 @@ public sealed class AutomaticNextMonthScheduleImportService : IDisposable
             if (string.Equals(ReadCompletedMonth(companyId.Value), monthKey, StringComparison.Ordinal))
                 return;
 
-            var lastWorkingDay = await GetLastWorkingDayAsync(now.Year, now.Month).ConfigureAwait(false);
+            DateOnly lastWorkingDay;
+        if (_cachedWorkingMonth == $"{now.Year:D4}-{now.Month:D2}")
+            lastWorkingDay = _cachedLastWorkingDay;
+        else
+        {
+            lastWorkingDay = await GetLastWorkingDayAsync(now.Year, now.Month).ConfigureAwait(false);
+            _cachedWorkingMonth = $"{now.Year:D4}-{now.Month:D2}";
+            _cachedLastWorkingDay = lastWorkingDay;
+        }
             if (DateOnly.FromDateTime(now) != lastWorkingDay ||
                 now.TimeOfDay < _settings.Current.AutoDownloadNextMonthTime)
                 return;
 
-            if (_runningMonthKey == monthKey)
+            if (_runningMonthKey == monthKey && _runningCompanyId == companyId.Value)
                 return;
 
             _runningMonthKey = monthKey;
+            _runningCompanyId = companyId.Value;
             _awaitingDownload = true;
 
             var sessionForCompany = new UserSession
