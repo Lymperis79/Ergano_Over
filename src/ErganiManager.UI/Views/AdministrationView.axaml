@@ -411,6 +411,14 @@
                                         <Button Content="{Binding Loc[SaveSchedulePortal]}" Command="{Binding SaveSchedulePortalCommand}" Classes="accent" />
                                         <TextBlock Text="{Binding SchedulePortalStatus}" TextWrapping="Wrap" VerticalAlignment="Center" />
                                     </StackPanel>
+                                    <Separator />
+                                    <TextBlock Text="Test automatic next-month import" FontWeight="SemiBold" />
+                                    <TextBlock Text="Downloads and imports next month's Excel immediately, without waiting for the scheduled day or time. This performs a real import: schedules in the imported date range are replaced and unsent overtime is recalculated. Use the Ergani trial portal or a test company first." Foreground="Gray" FontSize="12" TextWrapping="Wrap" />
+                                    <Button Content="Test automatic schedule import now"
+                                            Command="{Binding TestAutomaticNextMonthScheduleImportCommand}"
+                                            IsEnabled="{Binding !IsTestingAutomaticScheduleImport}"
+                                            HorizontalAlignment="Left" />
+                                    <TextBlock Text="{Binding AutomaticScheduleImportTestStatus}" TextWrapping="Wrap" />
                                 </StackPanel>
                             </Border>
 
