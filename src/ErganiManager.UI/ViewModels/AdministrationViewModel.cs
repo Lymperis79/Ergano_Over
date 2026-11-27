@@ -662,7 +662,6 @@ public partial class AdministrationViewModel : ViewModelBase, IAdminSectionViewM
         }
 
         if (_portal.Current.Schedule == null ||
-            string.IsNullOrWhiteSpace(_portal.Current.Schedule.PortalBaseUrl) ||
             string.IsNullOrWhiteSpace(_portal.Current.Schedule.TargetPageUrl) ||
             string.IsNullOrWhiteSpace(_portal.Current.Schedule.DownloadFolder))
         {
