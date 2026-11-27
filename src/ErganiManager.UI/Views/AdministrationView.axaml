@@ -392,6 +392,17 @@
                                     <TextBox Text="{Binding SchedulePortalDateFormat}" PlaceholderText="{Binding Loc[PortalDateFormatPlaceholder]}" Width="160" HorizontalAlignment="Left" />
                                     <CheckBox IsChecked="{Binding SchedulePortalAutoSearch}" Content="{Binding Loc[PortalAutoSearch]}" />
                                     <CheckBox IsChecked="{Binding SchedulePortalAutoDownload}" Content="{Binding Loc[PortalAutoDownload]}" />
+                                    <Border Background="{DynamicResource PanelBrush}" BorderBrush="{DynamicResource LineBrush}" BorderThickness="1" CornerRadius="8" Padding="12">
+                                        <StackPanel Spacing="8">
+                                            <TextBlock Text="Automatic next-month schedule download" FontWeight="SemiBold" />
+                                            <TextBlock Text="When enabled, the application will download the following month's schedule on the last working day of the current month." Foreground="Gray" FontSize="12" TextWrapping="Wrap" />
+                                            <CheckBox IsChecked="{Binding AutoDownloadNextMonthEnabled}" Content="Enable automatic download" />
+                                            <StackPanel Spacing="4" IsEnabled="{Binding AutoDownloadNextMonthEnabled}" MaxWidth="220" HorizontalAlignment="Left">
+                                                <TextBlock Text="Run time (local time)" Foreground="Gray" FontSize="11" />
+                                                <TimePicker SelectedTime="{Binding AutoDownloadNextMonthTime}" ClockIdentifier="24HourClock" MinuteIncrement="1" HorizontalAlignment="Stretch" />
+                                            </StackPanel>
+                                        </StackPanel>
+                                    </Border>
                                     <TextBlock Text="{Binding Loc[PortalSearchButtonId]}" FontWeight="SemiBold" />
                                     <TextBox Text="{Binding SchedulePortalSearchButton}" />
                                     <TextBlock Text="{Binding Loc[PortalDownloadFolder]}" FontWeight="SemiBold" />
