@@ -45,12 +45,14 @@ public sealed class AutomaticNextMonthScheduleImportService : IDisposable
             throw new InvalidOperationException("Only an administrator can run the automatic schedule import test.");
         if (!await _gate.WaitAsync(0).ConfigureAwait(false))
             throw new InvalidOperationException("An automatic schedule download or import is already running.");
+        if (_awaitingDownload)
+        {
+            _gate.Release();
+            throw new InvalidOperationException("An automatic schedule download or import is already running.");
+        }
 
         try
         {
-            if (_awaitingDownload)
-                throw new InvalidOperationException("An automatic schedule download or import is already running.");
-
             var companyId = session.CompanyId ?? _companyContext.ActiveCompanyId;
             if (!companyId.HasValue)
                 throw new InvalidOperationException("Select a company before testing the automatic schedule import.");
@@ -152,6 +154,10 @@ public sealed class AutomaticNextMonthScheduleImportService : IDisposable
     public void Stop()
     {
         _session = null;
+        _testCompletion?.TrySetException(new OperationCanceledException("The schedule import test was cancelled because the administrator signed out."));
+        _testCompletion = null;
+        _testStatusReporter = null;
+        _isTestRun = false;
         _timer?.Dispose();
         _timer = null;
         _importViewModel?.SetAutomaticPortalImportMode(false);
