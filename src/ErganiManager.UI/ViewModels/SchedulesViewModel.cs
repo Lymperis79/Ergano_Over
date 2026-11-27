@@ -2216,7 +2216,7 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
                     .ConfigureAwait(false);
 
                 var overtimeMarkers = unsentOvertime
-                    .Select(o => "\\"overtimeId\\":" + o.Id)
+                    .Select(o => "\"overtimeId\":" + o.Id)
                     .ToList();
                 var pendingOvertimeLogs = await db.ApiSubmissionLogs
                     .Where(l => l.CompanyId == importCompanyId &&
