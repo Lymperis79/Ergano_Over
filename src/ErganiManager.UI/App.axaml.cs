@@ -328,6 +328,7 @@ public partial class App : Application
         {
             var vm = Program.Services.GetRequiredService<AdminShellViewModel>();
             vm.Initialize(session);
+            Program.Services.GetRequiredService<ErganiManager.UI.Services.AutomaticNextMonthScheduleImportService>().Start(session);
             vm.LogoutRequested += (_, _) => SignOut(desktop, session);
             next = new AdminShellView { DataContext = vm };
         }
@@ -428,6 +429,7 @@ public partial class App : Application
         foreach (var window in desktop.Windows.ToList())
             if (window != desktop.MainWindow) window.Close();
 
+        Program.Services.GetRequiredService<ErganiManager.UI.Services.AutomaticNextMonthScheduleImportService>().Stop();
         Program.Services.GetRequiredService<IAuthService>().Logout();
         Log.Information("User {Username} signed out.", session.Username);
 
