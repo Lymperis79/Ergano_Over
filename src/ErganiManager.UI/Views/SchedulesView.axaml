@@ -453,7 +453,7 @@
                             <TextBlock Text="{Binding EditingDate, StringFormat='Schedule for {0:dd/MM/yyyy}'}"
                                        FontSize="16" FontWeight="Bold" />
 
-                            <TextBlock Text="{Binding Loc[Vm.Past dates are read-only because Ergani does not accept ordinary changes for them.]}"
+                            <TextBlock Text="Past dates are read-only because Ergani does not accept ordinary changes for them."
                                        Foreground="#FFB74D" TextWrapping="Wrap"
                                        IsVisible="{Binding IsPastEditingDate}" />
                             <StackPanel IsEnabled="{Binding CanEditEditingDay}" Spacing="10">
