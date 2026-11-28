@@ -7,7 +7,9 @@ using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.Threading;
 using ErganiManager.Core.Interfaces;
+#if WINDOWS
 using Microsoft.Toolkit.Uwp.Notifications;
+#endif
 
 namespace ErganiManager.UI.Services;
 
@@ -19,35 +21,33 @@ public static class DesktopAlertNotificationWindow
 {
     public static void Show(AlertMessage alert)
     {
-        if (OperatingSystem.IsWindows())
+#if WINDOWS
+        try
         {
-            try
-            {
-                var details = string.Join(" • ",
-                    alert.Lines
-                        .Where(line => !string.IsNullOrWhiteSpace(line.Value))
-                        .Select(line => $"{line.Label}: {line.Value}"));
+            var details = string.Join(" • ",
+                alert.Lines
+                    .Where(line => !string.IsNullOrWhiteSpace(line.Value))
+                    .Select(line => $"{line.Label}: {line.Value}"));
 
-                var notification = new ToastContentBuilder()
-                    .AddText("Ergani Manager")
-                    .AddText(alert.Title);
+            var notification = new ToastContentBuilder()
+                .AddText("Ergani Manager")
+                .AddText(alert.Title);
 
-                if (!string.IsNullOrWhiteSpace(details))
-                    notification.AddText(details);
+            if (!string.IsNullOrWhiteSpace(details))
+                notification.AddText(details);
 
-                // The toolkit's Show() method handles Windows toast registration
-                // for unpackaged desktop applications.
-                notification.Show();
-                return;
-            }
-            catch
-            {
-                // Keep alerts visible if Windows toast services are unavailable.
-                ShowAvaloniaFallback(alert);
-                return;
-            }
+            // The toolkit's Show() method handles Windows toast registration
+            // for unpackaged desktop applications.
+            notification.Show();
+            return;
         }
-
+        catch
+        {
+            // Keep alerts visible if Windows toast services are unavailable.
+            ShowAvaloniaFallback(alert);
+            return;
+        }
+#endif
         ShowAvaloniaFallback(alert);
     }
 
