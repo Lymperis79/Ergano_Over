@@ -12,17 +12,20 @@ namespace ErganiManager.Core.Services;
 public class AuthService : IAuthService
 {
     private readonly IConnectionStateService _connectionState;
+    private readonly IDbContextFactory<AppDbContext> _dbFactory;
     private readonly ICompanyContext _companyContext;
     private readonly IPasswordHasher _passwordHasher;
     private readonly ILogger<AuthService> _logger;
 
     public AuthService(
         IConnectionStateService connectionState,
+        IDbContextFactory<AppDbContext> dbFactory,
         ICompanyContext companyContext,
         IPasswordHasher passwordHasher,
         ILogger<AuthService> logger)
     {
         _connectionState = connectionState;
+        _dbFactory = dbFactory;
         _companyContext = companyContext;
         _passwordHasher = passwordHasher;
         _logger = logger;
@@ -85,14 +88,7 @@ public class AuthService : IAuthService
 
     private async Task<LoginResult> TryOnlineLoginAsync(string username, string password)
     {
-        var config = _connectionState.LoadConfig();
-        if (config == null)
-            return LoginResult.Fail(ErganiManager.Data.UiText.T("Database is not configured."));
-
-        var optionsBuilder = new DbContextOptionsBuilder<AppDbContext>();
-        DbProviderFactory.Configure(optionsBuilder, config);
-
-        await using var db = new AppDbContext(optionsBuilder.Options);
+        await using var db = await _dbFactory.CreateDbContextAsync();
 
         var user = await db.Users
             .Include(u => u.Company)
