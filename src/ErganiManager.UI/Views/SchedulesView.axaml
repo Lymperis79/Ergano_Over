@@ -8,7 +8,9 @@
 
     <ScrollViewer HorizontalScrollBarVisibility="Auto"
                   VerticalScrollBarVisibility="Disabled">
-      <Grid RowDefinitions="Auto,Auto,Auto,*" MinWidth="1200">
+      <Grid RowDefinitions="Auto,Auto,Auto,*"
+            Width="{Binding Bounds.Width, RelativeSource={RelativeSource AncestorType=UserControl}}"
+            MinWidth="1200">
 
         <!-- One shared Menu owns all three hover menus. This lets Avalonia close
              the previously opened submenu when the pointer enters another root item. -->
