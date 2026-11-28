@@ -743,8 +743,8 @@ public partial class ReportService
         foreach (var g in byCategory)
         {
             var hourly = g.Where(l => l.Start != null && l.End != null).Sum(l => SpanHours(l.Start!.Value, l.End!.Value));
-            summary.Add(ErganiManager.Core.Models.LeaveTypes.Label(g.Key),
-                (ErganiManager.Core.Models.LeaveTypes.Find(g.Key)?.IsPaid ?? true) ? UiText.T("Yes") : UiText.T("No"),
+            summary.Add(_leaveTypes.Label(g.Key),
+                (_leaveTypes.Find(g.Key)?.IsPaid ?? true) ? UiText.T("Yes") : UiText.T("No"),
                 g.Select(l => l.EmployeeId).Distinct().Count().ToString(Inv), g.Count().ToString(Inv),
                 hourly > 0 ? ReportFormat.Hours(hourly) : string.Empty);
         }
