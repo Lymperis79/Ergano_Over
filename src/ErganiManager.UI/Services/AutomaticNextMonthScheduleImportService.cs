@@ -285,6 +285,30 @@ public sealed class AutomaticNextMonthScheduleImportService : IDisposable
     {
         if (!_awaitingDownload)
             return;
+
+        if (string.IsNullOrWhiteSpace(filePath) || !File.Exists(filePath))
+        {
+            const string message = "The Ergani portal did not generate an Excel file. The automatic schedule import was stopped; no database changes were made.";
+            Log.Warning(message);
+            if (_testCompletion != null)
+            {
+                _testCompletion.TrySetException(new InvalidOperationException(message));
+                _testCompletion = null;
+                _testStatusReporter?.Invoke("❌ " + message);
+                _testStatusReporter = null;
+                _isTestRun = false;
+                _awaitingDownload = false;
+                _runningMonthKey = string.Empty;
+                _runningCompanyId = 0;
+                _importViewModel?.SetAutomaticPortalImportMode(false);
+            }
+            else
+            {
+                FailAttempt(message);
+            }
+            return;
+        }
+
         _ = ImportDownloadedFileAsync(filePath);
     }
 
