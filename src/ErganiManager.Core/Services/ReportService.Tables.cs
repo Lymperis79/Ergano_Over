@@ -758,7 +758,7 @@ public partial class ReportService
             (UiText.T("Leave hours"), 120), (UiText.T("Declared shift"), 130), (UiText.T("Comment"), 300), (UiText.T("Submitted to Ergani"), 150), (UiText.T("Protocol"), 200));
         foreach (var g in byCategory)
         {
-            details.Add(RowStyle.Group, UiText.F("{0} — {1} day(s), {2} employee(s)", ErganiManager.Core.Models.LeaveTypes.Label(g.Key), g.Count(),
+            details.Add(RowStyle.Group, UiText.F("{0} — {1} day(s), {2} employee(s)", _leaveTypes.Label(g.Key), g.Count(),
                 g.Select(l => l.EmployeeId).Distinct().Count()));
 
             var ranges = new List<List<HolidayDay>>();
