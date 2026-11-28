@@ -60,7 +60,7 @@ public sealed class ErganiPortalService : IErganiPortalService
             SearchButtonId = current.SearchButtonId,
             DownloadFolder = current.DownloadFolder
         };
-        return OpenProfileAsync(companyId, automaticProfile, from, to, downloadAfterSearch: true);
+        return OpenProfileAsync(companyId, automaticProfile, from, to, downloadAfterSearch: true, automaticMode: true);
     }
 
     public Task<string> OpenWorkCardsAsync(int companyId, DateOnly date)
@@ -91,7 +91,7 @@ public sealed class ErganiPortalService : IErganiPortalService
     public void Dispose() => ShutdownAllBrowsers();
 
     private async Task<string> OpenProfileAsync(int companyId, ErganiPortalProfile profile,
-        DateOnly? from, DateOnly? to, bool downloadAfterSearch)
+        DateOnly? from, DateOnly? to, bool downloadAfterSearch, bool automaticMode = false)
     {
         string username, password, usertype, companyApiBaseUrl;
         await using (var db = new AppDbContext(_connectionState.GetDbOptions()))
@@ -121,7 +121,7 @@ public sealed class ErganiPortalService : IErganiPortalService
 
         IWebDriver driver;
         var downloadDir = ResolveDownloadFolder(profile);
-        try { driver = await Task.Run(() => CreateDriver(downloadDir)); }
+        try { driver = await Task.Run(() => CreateDriver(downloadDir, automaticMode)); }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Could not start a browser for the Ergani portal");
@@ -130,7 +130,7 @@ public sealed class ErganiPortalService : IErganiPortalService
 
         lock (DriverGate) OpenDrivers.Add(driver);
         _ = Task.Run(() => LoginAndNavigate(driver, baseUri, profile, downloadDir,
-            from, to, username, password, usertype, downloadAfterSearch));
+            from, to, username, password, usertype, downloadAfterSearch, automaticMode));
         return "🌐 Browser opened — logging in to the Ergani portal…";
     }
 
@@ -161,7 +161,7 @@ public sealed class ErganiPortalService : IErganiPortalService
         options.AddArgument("--disable-features=PasswordLeakDetection,PasswordManagerOnboarding");
     }
 
-    private static IWebDriver CreateDriver(string downloadDir)
+    private static IWebDriver CreateDriver(string downloadDir, bool startMinimized)
     {
         var errors = new List<string>();
         var edgeFirst = OperatingSystem.IsWindows();
@@ -176,7 +176,7 @@ public sealed class ErganiPortalService : IErganiPortalService
                     service.HideCommandPromptWindow = true;
                     var options = new EdgeOptions { LeaveBrowserRunning = false };
                     ApplyDownloadPrefs(options, downloadDir);
-                    options.AddArgument("--start-maximized");
+                    options.AddArgument(startMinimized ? "--start-minimized" : "--start-maximized");
                     options.AddExcludedArgument("enable-automation");
                     return new EdgeDriver(service, options);
                 }
@@ -186,7 +186,7 @@ public sealed class ErganiPortalService : IErganiPortalService
                     service.HideCommandPromptWindow = true;
                     var options = new ChromeOptions { LeaveBrowserRunning = false };
                     ApplyDownloadPrefs(options, downloadDir);
-                    options.AddArgument("--start-maximized");
+                    options.AddArgument(startMinimized ? "--start-minimized" : "--start-maximized");
                     options.AddExcludedArgument("enable-automation");
                     return new ChromeDriver(service, options);
                 }
@@ -201,7 +201,7 @@ public sealed class ErganiPortalService : IErganiPortalService
     // ── Login flow ────────────────────────────────────────────────────────────
 
     private void LoginAndNavigate(IWebDriver driver, Uri baseUri, ErganiPortalProfile settings, string downloadDir,
-        DateOnly? from, DateOnly? to, string username, string password, string usertype, bool downloadAfterSearch)
+        DateOnly? from, DateOnly? to, string username, string password, string usertype, bool downloadAfterSearch, bool automaticMode)
     {
         try
         {
@@ -236,7 +236,7 @@ public sealed class ErganiPortalService : IErganiPortalService
                     if (okFrom && okTo)
                     {
                         Search(driver, settings);
-                        if (downloadAfterSearch && settings.AutoDownload) DownloadExcel(driver, settings, downloadDir);
+                        if (downloadAfterSearch && settings.AutoDownload) DownloadExcel(driver, settings, downloadDir, automaticMode);
                     }
                     else Report("⚠ The date boxes were not found on the page, so the search was not started.");
                 }
@@ -246,6 +246,19 @@ public sealed class ErganiPortalService : IErganiPortalService
         {
             // Includes the user closing the browser early
             _logger.LogWarning(ex, "Ergani portal automation stopped");
+            if (automaticMode)
+                try { ExcelDownloaded?.Invoke(string.Empty); } catch { }
+        }
+        finally
+        {
+            // Automatic runs are unattended: close the browser after the attempt,
+            // whether or not the portal produced an Excel workbook.
+            if (automaticMode)
+            {
+                lock (DriverGate) OpenDrivers.Remove(driver);
+                try { driver.Quit(); } catch { }
+                try { driver.Dispose(); } catch { }
+            }
         }
     }
 
@@ -311,20 +324,26 @@ public sealed class ErganiPortalService : IErganiPortalService
         Report("✅ Search completed.");
     }
 
-    private void DownloadExcel(IWebDriver driver, ErganiPortalProfile settings, string downloadDir)
+    private void DownloadExcel(IWebDriver driver, ErganiPortalProfile settings, string downloadDir, bool automaticMode)
     {
         var export = WaitFor(driver, TimeSpan.FromSeconds(30), () =>
             FirstDisplayed(driver, By.CssSelector("img.ExcelExport"))
             ?? FirstDisplayed(driver, By.XPath("//img[contains(@alt,'Excel')]")));
-        if (export == null) { Report("❌ The Excel export icon was not found (no results for this period?)."); return; }
+        if (export == null)
+        {
+            const string message = "The Ergani portal did not generate an Excel file (there may be no schedule results, or the portal is showing a message instead of the export option).";
+            Report("❌ " + message);
+            if (automaticMode) { try { ExcelDownloaded?.Invoke(string.Empty); } catch { } }
+            return;
+        }
         var before = Directory.GetFiles(downloadDir).ToHashSet(StringComparer.OrdinalIgnoreCase);
         Report("⬇ Exporting to Excel…");
         Click(driver, export);
         var file = WaitForDownload(downloadDir, before, TimeSpan.FromSeconds(120));
-        Report(file != null ? $"✅ Excel file saved: {file}" : "❌ The download did not complete within 2 minutes.");
-        if (file != null)
+        Report(file != null ? $"✅ Excel file saved: {file}" : "❌ The portal did not generate an Excel file or the download did not complete within 2 minutes.");
+        if (file != null || automaticMode)
         {
-            try { ExcelDownloaded?.Invoke(file); }
+            try { ExcelDownloaded?.Invoke(file ?? string.Empty); }
             catch (Exception ex) { _logger.LogWarning(ex, "ExcelDownloaded handler failed"); }
         }
     }
