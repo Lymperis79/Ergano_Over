@@ -15,7 +15,7 @@ public sealed class LeaveTypeService : ILeaveTypeService
 {
     private static readonly TimeSpan RefreshInterval = TimeSpan.FromSeconds(30);
     private static readonly object Gate = new();
-    private static readonly string ConfigPath = Path.Combine(
+    private static string ConfigPath => Path.Combine(
         ErganiManager.LocalCache.AppPaths.GetAppDataFolder(), "leave-types.json");
     private readonly IDbContextFactory<AppDbContext> _dbFactory;
     private IReadOnlyList<LeaveTypeInfo>? _configured;
