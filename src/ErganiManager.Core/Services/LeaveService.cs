@@ -9,10 +9,12 @@ namespace ErganiManager.Core.Services;
 public class LeaveService : ILeaveService
 {
     private readonly IConnectionStateService _connectionState;
+    private readonly ILeaveTypeService _leaveTypes;
 
-    public LeaveService(IConnectionStateService connectionState)
+    public LeaveService(IConnectionStateService connectionState, ILeaveTypeService leaveTypes)
     {
         _connectionState = connectionState;
+        _leaveTypes = leaveTypes;
     }
 
     private AppDbContext OpenDb() => new AppDbContext(_connectionState.GetDbOptions());
@@ -56,7 +58,7 @@ public class LeaveService : ILeaveService
         if ((to.DayNumber - from.DayNumber) > 366)
             throw new InvalidOperationException(ErganiManager.Data.UiText.T("A holiday can cover at most one year at a time."));
 
-        var type = LeaveTypes.Find(template.LeaveTypeCode)
+        var type = _leaveTypes.Find(template.LeaveTypeCode)
             ?? throw new InvalidOperationException(ErganiManager.Data.UiText.T("Select a holiday type."));
 
         if (type.IsHourly)
