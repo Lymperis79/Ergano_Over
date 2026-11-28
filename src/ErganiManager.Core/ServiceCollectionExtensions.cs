@@ -1,5 +1,6 @@
 using ErganiManager.Core.Interfaces;
 using ErganiManager.Core.Services;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace ErganiManager.Core;
@@ -17,6 +18,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IPasswordHasher, BCryptPasswordHasher>();
         services.AddSingleton<ICompanyContext, CompanyContextService>();
         services.AddSingleton<IConnectionStateService, ConnectionStateService>();
+        services.AddSingleton<IDbContextFactory<ErganiManager.Data.AppDbContext>, ConfiguredAppDbContextFactory>();
         services.AddTransient<IAuthService, AuthService>();
         services.AddTransient<ICacheSyncService, CacheSyncService>();
         services.AddTransient<WorkCardIntervalAlertService>();
