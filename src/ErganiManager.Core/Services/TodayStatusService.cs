@@ -10,11 +10,13 @@ public class TodayStatusService : ITodayStatusService
 {
     private readonly IConnectionStateService _connectionState;
     private readonly IWorkCardHistoryService _history;
+    private readonly ILeaveTypeService _leaveTypes;
 
-    public TodayStatusService(IConnectionStateService connectionState, IWorkCardHistoryService history)
+    public TodayStatusService(IConnectionStateService connectionState, IWorkCardHistoryService history, ILeaveTypeService leaveTypes)
     {
         _connectionState = connectionState;
         _history = history;
+        _leaveTypes = leaveTypes;
     }
 
     public async Task<List<TodayEmployeeStatusDto>> GetAsync(int companyId, DateOnly date, int graceMinutes)
@@ -96,7 +98,7 @@ public class TodayStatusService : ITodayStatusService
         void Add(TodayIssueDto issue) => issues.Add(issue);
 
         var wholeDayLeave = leaves.FirstOrDefault(l => l.StartTime == null);
-        var leaveType = wholeDayLeave == null ? null : LeaveTypes.Find(wholeDayLeave.LeaveTypeCode);
+        var leaveType = wholeDayLeave == null ? null : _leaveTypes.Find(wholeDayLeave.LeaveTypeCode);
         var leaveName = wholeDayLeave == null ? null
             : (leaveType?.LocalizedDescription ?? wholeDayLeave.LeaveTypeCode) + (leaveType?.IsPaid == false ? $" ({ErganiManager.Data.UiText.T("Unpaid")})" : string.Empty);
 
