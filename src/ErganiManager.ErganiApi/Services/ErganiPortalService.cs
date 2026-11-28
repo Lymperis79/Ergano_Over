@@ -129,31 +129,12 @@ public sealed class ErganiPortalService : IErganiPortalService
         }
 
         lock (DriverGate) OpenDrivers.Add(driver);
-
-        // Chromium's --start-minimized is not consistently honored when launched
-        // through WebDriver. Use the WebDriver window command as well.
-        if (automaticMode)
-            TryMinimizeBrowser(driver);
-
         _ = Task.Run(() => LoginAndNavigate(driver, baseUri, profile, downloadDir,
             from, to, username, password, usertype, downloadAfterSearch, automaticMode));
         return "🌐 Browser opened — logging in to the Ergani portal…";
     }
 
     // ── Browser ───────────────────────────────────────────────────────────────
-
-    private static void TryMinimizeBrowser(IWebDriver driver)
-    {
-        try
-        {
-            driver.Manage().Window.Minimize();
-        }
-        catch (Exception ex)
-        {
-            // The browser may still be starting; the caller retries after navigation.
-            System.Diagnostics.Debug.WriteLine($"Could not minimize automatic Ergani browser: {ex.Message}");
-        }
-    }
 
     private static string ResolveDownloadFolder(ErganiPortalProfile settings)
     {
@@ -225,7 +206,6 @@ public sealed class ErganiPortalService : IErganiPortalService
         try
         {
             driver.Navigate().GoToUrl(baseUri.ToString());
-            if (automaticMode) TryMinimizeBrowser(driver);
 
             ChooseLoginType(driver, usertype);
 
@@ -254,10 +234,7 @@ public sealed class ErganiPortalService : IErganiPortalService
             }
 
             if (!string.IsNullOrWhiteSpace(settings.TargetPageUrl))
-            {
                 driver.Navigate().GoToUrl(BuildTargetUrl(settings.TargetPageUrl, baseUri, driver.Url));
-                if (automaticMode) TryMinimizeBrowser(driver);
-            }
 
             if (from is { } f && to is { } t)
             {
