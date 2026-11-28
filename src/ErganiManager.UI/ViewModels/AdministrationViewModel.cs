@@ -62,6 +62,7 @@ public partial class AdministrationViewModel : ViewModelBase, IAdminSectionViewM
     private readonly ICompanyService _companyService;
     private readonly ICacheSyncService _cacheSync;
     private readonly IOfficialHolidayCatalogService _holidayCatalog;
+    private readonly ILeaveTypeService _leaveTypes;
     private readonly IEmailAlertService _emailAlertService;
     private readonly IInternetCheckService _internetCheckService;
     private readonly IHttpClientFactory _httpClientFactory;
@@ -478,7 +479,7 @@ public partial class AdministrationViewModel : ViewModelBase, IAdminSectionViewM
 
     public AdministrationViewModel(IDatabaseMaintenanceService maintenance, IRoundingSettingsService rounding,
         IPortalSettingsService portal, ICompanyService companyService, ICacheSyncService cacheSync,
-        IOfficialHolidayCatalogService holidayCatalog, IEmailAlertService emailAlertService,
+        IOfficialHolidayCatalogService holidayCatalog, ILeaveTypeService leaveTypes, IEmailAlertService emailAlertService,
         IInternetCheckService internetCheckService, IHttpClientFactory httpClientFactory,
         IErganiHealthCheckService erganiHealthCheckService, IConnectionStateService connectionState,
         ICredentialProtector credentialProtector, ErganiManager.UI.Services.AutomaticDatabaseBackupService automaticBackup, ErganiManager.UI.Services.AutomaticNextMonthScheduleImportService automaticScheduleImport)
@@ -489,6 +490,7 @@ public partial class AdministrationViewModel : ViewModelBase, IAdminSectionViewM
         _companyService = companyService;
         _cacheSync = cacheSync;
         _holidayCatalog = holidayCatalog;
+        _leaveTypes = leaveTypes;
         _emailAlertService = emailAlertService;
         _internetCheckService = internetCheckService;
         _httpClientFactory = httpClientFactory;
@@ -535,14 +537,14 @@ public partial class AdministrationViewModel : ViewModelBase, IAdminSectionViewM
         OnTimeWindowMinutes = rules.OnTimeWindowMinutes;
         AutoClockOutEnabled = portal.Current.AutoClockOutEnabled;
         AutoClockOutMinutes = Math.Clamp(portal.Current.AutoClockOutMinutes, 0, 1440);
-        LeaveTypes.Refresh();
+        _leaveTypes.Refresh();
         LoadLeaveTypes();
     }
 
     private void LoadLeaveTypes()
     {
         EditableLeaveTypes.Clear();
-        foreach (var type in LeaveTypes.All)
+        foreach (var type in _leaveTypes.All)
         {
             var edit = new LeaveTypeEdit(type.Code, type.Description, type.IsHourly, type.IsPaid, type.EffectivePaymentCategory);
             edit.SelectedPaymentOption = LeavePaymentOptions.FirstOrDefault(option => option.Key == type.EffectivePaymentCategory);
@@ -569,7 +571,7 @@ public partial class AdministrationViewModel : ViewModelBase, IAdminSectionViewM
     {
         try
         {
-            LeaveTypes.Save(EditableLeaveTypes.Select(t => new LeaveTypeInfo(t.Code, t.Description, t.IsHourly, t.IsPaid, t.SelectedPaymentOption?.Key ?? t.PaymentCategory)));
+            _leaveTypes.Save(EditableLeaveTypes.Select(t => new LeaveTypeInfo(t.Code, t.Description, t.IsHourly, t.IsPaid, t.SelectedPaymentOption?.Key ?? t.PaymentCategory)));
             LeaveTypesStatus = Loc["Vm.✅ Leave types saved. Changes apply to new and existing holiday display."];
             LoadLeaveTypes();
         }
