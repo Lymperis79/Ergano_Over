@@ -952,13 +952,13 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
         var nextMonth = first.AddMonths(1);
         schedules = (await _scheduleService.GetMonthAsync(selectedEmployee.Id, previousMonth.Year, previousMonth.Month).ConfigureAwait(false))
             .Concat(schedules)
-            .Concat(await _scheduleService.GetMonthAsync(SelectedEmployee.Id, nextMonth.Year, nextMonth.Month).ConfigureAwait(false))
+            .Concat(await _scheduleService.GetMonthAsync(selectedEmployee.Id, nextMonth.Year, nextMonth.Month).ConfigureAwait(false))
             .GroupBy(s => s.ScheduleDate).Select(g => g.First()).ToList();
         var restWarnings = BuildRestWarnings(schedules);
         foreach (var scheduledDay in schedules.Where(d => d.ScheduleDate >= first && d.ScheduleDate <= last))
             await EnsureScheduleOvertimePendingAsync(scheduledDay).ConfigureAwait(false);
         var leaves = _session?.CompanyId is int companyId
-            ? await Holidays.GetCalendarLeavesAsync(companyId, SelectedEmployee.Id, first, last).ConfigureAwait(false)
+            ? await Holidays.GetCalendarLeavesAsync(companyId, selectedEmployee.Id, first, last).ConfigureAwait(false)
             : new List<LeaveDto>();
         var byDate = schedules.ToDictionary(s => s.ScheduleDate);
         var overtimeByDate = await LoadOvertimeByDateAsync(first, last).ConfigureAwait(false);
@@ -1055,17 +1055,17 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
         // Include neighbouring months when the visible week crosses a month boundary.
         var previousDate = from.AddDays(-1);
         if (previousDate.Month != from.Month)
-            schedules = schedules.Concat(await _scheduleService.GetMonthAsync(SelectedEmployee.Id, previousDate.Year, previousDate.Month).ConfigureAwait(false)).ToList();
+            schedules = schedules.Concat(await _scheduleService.GetMonthAsync(selectedEmployee.Id, previousDate.Year, previousDate.Month).ConfigureAwait(false)).ToList();
         var nextDate = to.AddDays(1);
         if (nextDate.Month != to.Month)
-            schedules = schedules.Concat(await _scheduleService.GetMonthAsync(SelectedEmployee.Id, nextDate.Year, nextDate.Month).ConfigureAwait(false)).ToList();
+            schedules = schedules.Concat(await _scheduleService.GetMonthAsync(selectedEmployee.Id, nextDate.Year, nextDate.Month).ConfigureAwait(false)).ToList();
         schedules = schedules.GroupBy(s => s.ScheduleDate).Select(g => g.First()).ToList();
         var restWarnings = BuildRestWarnings(schedules);
         foreach (var scheduledDay in schedules.Where(d => d.ScheduleDate >= from && d.ScheduleDate <= to))
             await EnsureScheduleOvertimePendingAsync(scheduledDay).ConfigureAwait(false);
         var byDate = schedules.ToDictionary(s => s.ScheduleDate);
         var leaves = _session?.CompanyId is int companyId
-            ? await Holidays.GetCalendarLeavesAsync(companyId, SelectedEmployee.Id, from, to).ConfigureAwait(false)
+            ? await Holidays.GetCalendarLeavesAsync(companyId, selectedEmployee.Id, from, to).ConfigureAwait(false)
             : new List<LeaveDto>();
         var overtimeByDate = await LoadOvertimeByDateAsync(from, to).ConfigureAwait(false);
         var leavesByDate = leaves.GroupBy(l => l.LeaveDate).ToDictionary(g => g.Key, g => g.ToList());
