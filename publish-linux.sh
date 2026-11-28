@@ -12,6 +12,7 @@ echo ""
 
 dotnet publish "$PROJECT" \
     --configuration Release \
+    --framework net10.0 \
     --runtime linux-x64 \
     --self-contained true \
     --output "$OUTPUT" \
