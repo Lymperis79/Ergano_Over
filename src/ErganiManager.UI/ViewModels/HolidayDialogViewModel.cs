@@ -33,7 +33,7 @@ public class HolidayRow
 
     public string StatusIcon => SubmittedToErgani ? "✅" : (string.IsNullOrWhiteSpace(LastError) ? "🕓" : "❌");
     public string DateText => LeaveDate.ToString("dd/MM/yyyy");
-    public string TypeText => LeaveTypes.Label(LeaveTypeCode);
+    public string TypeText { get; init; } = string.Empty;
     public string HoursText => StartTime.HasValue && EndTime.HasValue
         ? $"{StartTime:HH:mm}–{EndTime:HH:mm}"
         : Tr.Loc["Vm.Whole day"];
@@ -52,6 +52,7 @@ public partial class HolidayDialogViewModel : ViewModelBase
     public event EventHandler? HolidaysChanged;
 
     private readonly ILeaveService _leaveService;
+    private readonly ILeaveTypeService _leaveTypes;
     private readonly ILeaveSubmitter _leaveSubmitter;
     private readonly IErganiDocumentService _documentService;
 
@@ -60,11 +61,12 @@ public partial class HolidayDialogViewModel : ViewModelBase
     private int? _editingLeaveId;
 
     public HolidayDialogViewModel(
-        ILeaveService leaveService, ILeaveSubmitter leaveSubmitter, IErganiDocumentService documentService)
+        ILeaveService leaveService, ILeaveSubmitter leaveSubmitter, IErganiDocumentService documentService, ILeaveTypeService leaveTypes)
     {
         _leaveService     = leaveService;
         _leaveSubmitter   = leaveSubmitter;
         _documentService  = documentService;
+        _leaveTypes = leaveTypes;
     }
 
     public ObservableCollection<LeaveTypeInfo> FilteredLeaveTypeOptions { get; } = new();
@@ -126,7 +128,7 @@ public partial class HolidayDialogViewModel : ViewModelBase
     private void RefreshLeaveTypeOptions()
     {
         FilteredLeaveTypeOptions.Clear();
-        foreach (var type in LeaveTypes.All)
+        foreach (var type in _leaveTypes.All)
             FilteredLeaveTypeOptions.Add(type);
     }
 
@@ -153,7 +155,7 @@ public partial class HolidayDialogViewModel : ViewModelBase
         int companyId, EmployeeDto employee, IEnumerable<BranchDto> branches,
         DateOnly? prefillFrom, DateOnly? prefillTo)
     {
-        LeaveTypes.Refresh(); // Pick up administrator changes made on another PC.
+        _leaveTypes.Refresh(); // Pick up administrator changes made on another PC.
         RefreshLeaveTypeOptions();
         _companyId = companyId;
         _employee  = employee;
@@ -211,6 +213,7 @@ public partial class HolidayDialogViewModel : ViewModelBase
                 BranchId          = l.BranchId,
                 LeaveDate         = l.LeaveDate,
                 LeaveTypeCode     = l.LeaveTypeCode,
+                TypeText          = _leaveTypes.Label(l.LeaveTypeCode),
                 StartTime         = l.StartTime,
                 EndTime           = l.EndTime,
                 DeclaredStartTime  = l.DeclaredStartTime,
@@ -368,7 +371,7 @@ public partial class HolidayDialogViewModel : ViewModelBase
 
         _editingLeaveId = row.Id;
         IsEditingExisting = true;
-        SelectedType = LeaveTypes.Find(row.LeaveTypeCode);
+        SelectedType = _leaveTypes.Find(row.LeaveTypeCode);
         SelectedBranch = Branches.FirstOrDefault(b => b.Id == row.BranchId);
         FromDate = new DateTimeOffset(row.LeaveDate.ToDateTime(TimeOnly.MinValue));
         ToDate = FromDate;
