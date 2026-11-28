@@ -36,6 +36,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IRoundingSettingsService, RoundingSettingsService>();
         services.AddSingleton<IPortalSettingsService, PortalSettingsService>();
         services.AddTransient<IReportService, ReportService>();
+        services.AddSingleton<ILeaveTypeService, LeaveTypeService>();
         services.AddTransient<ILeaveService, LeaveService>();
         services.AddTransient<IDatabaseMaintenanceService, DatabaseMaintenanceService>();
         services.AddTransient<IOfficialHolidayCatalogService, OfficialHolidayCatalogService>();
