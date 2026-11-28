@@ -139,8 +139,8 @@ public partial class HolidayDialogViewModel : ViewModelBase
         // Typing a new query clears the selection and narrows the list immediately.
         var matches = string.IsNullOrEmpty(query) ||
             (SelectedType != null && string.Equals(query, SelectedType.Label, StringComparison.CurrentCultureIgnoreCase))
-            ? LeaveTypes.All
-            : LeaveTypes.All.Where(type =>
+            ? _leaveTypes.All
+            : _leaveTypes.All.Where(type =>
                 type.Label.Contains(query, StringComparison.CurrentCultureIgnoreCase) ||
                 type.Code.Contains(query, StringComparison.CurrentCultureIgnoreCase)).ToList();
 
