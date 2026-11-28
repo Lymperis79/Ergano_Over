@@ -138,7 +138,7 @@ public class LeaveService : ILeaveService
                                    && l.Employee.CompanyId == companyId);
         if (entity == null || entity.SubmittedToErgani) return false;
 
-        var type = LeaveTypes.Find(dto.LeaveTypeCode)
+        var type = _leaveTypes.Find(dto.LeaveTypeCode)
             ?? throw new InvalidOperationException(ErganiManager.Data.UiText.T("Select a holiday type."));
         if (type.IsHourly)
         {
