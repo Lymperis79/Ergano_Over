@@ -10,11 +10,16 @@ public class AdminBootstrapService : IAdminBootstrapService
 {
     private readonly IConnectionStateService _connectionState;
     private readonly IPasswordHasher _passwordHasher;
+    private readonly IDbContextFactory<AppDbContext> _dbFactory;
 
-    public AdminBootstrapService(IConnectionStateService connectionState, IPasswordHasher passwordHasher)
+    public AdminBootstrapService(
+        IConnectionStateService connectionState,
+        IPasswordHasher passwordHasher,
+        IDbContextFactory<AppDbContext> dbFactory)
     {
         _connectionState = connectionState;
         _passwordHasher = passwordHasher;
+        _dbFactory = dbFactory;
     }
 
     public async Task<bool> NeedsFirstAdminAsync()
@@ -23,10 +28,7 @@ public class AdminBootstrapService : IAdminBootstrapService
         if (config == null)
             return true;
 
-        var optionsBuilder = new DbContextOptionsBuilder<AppDbContext>();
-        DbProviderFactory.Configure(optionsBuilder, config);
-
-        await using var db = new AppDbContext(optionsBuilder.Options);
+        await using var db = await _dbFactory.CreateDbContextAsync();
         return !await db.Users.AnyAsync();
     }
 
@@ -72,9 +74,7 @@ public class AdminBootstrapService : IAdminBootstrapService
         var config = _connectionState.LoadConfig()
             ?? throw new InvalidOperationException(ErganiManager.Data.UiText.T("Database is not configured."));
 
-        var optionsBuilder = new DbContextOptionsBuilder<AppDbContext>();
-        DbProviderFactory.Configure(optionsBuilder, config);
-        await using var db = new AppDbContext(optionsBuilder.Options);
+        await using var db = await _dbFactory.CreateDbContextAsync();
 
         var users = await db.Users
             .Include(u => u.Company)
