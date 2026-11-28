@@ -575,7 +575,10 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
         if (!HasActiveCompany)
             throw new InvalidOperationException("No active company is selected for the automatic schedule import.");
 
-        await LoadFiltersAsync();
+        // Automatic schedule imports are company-wide. Load the complete employee
+        // directory for AFM matching, but do not select a single employee or rebuild
+        // that employee's calendar as part of the background import workflow.
+        await LoadFiltersAsync(refreshCalendar: false, selectEmployee: false);
         if (SchedulePickerEmployees.Count == 0)
             throw new InvalidOperationException("No employees were loaded for the automatic schedule import.");
     }
@@ -604,7 +607,7 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
         }
     }
 
-    private async Task LoadFiltersAsync()
+    private async Task LoadFiltersAsync(bool refreshCalendar = true, bool selectEmployee = true)
     {
         if (_session?.CompanyId is not int companyId) return;
 
@@ -623,11 +626,13 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
             foreach (var e in activeEmployees) AvailableEmployees.Add(e);
             AvailableBranches.Clear();
             foreach (var b in branches) AvailableBranches.Add(b);
-            SelectedEmployee = SchedulePickerEmployees.FirstOrDefault();
-            EditingBranch    = AvailableBranches.FirstOrDefault();
+            if (selectEmployee && SelectedEmployee == null)
+                SelectedEmployee = SchedulePickerEmployees.FirstOrDefault();
+            EditingBranch = AvailableBranches.FirstOrDefault();
         });
 
-        await RefreshCalendarAsync();
+        if (refreshCalendar)
+            await RefreshCalendarAsync();
     }
 
     // ── Navigation ────────────────────────────────────────────────────────────
