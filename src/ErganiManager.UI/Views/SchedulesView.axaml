@@ -84,45 +84,57 @@
 
                 <!-- Employee picker -->
                 <TextBlock Grid.Column="0" Text="{Binding Loc[Employee2]}" VerticalAlignment="Center" Margin="0,0,8,0" />
-                <Grid Grid.Column="1" Width="420" HorizontalAlignment="Left">
-                    <AutoCompleteBox x:Name="ScheduleEmployeePicker"
-                                 ItemsSource="{Binding FilteredEmployees}"
-                                 SelectedItem="{Binding SelectedEmployee, Mode=TwoWay}"
-                                 Text="{Binding EmployeeSearchText, Mode=TwoWay}"
-                                 ValueMemberBinding="{Binding DisplayName}"
-                                 FilterMode="Contains"
-                                 MinimumPrefixLength="0"
-                                 IsTextCompletionEnabled="False"
-                                 ClearSelectionOnLostFocus="False"
-                                 HorizontalAlignment="Stretch"
-                                 ToolTip.Tip="Click to select the current text, then type an employee name, AFM or employee number">
-                    <AutoCompleteBox.Styles>
-                        <!-- Keep the editable text left-aligned even if the application has
-                             a global TextBox alignment style. -->
-                        <Style Selector="TextBox">
-                            <Setter Property="TextAlignment" Value="Left" />
-                        </Style>
-                    </AutoCompleteBox.Styles>
-                    <AutoCompleteBox.ItemTemplate>
-                        <DataTemplate x:DataType="core:EmployeeDto">
-                            <TextBlock Text="{Binding DisplayName}"
-                                       TextWrapping="NoWrap"
-                                       TextTrimming="CharacterEllipsis"
-                                       Margin="6,4" />
-                        </DataTemplate>
-                    </AutoCompleteBox.ItemTemplate>
-                </AutoCompleteBox>
-                    <ToggleButton Click="OnScheduleEmployeePickerDropdownClick"
-                                  Content="▾"
-                                  Width="30"
-                                  HorizontalAlignment="Right"
+                <Grid Grid.Column="1" Width="420" Height="36" HorizontalAlignment="Left"
+                      ColumnDefinitions="*,32" ColumnSpacing="4">
+                    <AutoCompleteBox Grid.Column="0"
+                                     x:Name="ScheduleEmployeePicker"
+                                     Height="36"
+                                     ItemsSource="{Binding FilteredEmployees}"
+                                     SelectedItem="{Binding SelectedEmployee, Mode=TwoWay}"
+                                     Text="{Binding EmployeeSearchText, Mode=TwoWay}"
+                                     ValueMemberBinding="{Binding ScheduleDisplayName}"
+                                     FilterMode="Contains"
+                                     MinimumPrefixLength="0"
+                                     IsTextCompletionEnabled="False"
+                                     ClearSelectionOnLostFocus="False"
+                                     HorizontalAlignment="Stretch"
+                                     VerticalAlignment="Center"
+                                     PointerPressed="OnScheduleEmployeePickerPointerPressed"
+                                     ToolTip.Tip="Search employees by name, AFM or employee number.">
+                        <AutoCompleteBox.Styles>
+                            <Style Selector="TextBox">
+                                <Setter Property="TextAlignment" Value="Left" />
+                                <Setter Property="VerticalContentAlignment" Value="Center" />
+                                <Setter Property="Padding" Value="8,0" />
+                            </Style>
+                        </AutoCompleteBox.Styles>
+                        <AutoCompleteBox.ItemTemplate>
+                            <DataTemplate x:DataType="core:EmployeeDto">
+                                <TextBlock Text="{Binding ScheduleDisplayName}"
+                                           VerticalAlignment="Center"
+                                           TextWrapping="NoWrap"
+                                           TextTrimming="CharacterEllipsis"
+                                           Margin="8,4" />
+                            </DataTemplate>
+                        </AutoCompleteBox.ItemTemplate>
+                    </AutoCompleteBox>
+                    <ToggleButton Grid.Column="1"
+                                  Click="OnScheduleEmployeePickerDropdownClick"
+                                  Content="▼"
+                                  Width="32" Height="36"
+                                  HorizontalAlignment="Stretch"
                                   VerticalAlignment="Center"
                                   VerticalContentAlignment="Center"
                                   HorizontalContentAlignment="Center"
-                                  Background="Transparent"
-                                  BorderThickness="0"
-                                  Padding="4,0"
-                                  ToolTip.Tip="Open employee list" />
+                                  Background="{DynamicResource AccentBrush}"
+                                  Foreground="White"
+                                  BorderBrush="{DynamicResource AccentLightBrush}"
+                                  BorderThickness="1"
+                                  CornerRadius="6"
+                                  FontSize="13"
+                                  FontWeight="Bold"
+                                  Padding="0"
+                                  ToolTip.Tip="Click to open the employee list" />
                 </Grid>
 
                 <!-- View mode -->
@@ -441,6 +453,10 @@
                             <TextBlock Text="{Binding EditingDate, StringFormat='Schedule for {0:dd/MM/yyyy}'}"
                                        FontSize="16" FontWeight="Bold" />
 
+                            <TextBlock Text="Past dates are read-only because Ergani does not accept ordinary changes for them."
+                                       Foreground="#FFB74D" TextWrapping="Wrap"
+                                       IsVisible="{Binding IsPastEditingDate}" />
+                            <StackPanel IsEnabled="{Binding CanEditEditingDay}" Spacing="10">
                             <TextBlock Text="{Binding Loc[WorkType]}" FontWeight="SemiBold" />
                             <ComboBox ItemsSource="{Binding AvailableWorkTypes}"
                                       SelectedItem="{Binding EditingWorkType}"
@@ -492,6 +508,7 @@
 
                             <TextBlock Text="{Binding Loc[Comments]}" FontWeight="SemiBold" />
                             <TextBox Text="{Binding EditingComments}" />
+                            </StackPanel>
 
                             <TextBlock Text="{Binding EditingActualText}" Foreground="Gray" FontSize="11"
                                        IsVisible="{Binding EditingActualText,
@@ -510,6 +527,7 @@
                         <Button Content="{Binding Loc[Delete2]}"
                                 Command="{Binding DeleteDayCommand}"
                                 IsVisible="{Binding IsEditingExisting}"
+                                IsEnabled="{Binding CanEditEditingDay}"
                                 Foreground="#EF9A9A" />
                         <Button Content="{Binding Loc[SaveSubmit]}"
                                 Command="{Binding SaveAndSubmitDayCommand}"
@@ -517,7 +535,8 @@
                                 IsEnabled="{Binding CanSubmitEditingDay}"
                                 ToolTip.Tip="{Binding Loc[RestSubmitBlockedTooltip]}" />
                         <Button Content="{Binding Loc[Save]}"
-                                Command="{Binding SaveDayCommand}" Classes="accent" />
+                                Command="{Binding SaveDayCommand}" Classes="accent"
+                                IsEnabled="{Binding CanEditEditingDay}" />
                     </StackPanel>
                 </Grid>
             </Border>

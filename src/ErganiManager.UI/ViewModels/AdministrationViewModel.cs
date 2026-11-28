@@ -45,6 +45,10 @@ public partial class AdministrationViewModel : ViewModelBase, IAdminSectionViewM
     [ObservableProperty] private string _lastBackupInfo = string.Empty;
 
     private readonly ErganiManager.UI.Services.AutomaticDatabaseBackupService _automaticBackup;
+    private readonly ErganiManager.UI.Services.AutomaticNextMonthScheduleImportService _automaticScheduleImport;
+    private UserSession? _session;
+    [ObservableProperty] private bool _isTestingAutomaticScheduleImport;
+    [ObservableProperty] private string _automaticScheduleImportTestStatus = string.Empty;
     [ObservableProperty] private bool _automaticBackupEnabled;
     [ObservableProperty] private int _automaticBackupIntervalHours = 24;
     [ObservableProperty] private int _automaticBackupRetentionCount = 14;
@@ -372,6 +376,8 @@ public partial class AdministrationViewModel : ViewModelBase, IAdminSectionViewM
     [ObservableProperty] private string _schedulePortalDateFormat = string.Empty;
     [ObservableProperty] private bool _schedulePortalAutoSearch = true;
     [ObservableProperty] private bool _schedulePortalAutoDownload = true;
+    [ObservableProperty] private bool _autoDownloadNextMonthEnabled;
+    [ObservableProperty] private TimeSpan? _autoDownloadNextMonthTime = new(18, 0, 0);
     [ObservableProperty] private string _schedulePortalSearchButton = string.Empty;
     [ObservableProperty] private string _schedulePortalDownloadFolder = string.Empty;
     [ObservableProperty] private string _schedulePortalStatus = string.Empty;
@@ -475,7 +481,7 @@ public partial class AdministrationViewModel : ViewModelBase, IAdminSectionViewM
         IOfficialHolidayCatalogService holidayCatalog, IEmailAlertService emailAlertService,
         IInternetCheckService internetCheckService, IHttpClientFactory httpClientFactory,
         IErganiHealthCheckService erganiHealthCheckService, IConnectionStateService connectionState,
-        ICredentialProtector credentialProtector, ErganiManager.UI.Services.AutomaticDatabaseBackupService automaticBackup)
+        ICredentialProtector credentialProtector, ErganiManager.UI.Services.AutomaticDatabaseBackupService automaticBackup, ErganiManager.UI.Services.AutomaticNextMonthScheduleImportService automaticScheduleImport)
     {
         _maintenance = maintenance;
         _rounding = rounding;
@@ -490,6 +496,7 @@ public partial class AdministrationViewModel : ViewModelBase, IAdminSectionViewM
         _connectionState = connectionState;
         _credentialProtector = credentialProtector;
         _automaticBackup = automaticBackup;
+        _automaticScheduleImport = automaticScheduleImport;
         AutomaticBackupEnabled = automaticBackup.IsEnabled;
         AutomaticBackupIntervalHours = automaticBackup.IntervalHours;
         AutomaticBackupRetentionCount = automaticBackup.RetentionCount;
@@ -506,6 +513,10 @@ public partial class AdministrationViewModel : ViewModelBase, IAdminSectionViewM
         SchedulePortalDateFormat = schedule.DateFormat;
         SchedulePortalAutoSearch = schedule.AutoSearch;
         SchedulePortalAutoDownload = schedule.AutoDownload;
+        AutoDownloadNextMonthEnabled = portal.Current.AutoDownloadNextMonthEnabled;
+        AutoDownloadNextMonthTime = portal.Current.AutoDownloadNextMonthTime >= TimeSpan.Zero && portal.Current.AutoDownloadNextMonthTime < TimeSpan.FromDays(1)
+            ? portal.Current.AutoDownloadNextMonthTime
+            : new TimeSpan(18, 0, 0);
         SchedulePortalSearchButton = schedule.SearchButtonId;
         SchedulePortalDownloadFolder = schedule.DownloadFolder;
 
@@ -616,14 +627,61 @@ public partial class AdministrationViewModel : ViewModelBase, IAdminSectionViewM
                 return;
             }
 
+            if (AutoDownloadNextMonthTime is not { } runTime || runTime < TimeSpan.Zero || runTime >= TimeSpan.FromDays(1))
+            {
+                SchedulePortalStatus = "Please select a valid run time between 00:00 and 23:59.";
+                return;
+            }
+
             var current = _portal.Current;
             current.Schedule = schedule;
+            current.AutoDownloadNextMonthEnabled = AutoDownloadNextMonthEnabled;
+            current.AutoDownloadNextMonthTime = new TimeSpan(runTime.Hours, runTime.Minutes, 0);
             _portal.Save(current);
             SchedulePortalStatus = Loc[L.SchedulePortalSaved];
         }
         catch (Exception ex)
         {
             SchedulePortalStatus = string.Format(Loc[L.CouldNotSaveSchedulePortal], ex.Message);
+        }
+    }
+
+    [RelayCommand]
+    private async Task TestAutomaticNextMonthScheduleImportAsync()
+    {
+        if (_session == null || _session.Role != AppUserRole.Admin)
+        {
+            AutomaticScheduleImportTestStatus = "❌ An administrator session is required.";
+            return;
+        }
+
+        if (_activeCompanyId is not int companyId)
+        {
+            AutomaticScheduleImportTestStatus = "❌ Select a company in the main window first.";
+            return;
+        }
+
+        if (_portal.Current.Schedule == null ||
+            string.IsNullOrWhiteSpace(_portal.Current.Schedule.TargetPageUrl))
+        {
+            AutomaticScheduleImportTestStatus = "❌ Save the Ergani schedule portal settings before running the test.";
+            return;
+        }
+
+        IsTestingAutomaticScheduleImport = true;
+        AutomaticScheduleImportTestStatus = "Starting test…";
+        try
+        {
+            await _automaticScheduleImport.RunTestAsync(_session, message =>
+                Dispatcher.UIThread.Post(() => AutomaticScheduleImportTestStatus = message));
+        }
+        catch (Exception ex)
+        {
+            AutomaticScheduleImportTestStatus = "❌ " + ex.Message;
+        }
+        finally
+        {
+            IsTestingAutomaticScheduleImport = false;
         }
     }
 
@@ -1050,7 +1108,7 @@ public partial class AdministrationViewModel : ViewModelBase, IAdminSectionViewM
                     _loadedCompanySettings = company;
                     CompanyErganiBaseUrl = company.ErganiBaseUrl ?? string.Empty;
                     // Older databases may contain 0 from before this setting was validated. The UI and save validation require 1–24 hours; show the standard 8-hour default so this legacy value cannot block saving every company setting.
-                    DailyOvertimeThresholdHours = company.DailyOvertimeThresholdHours is >= 1 and <= 24
+                    DailyOvertimeThresholdHours = company.DailyOvertimeThresholdHours is >= 0 and <= 24
                         ? (decimal)company.DailyOvertimeThresholdHours
                         : 8m;
                     EarlyClockInBlockMinutes = company.EarlyClockInBlockMinutes;
@@ -1157,7 +1215,7 @@ public partial class AdministrationViewModel : ViewModelBase, IAdminSectionViewM
             return;
         }
 
-        if (DailyOvertimeThresholdHours is not { } overtimeThreshold || overtimeThreshold < 1m || overtimeThreshold > 24m ||
+        if (DailyOvertimeThresholdHours is not { } overtimeThreshold || overtimeThreshold < 0m || overtimeThreshold > 24m ||
             overtimeThreshold * 2m != decimal.Truncate(overtimeThreshold * 2m) ||
             EarlyClockInBlockMinutes is < 0 or > 120 ||
             EarlyDepartureAlertMinutes is < 0 or > 120 ||
@@ -1263,6 +1321,7 @@ public partial class AdministrationViewModel : ViewModelBase, IAdminSectionViewM
 
     public void Initialize(UserSession session)
     {
+        _session = session;
         Refresh();
         var previousCompanyId = _activeCompanyId;
         _activeCompanyId = session.CompanyId;

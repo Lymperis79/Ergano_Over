@@ -41,6 +41,11 @@ public class EmployeeDto
     public bool IsActive { get; set; } = true;
 
     public string FullName => $"{FirstName} {LastName}";
+
+    /// <summary>Compact employee name for the Work Calendar picker, including the father's initial.</summary>
+    public string ScheduleDisplayName =>
+        FullName + (string.IsNullOrWhiteSpace(FatherName) ? string.Empty : $" {char.ToUpperInvariant(FatherName.Trim()[0])}.");
+
     public string DisplayName =>
         $"{FirstName} {LastName}" +
         (string.IsNullOrWhiteSpace(FatherName) ? string.Empty : $" {FatherName}") +
