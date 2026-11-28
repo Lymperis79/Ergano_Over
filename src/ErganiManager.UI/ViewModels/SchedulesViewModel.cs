@@ -688,6 +688,10 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
         if (SelectedEmployee == null) return;
         await LoadDailyOvertimeThresholdAsync();
 
+        // The employee selection can change while the database settings are loading.
+        // Never start a calendar build with a cleared selection.
+        if (SelectedEmployee == null) return;
+
         _selectedDates.Clear();
         NotifySelectionChanged();
 
@@ -928,16 +932,25 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
 
     private async Task BuildMonthCalendarAsync()
     {
+        // Keep a stable employee reference for the complete asynchronous build.
+        // Automatic imports can refresh the calendar while the employee picker is being updated.
+        var selectedEmployee = SelectedEmployee;
+        if (selectedEmployee == null)
+        {
+            await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(Cells.Clear);
+            return;
+        }
+
         var first = new DateOnly(Year, Month, 1);
         var days  = DateTime.DaysInMonth(Year, Month);
         var last  = new DateOnly(Year, Month, days);
 
         var schedules = await _scheduleService
-            .GetMonthAsync(SelectedEmployee!.Id, Year, Month).ConfigureAwait(false);
+            .GetMonthAsync(selectedEmployee.Id, Year, Month).ConfigureAwait(false);
         // Include adjacent months so the first/last day also receives a rest-gap check.
         var previousMonth = first.AddMonths(-1);
         var nextMonth = first.AddMonths(1);
-        schedules = (await _scheduleService.GetMonthAsync(SelectedEmployee.Id, previousMonth.Year, previousMonth.Month).ConfigureAwait(false))
+        schedules = (await _scheduleService.GetMonthAsync(selectedEmployee.Id, previousMonth.Year, previousMonth.Month).ConfigureAwait(false))
             .Concat(schedules)
             .Concat(await _scheduleService.GetMonthAsync(SelectedEmployee.Id, nextMonth.Year, nextMonth.Month).ConfigureAwait(false))
             .GroupBy(s => s.ScheduleDate).Select(g => g.First()).ToList();
@@ -1020,15 +1033,22 @@ public partial class SchedulesViewModel : ViewModelBase, IAdminSectionViewModel
 
     private async Task BuildWeekCalendarAsync()
     {
+        var selectedEmployee = SelectedEmployee;
+        if (selectedEmployee == null)
+        {
+            await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(Cells.Clear);
+            return;
+        }
+
         var (from, to) = CurrentWeekRange;
         var schedules  = await _scheduleService
-            .GetMonthAsync(SelectedEmployee!.Id, from.Year, from.Month).ConfigureAwait(false);
+            .GetMonthAsync(selectedEmployee.Id, from.Year, from.Month).ConfigureAwait(false);
 
         // If week spans two months, also fetch next month
         if (to.Month != from.Month)
         {
             var extra = await _scheduleService
-                .GetMonthAsync(SelectedEmployee.Id, to.Year, to.Month).ConfigureAwait(false);
+                .GetMonthAsync(selectedEmployee.Id, to.Year, to.Month).ConfigureAwait(false);
             schedules = schedules.Concat(extra).ToList();
         }
 
