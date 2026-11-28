@@ -27,7 +27,7 @@ public sealed record LeaveTypeInfo(string Code, string Description, bool IsHourl
 /// <summary>Built-in defaults and classification rules for Ergani leave types.</summary>
 public static class LeaveTypes
 {
-internal static List<LeaveTypeInfo> CreateDefaults() => new List<LeaveTypeInfo>
+public static List<LeaveTypeInfo> CreateDefaults() => new List<LeaveTypeInfo>
     {
         // ── Άδεια (whole day) ──
         new("ΑΔΚΑΝ",   "Κανονική άδεια", false),
