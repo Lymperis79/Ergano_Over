@@ -11,13 +11,15 @@ public partial class ReportService : IReportService
     private readonly IConnectionStateService _connectionState;
     private readonly IOvertimeService _overtime;
     private readonly IRoundingSettingsService _rounding;
+    private readonly ILeaveTypeService _leaveTypes;
 
     public ReportService(IConnectionStateService connectionState, IOvertimeService overtime,
-                         IRoundingSettingsService rounding)
+                         IRoundingSettingsService rounding, ILeaveTypeService leaveTypes)
     {
         _connectionState = connectionState;
         _overtime = overtime;
         _rounding = rounding;
+        _leaveTypes = leaveTypes;
     }
 
     public async Task<AttendanceReport> GetAttendanceReportAsync(
@@ -265,7 +267,7 @@ public partial class ReportService : IReportService
                         && l.LeaveDate >= from && l.LeaveDate <= to);
         if (employeeId != null) leaveQuery = leaveQuery.Where(l => l.EmployeeId == employeeId);
         var leaves = await leaveQuery.AsNoTracking().ToListAsync();
-        var leaveTypes = LeaveTypes.All.ToDictionary(t => t.Code, StringComparer.OrdinalIgnoreCase);
+        var leaveTypes = _leaveTypes.All.ToDictionary(t => t.Code, StringComparer.OrdinalIgnoreCase);
         var leavesByKey = leaves.ToLookup(l => (EmployeeId: l.EmployeeId, Date: l.LeaveDate));
 
         var rules = _rounding.Current;
