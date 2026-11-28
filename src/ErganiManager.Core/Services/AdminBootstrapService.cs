@@ -44,10 +44,7 @@ public class AdminBootstrapService : IAdminBootstrapService
         if (config == null)
             return new BootstrapResult { Success = false, ErrorMessage = ErganiManager.Data.UiText.T("Database is not configured.") };
 
-        var optionsBuilder = new DbContextOptionsBuilder<AppDbContext>();
-        DbProviderFactory.Configure(optionsBuilder, config);
-
-        await using var db = new AppDbContext(optionsBuilder.Options);
+        await using var db = await _dbFactory.CreateDbContextAsync();
 
         // Guard against this ever being usable as a backdoor after go-live.
         if (await db.Users.AnyAsync())
