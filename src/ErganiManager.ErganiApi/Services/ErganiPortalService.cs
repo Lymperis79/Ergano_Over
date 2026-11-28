@@ -210,7 +210,12 @@ public sealed class ErganiPortalService : IErganiPortalService
             ChooseLoginType(driver, usertype);
 
             var passwordBox = WaitFor(driver, TimeSpan.FromSeconds(30), () => FirstDisplayed(driver, By.CssSelector("input[type='password']")));
-            if (passwordBox == null) { _logger.LogWarning("Ergani portal: login form not found"); return; }
+            if (passwordBox == null)
+            {
+                _logger.LogWarning("Ergani portal: login form not found");
+                if (automaticMode) { try { ExcelDownloaded?.Invoke(string.Empty); } catch { } }
+                return;
+            }
 
             var userBox = FindUsernameBox(passwordBox);
             if (userBox != null) { userBox.Clear(); userBox.SendKeys(username); }
@@ -221,7 +226,12 @@ public sealed class ErganiPortalService : IErganiPortalService
             // Wait (up to 5 min, in case the user has to complete a verification step) until we leave the login page.
             var loggedIn = WaitFor(driver, TimeSpan.FromMinutes(5),
                 () => !driver.Url.Contains("login.aspx", StringComparison.OrdinalIgnoreCase) ? driver.Url : (string?)null);
-            if (loggedIn == null) { _logger.LogWarning("Ergani portal: still on the login page"); return; }
+            if (loggedIn == null)
+            {
+                _logger.LogWarning("Ergani portal: still on the login page");
+                if (automaticMode) { try { ExcelDownloaded?.Invoke(string.Empty); } catch { } }
+                return;
+            }
 
             if (!string.IsNullOrWhiteSpace(settings.TargetPageUrl))
                 driver.Navigate().GoToUrl(BuildTargetUrl(settings.TargetPageUrl, baseUri, driver.Url));
@@ -238,7 +248,11 @@ public sealed class ErganiPortalService : IErganiPortalService
                         Search(driver, settings);
                         if (downloadAfterSearch && settings.AutoDownload) DownloadExcel(driver, settings, downloadDir, automaticMode);
                     }
-                    else Report("⚠ The date boxes were not found on the page, so the search was not started.");
+                    else
+                    {
+                        Report("❌ The date boxes were not found on the page, so no Excel file was generated.");
+                        if (automaticMode) { try { ExcelDownloaded?.Invoke(string.Empty); } catch { } }
+                    }
                 }
             }
         }
